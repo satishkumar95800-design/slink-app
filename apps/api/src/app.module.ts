@@ -13,6 +13,8 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { FilesModule } from './modules/files/files.module';
+import { TenantsModule } from './modules/tenants/tenants.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -29,19 +31,20 @@ import { FilesModule } from './modules/files/files.module';
     ReportsModule,
     NotificationsModule,
     FilesModule,
-    // Modules added as they are implemented:
-    // TenantsModule
-    // UsersModule
+    TenantsModule,
+    UsersModule,
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // Apply tenant resolution to all routes; webhook excluded (Razorpay sends no X-Tenant-ID)
+    // /tenants (platform CRUD) excluded — super_admin has no X-Tenant-ID context
     consumer
       .apply(TenantMiddleware)
       .exclude(
         { path: 'v1/health', method: RequestMethod.GET },
         { path: 'v1/payments/webhook', method: RequestMethod.POST },
+        { path: 'v1/tenants', method: RequestMethod.ALL },
+        { path: 'v1/tenants/:id', method: RequestMethod.ALL },
       )
       .forRoutes('*');
   }

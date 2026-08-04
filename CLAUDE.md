@@ -62,10 +62,10 @@ pnpm db:generate   # regenerates the Prisma client
 | Module | Status | Responsibility |
 |---|---|---|
 | health | done | GET /health |
-| tenants | todo | Tenant CRUD, branding, feature flags |
-| auth | todo | Phone OTP via Firebase, JWT issue/refresh/revoke |
-| users | todo | User profiles |
-| students | todo | Student records, parent linkage |
+| tenants | done | Tenant CRUD, branding, feature flags, super_admin + admin self-management |
+| auth | done | Phone OTP via Firebase, JWT issue/refresh/revoke |
+| users | done | User profiles |
+| students | done | Student records, parent linkage |
 | fees | done | Fee structures, student fee assignments, offline payments, adjustments |
 | payments | done | Razorpay gateway, webhook handler, idempotency |
 | reports | done | Teacher → student → parent progress reports, read receipts |
