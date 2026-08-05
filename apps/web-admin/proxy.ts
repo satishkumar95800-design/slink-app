@@ -5,7 +5,7 @@ const PROTECTED_PREFIXES = ['/admin', '/users', '/students', '/classes', '/fees'
 
 // Named "middleware" export — Next.js 16 deprecates this file in favor of proxy.ts.
 // Run `npx @next/codemod@canary middleware-to-proxy .` to migrate automatically.
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isProtected = PROTECTED_PREFIXES.some(
