@@ -11,7 +11,11 @@ import type { ActiveUser } from '../../common/types/active-user.type';
 jest.mock('razorpay', () => {
   return jest.fn().mockImplementation(() => ({
     orders: {
-      create: jest.fn().mockResolvedValue({ id: 'order_razorpay123', amount: 500000, currency: 'INR' }),
+      create: jest.fn().mockResolvedValue({
+        id: 'order_razorpay123',
+        amount: 500000,
+        currency: 'INR',
+      }),
     },
   }));
 });
@@ -70,8 +74,19 @@ const makeOrder = (overrides: Record<string, unknown> = {}) => ({
 });
 
 const mockPrisma = {
-  studentFee: { findUnique: jest.fn(), findUniqueOrThrow: jest.fn(), update: jest.fn() },
-  paymentOrder: { findUnique: jest.fn(), findFirst: jest.fn(), create: jest.fn(), update: jest.fn(), findMany: jest.fn(), count: jest.fn() },
+  studentFee: {
+    findUnique: jest.fn(),
+    findUniqueOrThrow: jest.fn(),
+    update: jest.fn(),
+  },
+  paymentOrder: {
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    findMany: jest.fn(),
+    count: jest.fn(),
+  },
   studentParent: { findFirst: jest.fn() },
   paymentTransaction: { create: jest.fn() },
   auditLog: { create: jest.fn() },
@@ -115,8 +130,13 @@ describe('PaymentsService', () => {
       mockPrisma.paymentOrder.findUnique.mockResolvedValue(null);
       mockPrisma.paymentOrder.create.mockResolvedValue(makeOrder());
 
-      const result = await service.createOrder('tenant-uuid', { studentFeeId: 'fee-uuid' }, parentUser);
+      const result = await service.createOrder(
+        'tenant-uuid',
+        { studentFeeId: 'fee-uuid' },
+        parentUser,
+      );
       expect(result.id).toBe('order-uuid');
+      expect(result.keyId).toBe('rzp_test_key');
       expect(mockPrisma.paymentOrder.create).toHaveBeenCalledTimes(1);
     });
 
@@ -125,17 +145,27 @@ describe('PaymentsService', () => {
       const existing = makeOrder({ status: PaymentOrderStatus.created });
       mockPrisma.paymentOrder.findUnique.mockResolvedValue(existing);
 
-      const result = await service.createOrder('tenant-uuid', { studentFeeId: 'fee-uuid' }, parentUser);
-      expect(result).toEqual(existing);
+      const result = await service.createOrder(
+        'tenant-uuid',
+        { studentFeeId: 'fee-uuid' },
+        parentUser,
+      );
+      expect(result).toEqual({ ...existing, keyId: 'rzp_test_key' });
       expect(mockPrisma.paymentOrder.create).not.toHaveBeenCalled();
     });
 
     it('creates a new order when existing order has failed status', async () => {
       mockPrisma.studentFee.findUnique.mockResolvedValue(makeFee());
-      mockPrisma.paymentOrder.findUnique.mockResolvedValue(makeOrder({ status: PaymentOrderStatus.failed }));
+      mockPrisma.paymentOrder.findUnique.mockResolvedValue(
+        makeOrder({ status: PaymentOrderStatus.failed }),
+      );
       mockPrisma.paymentOrder.create.mockResolvedValue(makeOrder());
 
-      await service.createOrder('tenant-uuid', { studentFeeId: 'fee-uuid' }, parentUser);
+      await service.createOrder(
+        'tenant-uuid',
+        { studentFeeId: 'fee-uuid' },
+        parentUser,
+      );
       expect(mockPrisma.paymentOrder.create).toHaveBeenCalledTimes(1);
     });
 
@@ -144,28 +174,48 @@ describe('PaymentsService', () => {
         makeFee({ student: { id: 'student-uuid', name: 'John', parents: [] } }),
       );
       await expect(
-        service.createOrder('tenant-uuid', { studentFeeId: 'fee-uuid' }, parentUser),
+        service.createOrder(
+          'tenant-uuid',
+          { studentFeeId: 'fee-uuid' },
+          parentUser,
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('throws BadRequestException for a fully paid fee', async () => {
-      mockPrisma.studentFee.findUnique.mockResolvedValue(makeFee({ status: FeeStatus.paid }));
+      mockPrisma.studentFee.findUnique.mockResolvedValue(
+        makeFee({ status: FeeStatus.paid }),
+      );
       await expect(
-        service.createOrder('tenant-uuid', { studentFeeId: 'fee-uuid' }, parentUser),
+        service.createOrder(
+          'tenant-uuid',
+          { studentFeeId: 'fee-uuid' },
+          parentUser,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
     it('throws BadRequestException for a waived fee', async () => {
-      mockPrisma.studentFee.findUnique.mockResolvedValue(makeFee({ status: FeeStatus.waived }));
+      mockPrisma.studentFee.findUnique.mockResolvedValue(
+        makeFee({ status: FeeStatus.waived }),
+      );
       await expect(
-        service.createOrder('tenant-uuid', { studentFeeId: 'fee-uuid' }, parentUser),
+        service.createOrder(
+          'tenant-uuid',
+          { studentFeeId: 'fee-uuid' },
+          parentUser,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
     it('throws NotFoundException when fee not found', async () => {
       mockPrisma.studentFee.findUnique.mockResolvedValue(null);
       await expect(
-        service.createOrder('tenant-uuid', { studentFeeId: 'bad-id' }, parentUser),
+        service.createOrder(
+          'tenant-uuid',
+          { studentFeeId: 'bad-id' },
+          parentUser,
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -174,7 +224,11 @@ describe('PaymentsService', () => {
       mockPrisma.paymentOrder.findUnique.mockResolvedValue(null);
       mockPrisma.paymentOrder.create.mockResolvedValue(makeOrder());
 
-      await service.createOrder('tenant-uuid', { studentFeeId: 'fee-uuid', idempotencyKey: 'my-key' }, parentUser);
+      await service.createOrder(
+        'tenant-uuid',
+        { studentFeeId: 'fee-uuid', idempotencyKey: 'my-key' },
+        parentUser,
+      );
       expect(mockPrisma.paymentOrder.findUnique).toHaveBeenCalledWith(
         expect.objectContaining({ where: { idempotencyKey: 'my-key' } }),
       );
@@ -199,22 +253,30 @@ describe('PaymentsService', () => {
   });
 
   describe('findOne', () => {
-    it('returns order for admin', async () => {
+    it('returns order for admin, with the Razorpay key_id attached', async () => {
       const order = makeOrder();
       mockPrisma.paymentOrder.findUnique.mockResolvedValue(order);
-      const result = await service.findOne('tenant-uuid', 'order-uuid', adminUser);
-      expect(result).toEqual(order);
+      const result = await service.findOne(
+        'tenant-uuid',
+        'order-uuid',
+        adminUser,
+      );
+      expect(result).toEqual({ ...order, keyId: 'rzp_test_key' });
     });
 
     it('throws NotFoundException when order does not exist', async () => {
       mockPrisma.paymentOrder.findUnique.mockResolvedValue(null);
-      await expect(service.findOne('tenant-uuid', 'bad-id', adminUser)).rejects.toThrow(NotFoundException);
+      await expect(
+        service.findOne('tenant-uuid', 'bad-id', adminUser),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('throws NotFoundException for parent with no link to student', async () => {
       mockPrisma.paymentOrder.findUnique.mockResolvedValue(makeOrder());
       mockPrisma.studentParent.findFirst.mockResolvedValue(null);
-      await expect(service.findOne('tenant-uuid', 'order-uuid', parentUser)).rejects.toThrow(NotFoundException);
+      await expect(
+        service.findOne('tenant-uuid', 'order-uuid', parentUser),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -231,7 +293,12 @@ describe('PaymentsService', () => {
       mockPrisma.$transaction.mockResolvedValue([{}, {}, {}, {}]);
 
       await service.capturePayment(
-        { id: 'order-uuid', tenantId: 'tenant-uuid', studentFeeId: 'fee-uuid', amount: new Prisma.Decimal('5000.00') },
+        {
+          id: 'order-uuid',
+          tenantId: 'tenant-uuid',
+          studentFeeId: 'fee-uuid',
+          amount: new Prisma.Decimal('5000.00'),
+        },
         'pay_gateway123',
         'sig_xyz',
         new Date(),

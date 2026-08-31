@@ -50,7 +50,7 @@ export default function PaymentsPage() {
     try {
       setLoading(true);
       const qs = status ? `?status=${status}&limit=100` : '?limit=100';
-      const res = await api.get<{ data: Payment[]; total: number }>(`/payments${qs}`);
+      const res = await api.get<{ data: Payment[]; total: number }>(`/payments/orders${qs}`);
       setPayments(res.data);
       setTotal(res.total);
       setError(null);

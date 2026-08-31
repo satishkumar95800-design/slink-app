@@ -1,4 +1,12 @@
-import { IsEnum, IsNumber, IsString, IsOptional, Min, MinLength, MaxLength } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsString,
+  IsOptional,
+  Min,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 
 export enum AdjustmentType {
   DISCOUNT = 'discount',

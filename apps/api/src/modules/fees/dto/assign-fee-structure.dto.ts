@@ -1,4 +1,10 @@
-import { IsNumber, IsDateString, IsOptional, Min } from 'class-validator';
+import {
+  IsNumber,
+  IsDateString,
+  IsOptional,
+  IsBoolean,
+  Min,
+} from 'class-validator';
 
 export class AssignFeeStructureDto {
   /** Override the amount due for this assignment (e.g. custom scholarship amount) */
@@ -11,4 +17,9 @@ export class AssignFeeStructureDto {
   @IsDateString()
   @IsOptional()
   dueDateOverride?: string;
+
+  /** When true, broadcasts a fee-due notification to the class's parents after assigning */
+  @IsBoolean()
+  @IsOptional()
+  notifyParents?: boolean;
 }

@@ -1,6 +1,12 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { BullModule } from '@nestjs/bull';
 import { PrismaModule } from './prisma/prisma.module';
 import { FirebaseAdminModule } from './firebase/firebase-admin.module';
 import { TenantMiddleware } from './common/middleware/tenant.middleware';
@@ -15,11 +21,19 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { FilesModule } from './modules/files/files.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { UsersModule } from './modules/users/users.module';
+import { ImportsModule } from './modules/imports/imports.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        url: config.get<string>('REDIS_URL'),
+      }),
+    }),
     PrismaModule,
     FirebaseAdminModule,
     SecretsModule,
@@ -33,6 +47,7 @@ import { UsersModule } from './modules/users/users.module';
     FilesModule,
     TenantsModule,
     UsersModule,
+    ImportsModule,
   ],
 })
 export class AppModule implements NestModule {

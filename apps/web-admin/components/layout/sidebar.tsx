@@ -18,6 +18,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Student Fees', href: '/admin/student-fees', icon: '💰' },
   { label: 'Payments', href: '/admin/payments', icon: '💳' },
   { label: 'Reports', href: '/admin/reports', icon: '📊' },
+  { label: 'Import Data', href: '/admin/import', icon: '📥' },
 ];
 
 export function Sidebar() {

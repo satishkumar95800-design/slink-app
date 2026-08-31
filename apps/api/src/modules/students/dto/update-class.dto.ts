@@ -1,4 +1,10 @@
-import { IsString, IsUUID, IsOptional, MinLength, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsUUID,
+  IsOptional,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 
 export class UpdateClassDto {
   @IsString()
@@ -6,6 +12,12 @@ export class UpdateClassDto {
   @MaxLength(100)
   @IsOptional()
   name?: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(20)
+  @IsOptional()
+  section?: string;
 
   /** UUID of the teacher to assign as class teacher */
   @IsUUID()

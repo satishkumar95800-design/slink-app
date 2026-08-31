@@ -68,6 +68,15 @@ enum NotificationStatus {
   failed
 }
 
+enum ImportStatus {
+  pending
+  validating
+  validated
+  processing
+  completed
+  failed
+}
+
 // ─── Tenant ──────────────────────────────────────────────────────────────────
 
 model Tenant {
@@ -187,6 +196,7 @@ model Class {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId     String   @map("tenant_id") @db.Uuid
   name         String
+  section      String?
   academicYear String   @map("academic_year")
   teacherId    String?  @map("teacher_id") @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at")
@@ -197,7 +207,7 @@ model Class {
   feeStructures FeeStructure[]
   reports       Report[]
 
-  @@unique([tenantId, name, academicYear])
+  @@unique([tenantId, name, section, academicYear])
   @@index([tenantId])
   @@map("classes")
 }
@@ -221,6 +231,7 @@ model FeeStructure {
   items       FeeItem[]
   studentFees StudentFee[]
 
+  @@unique([tenantId, classId, name, academicYear])
   @@index([tenantId])
   @@map("fee_structures")
 }
@@ -382,4 +393,21 @@ model AuditLog {
   @@index([actorId])
   @@index([entityType, entityId])
   @@map("audit_logs")
+}
+
+// ─── Bulk Import ──────────────────────────────────────────────────────────────
+
+model ImportJob {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String       @map("tenant_id") @db.Uuid
+  initiatedBy String       @map("initiated_by") @db.Uuid
+  fileName    String       @map("file_name")
+  status      ImportStatus @default(pending)
+  summary     Json?
+  errorReport Json?        @map("error_report")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  completedAt DateTime?    @map("completed_at")
+
+  @@index([tenantId])
+  @@map("import_jobs")
 }

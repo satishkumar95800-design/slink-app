@@ -62,12 +62,12 @@ export default function StudentsPage() {
       setLoading(true);
       const qs = q ? `?search=${encodeURIComponent(q)}&limit=100` : '?limit=100';
       const [studentRes, classRes] = await Promise.all([
-        api.get<{ data: Student[]; total: number }>(`/students${qs}`),
-        api.get<{ data: Class[]; total: number }>('/students/classes?limit=200'),
+        api.get<{ data: Student[]; meta: { total: number } }>(`/students${qs}`),
+        api.get<Class[]>('/classes'),
       ]);
       setStudents(studentRes.data);
-      setTotal(studentRes.total);
-      setClasses(classRes.data);
+      setTotal(studentRes.meta.total);
+      setClasses(classRes);
       setError(null);
     } catch (e) {
       setError((e as Error).message);

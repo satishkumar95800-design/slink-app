@@ -1,4 +1,12 @@
-import { IsNumber, IsEnum, IsString, IsDateString, IsOptional, Min, MaxLength } from 'class-validator';
+import {
+  IsNumber,
+  IsEnum,
+  IsString,
+  IsDateString,
+  IsOptional,
+  Min,
+  MaxLength,
+} from 'class-validator';
 
 export enum OfflinePaymentMethod {
   CASH = 'cash',

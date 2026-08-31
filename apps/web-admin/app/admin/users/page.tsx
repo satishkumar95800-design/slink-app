@@ -70,9 +70,9 @@ export default function UsersPage() {
   async function fetchUsers() {
     try {
       setLoading(true);
-      const res = await api.get<{ data: User[]; total: number }>('/users?limit=50');
+      const res = await api.get<{ data: User[]; meta: { total: number } }>('/users?limit=50');
       setUsers(res.data);
-      setTotal(res.total);
+      setTotal(res.meta.total);
       setError(null);
     } catch (e) {
       setError((e as Error).message);

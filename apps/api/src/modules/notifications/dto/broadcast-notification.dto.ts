@@ -36,8 +36,10 @@ export class BroadcastNotificationDto {
 
   /** classId when targetType = 'class'; userId when targetType = 'user'; omit for 'all_parents' */
   @IsUUID()
-  @ValidateIf((o: BroadcastNotificationDto) =>
-    o.targetType === BroadcastTarget.CLASS || o.targetType === BroadcastTarget.USER,
+  @ValidateIf(
+    (o: BroadcastNotificationDto) =>
+      o.targetType === BroadcastTarget.CLASS ||
+      o.targetType === BroadcastTarget.USER,
   )
   targetId?: string;
 
@@ -45,4 +47,10 @@ export class BroadcastNotificationDto {
   @IsObject()
   @IsOptional()
   data?: Record<string, string>;
+
+  /** S3 key of a file already uploaded via POST /files/upload (category: attachment) */
+  @IsString()
+  @MaxLength(512)
+  @IsOptional()
+  fileKey?: string;
 }

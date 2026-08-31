@@ -47,8 +47,8 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
-function formatCurrency(paise: number) {
-  return `₹${(paise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+function formatCurrency(amount: number) {
+  return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
 }
 
 export default function FeesPage() {
@@ -77,12 +77,12 @@ export default function FeesPage() {
     try {
       setLoading(true);
       const [feesRes, classRes] = await Promise.all([
-        api.get<{ data: FeeStructure[]; total: number }>('/fees/structures?limit=100'),
-        api.get<{ data: Class[]; total: number }>('/students/classes?limit=200'),
+        api.get<FeeStructure[]>('/fee-structures'),
+        api.get<Class[]>('/classes'),
       ]);
-      setStructures(feesRes.data);
-      setTotal(feesRes.total);
-      setClasses(classRes.data);
+      setStructures(feesRes);
+      setTotal(feesRes.length);
+      setClasses(classRes);
       setError(null);
     } catch (e) {
       setError((e as Error).message);
@@ -97,7 +97,7 @@ export default function FeesPage() {
 
   async function onSubmit(data: FormData) {
     try {
-      await api.post('/fees/structures', data);
+      await api.post('/fee-structures', data);
       toast('Fee structure created', 'success');
       setShowModal(false);
       reset({ items: [{ label: '', amount: 0 }] });
@@ -184,8 +184,9 @@ export default function FeesPage() {
             <Input label="Academic Year" placeholder="2024-25" error={errors.academicYear?.message} {...register('academicYear')} />
             <Input label="Due Date" type="date" error={errors.dueDate?.message} {...register('dueDate')} />
             <Input
-              label="Late Fee / Day (₹ paise)"
+              label="Late Fee / Day (₹)"
               type="number"
+              step="0.01"
               placeholder="0"
               error={errors.lateFeePerDay?.message}
               {...register('lateFeePerDay', { valueAsNumber: true })}
@@ -213,8 +214,9 @@ export default function FeesPage() {
                   />
                   <input
                     type="number"
+                    step="0.01"
                     className="w-32 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
-                    placeholder="Amount (₹ paise)"
+                    placeholder="Amount (₹)"
                     {...register(`items.${idx}.amount`, { valueAsNumber: true })}
                   />
                   {fields.length > 1 && (

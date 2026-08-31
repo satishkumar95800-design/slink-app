@@ -23,8 +23,17 @@ async function bootstrap() {
   app.useGlobalGuards(new JwtAuthGuard(app.get(Reflector)));
   app.useGlobalGuards(new RolesGuard(app.get(Reflector)));
 
+  const allowedOrigins = [
+    process.env.ADMIN_BASE_URL ?? 'http://localhost:3001',
+    ...(process.env.EXTRA_CORS_ORIGINS
+      ? process.env.EXTRA_CORS_ORIGINS.split(',')
+      : []),
+  ];
   app.enableCors({
-    origin: process.env.ADMIN_BASE_URL ?? 'http://localhost:3001',
+    origin: (
+      origin: string | undefined,
+      cb: (err: Error | null, allow?: boolean) => void,
+    ) => cb(null, !origin || allowedOrigins.some((o) => origin.startsWith(o))),
     credentials: true,
   });
 

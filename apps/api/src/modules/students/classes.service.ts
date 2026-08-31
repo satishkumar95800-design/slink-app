@@ -22,10 +22,11 @@ export class ClassesService {
 
     return this.prisma.class.findMany({
       where,
-      orderBy: [{ academicYear: 'desc' }, { name: 'asc' }],
+      orderBy: [{ academicYear: 'desc' }, { name: 'asc' }, { section: 'asc' }],
       select: {
         id: true,
         name: true,
+        section: true,
         academicYear: true,
         teacherId: true,
         _count: { select: { students: true } },
@@ -49,13 +50,26 @@ export class ClassesService {
   }
 
   async create(tenantId: string, dto: CreateClassDto) {
-    const existing = await this.prisma.class.findUnique({
-      where: { tenantId_name_academicYear: { tenantId, name: dto.name, academicYear: dto.academicYear } },
+    const existing = await this.prisma.class.findFirst({
+      where: {
+        tenantId,
+        name: dto.name,
+        section: dto.section ?? null,
+        academicYear: dto.academicYear,
+      },
     });
-    if (existing) throw new ConflictException('A class with this name already exists for this academic year');
+    if (existing)
+      throw new ConflictException(
+        'A class with this name and section already exists for this academic year',
+      );
 
     return this.prisma.class.create({
-      data: { tenantId, name: dto.name, academicYear: dto.academicYear },
+      data: {
+        tenantId,
+        name: dto.name,
+        section: dto.section,
+        academicYear: dto.academicYear,
+      },
     });
   }
 
@@ -74,23 +88,29 @@ export class ClassesService {
 
     return this.prisma.class.update({
       where: { id: classId },
-      data: { name: dto.name, teacherId: dto.teacherId },
+      data: { name: dto.name, section: dto.section, teacherId: dto.teacherId },
     });
   }
 
   async remove(tenantId: string, classId: string) {
     const cls = await this.requireClass(tenantId, classId);
 
-    const studentCount = await this.prisma.student.count({ where: { classId, tenantId } });
+    const studentCount = await this.prisma.student.count({
+      where: { classId, tenantId },
+    });
     if (studentCount > 0) {
-      throw new ConflictException(`Cannot delete class: ${studentCount} student(s) still assigned`);
+      throw new ConflictException(
+        `Cannot delete class: ${studentCount} student(s) still assigned`,
+      );
     }
 
     await this.prisma.class.delete({ where: { id: cls.id } });
   }
 
   private async requireClass(tenantId: string, classId: string) {
-    const cls = await this.prisma.class.findUnique({ where: { id: classId, tenantId } });
+    const cls = await this.prisma.class.findUnique({
+      where: { id: classId, tenantId },
+    });
     if (!cls) throw new NotFoundException('Class not found');
     return cls;
   }

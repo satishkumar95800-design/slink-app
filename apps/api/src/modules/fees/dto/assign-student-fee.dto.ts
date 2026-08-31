@@ -1,4 +1,10 @@
-import { IsUUID, IsNumber, IsDateString, IsOptional, Min } from 'class-validator';
+import {
+  IsUUID,
+  IsNumber,
+  IsDateString,
+  IsOptional,
+  Min,
+} from 'class-validator';
 
 export class AssignStudentFeeDto {
   @IsUUID()

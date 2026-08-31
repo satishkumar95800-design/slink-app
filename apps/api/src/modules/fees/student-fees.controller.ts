@@ -56,10 +56,7 @@ export class StudentFeesController {
 
   @Post()
   @Roles(Role.admin, Role.accounts)
-  assign(
-    @TenantId() tenantId: string,
-    @Body() dto: AssignStudentFeeDto,
-  ) {
+  assign(@TenantId() tenantId: string, @Body() dto: AssignStudentFeeDto) {
     return this.studentFeesService.assignOne(tenantId, dto);
   }
 
@@ -72,7 +69,12 @@ export class StudentFeesController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: RecordOfflinePaymentDto,
   ) {
-    return this.studentFeesService.recordOfflinePayment(tenantId, id, dto, user.id);
+    return this.studentFeesService.recordOfflinePayment(
+      tenantId,
+      id,
+      dto,
+      user.id,
+    );
   }
 
   @Post(':id/adjust')

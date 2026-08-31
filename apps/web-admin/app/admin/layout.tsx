@@ -16,6 +16,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/admin/student-fees': 'Student Fees',
   '/admin/payments': 'Payments',
   '/admin/reports': 'Reports',
+  '/admin/import': 'Import Data',
 };
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

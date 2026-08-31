@@ -57,7 +57,9 @@ export class WebhookService {
     }
 
     // Fetch tenant-specific webhook secret and verify HMAC (invariant #3)
-    const { webhookSecret } = await this.secrets.getRazorpayCredentials(order.tenantId);
+    const { webhookSecret } = await this.secrets.getRazorpayCredentials(
+      order.tenantId,
+    );
     this.verifyHmac(rawBody, signature, webhookSecret);
 
     await this.processEvent(body, order);
@@ -94,7 +96,9 @@ export class WebhookService {
           '', // Razorpay signature is on the whole webhook, not per-payment
           new Date(payment.created_at * 1000),
         );
-        this.logger.log(`Payment captured: ${payment.id} for order ${order.id}`);
+        this.logger.log(
+          `Payment captured: ${payment.id} for order ${order.id}`,
+        );
         break;
       }
 

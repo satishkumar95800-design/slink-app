@@ -1,10 +1,28 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { NotificationChannel, NotificationStatus, Prisma, Role } from '@prisma/client';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
+import {
+  NotificationChannel,
+  NotificationStatus,
+  Prisma,
+  Role,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FcmService } from './fcm.service';
 import { SmsService } from './sms.service';
-import { BroadcastNotificationDto, BroadcastTarget } from './dto/broadcast-notification.dto';
+import { FilesService } from '../files/files.service';
+import {
+  BroadcastNotificationDto,
+  BroadcastTarget,
+} from './dto/broadcast-notification.dto';
 import { NotificationQueryDto } from './dto/notification-query.dto';
+import type { ActiveUser } from '../../common/types/active-user.type';
+
+/** Push notifications may sit unread in a device's tray a while — longer-lived than the files module's 15-min default */
+const ATTACHMENT_SIGNED_URL_TTL_SECONDS = 24 * 60 * 60;
 
 export interface SendOptions {
   tenantId: string;
@@ -23,6 +41,7 @@ export class NotificationsService {
     private readonly prisma: PrismaService,
     private readonly fcm: FcmService,
     private readonly sms: SmsService,
+    private readonly files: FilesService,
   ) {}
 
   // ── FCM token management ────────────────────────────────────────────────────
@@ -64,15 +83,22 @@ export class NotificationsService {
   async broadcast(
     tenantId: string,
     dto: BroadcastNotificationDto,
+    actor: ActiveUser,
   ): Promise<{ queued: number }> {
+    if (actor.role === Role.teacher) {
+      await this.assertTeacherCanBroadcast(tenantId, dto, actor);
+    }
+
     const users = await this.resolveTargetUsers(tenantId, dto);
 
     if (users.length === 0) {
       return { queued: 0 };
     }
 
+    const data = await this.resolveDataPayload(tenantId, dto);
+
     if (dto.channel === NotificationChannel.fcm) {
-      await this.broadcastFcm(tenantId, users, dto);
+      await this.broadcastFcm(tenantId, users, dto, data);
     } else {
       await this.broadcastSms(tenantId, users, dto);
     }
@@ -127,12 +153,52 @@ export class NotificationsService {
 
   // ── Internal helpers ─────────────────────────────────────────────────────────
 
+  /** Teachers may only broadcast to a class they own — mirrors the check in ReportsService */
+  private async assertTeacherCanBroadcast(
+    tenantId: string,
+    dto: BroadcastNotificationDto,
+    actor: ActiveUser,
+  ): Promise<void> {
+    if (dto.targetType !== BroadcastTarget.CLASS) {
+      throw new ForbiddenException(
+        'Teachers can only broadcast to their own class',
+      );
+    }
+
+    const cls = await this.prisma.class.findUnique({
+      where: { id: dto.targetId, tenantId },
+      select: { teacherId: true },
+    });
+    if (!cls) throw new NotFoundException('Class not found');
+    if (cls.teacherId !== actor.id) {
+      throw new ForbiddenException(
+        'Teachers can only broadcast to their own class',
+      );
+    }
+  }
+
+  /** Resolves dto.fileKey (from POST /files/upload) into a long-lived signed URL for the FCM data payload */
+  private async resolveDataPayload(
+    tenantId: string,
+    dto: BroadcastNotificationDto,
+  ): Promise<Record<string, string> | undefined> {
+    if (!dto.fileKey) return dto.data;
+
+    const attachmentUrl = await this.files.getSignedUrl(
+      dto.fileKey,
+      tenantId,
+      ATTACHMENT_SIGNED_URL_TTL_SECONDS,
+    );
+    return { ...dto.data, attachmentUrl };
+  }
+
   private async resolveTargetUsers(
     tenantId: string,
     dto: BroadcastNotificationDto,
   ) {
     if (dto.targetType === BroadcastTarget.USER) {
-      if (!dto.targetId) throw new NotFoundException('targetId is required for user target');
+      if (!dto.targetId)
+        throw new NotFoundException('targetId is required for user target');
       const user = await this.prisma.user.findUnique({
         where: { id: dto.targetId, tenantId },
         select: { id: true, phone: true, fcmTokens: true },
@@ -141,11 +207,14 @@ export class NotificationsService {
     }
 
     if (dto.targetType === BroadcastTarget.CLASS) {
-      if (!dto.targetId) throw new NotFoundException('targetId is required for class target');
+      if (!dto.targetId)
+        throw new NotFoundException('targetId is required for class target');
       // Collect parents of all students in the class
       const links = await this.prisma.studentParent.findMany({
         where: { student: { classId: dto.targetId, tenantId } },
-        select: { parent: { select: { id: true, phone: true, fcmTokens: true } } },
+        select: {
+          parent: { select: { id: true, phone: true, fcmTokens: true } },
+        },
       });
       return deduplicateById(links.map((l) => l.parent));
     }
@@ -161,6 +230,7 @@ export class NotificationsService {
     tenantId: string,
     users: Array<{ id: string; fcmTokens: string[] }>,
     dto: BroadcastNotificationDto,
+    data: Record<string, string> | undefined,
   ) {
     const allTokens = users.flatMap((u) => u.fcmTokens);
 
@@ -174,7 +244,7 @@ export class NotificationsService {
             channel: NotificationChannel.fcm,
             title: dto.title,
             body: dto.body,
-            data: dto.data ?? Prisma.JsonNull,
+            data: data ?? Prisma.JsonNull,
           },
         }),
       ),
@@ -183,7 +253,10 @@ export class NotificationsService {
     if (allTokens.length === 0) {
       await this.prisma.notification.updateMany({
         where: { id: { in: records.map((r) => r.id) } },
-        data: { status: NotificationStatus.failed, error: 'No FCM tokens registered' },
+        data: {
+          status: NotificationStatus.failed,
+          error: 'No FCM tokens registered',
+        },
       });
       return;
     }
@@ -192,20 +265,24 @@ export class NotificationsService {
       allTokens,
       dto.title ?? '',
       dto.body,
-      dto.data,
+      data,
     );
     const failedSet = new Set(failedTokens);
 
     // Mark each notification as sent or failed based on whether their tokens failed
     for (let i = 0; i < users.length; i++) {
-      const user = users[i]!;
-      const record = records[i]!;
-      const allFailed = user.fcmTokens.length > 0 && user.fcmTokens.every((t) => failedSet.has(t));
+      const user = users[i];
+      const record = records[i];
+      const allFailed =
+        user.fcmTokens.length > 0 &&
+        user.fcmTokens.every((t) => failedSet.has(t));
 
       await this.prisma.notification.update({
         where: { id: record.id },
         data: {
-          status: allFailed ? NotificationStatus.failed : NotificationStatus.sent,
+          status: allFailed
+            ? NotificationStatus.failed
+            : NotificationStatus.sent,
           sentAt: allFailed ? undefined : new Date(),
           error: allFailed ? 'All FCM tokens failed' : undefined,
         },
@@ -229,12 +306,16 @@ export class NotificationsService {
         },
       });
 
-      await this.dispatch(record.id, { ...user, fcmTokens: [] }, {
-        tenantId,
-        userId: user.id,
-        channel: NotificationChannel.sms,
-        body: dto.body,
-      });
+      await this.dispatch(
+        record.id,
+        { ...user, fcmTokens: [] },
+        {
+          tenantId,
+          userId: user.id,
+          channel: NotificationChannel.sms,
+          body: dto.body,
+        },
+      );
     }
   }
 
@@ -248,7 +329,12 @@ export class NotificationsService {
         if (user.fcmTokens.length === 0) {
           throw new Error('No FCM tokens registered for user');
         }
-        await this.fcm.sendMulticast(user.fcmTokens, opts.title ?? '', opts.body, opts.data);
+        await this.fcm.sendMulticast(
+          user.fcmTokens,
+          opts.title ?? '',
+          opts.body,
+          opts.data,
+        );
       } else {
         if (!user.phone) throw new Error('User has no phone number');
         const { error } = await this.sms.send(user.phone, opts.body);

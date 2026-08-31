@@ -53,16 +53,16 @@ export default function DashboardPage() {
     async function fetchStats() {
       try {
         const [usersRes, studentsRes, paymentsRes, feesRes] = await Promise.allSettled([
-          api.get<{ data: unknown[]; total: number }>('/users?limit=1'),
-          api.get<{ data: unknown[]; total: number }>('/students?limit=1'),
-          api.get<{ data: { id: string; amount: number; status: string; createdAt: string; studentFee?: { student?: { name: string } } }[]; total: number }>('/payments?limit=5'),
-          api.get<{ data: { amountDue: number; amountPaid: number; status: string }[] }>('/fees/student-fees?limit=1000'),
+          api.get<{ data: unknown[]; meta: { total: number } }>('/users?limit=1'),
+          api.get<{ data: unknown[]; meta: { total: number } }>('/students?limit=1'),
+          api.get<{ data: { id: string; amount: number; status: string; createdAt: string; studentFee?: { student?: { name: string } } }[]; total: number }>('/payments/orders?limit=5'),
+          api.get<{ data: { amountDue: number; amountPaid: number; status: string }[] }>('/student-fees?limit=1000'),
         ]);
 
         const partialStats: Partial<Stats> = {};
 
-        if (usersRes.status === 'fulfilled') partialStats.userCount = usersRes.value.total;
-        if (studentsRes.status === 'fulfilled') partialStats.studentCount = studentsRes.value.total;
+        if (usersRes.status === 'fulfilled') partialStats.userCount = usersRes.value.meta.total;
+        if (studentsRes.status === 'fulfilled') partialStats.studentCount = studentsRes.value.meta.total;
         if (paymentsRes.status === 'fulfilled') {
           partialStats.recentPayments = paymentsRes.value.data.map((p) => ({
             id: p.id, amount: p.amount, status: p.status, createdAt: p.createdAt,

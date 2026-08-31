@@ -57,11 +57,11 @@ export default function ClassesPage() {
     try {
       setLoading(true);
       const [classRes, teacherRes] = await Promise.all([
-        api.get<{ data: Class[]; total: number }>('/students/classes?limit=100'),
-        api.get<{ data: Teacher[]; total: number }>('/users?role=teacher&limit=200'),
+        api.get<Class[]>('/classes'),
+        api.get<{ data: Teacher[]; meta: { total: number } }>('/users?role=teacher&limit=200'),
       ]);
-      setClasses(classRes.data);
-      setTotal(classRes.total);
+      setClasses(classRes);
+      setTotal(classRes.length);
       setTeachers(teacherRes.data);
       setError(null);
     } catch (e) {
@@ -77,7 +77,7 @@ export default function ClassesPage() {
 
   async function onSubmit(data: FormData) {
     try {
-      await api.post('/students/classes', {
+      await api.post('/classes', {
         ...data,
         teacherId: data.teacherId || undefined,
         section: data.section || undefined,

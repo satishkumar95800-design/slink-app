@@ -24,7 +24,13 @@ const orderInclude = {
     },
   },
   transaction: {
-    select: { id: true, gatewayPaymentId: true, amount: true, paidAt: true, receiptUrl: true },
+    select: {
+      id: true,
+      gatewayPaymentId: true,
+      amount: true,
+      paidAt: true,
+      receiptUrl: true,
+    },
   },
 } satisfies Prisma.PaymentOrderInclude;
 
@@ -40,7 +46,9 @@ export class PaymentsService {
   async createOrder(tenantId: string, dto: CreateOrderDto, user: ActiveUser) {
     const fee = await this.prisma.studentFee.findUnique({
       where: { id: dto.studentFeeId, tenantId },
-      include: { student: { include: { parents: { where: { parentId: user.id } } } } },
+      include: {
+        student: { include: { parents: { where: { parentId: user.id } } } },
+      },
     });
 
     if (!fee) throw new NotFoundException('Student fee not found');
@@ -57,7 +65,13 @@ export class PaymentsService {
       throw new BadRequestException('This fee has been waived');
     }
 
-    const idempotencyKey = dto.idempotencyKey ?? `${tenantId}:${dto.studentFeeId}`;
+    const idempotencyKey =
+      dto.idempotencyKey ?? `${tenantId}:${dto.studentFeeId}`;
+
+    // Fetched up front (and 5-minute cached in SecretsService) since the Razorpay
+    // publishable key_id is returned to the client either way — new order or replay.
+    const { keyId, keySecret } =
+      await this.secrets.getRazorpayCredentials(tenantId);
 
     // Idempotency check: return existing non-failed order for the same key
     const existing = await this.prisma.paymentOrder.findUnique({
@@ -65,7 +79,7 @@ export class PaymentsService {
       include: orderInclude,
     });
     if (existing && existing.status !== PaymentOrderStatus.failed) {
-      return existing;
+      return { ...existing, keyId };
     }
 
     // Outstanding amount in paise (integer arithmetic, per architectural invariant)
@@ -76,8 +90,6 @@ export class PaymentsService {
       throw new BadRequestException('No outstanding amount to pay');
     }
 
-    const { keyId, keySecret } = await this.secrets.getRazorpayCredentials(tenantId);
-
     const rzp = new Razorpay({ key_id: keyId, key_secret: keySecret });
 
     const gatewayOrder = await rzp.orders.create({
@@ -87,7 +99,7 @@ export class PaymentsService {
       notes: { tenantId, studentFeeId: dto.studentFeeId, userId: user.id },
     });
 
-    return this.prisma.paymentOrder.create({
+    const order = await this.prisma.paymentOrder.create({
       data: {
         tenantId,
         studentFeeId: dto.studentFeeId,
@@ -98,6 +110,8 @@ export class PaymentsService {
       },
       include: orderInclude,
     });
+
+    return { ...order, keyId };
   }
 
   async findAll(tenantId: string, user: ActiveUser, query: OrderQueryDto) {
@@ -107,7 +121,9 @@ export class PaymentsService {
     if (query.studentFeeId) where.studentFeeId = query.studentFeeId;
 
     if (user.role === Role.parent) {
-      where.studentFee = { student: { parents: { some: { parentId: user.id } } } };
+      where.studentFee = {
+        student: { parents: { some: { parentId: user.id } } },
+      };
     }
 
     const [data, total] = await this.prisma.$transaction([
@@ -139,7 +155,9 @@ export class PaymentsService {
       if (!link) throw new NotFoundException('Payment order not found');
     }
 
-    return order;
+    // Included so a client can resume Razorpay Checkout for a still-pending order
+    const { keyId } = await this.secrets.getRazorpayCredentials(tenantId);
+    return { ...order, keyId };
   }
 
   /**
@@ -147,7 +165,12 @@ export class PaymentsService {
    * Called by WebhookService after HMAC verification.
    */
   async capturePayment(
-    order: { id: string; tenantId: string; studentFeeId: string; amount: Prisma.Decimal },
+    order: {
+      id: string;
+      tenantId: string;
+      studentFeeId: string;
+      amount: Prisma.Decimal;
+    },
     gatewayPaymentId: string,
     gatewaySignature: string,
     paidAt: Date,
@@ -157,7 +180,11 @@ export class PaymentsService {
     });
 
     const newAmountPaid = fee.amountPaid.add(order.amount);
-    const newFeeStatus = this.recalcFeeStatus(fee.amountDue, newAmountPaid, fee.dueDate);
+    const newFeeStatus = this.recalcFeeStatus(
+      fee.amountDue,
+      newAmountPaid,
+      fee.dueDate,
+    );
 
     await this.prisma.$transaction([
       this.prisma.paymentOrder.update({

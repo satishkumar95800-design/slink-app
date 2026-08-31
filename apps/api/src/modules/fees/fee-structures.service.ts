@@ -4,8 +4,10 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { Prisma, Role } from '@prisma/client';
+import { NotificationChannel, Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { BroadcastTarget } from '../notifications/dto/broadcast-notification.dto';
 import type { ActiveUser } from '../../common/types/active-user.type';
 import { CreateFeeStructureDto } from './dto/create-fee-structure.dto';
 import { UpdateFeeStructureDto } from './dto/update-fee-structure.dto';
@@ -14,15 +16,25 @@ import { FeeStructureQueryDto } from './dto/fee-structure-query.dto';
 
 const feeStructureInclude = {
   class: { select: { id: true, name: true, academicYear: true } },
-  items: { select: { id: true, label: true, amount: true }, orderBy: { label: 'asc' as const } },
+  items: {
+    select: { id: true, label: true, amount: true },
+    orderBy: { label: 'asc' as const },
+  },
   _count: { select: { studentFees: true } },
 } satisfies Prisma.FeeStructureInclude;
 
 @Injectable()
 export class FeeStructuresService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
-  async findAll(tenantId: string, user: ActiveUser, query: FeeStructureQueryDto) {
+  async findAll(
+    tenantId: string,
+    user: ActiveUser,
+    query: FeeStructureQueryDto,
+  ) {
     const where: Prisma.FeeStructureWhereInput = { tenantId };
 
     if (query.academicYear) where.academicYear = query.academicYear;
@@ -80,7 +92,12 @@ export class FeeStructuresService {
         dueDate: new Date(dto.dueDate),
         lateFeePerDay: dto.lateFeePerDay ?? 0,
         totalAmount: new Prisma.Decimal(totalAmount.toFixed(2)),
-        items: { create: dto.items.map((item) => ({ label: item.label, amount: new Prisma.Decimal(item.amount.toFixed(2)) })) },
+        items: {
+          create: dto.items.map((item) => ({
+            label: item.label,
+            amount: new Prisma.Decimal(item.amount.toFixed(2)),
+          })),
+        },
       },
       include: feeStructureInclude,
     });
@@ -93,7 +110,8 @@ export class FeeStructuresService {
 
     if (dto.name !== undefined) data.name = dto.name;
     if (dto.dueDate !== undefined) data.dueDate = new Date(dto.dueDate);
-    if (dto.lateFeePerDay !== undefined) data.lateFeePerDay = new Prisma.Decimal(dto.lateFeePerDay.toFixed(2));
+    if (dto.lateFeePerDay !== undefined)
+      data.lateFeePerDay = new Prisma.Decimal(dto.lateFeePerDay.toFixed(2));
 
     if (dto.items !== undefined) {
       const totalAmount = dto.items.reduce((sum, item) => sum + item.amount, 0);
@@ -101,7 +119,10 @@ export class FeeStructuresService {
       // Replace all items: delete existing, create new
       data.items = {
         deleteMany: {},
-        create: dto.items.map((item) => ({ label: item.label, amount: new Prisma.Decimal(item.amount.toFixed(2)) })),
+        create: dto.items.map((item) => ({
+          label: item.label,
+          amount: new Prisma.Decimal(item.amount.toFixed(2)),
+        })),
       };
     }
 
@@ -132,7 +153,12 @@ export class FeeStructuresService {
    * Students who already have an assignment for this structure are skipped.
    * Returns a summary of how many were assigned vs skipped.
    */
-  async assignToClass(tenantId: string, feeStructureId: string, dto: AssignFeeStructureDto) {
+  async assignToClass(
+    tenantId: string,
+    feeStructureId: string,
+    dto: AssignFeeStructureDto,
+    actor: ActiveUser,
+  ) {
     const structure = await this.requireFeeStructure(tenantId, feeStructureId);
 
     const students = await this.prisma.student.findMany({
@@ -154,7 +180,9 @@ export class FeeStructuresService {
     const amountDue = dto.amountDueOverride
       ? new Prisma.Decimal(dto.amountDueOverride.toFixed(2))
       : structure.totalAmount;
-    const dueDate = dto.dueDateOverride ? new Date(dto.dueDateOverride) : structure.dueDate;
+    const dueDate = dto.dueDateOverride
+      ? new Date(dto.dueDateOverride)
+      : structure.dueDate;
 
     if (toAssign.length > 0) {
       await this.prisma.studentFee.createMany({
@@ -168,6 +196,20 @@ export class FeeStructuresService {
       });
     }
 
+    if (dto.notifyParents) {
+      await this.notifications.broadcast(
+        tenantId,
+        {
+          channel: NotificationChannel.fcm,
+          title: `Fee due: ${structure.name}`,
+          body: `A fee of ₹${amountDue.toFixed(2)} is due by ${dueDate.toISOString().slice(0, 10)}. Please pay via the School Connect app.`,
+          targetType: BroadcastTarget.CLASS,
+          targetId: structure.classId,
+        },
+        actor,
+      );
+    }
+
     return {
       total: students.length,
       assigned: toAssign.length,
@@ -176,13 +218,17 @@ export class FeeStructuresService {
   }
 
   private async requireFeeStructure(tenantId: string, id: string) {
-    const s = await this.prisma.feeStructure.findUnique({ where: { id, tenantId } });
+    const s = await this.prisma.feeStructure.findUnique({
+      where: { id, tenantId },
+    });
     if (!s) throw new NotFoundException('Fee structure not found');
     return s;
   }
 
   private async requireClass(tenantId: string, classId: string) {
-    const c = await this.prisma.class.findUnique({ where: { id: classId, tenantId } });
+    const c = await this.prisma.class.findUnique({
+      where: { id: classId, tenantId },
+    });
     if (!c) throw new NotFoundException('Class not found');
     return c;
   }

@@ -48,10 +48,7 @@ export class FeeStructuresController {
 
   @Post()
   @Roles(Role.admin, Role.accounts)
-  create(
-    @TenantId() tenantId: string,
-    @Body() dto: CreateFeeStructureDto,
-  ) {
+  create(@TenantId() tenantId: string, @Body() dto: CreateFeeStructureDto) {
     return this.feeStructuresService.create(tenantId, dto);
   }
 
@@ -68,10 +65,7 @@ export class FeeStructuresController {
   @Delete(':id')
   @Roles(Role.admin)
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(
-    @TenantId() tenantId: string,
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
+  remove(@TenantId() tenantId: string, @Param('id', ParseUUIDPipe) id: string) {
     return this.feeStructuresService.remove(tenantId, id);
   }
 
@@ -82,7 +76,8 @@ export class FeeStructuresController {
     @TenantId() tenantId: string,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AssignFeeStructureDto,
+    @CurrentUser() user: ActiveUser,
   ) {
-    return this.feeStructuresService.assignToClass(tenantId, id, dto);
+    return this.feeStructuresService.assignToClass(tenantId, id, dto, user);
   }
 }

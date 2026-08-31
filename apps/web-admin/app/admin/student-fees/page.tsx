@@ -45,8 +45,9 @@ const assignSchema = z.object({
 
 const offlineSchema = z.object({
   studentFeeId: z.string().min(1),
-  amount: z.number().min(1, 'Amount required'),
-  note: z.string().optional(),
+  amount: z.number().min(0.01, 'Amount required'),
+  method: z.enum(['cash', 'cheque', 'bank_transfer', 'demand_draft']),
+  notes: z.string().optional(),
 });
 
 type AssignData = z.infer<typeof assignSchema>;
@@ -63,8 +64,8 @@ const statusVariant = (s: FeeStatus): 'green' | 'red' | 'yellow' | 'blue' | 'gra
   return m[s];
 };
 
-function formatCurrency(paise: number) {
-  return `₹${(paise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+function formatCurrency(amount: number) {
+  return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
 }
 
 export default function StudentFeesPage() {
@@ -85,16 +86,16 @@ export default function StudentFeesPage() {
   async function fetchFees(status?: string) {
     try {
       setLoading(true);
-      const qs = status ? `?status=${status}&limit=200` : '?limit=200';
+      const qs = status ? `?status=${status}&limit=100` : '?limit=100';
       const [feesRes, studentsRes, structuresRes] = await Promise.all([
-        api.get<{ data: StudentFee[]; total: number }>(`/fees/student-fees${qs}`),
-        api.get<{ data: Student[]; total: number }>('/students?limit=500'),
-        api.get<{ data: FeeStructure[]; total: number }>('/fees/structures?limit=200'),
+        api.get<{ data: StudentFee[]; total: number }>(`/student-fees${qs}`),
+        api.get<{ data: Student[]; meta: { total: number } }>('/students?limit=100'),
+        api.get<FeeStructure[]>('/fee-structures'),
       ]);
       setFees(feesRes.data);
       setTotal(feesRes.total);
       setStudents(studentsRes.data);
-      setStructures(structuresRes.data);
+      setStructures(structuresRes);
       setError(null);
     } catch (e) {
       setError((e as Error).message);
@@ -109,7 +110,7 @@ export default function StudentFeesPage() {
 
   async function onAssign(data: AssignData) {
     try {
-      await api.post('/fees/student-fees', data);
+      await api.post('/student-fees', data);
       toast('Fee assigned', 'success');
       setShowAssign(false);
       assignForm.reset();
@@ -121,7 +122,8 @@ export default function StudentFeesPage() {
 
   async function onOfflinePayment(data: OfflineData) {
     try {
-      await api.post('/fees/student-fees/offline-payment', data);
+      const { studentFeeId, ...body } = data;
+      await api.post(`/student-fees/${studentFeeId}/offline-payment`, body);
       toast('Offline payment recorded', 'success');
       setSelectedFee(null);
       offlineForm.reset();
@@ -284,16 +286,28 @@ export default function StudentFeesPage() {
               </p>
             </div>
             <Input
-              label="Amount (₹ paise)"
+              label="Amount (₹)"
               type="number"
-              placeholder="e.g. 100000"
+              step="0.01"
+              placeholder="e.g. 1000"
               error={offlineForm.formState.errors.amount?.message}
               {...offlineForm.register('amount', { valueAsNumber: true })}
             />
+            <Select
+              label="Method"
+              options={[
+                { value: 'cash', label: 'Cash' },
+                { value: 'cheque', label: 'Cheque' },
+                { value: 'bank_transfer', label: 'Bank Transfer' },
+                { value: 'demand_draft', label: 'Demand Draft' },
+              ]}
+              error={offlineForm.formState.errors.method?.message}
+              {...offlineForm.register('method')}
+            />
             <Input
-              label="Note (optional)"
-              placeholder="Cash / Cheque / DD"
-              {...offlineForm.register('note')}
+              label="Notes (optional)"
+              placeholder="Cheque number, UTR, DD number, etc."
+              {...offlineForm.register('notes')}
             />
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="secondary" type="button" onClick={() => { setSelectedFee(null); offlineForm.reset(); }}>

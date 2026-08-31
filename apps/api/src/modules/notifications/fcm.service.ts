@@ -27,8 +27,13 @@ export class FcmService implements OnModuleInit {
     title: string,
     body: string,
     data?: Record<string, string>,
-  ): Promise<{ successCount: number; failureCount: number; failedTokens: string[] }> {
-    if (!tokens.length) return { successCount: 0, failureCount: 0, failedTokens: [] };
+  ): Promise<{
+    successCount: number;
+    failureCount: number;
+    failedTokens: string[];
+  }> {
+    if (!tokens.length)
+      return { successCount: 0, failureCount: 0, failedTokens: [] };
 
     if (!this.messaging) {
       this.logger.warn('FCM not initialised (dev mode) — skipping multicast');
@@ -54,11 +59,13 @@ export class FcmService implements OnModuleInit {
       failureCount += response.failureCount;
 
       response.responses.forEach((r, idx) => {
-        if (!r.success) failedTokens.push(batch[idx]!);
+        if (!r.success) failedTokens.push(batch[idx]);
       });
     }
 
-    this.logger.log(`FCM multicast: ${successCount} sent, ${failureCount} failed`);
+    this.logger.log(
+      `FCM multicast: ${successCount} sent, ${failureCount} failed`,
+    );
     return { successCount, failureCount, failedTokens };
   }
 }

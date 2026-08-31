@@ -17,18 +17,27 @@ export class SmsService {
       this.client = twilio(accountSid, authToken);
     } else {
       this.client = null;
-      this.logger.warn('Twilio credentials not configured — SMS will be no-ops in dev mode');
+      this.logger.warn(
+        'Twilio credentials not configured — SMS will be no-ops in dev mode',
+      );
     }
   }
 
-  async send(to: string, body: string): Promise<{ sid: string | null; error: string | null }> {
+  async send(
+    to: string,
+    body: string,
+  ): Promise<{ sid: string | null; error: string | null }> {
     if (!this.client) {
       this.logger.warn(`SMS (dev no-op) to ${to}: ${body}`);
       return { sid: null, error: null };
     }
 
     try {
-      const message = await this.client.messages.create({ to, from: this.from, body });
+      const message = await this.client.messages.create({
+        to,
+        from: this.from,
+        body,
+      });
       return { sid: message.sid, error: null };
     } catch (err: unknown) {
       const error = err instanceof Error ? err.message : String(err);

@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { ClassesService } from './classes.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -31,6 +35,7 @@ const baseClass = {
 const mockPrisma = {
   class: {
     findUnique: jest.fn(),
+    findFirst: jest.fn(),
     findMany: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
@@ -92,14 +97,22 @@ describe('ClassesService', () => {
     it('admin can view any class', async () => {
       mockPrisma.class.findUnique.mockResolvedValue(baseClass);
 
-      const result = await service.findOne(TENANT, CLASS_ID, makeUser(Role.admin));
+      const result = await service.findOne(
+        TENANT,
+        CLASS_ID,
+        makeUser(Role.admin),
+      );
       expect(result.id).toBe(CLASS_ID);
     });
 
     it('teacher can view their own class', async () => {
       mockPrisma.class.findUnique.mockResolvedValue(baseClass);
 
-      const result = await service.findOne(TENANT, CLASS_ID, makeUser(Role.teacher, TEACHER_ID));
+      const result = await service.findOne(
+        TENANT,
+        CLASS_ID,
+        makeUser(Role.teacher, TEACHER_ID),
+      );
       expect(result.id).toBe(CLASS_ID);
     });
 
@@ -107,16 +120,20 @@ describe('ClassesService', () => {
       mockPrisma.class.findUnique.mockResolvedValue(baseClass);
 
       await expect(
-        service.findOne(TENANT, CLASS_ID, makeUser(Role.teacher, 'other-teacher')),
+        service.findOne(
+          TENANT,
+          CLASS_ID,
+          makeUser(Role.teacher, 'other-teacher'),
+        ),
       ).rejects.toThrow(ForbiddenException);
     });
 
     it('throws NotFoundException when class does not exist', async () => {
       mockPrisma.class.findUnique.mockResolvedValue(null);
 
-      await expect(service.findOne(TENANT, 'bad-id', makeUser(Role.admin))).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.findOne(TENANT, 'bad-id', makeUser(Role.admin)),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -124,15 +141,18 @@ describe('ClassesService', () => {
 
   describe('create', () => {
     it('creates a class successfully', async () => {
-      mockPrisma.class.findUnique.mockResolvedValue(null); // no duplicate
+      mockPrisma.class.findFirst.mockResolvedValue(null); // no duplicate
       mockPrisma.class.create.mockResolvedValue(baseClass);
 
-      const result = await service.create(TENANT, { name: 'Grade 5', academicYear: '2025-26' });
+      const result = await service.create(TENANT, {
+        name: 'Grade 5',
+        academicYear: '2025-26',
+      });
       expect(result.name).toBe('Grade 5');
     });
 
-    it('throws ConflictException when name+academicYear already exists', async () => {
-      mockPrisma.class.findUnique.mockResolvedValue(baseClass);
+    it('throws ConflictException when name+section+academicYear already exists', async () => {
+      mockPrisma.class.findFirst.mockResolvedValue(baseClass);
 
       await expect(
         service.create(TENANT, { name: 'Grade 5', academicYear: '2025-26' }),
@@ -147,21 +167,31 @@ describe('ClassesService', () => {
   describe('update', () => {
     it('updates class name', async () => {
       mockPrisma.class.findUnique.mockResolvedValue(baseClass);
-      mockPrisma.class.update.mockResolvedValue({ ...baseClass, name: 'Grade 6' });
+      mockPrisma.class.update.mockResolvedValue({
+        ...baseClass,
+        name: 'Grade 6',
+      });
 
-      const result = await service.update(TENANT, CLASS_ID, { name: 'Grade 6' });
+      const result = await service.update(TENANT, CLASS_ID, {
+        name: 'Grade 6',
+      });
       expect(result.name).toBe('Grade 6');
     });
 
     it('validates teacherId belongs to a teacher in the tenant', async () => {
       mockPrisma.class.findUnique.mockResolvedValue(baseClass);
       mockPrisma.user.findUnique.mockResolvedValue({ role: Role.teacher });
-      mockPrisma.class.update.mockResolvedValue({ ...baseClass, teacherId: TEACHER_ID });
+      mockPrisma.class.update.mockResolvedValue({
+        ...baseClass,
+        teacherId: TEACHER_ID,
+      });
 
       await service.update(TENANT, CLASS_ID, { teacherId: TEACHER_ID });
 
       expect(mockPrisma.user.findUnique).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: TEACHER_ID, tenantId: TENANT } }),
+        expect.objectContaining({
+          where: { id: TEACHER_ID, tenantId: TENANT },
+        }),
       );
     });
 
@@ -186,9 +216,9 @@ describe('ClassesService', () => {
     it('throws NotFoundException when class does not exist', async () => {
       mockPrisma.class.findUnique.mockResolvedValue(null);
 
-      await expect(service.update(TENANT, 'bad-id', { name: 'X' })).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update(TENANT, 'bad-id', { name: 'X' }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -201,21 +231,27 @@ describe('ClassesService', () => {
       mockPrisma.class.delete.mockResolvedValue({});
 
       await service.remove(TENANT, CLASS_ID);
-      expect(mockPrisma.class.delete).toHaveBeenCalledWith({ where: { id: CLASS_ID } });
+      expect(mockPrisma.class.delete).toHaveBeenCalledWith({
+        where: { id: CLASS_ID },
+      });
     });
 
     it('throws ConflictException when students are still assigned to the class', async () => {
       mockPrisma.class.findUnique.mockResolvedValue(baseClass);
       mockPrisma.student.count.mockResolvedValue(3);
 
-      await expect(service.remove(TENANT, CLASS_ID)).rejects.toThrow(ConflictException);
+      await expect(service.remove(TENANT, CLASS_ID)).rejects.toThrow(
+        ConflictException,
+      );
       expect(mockPrisma.class.delete).not.toHaveBeenCalled();
     });
 
     it('throws NotFoundException when class does not exist', async () => {
       mockPrisma.class.findUnique.mockResolvedValue(null);
 
-      await expect(service.remove(TENANT, 'bad-id')).rejects.toThrow(NotFoundException);
+      await expect(service.remove(TENANT, 'bad-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

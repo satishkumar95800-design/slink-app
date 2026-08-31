@@ -13,7 +13,10 @@ function makeSignature(body: string): string {
   return createHmac('sha256', WEBHOOK_SECRET).update(body).digest('hex');
 }
 
-function makePaymentCapturedBody(orderId = 'order_rzp123', paymentId = 'pay_rzp456') {
+function makePaymentCapturedBody(
+  orderId = 'order_rzp123',
+  paymentId = 'pay_rzp456',
+) {
   return JSON.stringify({
     event: 'payment.captured',
     payload: {
@@ -33,7 +36,14 @@ function makePaymentFailedBody(orderId = 'order_rzp123') {
   return JSON.stringify({
     event: 'payment.failed',
     payload: {
-      payment: { entity: { id: 'pay_rzp_failed', order_id: orderId, amount: 500000, created_at: 0 } },
+      payment: {
+        entity: {
+          id: 'pay_rzp_failed',
+          order_id: orderId,
+          amount: 500000,
+          created_at: 0,
+        },
+      },
     },
   });
 }
@@ -97,16 +107,18 @@ describe('WebhookService', () => {
       const body = makePaymentCapturedBody();
       mockPayments.findOrderByGatewayOrderId.mockResolvedValue(mockOrder);
 
-      await expect(service.handle(Buffer.from(body), 'bad_signature')).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(
+        service.handle(Buffer.from(body), 'bad_signature'),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('does not call capturePayment when signature is wrong', async () => {
       const body = makePaymentCapturedBody();
       mockPayments.findOrderByGatewayOrderId.mockResolvedValue(mockOrder);
 
-      await expect(service.handle(Buffer.from(body), 'wrong')).rejects.toThrow();
+      await expect(
+        service.handle(Buffer.from(body), 'wrong'),
+      ).rejects.toThrow();
       expect(mockPayments.capturePayment).not.toHaveBeenCalled();
     });
   });
@@ -131,7 +143,9 @@ describe('WebhookService', () => {
 
       mockPayments.findOrderByGatewayOrderId.mockResolvedValue(null);
 
-      await expect(service.handle(Buffer.from(body), sig)).resolves.toBeUndefined();
+      await expect(
+        service.handle(Buffer.from(body), sig),
+      ).resolves.toBeUndefined();
       expect(mockPayments.capturePayment).not.toHaveBeenCalled();
     });
   });
@@ -140,16 +154,18 @@ describe('WebhookService', () => {
     it('acks silently for unhandled event types', async () => {
       const body = JSON.stringify({ event: 'order.paid', payload: {} });
       // No order_id extractable — should silently return
-      await expect(service.handle(Buffer.from(body), 'any')).resolves.toBeUndefined();
+      await expect(
+        service.handle(Buffer.from(body), 'any'),
+      ).resolves.toBeUndefined();
       expect(mockPayments.capturePayment).not.toHaveBeenCalled();
     });
   });
 
   describe('handle - invalid body', () => {
     it('throws BadRequestException for malformed JSON', async () => {
-      await expect(service.handle(Buffer.from('not-json'), 'sig')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.handle(Buffer.from('not-json'), 'sig'),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

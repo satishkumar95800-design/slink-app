@@ -23,16 +23,18 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   /**
-   * Admin broadcasts a notification to a class, all parents, or a specific user.
+   * Admin/accounts broadcast to a class, all parents, or a specific user.
+   * Teachers may also call this, but only with targetType 'class' for a class they own.
    */
   @Post('broadcast')
-  @Roles(Role.admin, Role.accounts)
+  @Roles(Role.admin, Role.accounts, Role.teacher)
   @HttpCode(HttpStatus.OK)
   broadcast(
     @TenantId() tenantId: string,
     @Body() dto: BroadcastNotificationDto,
+    @CurrentUser() user: ActiveUser,
   ) {
-    return this.notificationsService.broadcast(tenantId, dto);
+    return this.notificationsService.broadcast(tenantId, dto, user);
   }
 
   /**
@@ -40,10 +42,7 @@ export class NotificationsController {
    */
   @Get()
   @Roles(Role.admin, Role.accounts)
-  findAll(
-    @TenantId() tenantId: string,
-    @Query() query: NotificationQueryDto,
-  ) {
+  findAll(@TenantId() tenantId: string, @Query() query: NotificationQueryDto) {
     return this.notificationsService.findAll(tenantId, query);
   }
 

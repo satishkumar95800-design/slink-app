@@ -26,7 +26,9 @@ export class CreateFeeStructureDto {
 
   /** e.g. "2025-26" */
   @IsString()
-  @Matches(/^\d{4}-\d{2}$/, { message: 'academicYear must be in format YYYY-YY' })
+  @Matches(/^\d{4}-\d{2}$/, {
+    message: 'academicYear must be in format YYYY-YY',
+  })
   academicYear: string;
 
   /** ISO 8601 date string */

@@ -1,8 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { FeeStructuresService } from './fee-structures.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import type { ActiveUser } from '../../common/types/active-user.type';
 
 const adminUser: ActiveUser = {
@@ -29,7 +34,12 @@ const mockFeeStructure = {
   academicYear: '2025-26',
   dueDate: new Date('2025-06-01'),
   lateFeePerDay: 0,
-  totalAmount: { toFixed: () => '5000.00', add: jest.fn(), sub: jest.fn(), greaterThan: jest.fn() },
+  totalAmount: {
+    toFixed: () => '5000.00',
+    add: jest.fn(),
+    sub: jest.fn(),
+    greaterThan: jest.fn(),
+  },
   class: { id: 'class-uuid', name: 'Grade 5', academicYear: '2025-26' },
   items: [{ id: 'item-uuid', label: 'Tuition', amount: '5000.00' }],
   _count: { studentFees: 0 },
@@ -57,6 +67,10 @@ const mockPrisma = {
   },
 };
 
+const mockNotifications = {
+  broadcast: jest.fn().mockResolvedValue({ queued: 1 }),
+};
+
 describe('FeeStructuresService', () => {
   let service: FeeStructuresService;
 
@@ -65,11 +79,13 @@ describe('FeeStructuresService', () => {
       providers: [
         FeeStructuresService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: NotificationsService, useValue: mockNotifications },
       ],
     }).compile();
 
     service = module.get<FeeStructuresService>(FeeStructuresService);
     jest.clearAllMocks();
+    mockNotifications.broadcast.mockResolvedValue({ queued: 1 });
   });
 
   describe('findAll', () => {
@@ -82,7 +98,9 @@ describe('FeeStructuresService', () => {
 
     it('filters by classId in query when provided', async () => {
       mockPrisma.feeStructure.findMany.mockResolvedValue([mockFeeStructure]);
-      await service.findAll('tenant-uuid', adminUser, { classId: 'class-uuid' });
+      await service.findAll('tenant-uuid', adminUser, {
+        classId: 'class-uuid',
+      });
       const call = mockPrisma.feeStructure.findMany.mock.calls[0][0];
       expect(call.where.classId).toBe('class-uuid');
     });
@@ -105,23 +123,31 @@ describe('FeeStructuresService', () => {
 
     it('throws NotFoundException when not found', async () => {
       mockPrisma.feeStructure.findUnique.mockResolvedValue(null);
-      await expect(service.findOne('tenant-uuid', 'fs-uuid', adminUser)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.findOne('tenant-uuid', 'fs-uuid', adminUser),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('throws NotFoundException for teacher accessing another class', async () => {
       mockPrisma.feeStructure.findUnique.mockResolvedValue(mockFeeStructure);
-      mockPrisma.class.findUnique.mockResolvedValue({ teacherId: 'other-teacher-uuid' });
-      await expect(service.findOne('tenant-uuid', 'fs-uuid', teacherUser)).rejects.toThrow(
-        NotFoundException,
-      );
+      mockPrisma.class.findUnique.mockResolvedValue({
+        teacherId: 'other-teacher-uuid',
+      });
+      await expect(
+        service.findOne('tenant-uuid', 'fs-uuid', teacherUser),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('allows teacher to access their own class structure', async () => {
       mockPrisma.feeStructure.findUnique.mockResolvedValue(mockFeeStructure);
-      mockPrisma.class.findUnique.mockResolvedValue({ teacherId: teacherUser.id });
-      const result = await service.findOne('tenant-uuid', 'fs-uuid', teacherUser);
+      mockPrisma.class.findUnique.mockResolvedValue({
+        teacherId: teacherUser.id,
+      });
+      const result = await service.findOne(
+        'tenant-uuid',
+        'fs-uuid',
+        teacherUser,
+      );
       expect(result).toEqual(mockFeeStructure);
     });
   });
@@ -147,7 +173,9 @@ describe('FeeStructuresService', () => {
 
     it('throws NotFoundException when classId does not exist', async () => {
       mockPrisma.class.findUnique.mockResolvedValue(null);
-      await expect(service.create('tenant-uuid', createDto)).rejects.toThrow(NotFoundException);
+      await expect(service.create('tenant-uuid', createDto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -186,7 +214,9 @@ describe('FeeStructuresService', () => {
     it('throws ConflictException when students are assigned', async () => {
       mockPrisma.feeStructure.findUnique.mockResolvedValue(mockFeeStructure);
       mockPrisma.studentFee.count.mockResolvedValue(5);
-      await expect(service.remove('tenant-uuid', 'fs-uuid')).rejects.toThrow(ConflictException);
+      await expect(service.remove('tenant-uuid', 'fs-uuid')).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 
@@ -201,17 +231,23 @@ describe('FeeStructuresService', () => {
       mockPrisma.studentFee.findMany.mockResolvedValue([{ studentId: 's1' }]);
       mockPrisma.studentFee.createMany.mockResolvedValue({ count: 2 });
 
-      const result = await service.assignToClass('tenant-uuid', 'fs-uuid', {});
+      const result = await service.assignToClass(
+        'tenant-uuid',
+        'fs-uuid',
+        {},
+        adminUser,
+      );
       expect(result).toEqual({ total: 3, assigned: 2, skipped: 1 });
       expect(mockPrisma.studentFee.createMany).toHaveBeenCalledTimes(1);
+      expect(mockNotifications.broadcast).not.toHaveBeenCalled();
     });
 
     it('throws BadRequestException when class has no students', async () => {
       mockPrisma.feeStructure.findUnique.mockResolvedValue(mockFeeStructure);
       mockPrisma.student.findMany.mockResolvedValue([]);
-      await expect(service.assignToClass('tenant-uuid', 'fs-uuid', {})).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.assignToClass('tenant-uuid', 'fs-uuid', {}, adminUser),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('skips createMany when all students already assigned', async () => {
@@ -219,9 +255,37 @@ describe('FeeStructuresService', () => {
       mockPrisma.student.findMany.mockResolvedValue([{ id: 's1' }]);
       mockPrisma.studentFee.findMany.mockResolvedValue([{ studentId: 's1' }]);
 
-      const result = await service.assignToClass('tenant-uuid', 'fs-uuid', {});
+      const result = await service.assignToClass(
+        'tenant-uuid',
+        'fs-uuid',
+        {},
+        adminUser,
+      );
       expect(result).toEqual({ total: 1, assigned: 0, skipped: 1 });
       expect(mockPrisma.studentFee.createMany).not.toHaveBeenCalled();
+    });
+
+    it('broadcasts a fee-due notification to the class when notifyParents is true', async () => {
+      mockPrisma.feeStructure.findUnique.mockResolvedValue(mockFeeStructure);
+      mockPrisma.student.findMany.mockResolvedValue([{ id: 's1' }]);
+      mockPrisma.studentFee.findMany.mockResolvedValue([]);
+      mockPrisma.studentFee.createMany.mockResolvedValue({ count: 1 });
+
+      await service.assignToClass(
+        'tenant-uuid',
+        'fs-uuid',
+        { notifyParents: true },
+        adminUser,
+      );
+
+      expect(mockNotifications.broadcast).toHaveBeenCalledWith(
+        'tenant-uuid',
+        expect.objectContaining({
+          targetType: 'class',
+          targetId: 'class-uuid',
+        }),
+        adminUser,
+      );
     });
   });
 });

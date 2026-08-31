@@ -55,29 +55,22 @@ export class AuthService {
       throw new UnauthorizedException('Invalid Firebase ID token');
     }
 
-    let user = await this.prisma.user.findUnique({
+    // Upsert instead of find-then-create: concurrent OTP verifications for the
+    // same phone number (e.g. a double-submit on the client) would otherwise
+    // race on the create and throw a unique-constraint error.
+    const user = await this.prisma.user.upsert({
       where: { tenantId_phone: { tenantId, phone } },
+      update: { isVerified: true },
+      create: {
+        tenantId,
+        phone,
+        // First-time login: create parent account.
+        // The parent will only see linked students — linkage is done by admin.
+        name: 'Parent',
+        role: Role.parent,
+        isVerified: true,
+      },
     });
-
-    if (!user) {
-      // First-time login: create parent account
-      // The parent will only see linked students — linkage is done by admin
-      user = await this.prisma.user.create({
-        data: {
-          tenantId,
-          phone,
-          name: 'Parent',
-          role: Role.parent,
-          isVerified: true,
-        },
-      });
-    } else if (!user.isVerified) {
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: { isVerified: true },
-      });
-      user = { ...user, isVerified: true };
-    }
 
     return this.issueTokens(user, dto.deviceId);
   }
