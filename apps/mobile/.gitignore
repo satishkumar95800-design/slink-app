@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase config — contains a client API key flagged by secret scanning;
+# distribute per-developer instead of committing (see ios/Runner/GoogleService-Info.plist too)
+/android/app/google-services.json
+/ios/Runner/GoogleService-Info.plist
