@@ -1,19 +1,21 @@
 import {
   IsNumber,
-  IsEnum,
+  IsIn,
   IsString,
   IsDateString,
   IsOptional,
   Min,
   MaxLength,
 } from 'class-validator';
+import { PaymentMethod } from '@prisma/client';
 
-export enum OfflinePaymentMethod {
-  CASH = 'cash',
-  CHEQUE = 'cheque',
-  BANK_TRANSFER = 'bank_transfer',
-  DEMAND_DRAFT = 'demand_draft',
-}
+/** Every PaymentMethod except "gateway" — that value is reserved for online-gateway receipts. */
+export const OFFLINE_PAYMENT_METHODS = [
+  PaymentMethod.cash,
+  PaymentMethod.cheque,
+  PaymentMethod.bank_transfer,
+  PaymentMethod.demand_draft,
+] as const;
 
 export class RecordOfflinePaymentDto {
   /** Amount received, in major currency units (e.g. INR) */
@@ -21,8 +23,8 @@ export class RecordOfflinePaymentDto {
   @Min(0.01)
   amount: number;
 
-  @IsEnum(OfflinePaymentMethod)
-  method: OfflinePaymentMethod;
+  @IsIn(OFFLINE_PAYMENT_METHODS)
+  method: (typeof OFFLINE_PAYMENT_METHODS)[number];
 
   /** Cheque number, UTR, DD number, etc. */
   @IsString()

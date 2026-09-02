@@ -575,6 +575,8 @@ export class ImportsService {
             name: row.name,
             classId: classInfo.id,
             dob: row.dob ? new Date(row.dob) : existing.dob,
+            bloodGroup: row.bloodGroup ?? existing.bloodGroup,
+            caste: row.caste ?? existing.caste,
           },
         });
         studentId = existing.id;
@@ -587,6 +589,8 @@ export class ImportsService {
             admissionNo: row.admissionNo,
             classId: classInfo.id,
             dob: row.dob ? new Date(row.dob) : null,
+            bloodGroup: row.bloodGroup ?? null,
+            caste: row.caste ?? null,
           },
         });
         studentId = created.id;
@@ -604,6 +608,7 @@ export class ImportsService {
             email: row.parentEmail ?? null,
             name: row.parentName,
             role: Role.parent,
+            profession: row.parentProfession ?? null,
             isVerified: false,
           },
         });

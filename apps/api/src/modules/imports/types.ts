@@ -1,3 +1,5 @@
+import type { BloodGroup, Caste } from '@prisma/client';
+
 export interface RawRow {
   /** 1-based row number as it appears in the spreadsheet, for error reporting */
   rowNumber: number;
@@ -55,9 +57,12 @@ export interface ValidStudentRow {
   admissionNo: string;
   classKey: string;
   dob?: string;
+  bloodGroup?: BloodGroup;
+  caste?: Caste;
   parentName: string;
   parentPhone: string;
   parentEmail?: string;
+  parentProfession?: string;
 }
 
 export interface ValidFeeStructureRow {

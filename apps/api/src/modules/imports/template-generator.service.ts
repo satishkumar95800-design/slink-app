@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import ExcelJS from 'exceljs';
 import {
   ALLOWED_ROLES,
+  BLOOD_GROUP_TEMPLATE_OPTIONS,
+  CASTE_TEMPLATE_OPTIONS,
   COMMON_FEE_COMPONENTS,
   DISPLAY_HEADERS,
   TAB_HEADERS,
@@ -107,7 +109,20 @@ export class TemplateGeneratorService {
       'Sunita Kumar',
       '+919876543211',
       'sunita.kumar@example.com',
+      'A+',
+      'General',
+      'Engineer',
     ]);
+
+    const bloodGroupColumn = TAB_HEADERS.Students.indexOf('Blood Group') + 1;
+    this.applyDropdown(sheet, bloodGroupColumn, BLOOD_GROUP_TEMPLATE_OPTIONS, {
+      blocking: true,
+    });
+
+    const casteColumn = TAB_HEADERS.Students.indexOf('Caste') + 1;
+    this.applyDropdown(sheet, casteColumn, CASTE_TEMPLATE_OPTIONS, {
+      blocking: true,
+    });
   }
 
   private buildFeeStructuresTab(workbook: ExcelJS.Workbook) {

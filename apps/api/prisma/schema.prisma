@@ -15,6 +15,7 @@ enum Role {
   admin
   accounts
   super_admin
+  developer
 }
 
 enum FeeStatus {
@@ -57,6 +58,29 @@ enum GuardianRelation {
   guardian
 }
 
+// Prisma enum identifiers can't contain "+"/"-", so the human-facing "A+"/"A-"/...
+// strings are translated to/from these identifiers at the API boundary — see
+// apps/api/src/common/blood-group.ts. Never expose A_POSITIVE etc. to end users.
+enum BloodGroup {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
+}
+
+enum Caste {
+  General
+  OBC
+  SC
+  ST
+  EWS
+  Other
+}
+
 enum NotificationChannel {
   fcm
   sms
@@ -77,23 +101,32 @@ enum ImportStatus {
   failed
 }
 
+enum PaymentMethod {
+  cash
+  cheque
+  bank_transfer
+  demand_draft
+  gateway
+}
+
 // ─── Tenant ──────────────────────────────────────────────────────────────────
 
 model Tenant {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  slug         String   @unique
-  name         String
-  logoUrl      String?  @map("logo_url")
-  primaryColor String   @default("#1E40AF") @map("primary_color")
-  accentColor  String   @default("#F59E0B") @map("accent_color")
-  timezone     String   @default("Asia/Kolkata")
-  isActive     Boolean  @default(true) @map("is_active")
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug            String   @unique
+  name            String
+  logoUrl         String?  @map("logo_url")
+  primaryColor    String   @default("#1E40AF") @map("primary_color")
+  accentColor     String   @default("#F59E0B") @map("accent_color")
+  timezone        String   @default("Asia/Kolkata")
+  isActive        Boolean  @default(true) @map("is_active")
   // branding: { coverPhotoUrls, address, contactPhone, contactEmail, websiteUrl, ... }
-  branding     Json     @default("{}")
+  branding        Json     @default("{}")
   // features: { installmentPlans, inAppMessaging, transportFeeModule, photoGallery }
-  features     Json     @default("{\"installmentPlans\":false,\"inAppMessaging\":false,\"transportFeeModule\":true,\"photoGallery\":false}")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  features        Json     @default("{\"installmentPlans\":false,\"inAppMessaging\":false,\"transportFeeModule\":true,\"photoGallery\":false}")
+  receiptSequence Int      @default(0) @map("receipt_sequence")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   users         User[]
   students      Student[]
@@ -104,6 +137,7 @@ model Tenant {
   transactions  PaymentTransaction[]
   reports       Report[]
   notifications Notification[]
+  receipts      Receipt[]
 
   @@map("tenants")
 }
@@ -111,23 +145,25 @@ model Tenant {
 // ─── User ─────────────────────────────────────────────────────────────────────
 
 model User {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId   String   @map("tenant_id") @db.Uuid
-  phone      String?
-  email      String?
-  name       String
-  role       Role
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  phone        String?
+  email        String?
+  name         String
+  role         Role
+  profession   String?
   passwordHash String?  @map("password_hash")
   fcmTokens    String[] @default([]) @map("fcm_tokens")
   isVerified   Boolean  @default(false) @map("is_verified")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  linkedStudents StudentParent[]
-  reports        Report[]        @relation("TeacherReports")
-  refreshTokens  RefreshToken[]
-  notifications  Notification[]
+  tenant           Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  linkedStudents   StudentParent[]
+  reports          Report[]        @relation("TeacherReports")
+  refreshTokens    RefreshToken[]
+  notifications    Notification[]
+  recordedReceipts Receipt[]       @relation("ReceiptRecordedBy")
 
   @@unique([tenantId, phone])
   @@unique([tenantId, email])
@@ -155,20 +191,24 @@ model RefreshToken {
 // ─── Student ──────────────────────────────────────────────────────────────────
 
 model Student {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId    String    @map("tenant_id") @db.Uuid
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String      @map("tenant_id") @db.Uuid
   name        String
-  admissionNo String    @map("admission_no")
-  dob         DateTime? @db.Date
-  classId     String    @map("class_id") @db.Uuid
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  admissionNo String      @map("admission_no")
+  dob         DateTime?   @db.Date
+  bloodGroup  BloodGroup? @map("blood_group")
+  caste       Caste?
+  photoUrl    String?     @map("photo_url")
+  classId     String      @map("class_id") @db.Uuid
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
 
   tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   class    Class           @relation(fields: [classId], references: [id])
   parents  StudentParent[]
   fees     StudentFee[]
   reports  Report[]
+  receipts Receipt[]
 
   @@unique([tenantId, admissionNo])
   @@index([tenantId])
@@ -206,6 +246,7 @@ model Class {
   students      Student[]
   feeStructures FeeStructure[]
   reports       Report[]
+  receipts      Receipt[]
 
   @@unique([tenantId, name, section, academicYear])
   @@index([tenantId])
@@ -220,7 +261,7 @@ model FeeStructure {
   classId       String   @map("class_id") @db.Uuid
   name          String
   totalAmount   Decimal  @map("total_amount") @db.Decimal(12, 2)
-  dueDate       DateTime @db.Date @map("due_date")
+  dueDate       DateTime @map("due_date") @db.Date
   lateFeePerDay Decimal  @default(0) @map("late_fee_per_day") @db.Decimal(8, 2)
   academicYear  String   @map("academic_year")
   createdAt     DateTime @default(now()) @map("created_at")
@@ -255,7 +296,7 @@ model StudentFee {
   amountDue      Decimal   @map("amount_due") @db.Decimal(12, 2)
   amountPaid     Decimal   @default(0) @map("amount_paid") @db.Decimal(12, 2)
   status         FeeStatus @default(pending)
-  dueDate        DateTime  @db.Date @map("due_date")
+  dueDate        DateTime  @map("due_date") @db.Date
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
@@ -263,6 +304,7 @@ model StudentFee {
   student      Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
   feeStructure FeeStructure   @relation(fields: [feeStructureId], references: [id])
   orders       PaymentOrder[]
+  receipts     Receipt[]
 
   @@unique([studentId, feeStructureId])
   @@index([tenantId])
@@ -310,6 +352,41 @@ model PaymentTransaction {
 
   @@index([tenantId])
   @@map("payment_transactions")
+}
+
+// ─── Receipts ─────────────────────────────────────────────────────────────────
+// One row per payment (online or offline) — the source of "paid fee history" and
+// the printable cash/cheque/bank-transfer receipt. studentId/classId are
+// denormalized to capture the class the student was in at time of payment, since
+// Student.classId can change later (e.g. promotion/transfer).
+
+model Receipt {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String        @map("tenant_id") @db.Uuid
+  receiptNumber  String        @map("receipt_number")
+  studentFeeId   String        @map("student_fee_id") @db.Uuid
+  studentId      String        @map("student_id") @db.Uuid
+  classId        String        @map("class_id") @db.Uuid
+  amount         Decimal       @db.Decimal(12, 2)
+  method         PaymentMethod
+  reference      String?
+  paidOn         DateTime      @map("paid_on") @db.Date
+  notes          String?
+  recordedBy     String?       @map("recorded_by") @db.Uuid
+  paymentOrderId String?       @unique @map("payment_order_id") @db.Uuid
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  tenant         Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  studentFee     StudentFee @relation(fields: [studentFeeId], references: [id])
+  student        Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class          Class      @relation(fields: [classId], references: [id])
+  recordedByUser User?      @relation("ReceiptRecordedBy", fields: [recordedBy], references: [id])
+
+  @@unique([tenantId, receiptNumber])
+  @@index([tenantId, paidOn])
+  @@index([studentId])
+  @@index([classId])
+  @@map("receipts")
 }
 
 // ─── Reports ──────────────────────────────────────────────────────────────────
@@ -381,11 +458,11 @@ model Notification {
 
 model AuditLog {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId   String   @map("tenant_id") @db.Uuid
+  tenantId   String?  @map("tenant_id") @db.Uuid
   actorId    String   @map("actor_id") @db.Uuid
   action     String
   entityType String   @map("entity_type")
-  entityId   String   @map("entity_id")
+  entityId   String?  @map("entity_id")
   diff       Json?
   createdAt  DateTime @default(now()) @map("created_at")
 

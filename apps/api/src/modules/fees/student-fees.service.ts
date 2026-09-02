@@ -11,6 +11,7 @@ import { AssignStudentFeeDto } from './dto/assign-student-fee.dto';
 import { RecordOfflinePaymentDto } from './dto/record-offline-payment.dto';
 import { AdjustStudentFeeDto, AdjustmentType } from './dto/adjust-student-fee.dto';
 import { StudentFeeQueryDto } from './dto/student-fee-query.dto';
+import { ReceiptsService } from '../receipts/receipts.service';
 
 const studentFeeInclude = {
   student: {
@@ -33,7 +34,10 @@ const studentFeeInclude = {
 
 @Injectable()
 export class StudentFeesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly receiptsService: ReceiptsService,
+  ) {}
 
   async findAll(tenantId: string, user: ActiveUser, query: StudentFeeQueryDto) {
     const where = await this.buildListWhere(tenantId, user, query);
@@ -120,7 +124,10 @@ export class StudentFeesService {
     dto: RecordOfflinePaymentDto,
     actorId: string,
   ) {
-    const fee = await this.prisma.studentFee.findUnique({ where: { id, tenantId } });
+    const fee = await this.prisma.studentFee.findUnique({
+      where: { id, tenantId },
+      include: { student: { select: { id: true, classId: true } } },
+    });
     if (!fee) throw new NotFoundException('Student fee not found');
 
     if (fee.status === FeeStatus.waived) {
@@ -130,14 +137,19 @@ export class StudentFeesService {
     const incomingAmount = new Prisma.Decimal(dto.amount.toFixed(2));
     const newAmountPaid = fee.amountPaid.add(incomingAmount);
     const newStatus = this.recalcStatus(fee.amountDue, newAmountPaid, fee.dueDate);
+    const paidOn = dto.paidOn ? new Date(dto.paidOn) : new Date();
 
-    const [updated] = await this.prisma.$transaction([
-      this.prisma.studentFee.update({
+    // Callback-form transaction (not the array form used elsewhere in this file) —
+    // receipt-number generation needs to read the incremented tenant sequence
+    // before inserting the Receipt row, which the array form can't express.
+    const [studentFee, receipt] = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.studentFee.update({
         where: { id },
         data: { amountPaid: newAmountPaid, status: newStatus },
         include: studentFeeInclude,
-      }),
-      this.prisma.auditLog.create({
+      });
+
+      await tx.auditLog.create({
         data: {
           tenantId,
           actorId,
@@ -148,17 +160,32 @@ export class StudentFeesService {
             amount: dto.amount,
             method: dto.method,
             reference: dto.reference ?? null,
-            paidOn: dto.paidOn ?? new Date().toISOString(),
+            paidOn: paidOn.toISOString(),
             notes: dto.notes ?? null,
             previousAmountPaid: fee.amountPaid.toFixed(2),
             newAmountPaid: newAmountPaid.toFixed(2),
             newStatus,
           },
         },
-      }),
-    ]);
+      });
 
-    return updated;
+      const createdReceipt = await this.receiptsService.createForPayment(tx, {
+        tenantId,
+        studentFeeId: id,
+        studentId: fee.student.id,
+        classId: fee.student.classId,
+        amount: incomingAmount,
+        method: dto.method,
+        reference: dto.reference,
+        paidOn,
+        notes: dto.notes,
+        recordedBy: actorId,
+      });
+
+      return [updated, createdReceipt] as const;
+    });
+
+    return { studentFee, receipt };
   }
 
   async adjust(

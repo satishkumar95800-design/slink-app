@@ -47,6 +47,8 @@ const offlineSchema = z.object({
   studentFeeId: z.string().min(1),
   amount: z.number().min(0.01, 'Amount required'),
   method: z.enum(['cash', 'cheque', 'bank_transfer', 'demand_draft']),
+  reference: z.string().optional(),
+  paidOn: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -123,11 +125,19 @@ export default function StudentFeesPage() {
   async function onOfflinePayment(data: OfflineData) {
     try {
       const { studentFeeId, ...body } = data;
-      await api.post(`/student-fees/${studentFeeId}/offline-payment`, body);
+      const res = await api.post<{ studentFee: StudentFee; receipt: { id: string } }>(
+        `/student-fees/${studentFeeId}/offline-payment`,
+        {
+          ...body,
+          reference: body.reference || undefined,
+          paidOn: body.paidOn || undefined,
+        },
+      );
       toast('Offline payment recorded', 'success');
       setSelectedFee(null);
       offlineForm.reset();
       fetchFees(statusFilter);
+      window.open(`/receipts/${res.receipt.id}/print`, '_blank');
     } catch (e) {
       toast((e as ApiError).message, 'error');
     }
@@ -136,6 +146,7 @@ export default function StudentFeesPage() {
   function openOffline(fee: StudentFee) {
     setSelectedFee(fee);
     offlineForm.setValue('studentFeeId', fee.id);
+    offlineForm.setValue('paidOn', new Date().toISOString().slice(0, 10));
   }
 
   const studentOptions = students.map((s) => ({
@@ -304,9 +315,21 @@ export default function StudentFeesPage() {
               error={offlineForm.formState.errors.method?.message}
               {...offlineForm.register('method')}
             />
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Reference (optional)"
+                placeholder="Cheque no. / UTR / DD no."
+                {...offlineForm.register('reference')}
+              />
+              <Input
+                label="Paid On"
+                type="date"
+                {...offlineForm.register('paidOn')}
+              />
+            </div>
             <Input
               label="Notes (optional)"
-              placeholder="Cheque number, UTR, DD number, etc."
+              placeholder="Any additional notes"
               {...offlineForm.register('notes')}
             />
             <div className="flex justify-end gap-3 pt-2">

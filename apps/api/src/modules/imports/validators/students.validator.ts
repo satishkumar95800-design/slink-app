@@ -1,3 +1,4 @@
+import { Caste } from '@prisma/client';
 import {
   ParsedTab,
   TabValidation,
@@ -11,8 +12,11 @@ import {
   issue,
   resolveClass,
 } from './shared';
+import { BLOOD_GROUP_TEMPLATE_OPTIONS, CASTE_TEMPLATE_OPTIONS } from '../tab-schema';
+import { BLOOD_GROUP_DISPLAY_TO_ENUM } from '../../../common/blood-group';
 
 const TAB = 'Students' as const;
+const CASTE_SET = new Set<string>(CASTE_TEMPLATE_OPTIONS);
 
 export function validateStudentsTab(
   tab: ParsedTab,
@@ -33,6 +37,9 @@ export function validateStudentsTab(
     const parentName = row.cells['Parent Name'];
     const parentPhone = row.cells['Parent Mobile Number'];
     const parentEmail = row.cells['Parent Email'];
+    const bloodGroupRaw = row.cells['Blood Group'];
+    const casteRaw = row.cells['Caste'];
+    const parentProfession = row.cells['Parent Profession'];
 
     let hasError = false;
 
@@ -94,6 +101,28 @@ export function validateStudentsTab(
       );
       hasError = true;
     }
+    if (bloodGroupRaw && !BLOOD_GROUP_DISPLAY_TO_ENUM[bloodGroupRaw]) {
+      errors.push(
+        issue(
+          TAB,
+          row.rowNumber,
+          'Blood Group',
+          `must be one of ${BLOOD_GROUP_TEMPLATE_OPTIONS.join(', ')}`,
+        ),
+      );
+      hasError = true;
+    }
+    if (casteRaw && !CASTE_SET.has(casteRaw)) {
+      errors.push(
+        issue(
+          TAB,
+          row.rowNumber,
+          'Caste',
+          `must be one of ${CASTE_TEMPLATE_OPTIONS.join(', ')}`,
+        ),
+      );
+      hasError = true;
+    }
 
     let classKey: string | undefined;
     if (className && section) {
@@ -150,9 +179,12 @@ export function validateStudentsTab(
       admissionNo,
       classKey,
       dob: dob || undefined,
+      bloodGroup: bloodGroupRaw ? BLOOD_GROUP_DISPLAY_TO_ENUM[bloodGroupRaw] : undefined,
+      caste: casteRaw ? (casteRaw as Caste) : undefined,
       parentName,
       parentPhone,
       parentEmail: parentEmail || undefined,
+      parentProfession: parentProfession || undefined,
     });
   }
 

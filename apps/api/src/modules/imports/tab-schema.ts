@@ -21,6 +21,9 @@ export const TAB_HEADERS: Record<
     'Parent Name',
     'Parent Mobile Number',
     'Parent Email',
+    'Blood Group',
+    'Caste',
+    'Parent Profession',
   ],
   'Fee Structures': [
     'Class Name',
@@ -54,6 +57,9 @@ export const DISPLAY_HEADERS: Record<
     'Parent Name*',
     'Parent Mobile Number*',
     'Parent Email',
+    'Blood Group',
+    'Caste',
+    'Parent Profession',
   ],
   'Fee Structures': [
     'Class Name*',
@@ -76,3 +82,6 @@ export const COMMON_FEE_COMPONENTS = [
   'Library Fee',
   'Miscellaneous',
 ];
+
+export const BLOOD_GROUP_TEMPLATE_OPTIONS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+export const CASTE_TEMPLATE_OPTIONS = ['General', 'OBC', 'SC', 'ST', 'EWS', 'Other'];

@@ -149,6 +149,8 @@ export class FilesService {
         return `private/${tenantId}/reports/${entityId ?? uuid}/${uuid}${ext}`;
       case FileCategory.ATTACHMENT:
         return `private/${tenantId}/attachments/${entityId ? `${entityId}/` : ''}${uuid}${ext}`;
+      case FileCategory.STUDENT_PHOTO:
+        return `private/${tenantId}/students/${entityId ?? uuid}/${uuid}${ext}`;
     }
   }
 

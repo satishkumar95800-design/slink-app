@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import { PaymentsService } from './payments.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SecretsService } from '../../secrets/secrets.service';
+import { ReceiptsService } from '../receipts/receipts.service';
 import type { ActiveUser } from '../../common/types/active-user.type';
 
 // Mock Razorpay module
@@ -93,12 +94,24 @@ const mockPrisma = {
   $transaction: jest.fn(),
 };
 
+/** tx surface used inside capturePayment's callback-form transaction */
+const mockTx = {
+  paymentOrder: { update: jest.fn() },
+  paymentTransaction: { create: jest.fn() },
+  studentFee: { update: jest.fn() },
+  auditLog: { create: jest.fn() },
+};
+
 const mockSecrets = {
   getRazorpayCredentials: jest.fn().mockResolvedValue({
     keyId: 'rzp_test_key',
     keySecret: 'rzp_test_secret',
     webhookSecret: 'webhook_secret',
   }),
+};
+
+const mockReceiptsService = {
+  createForPayment: jest.fn(),
 };
 
 describe('PaymentsService', () => {
@@ -110,6 +123,7 @@ describe('PaymentsService', () => {
         PaymentsService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: SecretsService, useValue: mockSecrets },
+        { provide: ReceiptsService, useValue: mockReceiptsService },
       ],
     }).compile();
 
@@ -281,17 +295,26 @@ describe('PaymentsService', () => {
   });
 
   describe('capturePayment', () => {
-    it('updates order, creates transaction, and updates fee status', async () => {
+    it('updates order, creates transaction, updates fee status, and creates a receipt', async () => {
       const fee = {
         id: 'fee-uuid',
         amountDue: new Prisma.Decimal('5000.00'),
         amountPaid: new Prisma.Decimal('0.00'),
         status: FeeStatus.pending,
         dueDate: new Date('2099-12-31'),
+        student: { id: 'student-uuid', classId: 'class-uuid' },
       };
       mockPrisma.studentFee.findUniqueOrThrow.mockResolvedValue(fee);
-      mockPrisma.$transaction.mockResolvedValue([{}, {}, {}, {}]);
+      mockPrisma.$transaction.mockImplementation((cb: unknown) =>
+        typeof cb === 'function' ? cb(mockTx) : Promise.resolve(cb),
+      );
+      mockTx.paymentOrder.update.mockResolvedValue({});
+      mockTx.paymentTransaction.create.mockResolvedValue({});
+      mockTx.studentFee.update.mockResolvedValue({});
+      mockTx.auditLog.create.mockResolvedValue({});
+      mockReceiptsService.createForPayment.mockResolvedValue({ id: 'receipt-uuid' });
 
+      const paidAt = new Date();
       await service.capturePayment(
         {
           id: 'order-uuid',
@@ -301,11 +324,26 @@ describe('PaymentsService', () => {
         },
         'pay_gateway123',
         'sig_xyz',
-        new Date(),
+        paidAt,
       );
 
-      const [txOps] = mockPrisma.$transaction.mock.calls[0];
-      expect(txOps).toHaveLength(4); // update order + create transaction + update fee + audit log
+      expect(mockTx.paymentOrder.update).toHaveBeenCalled();
+      expect(mockTx.paymentTransaction.create).toHaveBeenCalled();
+      expect(mockTx.studentFee.update).toHaveBeenCalled();
+      expect(mockTx.auditLog.create).toHaveBeenCalled();
+      expect(mockReceiptsService.createForPayment).toHaveBeenCalledWith(
+        mockTx,
+        expect.objectContaining({
+          tenantId: 'tenant-uuid',
+          studentFeeId: 'fee-uuid',
+          studentId: 'student-uuid',
+          classId: 'class-uuid',
+          method: 'gateway',
+          paidOn: paidAt,
+          recordedBy: null,
+          paymentOrderId: 'order-uuid',
+        }),
+      );
     });
   });
 

@@ -136,4 +136,38 @@ describe('validateStudentsTab', () => {
     expect(result.warnings).toHaveLength(2);
     expect(result.warnings[0].reason).toMatch(/linked to 2 students/);
   });
+
+  it('accepts a valid Blood Group and Caste and translates blood group to the Prisma enum', () => {
+    const result = validateStudentsTab(
+      makeTab([baseRow({ 'Blood Group': 'A+', Caste: 'General' })]),
+      CLASSES,
+    );
+    expect(result.errors).toHaveLength(0);
+    expect(result.validRows[0].bloodGroup).toBe('A_POSITIVE');
+    expect(result.validRows[0].caste).toBe('General');
+  });
+
+  it('rejects an invalid Blood Group value', () => {
+    const result = validateStudentsTab(
+      makeTab([baseRow({ 'Blood Group': 'AB positive' })]),
+      CLASSES,
+    );
+    expect(result.errors.some((e) => e.column === 'Blood Group')).toBe(true);
+  });
+
+  it('rejects an invalid Caste value', () => {
+    const result = validateStudentsTab(
+      makeTab([baseRow({ Caste: 'Unknown' })]),
+      CLASSES,
+    );
+    expect(result.errors.some((e) => e.column === 'Caste')).toBe(true);
+  });
+
+  it('leaves Blood Group, Caste, and Parent Profession undefined when omitted (all optional)', () => {
+    const result = validateStudentsTab(makeTab([baseRow()]), CLASSES);
+    expect(result.errors).toHaveLength(0);
+    expect(result.validRows[0].bloodGroup).toBeUndefined();
+    expect(result.validRows[0].caste).toBeUndefined();
+    expect(result.validRows[0].parentProfession).toBeUndefined();
+  });
 });

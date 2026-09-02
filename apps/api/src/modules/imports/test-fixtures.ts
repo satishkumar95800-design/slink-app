@@ -20,6 +20,9 @@ const DEFAULT_HEADERS: Record<string, string[]> = {
     'Parent Name',
     'Parent Mobile Number',
     'Parent Email',
+    'Blood Group',
+    'Caste',
+    'Parent Profession',
   ],
   'Fee Structures': [
     'Class Name',

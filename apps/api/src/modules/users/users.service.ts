@@ -24,6 +24,7 @@ const userSelect = {
   email: true,
   phone: true,
   role: true,
+  profession: true,
   isVerified: true,
   createdAt: true,
   updatedAt: true,
@@ -120,6 +121,7 @@ export class UsersService {
         email: dto.email,
         phone: dto.phone,
         role: dto.role,
+        profession: dto.profession,
       },
       select: userSelect,
     });

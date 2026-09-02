@@ -69,6 +69,9 @@ describe('WorkbookParserService', () => {
         'Parent Name',
         'Parent Mobile Number',
         'Parent Email',
+        'Blood Group',
+        'Caste',
+        'Parent Profession',
       ]);
     workbook
       .addWorksheet('Fee Structures')
@@ -126,6 +129,9 @@ describe('WorkbookParserService', () => {
         'Parent Name',
         'Parent Mobile Number',
         'Parent Email',
+        'Blood Group',
+        'Caste',
+        'Parent Profession',
       ]);
     workbook
       .addWorksheet('Fee Structures')
@@ -173,6 +179,9 @@ describe('WorkbookParserService', () => {
         'Parent Name',
         'Parent Mobile Number',
         'Parent Email',
+        'Blood Group',
+        'Caste',
+        'Parent Profession',
       ]);
     workbook
       .addWorksheet('Fee Structures')
@@ -216,6 +225,9 @@ describe('WorkbookParserService', () => {
       'Parent Name',
       'Parent Mobile Number',
       'Parent Email',
+      'Blood Group',
+      'Caste',
+      'Parent Profession',
     ]);
     studentsSheet.addRow([
       'Amy',
@@ -225,6 +237,9 @@ describe('WorkbookParserService', () => {
       new Date('2015-06-01T00:00:00.000Z'),
       'Bob',
       '+919876543210',
+      '',
+      '',
+      '',
       '',
     ]);
     workbook

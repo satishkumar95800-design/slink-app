@@ -7,6 +7,7 @@ export interface User {
   email: string | null;
   name: string;
   role: Role;
+  profession: string | null;
   isVerified: boolean;
   createdAt: Date;
   updatedAt: Date;

@@ -12,6 +12,7 @@ import { SecretsService } from '../../secrets/secrets.service';
 import type { ActiveUser } from '../../common/types/active-user.type';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderQueryDto } from './dto/order-query.dto';
+import { ReceiptsService } from '../receipts/receipts.service';
 
 const orderInclude = {
   studentFee: {
@@ -41,6 +42,7 @@ export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly secrets: SecretsService,
+    private readonly receiptsService: ReceiptsService,
   ) {}
 
   async createOrder(tenantId: string, dto: CreateOrderDto, user: ActiveUser) {
@@ -177,6 +179,7 @@ export class PaymentsService {
   ) {
     const fee = await this.prisma.studentFee.findUniqueOrThrow({
       where: { id: order.studentFeeId },
+      include: { student: { select: { id: true, classId: true } } },
     });
 
     const newAmountPaid = fee.amountPaid.add(order.amount);
@@ -186,12 +189,15 @@ export class PaymentsService {
       fee.dueDate,
     );
 
-    await this.prisma.$transaction([
-      this.prisma.paymentOrder.update({
+    // Callback-form transaction (not the array form used elsewhere in this file) —
+    // receipt-number generation needs to read the incremented tenant sequence
+    // before inserting the Receipt row, which the array form can't express.
+    await this.prisma.$transaction(async (tx) => {
+      await tx.paymentOrder.update({
         where: { id: order.id },
         data: { status: PaymentOrderStatus.paid },
-      }),
-      this.prisma.paymentTransaction.create({
+      });
+      await tx.paymentTransaction.create({
         data: {
           tenantId: order.tenantId,
           paymentOrderId: order.id,
@@ -200,12 +206,12 @@ export class PaymentsService {
           amount: order.amount,
           paidAt,
         },
-      }),
-      this.prisma.studentFee.update({
+      });
+      await tx.studentFee.update({
         where: { id: order.studentFeeId },
         data: { amountPaid: newAmountPaid, status: newFeeStatus },
-      }),
-      this.prisma.auditLog.create({
+      });
+      await tx.auditLog.create({
         data: {
           tenantId: order.tenantId,
           actorId: order.id, // gateway actor — no human actor for webhooks
@@ -220,8 +226,19 @@ export class PaymentsService {
             newStatus: newFeeStatus,
           },
         },
-      }),
-    ]);
+      });
+      await this.receiptsService.createForPayment(tx, {
+        tenantId: order.tenantId,
+        studentFeeId: order.studentFeeId,
+        studentId: fee.student.id,
+        classId: fee.student.classId,
+        amount: order.amount,
+        method: 'gateway',
+        paidOn: paidAt,
+        recordedBy: null,
+        paymentOrderId: order.id,
+      });
+    });
   }
 
   async markOrderFailed(orderId: string) {

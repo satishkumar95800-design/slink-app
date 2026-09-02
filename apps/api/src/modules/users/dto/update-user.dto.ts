@@ -1,4 +1,4 @@
-import { IsEmail, IsEnum, IsOptional, IsPhoneNumber, IsString } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsPhoneNumber, IsString, MaxLength } from 'class-validator';
 import { Role } from '@prisma/client';
 
 const STAFF_ROLES = [Role.teacher, Role.admin, Role.accounts] as const;
@@ -20,4 +20,10 @@ export class UpdateUserDto {
   @IsEnum(STAFF_ROLES)
   @IsOptional()
   role?: StaffRole;
+
+  /** Not role-restricted — used to edit a parent's profession too. */
+  @IsString()
+  @IsOptional()
+  @MaxLength(150)
+  profession?: string;
 }

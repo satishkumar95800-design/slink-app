@@ -4,9 +4,10 @@ import { StudentFeesService } from './student-fees.service';
 import { FeeStructuresController } from './fee-structures.controller';
 import { StudentFeesController } from './student-fees.controller';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { ReceiptsModule } from '../receipts/receipts.module';
 
 @Module({
-  imports: [NotificationsModule],
+  imports: [NotificationsModule, ReceiptsModule],
   controllers: [FeeStructuresController, StudentFeesController],
   providers: [FeeStructuresService, StudentFeesService],
   exports: [FeeStructuresService, StudentFeesService],

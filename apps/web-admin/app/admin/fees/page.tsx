@@ -59,6 +59,7 @@ export default function FeesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [editingStructure, setEditingStructure] = useState<FeeStructure | null>(null);
 
   const {
     register,
@@ -71,7 +72,19 @@ export default function FeesPage() {
     defaultValues: { items: [{ label: '', amount: 0 }] },
   });
 
+  const {
+    register: registerEdit,
+    handleSubmit: handleEditSubmit,
+    control: controlEdit,
+    reset: resetEdit,
+    formState: { errors: editErrors, isSubmitting: isEditSubmitting },
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: { items: [{ label: '', amount: 0 }] },
+  });
+
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
+  const { fields: editFields, append: appendEdit, remove: removeEdit } = useFieldArray({ control: controlEdit, name: 'items' });
 
   async function fetchData() {
     try {
@@ -107,6 +120,30 @@ export default function FeesPage() {
     }
   }
 
+  function openEdit(structure: FeeStructure) {
+    setEditingStructure(structure);
+    resetEdit({
+      name: structure.name,
+      classId: structure.classId,
+      academicYear: structure.academicYear,
+      dueDate: structure.dueDate.slice(0, 10),
+      lateFeePerDay: structure.lateFeePerDay,
+      items: (structure.items ?? [{ label: '', amount: 0 }]).map((item) => ({ label: item.label, amount: Number(item.amount) })),
+    });
+  }
+
+  async function onEditSubmit(data: FormData) {
+    if (!editingStructure) return;
+    try {
+      await api.patch(`/fee-structures/${editingStructure.id}`, data);
+      toast('Fee structure updated', 'success');
+      setEditingStructure(null);
+      fetchData();
+    } catch (e) {
+      toast((e as ApiError).message, 'error');
+    }
+  }
+
   const classOptions = classes.map((c) => ({
     value: c.id,
     label: `${c.name} (${c.academicYear})`,
@@ -136,7 +173,7 @@ export default function FeesPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                {['Name', 'Class', 'Academic Year', 'Total', 'Due Date', 'Late Fee/Day'].map((h) => (
+                {['Name', 'Class', 'Academic Year', 'Total', 'Due Date', 'Late Fee/Day', ''].map((h) => (
                   <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                     {h}
                   </th>
@@ -155,6 +192,11 @@ export default function FeesPage() {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
                     {s.lateFeePerDay ? formatCurrency(s.lateFeePerDay) : '—'}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button onClick={() => openEdit(s)} className="text-xs text-blue-600 hover:underline">
+                      Edit
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -244,6 +286,92 @@ export default function FeesPage() {
             </Button>
             <Button type="submit" loading={isSubmitting}>
               Create Structure
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={!!editingStructure}
+        onClose={() => setEditingStructure(null)}
+        title="Edit Fee Structure"
+        size="lg"
+      >
+        <form onSubmit={handleEditSubmit(onEditSubmit)} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Name" placeholder="Annual Fees" error={editErrors.name?.message} {...registerEdit('name')} />
+            <Select
+              label="Class"
+              options={classOptions}
+              placeholder="Select a class"
+              error={editErrors.classId?.message}
+              {...registerEdit('classId')}
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <Input label="Academic Year" placeholder="2024-25" error={editErrors.academicYear?.message} {...registerEdit('academicYear')} />
+            <Input label="Due Date" type="date" error={editErrors.dueDate?.message} {...registerEdit('dueDate')} />
+            <Input
+              label="Late Fee / Day (₹)"
+              type="number"
+              step="0.01"
+              placeholder="0"
+              error={editErrors.lateFeePerDay?.message}
+              {...registerEdit('lateFeePerDay', { valueAsNumber: true })}
+            />
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Fee Items</p>
+              <button
+                type="button"
+                onClick={() => appendEdit({ label: '', amount: 0 })}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                + Add item
+              </button>
+            </div>
+            <div className="space-y-2">
+              {editFields.map((field, idx) => (
+                <div key={field.id} className="flex gap-2">
+                  <input
+                    className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                    placeholder="Label (e.g. Tuition)"
+                    {...registerEdit(`items.${idx}.label`)}
+                  />
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="w-32 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                    placeholder="Amount (₹)"
+                    {...registerEdit(`items.${idx}.amount`, { valueAsNumber: true })}
+                  />
+                  {editFields.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeEdit(idx)}
+                      className="px-2 text-gray-400 hover:text-red-600"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {editErrors.items && (
+              <p className="mt-1 text-xs text-red-600">
+                {typeof editErrors.items.message === 'string' ? editErrors.items.message : 'Fix fee items'}
+              </p>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" type="button" onClick={() => setEditingStructure(null)}>
+              Cancel
+            </Button>
+            <Button type="submit" loading={isEditSubmitting}>
+              Save Changes
             </Button>
           </div>
         </form>

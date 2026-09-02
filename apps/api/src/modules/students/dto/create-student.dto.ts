@@ -9,7 +9,9 @@ import {
   IsDateString,
   Matches,
 } from 'class-validator';
-import { GuardianRelation } from '@prisma/client';
+import { Transform } from 'class-transformer';
+import { GuardianRelation, BloodGroup, Caste } from '@prisma/client';
+import { BLOOD_GROUP_DISPLAY_TO_ENUM, BLOOD_GROUP_OPTIONS } from '../../../common/blood-group';
 
 export class CreateStudentDto {
   @IsString()
@@ -26,6 +28,22 @@ export class CreateStudentDto {
   @IsDateString()
   @IsOptional()
   dob?: string;
+
+  /** Accepts "A+", "A-", "B+", ... on the wire; translated to the Prisma enum here. */
+  @Transform(({ value }) => BLOOD_GROUP_DISPLAY_TO_ENUM[value] ?? value)
+  @IsEnum(BloodGroup, {
+    message: `bloodGroup must be one of ${BLOOD_GROUP_OPTIONS.join(', ')}`,
+  })
+  @IsOptional()
+  bloodGroup?: BloodGroup;
+
+  @IsEnum(Caste)
+  @IsOptional()
+  caste?: Caste;
+
+  @IsString()
+  @IsOptional()
+  photoUrl?: string;
 
   @IsUUID()
   classId: string;

@@ -20,7 +20,7 @@ const studentInclude = {
     select: {
       relation: true,
       isPrimary: true,
-      parent: { select: { id: true, name: true, phone: true } },
+      parent: { select: { id: true, name: true, phone: true, profession: true } },
     },
   },
 } satisfies Prisma.StudentInclude;
@@ -97,6 +97,9 @@ export class StudentsService {
         name: dto.name,
         admissionNo: dto.admissionNo,
         dob: dto.dob ? new Date(dto.dob) : null,
+        bloodGroup: dto.bloodGroup ?? null,
+        caste: dto.caste ?? null,
+        photoUrl: dto.photoUrl ?? null,
         classId: dto.classId,
       },
       include: studentInclude,
@@ -152,6 +155,9 @@ export class StudentsService {
         name: dto.name,
         classId: dto.classId,
         dob: dto.dob ? new Date(dto.dob) : undefined,
+        bloodGroup: dto.bloodGroup,
+        caste: dto.caste,
+        photoUrl: dto.photoUrl,
       },
       include: studentInclude,
     });
@@ -293,9 +299,17 @@ export class StudentsService {
     }
   }
 
-  /** Strip sensitive parent contact info when returning data to parents. */
+  /**
+   * Strip sensitive parent contact info when returning data to parents, and
+   * strip caste (sensitive demographic data) when returning data to teachers.
+   * Blood group stays visible to teachers — useful in a medical emergency.
+   */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private sanitiseForRole(student: any, user: ActiveUser) {
+    if (user.role === Role.teacher) {
+      const { caste: _caste, ...rest } = student;
+      return rest;
+    }
     if (user.role !== Role.parent) return student;
     return {
       ...student,

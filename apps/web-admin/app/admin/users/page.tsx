@@ -36,6 +36,15 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+const editSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Enter a valid email').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  role: z.enum(['teacher', 'admin', 'accounts']),
+});
+
+type EditFormData = z.infer<typeof editSchema>;
+
 const roleOptions = [
   { value: 'teacher', label: 'Teacher' },
   { value: 'admin', label: 'Admin' },
@@ -58,6 +67,7 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const {
@@ -66,6 +76,13 @@ export default function UsersPage() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
+
+  const {
+    register: registerEdit,
+    handleSubmit: handleEditSubmit,
+    reset: resetEdit,
+    formState: { errors: editErrors, isSubmitting: isEditSubmitting },
+  } = useForm<EditFormData>({ resolver: zodResolver(editSchema) });
 
   async function fetchUsers() {
     try {
@@ -91,6 +108,33 @@ export default function UsersPage() {
       toast('User created successfully', 'success');
       setShowModal(false);
       reset();
+      fetchUsers();
+    } catch (e) {
+      toast((e as ApiError).message, 'error');
+    }
+  }
+
+  function openEdit(user: User) {
+    setEditingUser(user);
+    resetEdit({
+      name: user.name,
+      email: user.email ?? '',
+      phone: user.phone ?? '',
+      role: user.role === 'teacher' || user.role === 'admin' || user.role === 'accounts' ? user.role : 'admin',
+    });
+  }
+
+  async function onEditSubmit(data: EditFormData) {
+    if (!editingUser) return;
+    try {
+      await api.patch(`/users/${editingUser.id}`, {
+        name: data.name,
+        email: data.email || undefined,
+        phone: data.phone || undefined,
+        role: data.role,
+      });
+      toast('User updated successfully', 'success');
+      setEditingUser(null);
       fetchUsers();
     } catch (e) {
       toast((e as ApiError).message, 'error');
@@ -159,13 +203,21 @@ export default function UsersPage() {
                     {new Date(u.createdAt).toLocaleDateString('en-IN')}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => handleDelete(u.id)}
-                      disabled={deletingId === u.id}
-                      className="text-xs text-red-600 hover:underline disabled:opacity-50"
-                    >
-                      {deletingId === u.id ? 'Deleting…' : 'Delete'}
-                    </button>
+                    <div className="flex items-center justify-end gap-3">
+                      <button
+                        onClick={() => openEdit(u)}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(u.id)}
+                        disabled={deletingId === u.id}
+                        className="text-xs text-red-600 hover:underline disabled:opacity-50"
+                      >
+                        {deletingId === u.id ? 'Deleting…' : 'Delete'}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -202,6 +254,33 @@ export default function UsersPage() {
             </Button>
             <Button type="submit" loading={isSubmitting}>
               Create User
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={!!editingUser}
+        onClose={() => setEditingUser(null)}
+        title="Edit User"
+      >
+        <form onSubmit={handleEditSubmit(onEditSubmit)} className="space-y-4">
+          <Input label="Full Name" error={editErrors.name?.message} {...registerEdit('name')} />
+          <Input label="Email" type="email" error={editErrors.email?.message} {...registerEdit('email')} />
+          <Input label="Phone" placeholder="+91..." error={editErrors.phone?.message} {...registerEdit('phone')} />
+          <Select
+            label="Role"
+            options={roleOptions}
+            placeholder="Select a role"
+            error={editErrors.role?.message}
+            {...registerEdit('role')}
+          />
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" type="button" onClick={() => setEditingUser(null)}>
+              Cancel
+            </Button>
+            <Button type="submit" loading={isEditSubmitting}>
+              Save Changes
             </Button>
           </div>
         </form>

@@ -22,6 +22,9 @@ import { FilesModule } from './modules/files/files.module';
 import { TenantsModule } from './modules/tenants/tenants.module';
 import { UsersModule } from './modules/users/users.module';
 import { ImportsModule } from './modules/imports/imports.module';
+import { ReceiptsModule } from './modules/receipts/receipts.module';
+import { InsightsModule } from './modules/insights/insights.module';
+import { AuditModule } from './modules/audit/audit.module';
 
 @Module({
   imports: [
@@ -48,11 +51,15 @@ import { ImportsModule } from './modules/imports/imports.module';
     TenantsModule,
     UsersModule,
     ImportsModule,
+    ReceiptsModule,
+    InsightsModule,
+    AuditModule,
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // /tenants (platform CRUD) excluded — super_admin has no X-Tenant-ID context
+    // /tenants (platform CRUD) and /dev/* (developer tooling) excluded —
+    // super_admin/developer have no X-Tenant-ID context; both operate cross-tenant.
     consumer
       .apply(TenantMiddleware)
       .exclude(
@@ -60,6 +67,7 @@ export class AppModule implements NestModule {
         { path: 'payments/webhook', method: RequestMethod.POST },
         { path: 'tenants', method: RequestMethod.ALL },
         { path: 'tenants/:id', method: RequestMethod.ALL },
+        { path: 'dev/audit-logs', method: RequestMethod.ALL },
       )
       .forRoutes('*');
   }

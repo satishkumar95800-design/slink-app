@@ -4,6 +4,8 @@ import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
+import { PrismaService } from './prisma/prisma.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });
@@ -22,6 +24,7 @@ async function bootstrap() {
   // JwtAuthGuard must be registered before RolesGuard so req.user is populated
   app.useGlobalGuards(new JwtAuthGuard(app.get(Reflector)));
   app.useGlobalGuards(new RolesGuard(app.get(Reflector)));
+  app.useGlobalInterceptors(new AuditLogInterceptor(app.get(PrismaService)));
 
   const allowedOrigins = [
     process.env.ADMIN_BASE_URL ?? 'http://localhost:3001',
