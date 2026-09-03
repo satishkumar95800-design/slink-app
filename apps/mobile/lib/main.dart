@@ -21,11 +21,73 @@ void main() async {
   runApp(const ProviderScope(child: SchoolConnectApp()));
 }
 
-class SchoolConnectApp extends ConsumerWidget {
+class SchoolConnectApp extends ConsumerStatefulWidget {
   const SchoolConnectApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SchoolConnectApp> createState() => _SchoolConnectAppState();
+}
+
+class _SchoolConnectAppState extends ConsumerState<SchoolConnectApp> {
+  @override
+  void initState() {
+    super.initState();
+    _configurePushNotifications();
+  }
+
+  Future<void> _configurePushNotifications() async {
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      _handleNotificationRoute(message.data);
+    });
+
+    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+    if (initialMessage != null) {
+      _handleNotificationRoute(initialMessage.data);
+    }
+  }
+
+  void _handleNotificationRoute(Map<String, dynamic> data) {
+    final targetRoute = _resolveNotificationRoute(data);
+    if (targetRoute == null) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(appRouterProvider).go(targetRoute);
+    });
+  }
+
+  String? _resolveNotificationRoute(Map<String, dynamic> data) {
+    final type = data['type']?.toString();
+    final feeId = data['feeId'] ?? data['studentFeeId'];
+    final reportId = data['reportId'];
+
+    switch (type) {
+      case 'fee_due':
+      case 'fee_payment':
+      case 'payment':
+        if (feeId != null) return '/fees/$feeId/pay';
+        break;
+      case 'report':
+      case 'report_published':
+        if (reportId != null) return '/reports/$reportId';
+        break;
+      case 'dashboard':
+        return '/dashboard';
+    }
+
+    if (feeId != null && feeId is String && feeId.isNotEmpty) {
+      return '/fees/$feeId/pay';
+    }
+
+    if (reportId != null && reportId is String && reportId.isNotEmpty) {
+      return '/reports/$reportId';
+    }
+
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
     final theme = ref.watch(appThemeProvider);
 

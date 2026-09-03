@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../shared/models/active_user.dart';
 import '../../shared/models/student.dart';
 import '../auth/session_controller.dart';
 import 'students_repository.dart';
@@ -10,41 +11,97 @@ class DashboardPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final childrenAsync = ref.watch(myChildrenProvider);
-    final user = ref.watch(sessionControllerProvider).user;
+    final session = ref.watch(sessionControllerProvider);
+    final user = session.user;
+    final isTeacher = user?.role == UserRole.teacher;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(user != null ? 'Hi, ${user.name}' : 'School Connect'),
         actions: [
+          if (user != null)
+            IconButton(
+              icon: const Icon(Icons.person_outline),
+              tooltip: 'Profile',
+              onPressed: () => context.push('/profile'),
+            ),
           IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
             onPressed: () => ref.read(sessionControllerProvider.notifier).logout(),
           ),
         ],
       ),
-      body: childrenAsync.when(
-        data: (children) {
-          if (children.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  "No children are linked to your account yet. Please contact the school office.",
-                  textAlign: TextAlign.center,
-                ),
+      body: isTeacher ? _TeacherDashboardBody(user: user!) : _ParentDashboardBody(user: user),
+    );
+  }
+}
+
+class _ParentDashboardBody extends ConsumerWidget {
+  final ActiveUser? user;
+
+  const _ParentDashboardBody({required this.user});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final childrenAsync = ref.watch(myChildrenProvider);
+
+    return childrenAsync.when(
+      data: (children) {
+        if (children.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Text(
+                "No children are linked to your account yet. Please contact the school office.",
+                textAlign: TextAlign.center,
               ),
-            );
-          }
-          return _DashboardBody(children: children);
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text('Could not load your children.\n$error', textAlign: TextAlign.center),
-          ),
+            ),
+          );
+        }
+        return _DashboardBody(children: children);
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text('Could not load your children.\n$error', textAlign: TextAlign.center),
         ),
+      ),
+    );
+  }
+}
+
+class _TeacherDashboardBody extends StatelessWidget {
+  final ActiveUser user;
+
+  const _TeacherDashboardBody({required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Teacher dashboard', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          Text('Signed in as ${user.name}', style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: 24),
+          _NavCard(
+            icon: Icons.assignment,
+            title: 'Reports',
+            subtitle: 'Review recent student performance and homework updates',
+            onTap: () => context.push('/dashboard/reports'),
+          ),
+          const SizedBox(height: 12),
+          _NavCard(
+            icon: Icons.person_outline,
+            title: 'Profile',
+            subtitle: 'View account details and sign out',
+            onTap: () => context.push('/profile'),
+          ),
+        ],
       ),
     );
   }

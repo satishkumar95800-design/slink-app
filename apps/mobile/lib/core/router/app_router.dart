@@ -8,6 +8,7 @@ import '../../features/auth/tenant_entry_page.dart';
 import '../../features/dashboard/dashboard_page.dart';
 import '../../features/fees/fees_list_page.dart';
 import '../../features/payments/checkout_page.dart';
+import '../../features/profile/profile_page.dart';
 import '../../features/reports/report_detail_page.dart';
 import '../../features/reports/reports_list_page.dart';
 import '../../shared/services/secure_storage_service.dart';
@@ -46,6 +47,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login/phone', builder: (_, __) => const PhoneEntryPage()),
       GoRoute(path: '/login/otp', builder: (_, __) => const OtpVerifyPage()),
       GoRoute(path: '/dashboard', builder: (_, __) => const DashboardPage()),
+      GoRoute(path: '/profile', builder: (_, __) => const ProfilePage()),
       GoRoute(path: '/dashboard/fees', builder: (_, __) => const FeesListPage()),
       GoRoute(path: '/dashboard/reports', builder: (_, __) => const ReportsListPage()),
       GoRoute(
