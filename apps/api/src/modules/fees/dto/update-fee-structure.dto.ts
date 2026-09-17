@@ -1,5 +1,6 @@
 import {
   IsString,
+  IsUUID,
   IsOptional,
   IsNumber,
   IsDateString,
@@ -19,6 +20,13 @@ export class UpdateFeeStructureDto {
   @MaxLength(150)
   @IsOptional()
   name?: string;
+
+  /** Providing classIds replaces ALL existing class links */
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  classIds?: string[];
 
   @IsDateString()
   @IsOptional()

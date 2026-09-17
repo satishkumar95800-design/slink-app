@@ -1,5 +1,6 @@
 import {
   IsEnum,
+  IsUUID,
   IsNumber,
   IsString,
   IsOptional,
@@ -16,6 +17,11 @@ export enum AdjustmentType {
 export class AdjustStudentFeeDto {
   @IsEnum(AdjustmentType)
   type: AdjustmentType;
+
+  /** Scope the adjustment to a single fee component; omit to apply across the whole fee */
+  @IsUUID()
+  @IsOptional()
+  studentFeeComponentId?: string;
 
   /** Required when type = 'discount' */
   @IsNumber({ maxDecimalPlaces: 2 })

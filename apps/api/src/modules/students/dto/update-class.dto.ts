@@ -1,6 +1,5 @@
 import {
   IsString,
-  IsUUID,
   IsOptional,
   MinLength,
   MaxLength,
@@ -18,9 +17,4 @@ export class UpdateClassDto {
   @MaxLength(20)
   @IsOptional()
   section?: string;
-
-  /** UUID of the teacher to assign as class teacher */
-  @IsUUID()
-  @IsOptional()
-  teacherId?: string;
 }

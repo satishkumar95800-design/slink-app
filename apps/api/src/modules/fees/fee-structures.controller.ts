@@ -20,6 +20,7 @@ import { CreateFeeStructureDto } from './dto/create-fee-structure.dto';
 import { UpdateFeeStructureDto } from './dto/update-fee-structure.dto';
 import { FeeStructureQueryDto } from './dto/fee-structure-query.dto';
 import { AssignFeeStructureDto } from './dto/assign-fee-structure.dto';
+import { RolloverArrearsDto } from './dto/rollover-arrears.dto';
 import type { ActiveUser } from '../../common/types/active-user.type';
 
 @Controller('fee-structures')
@@ -50,6 +51,14 @@ export class FeeStructuresController {
   @Roles(Role.admin, Role.accounts)
   create(@TenantId() tenantId: string, @Body() dto: CreateFeeStructureDto) {
     return this.feeStructuresService.create(tenantId, dto);
+  }
+
+  /** Year-end arrears carry-forward — see FeeStructuresService.rolloverArrears */
+  @Post('rollover')
+  @Roles(Role.admin)
+  @HttpCode(HttpStatus.OK)
+  rolloverArrears(@TenantId() tenantId: string, @Body() dto: RolloverArrearsDto) {
+    return this.feeStructuresService.rolloverArrears(tenantId, dto);
   }
 
   @Patch(':id')

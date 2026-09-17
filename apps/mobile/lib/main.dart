@@ -18,17 +18,17 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  runApp(const ProviderScope(child: SchoolConnectApp()));
+  runApp(const ProviderScope(child: SlinkApp()));
 }
 
-class SchoolConnectApp extends ConsumerStatefulWidget {
-  const SchoolConnectApp({super.key});
+class SlinkApp extends ConsumerStatefulWidget {
+  const SlinkApp({super.key});
 
   @override
-  ConsumerState<SchoolConnectApp> createState() => _SchoolConnectAppState();
+  ConsumerState<SlinkApp> createState() => _SlinkAppState();
 }
 
-class _SchoolConnectAppState extends ConsumerState<SchoolConnectApp> {
+class _SlinkAppState extends ConsumerState<SlinkApp> {
   @override
   void initState() {
     super.initState();
@@ -92,7 +92,7 @@ class _SchoolConnectAppState extends ConsumerState<SchoolConnectApp> {
     final theme = ref.watch(appThemeProvider);
 
     return MaterialApp.router(
-      title: 'School Connect',
+      title: 'slink',
       theme: theme.lightTheme,
       darkTheme: theme.darkTheme,
       routerConfig: router,

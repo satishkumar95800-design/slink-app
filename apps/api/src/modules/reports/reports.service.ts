@@ -33,10 +33,10 @@ export class ReportsService {
 
     const cls = await this.prisma.class.findUnique({
       where: { id: student.classId, tenantId },
-      select: { id: true, teacherId: true },
+      select: { id: true, teachers: { select: { teacherId: true } } },
     });
     if (!cls) throw new NotFoundException('Class not found');
-    if (cls.teacherId !== user.id) {
+    if (!cls.teachers.some((t) => t.teacherId === user.id)) {
       throw new ForbiddenException('You can only create reports for students in your class');
     }
 
@@ -197,7 +197,7 @@ export class ReportsService {
     } else if (user.role === Role.teacher) {
       // Teachers only see reports for students in their class
       const teacherClasses = await this.prisma.class.findMany({
-        where: { tenantId, teacherId: user.id },
+        where: { tenantId, teachers: { some: { teacherId: user.id } } },
         select: { id: true },
       });
       where.classId = { in: teacherClasses.map((c) => c.id) };
@@ -231,9 +231,11 @@ export class ReportsService {
       // Teacher must own the class this report belongs to
       const cls = await this.prisma.class.findUnique({
         where: { id: report.classId, tenantId },
-        select: { teacherId: true },
+        select: { teachers: { select: { teacherId: true } } },
       });
-      if (cls?.teacherId !== user.id) throw new NotFoundException('Report not found');
+      if (!cls?.teachers.some((t) => t.teacherId === user.id)) {
+        throw new NotFoundException('Report not found');
+      }
     }
     // admin / accounts can read everything
   }

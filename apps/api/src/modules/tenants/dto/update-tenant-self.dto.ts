@@ -57,10 +57,22 @@ export class UpdateTenantSelfDto {
   @IsOptional()
   accentColor?: string;
 
+  /** What this school calls a "Class" — e.g. Class, Grade, Standard, Group, Section, or a custom word */
+  @IsString()
+  @MinLength(1)
+  @MaxLength(30)
+  @IsOptional()
+  classLabel?: string;
+
   /** S3 key for the tenant logo (returned by POST /files/upload with category=logo) */
   @IsString()
   @IsOptional()
   logoKey?: string;
+
+  /** S3 key for the tenant background image (returned by POST /files/upload with category=background) */
+  @IsString()
+  @IsOptional()
+  backgroundImageKey?: string;
 
   @ValidateNested()
   @Type(() => BrandingDto)

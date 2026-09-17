@@ -106,7 +106,7 @@ describe('ReportsService', () => {
 
     it('creates a draft report when teacher owns the class', async () => {
       mockPrisma.student.findUnique.mockResolvedValue({ id: 'student-uuid', classId: 'class-uuid' });
-      mockPrisma.class.findUnique.mockResolvedValue({ id: 'class-uuid', teacherId: 'teacher-uuid' });
+      mockPrisma.class.findUnique.mockResolvedValue({ id: 'class-uuid', teachers: [{ teacherId: 'teacher-uuid' }] });
       mockPrisma.report.create.mockResolvedValue(makeDraftReport());
 
       const result = await service.create('tenant-uuid', dto, teacherUser);
@@ -121,7 +121,7 @@ describe('ReportsService', () => {
 
     it('throws ForbiddenException when teacher does not own the class', async () => {
       mockPrisma.student.findUnique.mockResolvedValue({ id: 'student-uuid', classId: 'class-uuid' });
-      mockPrisma.class.findUnique.mockResolvedValue({ id: 'class-uuid', teacherId: 'other-teacher-uuid' });
+      mockPrisma.class.findUnique.mockResolvedValue({ id: 'class-uuid', teachers: [{ teacherId: 'other-teacher-uuid' }] });
       await expect(service.create('tenant-uuid', dto, teacherUser)).rejects.toThrow(ForbiddenException);
     });
   });
@@ -184,7 +184,7 @@ describe('ReportsService', () => {
 
     it('throws NotFoundException for teacher accessing another class report', async () => {
       mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ classId: 'other-class' }));
-      mockPrisma.class.findUnique.mockResolvedValue({ teacherId: 'other-teacher-uuid' });
+      mockPrisma.class.findUnique.mockResolvedValue({ teachers: [{ teacherId: 'other-teacher-uuid' }] });
       await expect(service.findOne('tenant-uuid', 'report-uuid', teacherUser)).rejects.toThrow(NotFoundException);
     });
   });

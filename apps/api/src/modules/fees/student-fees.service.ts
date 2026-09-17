@@ -1,10 +1,9 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
-import { Prisma, Role, FeeStatus } from '@prisma/client';
+import { Prisma, Role, FeeStatus, DiscountKind } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { ActiveUser } from '../../common/types/active-user.type';
 import { AssignStudentFeeDto } from './dto/assign-student-fee.dto';
@@ -12,6 +11,9 @@ import { RecordOfflinePaymentDto } from './dto/record-offline-payment.dto';
 import { AdjustStudentFeeDto, AdjustmentType } from './dto/adjust-student-fee.dto';
 import { StudentFeeQueryDto } from './dto/student-fee-query.dto';
 import { ReceiptsService } from '../receipts/receipts.service';
+import { buildStudentFeeComponents, sumComponentAmounts } from './fee-assignment.util';
+import { applyDiscountsToComponents } from '../discounts/discount-application.util';
+import type { ApplicableStudentDiscount } from '../discounts/discount-application.util';
 
 const studentFeeInclude = {
   student: {
@@ -29,6 +31,10 @@ const studentFeeInclude = {
       academicYear: true,
       items: { select: { id: true, label: true, amount: true } },
     },
+  },
+  components: {
+    include: { feeItem: { select: { id: true, label: true } } },
+    orderBy: { periodStart: 'asc' as const },
   },
 } satisfies Prisma.StudentFeeInclude;
 
@@ -90,8 +96,14 @@ export class StudentFeesService {
 
   async assignOne(tenantId: string, dto: AssignStudentFeeDto) {
     const [student, structure] = await Promise.all([
-      this.prisma.student.findUnique({ where: { id: dto.studentId, tenantId } }),
-      this.prisma.feeStructure.findUnique({ where: { id: dto.feeStructureId, tenantId } }),
+      this.prisma.student.findUnique({
+        where: { id: dto.studentId, tenantId },
+        include: { transportSlab: { select: { monthlyAmount: true } } },
+      }),
+      this.prisma.feeStructure.findUnique({
+        where: { id: dto.feeStructureId, tenantId },
+        include: { items: true },
+      }),
     ]);
 
     if (!student) throw new NotFoundException('Student not found');
@@ -104,20 +116,33 @@ export class StudentFeesService {
       throw new BadRequestException('Student is already assigned to this fee structure');
     }
 
+    const discounts = await this.loadDiscounts(tenantId, dto.studentId);
+    const components = buildStudentFeeComponents(
+      structure,
+      discounts,
+      student.transportSlab?.monthlyAmount,
+    );
+    const amountDue = dto.amountDueOverride
+      ? new Prisma.Decimal(dto.amountDueOverride.toFixed(2))
+      : sumComponentAmounts(components);
+
     return this.prisma.studentFee.create({
       data: {
         tenantId,
         studentId: dto.studentId,
         feeStructureId: dto.feeStructureId,
-        amountDue: dto.amountDueOverride
-          ? new Prisma.Decimal(dto.amountDueOverride.toFixed(2))
-          : structure.totalAmount,
+        amountDue,
         dueDate: dto.dueDateOverride ? new Date(dto.dueDateOverride) : structure.dueDate,
+        components: { create: components },
       },
       include: studentFeeInclude,
     });
   }
 
+  /**
+   * Records a cash/cheque/bank-transfer/demand-draft payment that may cover
+   * multiple fee components in one transaction (e.g. "Tuition & Van Fee").
+   */
   async recordOfflinePayment(
     tenantId: string,
     id: string,
@@ -126,7 +151,10 @@ export class StudentFeesService {
   ) {
     const fee = await this.prisma.studentFee.findUnique({
       where: { id, tenantId },
-      include: { student: { select: { id: true, classId: true } } },
+      include: {
+        student: { select: { id: true, classId: true } },
+        components: { include: { feeItem: { select: { label: true } } } },
+      },
     });
     if (!fee) throw new NotFoundException('Student fee not found');
 
@@ -134,15 +162,56 @@ export class StudentFeesService {
       throw new BadRequestException('Cannot record payment for a waived fee');
     }
 
-    const incomingAmount = new Prisma.Decimal(dto.amount.toFixed(2));
-    const newAmountPaid = fee.amountPaid.add(incomingAmount);
+    const componentsById = new Map(fee.components.map((c) => [c.id, c]));
+    const componentUpdates: Array<{
+      id: string;
+      amount: Prisma.Decimal;
+      newAmountPaid: Prisma.Decimal;
+      newStatus: FeeStatus;
+    }> = [];
+    const labels = new Set<string>();
+    let totalIncoming = new Prisma.Decimal(0);
+
+    for (const alloc of dto.allocations) {
+      const component = componentsById.get(alloc.studentFeeComponentId);
+      if (!component) {
+        throw new BadRequestException(
+          `Component ${alloc.studentFeeComponentId} does not belong to this fee`,
+        );
+      }
+      const allocAmount = new Prisma.Decimal(alloc.amount.toFixed(2));
+      const newAmountPaid = component.amountPaid.add(allocAmount);
+      if (newAmountPaid.greaterThan(component.amountDue)) {
+        throw new BadRequestException(
+          `Allocation for "${component.feeItem.label} (${component.periodLabel})" exceeds its outstanding amount`,
+        );
+      }
+      componentUpdates.push({
+        id: component.id,
+        amount: allocAmount,
+        newAmountPaid,
+        newStatus: this.recalcStatus(component.amountDue, newAmountPaid, component.dueDate),
+      });
+      labels.add(component.feeItem.label);
+      totalIncoming = totalIncoming.add(allocAmount);
+    }
+
+    const newAmountPaid = fee.amountPaid.add(totalIncoming);
     const newStatus = this.recalcStatus(fee.amountDue, newAmountPaid, fee.dueDate);
     const paidOn = dto.paidOn ? new Date(dto.paidOn) : new Date();
+    const autoNotes = [...labels].join(' & ');
 
     // Callback-form transaction (not the array form used elsewhere in this file) —
     // receipt-number generation needs to read the incremented tenant sequence
     // before inserting the Receipt row, which the array form can't express.
     const [studentFee, receipt] = await this.prisma.$transaction(async (tx) => {
+      for (const u of componentUpdates) {
+        await tx.studentFeeComponent.update({
+          where: { id: u.id },
+          data: { amountPaid: u.newAmountPaid, status: u.newStatus },
+        });
+      }
+
       const updated = await tx.studentFee.update({
         where: { id },
         data: { amountPaid: newAmountPaid, status: newStatus },
@@ -157,11 +226,15 @@ export class StudentFeesService {
           entityId: id,
           action: 'offline_payment',
           diff: {
-            amount: dto.amount,
+            amount: totalIncoming.toFixed(2),
             method: dto.method,
             reference: dto.reference ?? null,
             paidOn: paidOn.toISOString(),
             notes: dto.notes ?? null,
+            allocations: dto.allocations.map((a) => ({
+              studentFeeComponentId: a.studentFeeComponentId,
+              amount: a.amount,
+            })),
             previousAmountPaid: fee.amountPaid.toFixed(2),
             newAmountPaid: newAmountPaid.toFixed(2),
             newStatus,
@@ -174,13 +247,19 @@ export class StudentFeesService {
         studentFeeId: id,
         studentId: fee.student.id,
         classId: fee.student.classId,
-        amount: incomingAmount,
+        amount: totalIncoming,
         method: dto.method,
         reference: dto.reference,
         paidOn,
-        notes: dto.notes,
+        notes: dto.notes ?? autoNotes,
         recordedBy: actorId,
       });
+
+      for (const u of componentUpdates) {
+        await tx.receiptAllocation.create({
+          data: { receiptId: createdReceipt.id, studentFeeComponentId: u.id, amount: u.amount },
+        });
+      }
 
       return [updated, createdReceipt] as const;
     });
@@ -194,41 +273,83 @@ export class StudentFeesService {
     dto: AdjustStudentFeeDto,
     actorId: string,
   ) {
-    const fee = await this.prisma.studentFee.findUnique({ where: { id, tenantId } });
+    const fee = await this.prisma.studentFee.findUnique({
+      where: { id, tenantId },
+      include: { components: true },
+    });
     if (!fee) throw new NotFoundException('Student fee not found');
 
     if (fee.status === FeeStatus.paid) {
       throw new BadRequestException('Cannot adjust a fully paid fee');
     }
 
-    let newAmountDue = fee.amountDue;
-    let newStatus: FeeStatus;
-    const auditAction: string = dto.type;
+    const targets = dto.studentFeeComponentId
+      ? fee.components.filter((c) => c.id === dto.studentFeeComponentId)
+      : fee.components;
+    if (dto.studentFeeComponentId && targets.length === 0) {
+      throw new NotFoundException('Fee component not found');
+    }
 
+    // Represent each target's outstanding balance in the same shape the
+    // discount-application util works with, so waive/discount can reuse it.
+    const outstanding = targets.map((c) => ({
+      feeItemId: c.feeItemId,
+      periodLabel: c.periodLabel,
+      periodStart: c.periodStart,
+      periodEnd: c.periodEnd,
+      dueDate: c.dueDate,
+      amountDue: c.amountDue.sub(c.amountPaid),
+      __componentId: c.id,
+    }));
+    const totalOutstanding = outstanding.reduce((sum, c) => sum.add(c.amountDue), new Prisma.Decimal(0));
+
+    let reduced: typeof outstanding;
     if (dto.type === AdjustmentType.WAIVE) {
-      newStatus = FeeStatus.waived;
+      reduced = outstanding.map((c) => ({ ...c, amountDue: new Prisma.Decimal(0) }));
     } else {
-      // discount
       if (!dto.discountAmount) {
         throw new BadRequestException('discountAmount is required for discount adjustments');
       }
       const discount = new Prisma.Decimal(dto.discountAmount.toFixed(2));
-      if (discount.greaterThan(fee.amountDue.sub(fee.amountPaid))) {
+      if (discount.greaterThan(totalOutstanding)) {
         throw new BadRequestException('Discount cannot exceed the outstanding balance');
       }
-      newAmountDue = fee.amountDue.sub(discount);
-      newStatus = this.recalcStatus(newAmountDue, fee.amountPaid, fee.dueDate);
+      const applied: ApplicableStudentDiscount = {
+        kind: DiscountKind.fixed_amount,
+        feeItemId: null,
+        percentage: null,
+        fixedAmount: discount,
+      };
+      reduced = applyDiscountsToComponents(outstanding, [applied]);
     }
+
+    const reducedById = new Map(reduced.map((c) => [c.__componentId, c.amountDue]));
+    const componentUpdates = fee.components.map((c) => {
+      const remaining = reducedById.get(c.id) ?? c.amountDue.sub(c.amountPaid);
+      const newAmountDue = c.amountPaid.add(remaining);
+      return {
+        id: c.id,
+        newAmountDue,
+        newStatus: this.recalcStatus(newAmountDue, c.amountPaid, c.dueDate),
+      };
+    });
+
+    const newAmountDue = componentUpdates.reduce((sum, c) => sum.add(c.newAmountDue), new Prisma.Decimal(0));
+    const newStatus = this.recalcStatus(newAmountDue, fee.amountPaid, fee.dueDate);
+    const auditAction: string = dto.type;
 
     const [updated] = await this.prisma.$transaction([
       this.prisma.studentFee.update({
         where: { id },
-        data: {
-          amountDue: newAmountDue,
-          status: newStatus,
-        },
+        data: { amountDue: newAmountDue, status: newStatus },
         include: studentFeeInclude,
       }),
+      ...componentUpdates.map((c) =>
+        this.prisma.studentFeeComponent.update({
+          where: { id: c.id },
+          data: { amountDue: c.newAmountDue, status: c.newStatus },
+        }),
+      ),
       this.prisma.auditLog.create({
         data: {
           tenantId,
@@ -238,6 +359,7 @@ export class StudentFeesService {
           action: auditAction,
           diff: {
             type: dto.type,
+            studentFeeComponentId: dto.studentFeeComponentId ?? null,
             discountAmount: dto.discountAmount ?? null,
             reason: dto.reason,
             previousAmountDue: fee.amountDue.toFixed(2),
@@ -264,6 +386,19 @@ export class StudentFeesService {
     return FeeStatus.pending;
   }
 
+  private async loadDiscounts(tenantId: string, studentId: string): Promise<ApplicableStudentDiscount[]> {
+    const discounts = await this.prisma.studentDiscount.findMany({
+      where: { tenantId, studentId },
+      include: { discountType: { select: { kind: true } } },
+    });
+    return discounts.map((d) => ({
+      kind: d.discountType.kind,
+      feeItemId: d.feeItemId,
+      percentage: d.percentage,
+      fixedAmount: d.fixedAmount,
+    }));
+  }
+
   private async buildListWhere(
     tenantId: string,
     user: ActiveUser,
@@ -283,7 +418,7 @@ export class StudentFeesService {
       }
     } else if (user.role === Role.teacher) {
       const teacherClasses = await this.prisma.class.findMany({
-        where: { tenantId, teacherId: user.id },
+        where: { tenantId, teachers: { some: { teacherId: user.id } } },
         select: { id: true },
       });
       where.student = { classId: { in: teacherClasses.map((c) => c.id) } };
@@ -316,9 +451,11 @@ export class StudentFeesService {
       if (!classId) throw new NotFoundException('Student fee not found');
       const cls = await this.prisma.class.findUnique({
         where: { id: classId, tenantId },
-        select: { teacherId: true },
+        select: { teachers: { select: { teacherId: true } } },
       });
-      if (cls?.teacherId !== user.id) throw new NotFoundException('Student fee not found');
+      if (!cls?.teachers.some((t) => t.teacherId === user.id)) {
+        throw new NotFoundException('Student fee not found');
+      }
     }
   }
 }

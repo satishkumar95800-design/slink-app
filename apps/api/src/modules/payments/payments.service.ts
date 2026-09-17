@@ -179,7 +179,10 @@ export class PaymentsService {
   ) {
     const fee = await this.prisma.studentFee.findUniqueOrThrow({
       where: { id: order.studentFeeId },
-      include: { student: { select: { id: true, classId: true } } },
+      include: {
+        student: { select: { id: true, classId: true } },
+        components: { orderBy: { dueDate: 'asc' } },
+      },
     });
 
     const newAmountPaid = fee.amountPaid.add(order.amount);
@@ -188,6 +191,31 @@ export class PaymentsService {
       newAmountPaid,
       fee.dueDate,
     );
+
+    // A gateway payment doesn't specify which components it covers, so the
+    // captured amount is allocated FIFO across the outstanding components
+    // ordered by due date.
+    let remaining = order.amount;
+    const componentAllocations: Array<{
+      id: string;
+      amount: Prisma.Decimal;
+      newAmountPaid: Prisma.Decimal;
+      newStatus: FeeStatus;
+    }> = [];
+    for (const component of fee.components) {
+      if (remaining.lessThanOrEqualTo(0)) break;
+      const outstanding = component.amountDue.sub(component.amountPaid);
+      if (outstanding.lessThanOrEqualTo(0)) continue;
+      const allocation = remaining.greaterThan(outstanding) ? outstanding : remaining;
+      const newComponentAmountPaid = component.amountPaid.add(allocation);
+      componentAllocations.push({
+        id: component.id,
+        amount: allocation,
+        newAmountPaid: newComponentAmountPaid,
+        newStatus: this.recalcFeeStatus(component.amountDue, newComponentAmountPaid, component.dueDate),
+      });
+      remaining = remaining.sub(allocation);
+    }
 
     // Callback-form transaction (not the array form used elsewhere in this file) —
     // receipt-number generation needs to read the incremented tenant sequence
@@ -211,6 +239,12 @@ export class PaymentsService {
         where: { id: order.studentFeeId },
         data: { amountPaid: newAmountPaid, status: newFeeStatus },
       });
+      for (const alloc of componentAllocations) {
+        await tx.studentFeeComponent.update({
+          where: { id: alloc.id },
+          data: { amountPaid: alloc.newAmountPaid, status: alloc.newStatus },
+        });
+      }
       await tx.auditLog.create({
         data: {
           tenantId: order.tenantId,
@@ -227,7 +261,7 @@ export class PaymentsService {
           },
         },
       });
-      await this.receiptsService.createForPayment(tx, {
+      const receipt = await this.receiptsService.createForPayment(tx, {
         tenantId: order.tenantId,
         studentFeeId: order.studentFeeId,
         studentId: fee.student.id,
@@ -238,6 +272,11 @@ export class PaymentsService {
         recordedBy: null,
         paymentOrderId: order.id,
       });
+      for (const alloc of componentAllocations) {
+        await tx.receiptAllocation.create({
+          data: { receiptId: receipt.id, studentFeeComponentId: alloc.id, amount: alloc.amount },
+        });
+      }
     });
   }
 

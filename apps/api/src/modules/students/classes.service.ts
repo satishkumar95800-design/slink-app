@@ -9,6 +9,16 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ActiveUser } from '../../common/types/active-user.type';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
+import { AddClassTeacherDto } from './dto/add-class-teacher.dto';
+
+const classListSelect = {
+  id: true,
+  name: true,
+  section: true,
+  academicYear: true,
+  teachers: { select: { teacher: { select: { id: true, name: true } } } },
+  _count: { select: { students: true } },
+} as const;
 
 @Injectable()
 export class ClassesService {
@@ -17,36 +27,36 @@ export class ClassesService {
   async findAll(tenantId: string, user: ActiveUser) {
     const where =
       user.role === Role.teacher
-        ? { tenantId, teacherId: user.id }
+        ? { tenantId, teachers: { some: { teacherId: user.id } } }
         : { tenantId };
 
     return this.prisma.class.findMany({
       where,
       orderBy: [{ academicYear: 'desc' }, { name: 'asc' }, { section: 'asc' }],
-      select: {
-        id: true,
-        name: true,
-        section: true,
-        academicYear: true,
-        teacherId: true,
-        _count: { select: { students: true } },
-      },
+      select: classListSelect,
     });
   }
 
   async findOne(tenantId: string, classId: string, user: ActiveUser) {
     const cls = await this.prisma.class.findUnique({
       where: { id: classId, tenantId },
-      include: { _count: { select: { students: true } } },
+      include: {
+        teachers: { select: { teacher: { select: { id: true, name: true } } } },
+        _count: { select: { students: true } },
+      },
     });
 
     if (!cls) throw new NotFoundException('Class not found');
 
-    if (user.role === Role.teacher && cls.teacherId !== user.id) {
+    if (user.role === Role.teacher && !this.isTeacherOf(cls, user.id)) {
       throw new ForbiddenException('You are not assigned to this class');
     }
 
     return cls;
+  }
+
+  isTeacherOf(cls: { teachers: Array<{ teacher: { id: string } }> }, teacherId: string) {
+    return cls.teachers.some((t) => t.teacher.id === teacherId);
   }
 
   async create(tenantId: string, dto: CreateClassDto) {
@@ -76,19 +86,44 @@ export class ClassesService {
   async update(tenantId: string, classId: string, dto: UpdateClassDto) {
     await this.requireClass(tenantId, classId);
 
-    if (dto.teacherId) {
-      const teacher = await this.prisma.user.findUnique({
-        where: { id: dto.teacherId, tenantId },
-        select: { role: true },
-      });
-      if (!teacher || teacher.role !== Role.teacher) {
-        throw new NotFoundException('Teacher not found');
-      }
-    }
-
     return this.prisma.class.update({
       where: { id: classId },
-      data: { name: dto.name, section: dto.section, teacherId: dto.teacherId },
+      data: { name: dto.name, section: dto.section },
+    });
+  }
+
+  /** Assign a co-teacher to a class. A class may have more than one teacher. */
+  async addTeacher(tenantId: string, classId: string, dto: AddClassTeacherDto) {
+    await this.requireClass(tenantId, classId);
+
+    const teacher = await this.prisma.user.findUnique({
+      where: { id: dto.teacherId, tenantId },
+      select: { role: true },
+    });
+    if (!teacher || teacher.role !== Role.teacher) {
+      throw new NotFoundException('Teacher not found');
+    }
+
+    const existing = await this.prisma.classTeacher.findUnique({
+      where: { classId_teacherId: { classId, teacherId: dto.teacherId } },
+    });
+    if (existing) throw new ConflictException('This teacher is already assigned to the class');
+
+    return this.prisma.classTeacher.create({
+      data: { classId, teacherId: dto.teacherId },
+    });
+  }
+
+  async removeTeacher(tenantId: string, classId: string, teacherId: string) {
+    await this.requireClass(tenantId, classId);
+
+    const existing = await this.prisma.classTeacher.findUnique({
+      where: { classId_teacherId: { classId, teacherId } },
+    });
+    if (!existing) throw new NotFoundException('Teacher assignment not found');
+
+    await this.prisma.classTeacher.delete({
+      where: { classId_teacherId: { classId, teacherId } },
     });
   }
 

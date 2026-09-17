@@ -109,35 +109,62 @@ enum PaymentMethod {
   gateway
 }
 
+// How a FeeItem's annual amount is split into StudentFeeComponent periods.
+enum BillingFrequency {
+  one_time
+  monthly
+  quarterly
+}
+
+enum DiscountKind {
+  percentage
+  fixed_amount
+  full_waiver
+}
+
+enum CustomFieldType {
+  text
+  number
+  dropdown
+}
+
 // ─── Tenant ──────────────────────────────────────────────────────────────────
 
 model Tenant {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  slug            String   @unique
-  name            String
-  logoUrl         String?  @map("logo_url")
-  primaryColor    String   @default("#1E40AF") @map("primary_color")
-  accentColor     String   @default("#F59E0B") @map("accent_color")
-  timezone        String   @default("Asia/Kolkata")
-  isActive        Boolean  @default(true) @map("is_active")
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug               String   @unique
+  name               String
+  logoUrl            String?  @map("logo_url")
+  backgroundImageUrl String?  @map("background_image_url")
+  primaryColor       String   @default("#1E40AF") @map("primary_color")
+  accentColor        String   @default("#F59E0B") @map("accent_color")
+  timezone           String   @default("Asia/Kolkata")
+  isActive           Boolean  @default(true) @map("is_active")
+  // What this school calls a "Class" — Class / Grade / Standard / Group / Section / custom.
+  classLabel         String   @default("Class") @map("class_label")
   // branding: { coverPhotoUrls, address, contactPhone, contactEmail, websiteUrl, ... }
-  branding        Json     @default("{}")
+  branding           Json     @default("{}")
   // features: { installmentPlans, inAppMessaging, transportFeeModule, photoGallery }
-  features        Json     @default("{\"installmentPlans\":false,\"inAppMessaging\":false,\"transportFeeModule\":true,\"photoGallery\":false}")
-  receiptSequence Int      @default(0) @map("receipt_sequence")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  features           Json     @default("{\"installmentPlans\":false,\"inAppMessaging\":false,\"transportFeeModule\":true,\"photoGallery\":false}")
+  receiptSequence    Int      @default(0) @map("receipt_sequence")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
-  users         User[]
-  students      Student[]
-  classes       Class[]
-  feeStructures FeeStructure[]
-  studentFees   StudentFee[]
-  paymentOrders PaymentOrder[]
-  transactions  PaymentTransaction[]
-  reports       Report[]
-  notifications Notification[]
-  receipts      Receipt[]
+  users                    User[]
+  students                 Student[]
+  classes                  Class[]
+  feeStructures            FeeStructure[]
+  studentFees              StudentFee[]
+  paymentOrders            PaymentOrder[]
+  transactions             PaymentTransaction[]
+  reports                  Report[]
+  notifications            Notification[]
+  receipts                 Receipt[]
+  discountTypes            DiscountType[]
+  studentDiscounts         StudentDiscount[]
+  customFieldDefinitions   CustomFieldDefinition[]
+  studentCustomFieldValues StudentCustomFieldValue[]
+  transportSlabs           TransportSlab[]
 
   @@map("tenants")
 }
@@ -164,6 +191,7 @@ model User {
   refreshTokens    RefreshToken[]
   notifications    Notification[]
   recordedReceipts Receipt[]       @relation("ReceiptRecordedBy")
+  taughtClasses    ClassTeacher[]
 
   @@unique([tenantId, phone])
   @@unique([tenantId, email])
@@ -191,24 +219,28 @@ model RefreshToken {
 // ─── Student ──────────────────────────────────────────────────────────────────
 
 model Student {
-  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId    String      @map("tenant_id") @db.Uuid
-  name        String
-  admissionNo String      @map("admission_no")
-  dob         DateTime?   @db.Date
-  bloodGroup  BloodGroup? @map("blood_group")
-  caste       Caste?
-  photoUrl    String?     @map("photo_url")
-  classId     String      @map("class_id") @db.Uuid
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String      @map("tenant_id") @db.Uuid
+  name            String
+  admissionNo     String      @map("admission_no")
+  dob             DateTime?   @db.Date
+  bloodGroup      BloodGroup? @map("blood_group")
+  caste           Caste?
+  photoUrl        String?     @map("photo_url")
+  classId         String      @map("class_id") @db.Uuid
+  transportSlabId String?     @map("transport_slab_id") @db.Uuid
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
 
-  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  class    Class           @relation(fields: [classId], references: [id])
-  parents  StudentParent[]
-  fees     StudentFee[]
-  reports  Report[]
-  receipts Receipt[]
+  tenant            Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  class             Class                     @relation(fields: [classId], references: [id])
+  transportSlab     TransportSlab?            @relation(fields: [transportSlabId], references: [id])
+  parents           StudentParent[]
+  fees              StudentFee[]
+  reports           Report[]
+  receipts          Receipt[]
+  discounts         StudentDiscount[]
+  customFieldValues StudentCustomFieldValue[]
 
   @@unique([tenantId, admissionNo])
   @@index([tenantId])
@@ -238,19 +270,32 @@ model Class {
   name         String
   section      String?
   academicYear String   @map("academic_year")
-  teacherId    String?  @map("teacher_id") @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  students      Student[]
-  feeStructures FeeStructure[]
-  reports       Report[]
-  receipts      Receipt[]
+  tenant            Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  students          Student[]
+  teachers          ClassTeacher[]
+  feeStructureLinks FeeStructureClass[]
+  reports           Report[]
+  receipts          Receipt[]
 
   @@unique([tenantId, name, section, academicYear])
   @@index([tenantId])
   @@map("classes")
+}
+
+// Many-to-many: a class can have co-teachers, a teacher can teach several classes.
+model ClassTeacher {
+  classId   String @map("class_id") @db.Uuid
+  teacherId String @map("teacher_id") @db.Uuid
+
+  class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher User  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@id([classId, teacherId])
+  @@index([teacherId])
+  @@map("class_teachers")
 }
 
 // ─── Fees ─────────────────────────────────────────────────────────────────────
@@ -258,32 +303,59 @@ model Class {
 model FeeStructure {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId      String   @map("tenant_id") @db.Uuid
-  classId       String   @map("class_id") @db.Uuid
   name          String
   totalAmount   Decimal  @map("total_amount") @db.Decimal(12, 2)
   dueDate       DateTime @map("due_date") @db.Date
   lateFeePerDay Decimal  @default(0) @map("late_fee_per_day") @db.Decimal(8, 2)
   academicYear  String   @map("academic_year")
+  // System-generated plans (e.g. the per-tenant "Previous Year Dues" arrears plan
+  // created by the year-end rollover) are hidden from the normal fee-plan UI/list.
+  isSystem      Boolean  @default(false) @map("is_system")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  class       Class        @relation(fields: [classId], references: [id])
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  classes     FeeStructureClass[]
   items       FeeItem[]
   studentFees StudentFee[]
 
-  @@unique([tenantId, classId, name, academicYear])
+  @@unique([tenantId, name, academicYear])
   @@index([tenantId])
   @@map("fee_structures")
 }
 
-model FeeItem {
-  id             String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  feeStructureId String  @map("fee_structure_id") @db.Uuid
-  label          String
-  amount         Decimal @db.Decimal(12, 2)
+// Many-to-many: one fee plan can span multiple classes/groups (e.g. an AS/A-Level
+// plan spanning Groups 11 & 12), and a class can be covered by more than one plan.
+model FeeStructureClass {
+  feeStructureId String @map("fee_structure_id") @db.Uuid
+  classId        String @map("class_id") @db.Uuid
 
   feeStructure FeeStructure @relation(fields: [feeStructureId], references: [id], onDelete: Cascade)
+  class        Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@id([feeStructureId, classId])
+  @@index([classId])
+  @@map("fee_structure_classes")
+}
+
+model FeeItem {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  feeStructureId     String           @map("fee_structure_id") @db.Uuid
+  label              String
+  amount             Decimal          @db.Decimal(12, 2)
+  billingFrequency   BillingFrequency @default(one_time) @map("billing_frequency")
+  // Only meaningful when billingFrequency = quarterly — number of months each
+  // quarter spans, e.g. [3,3,2,2]. Quarters are weighted by these counts rather
+  // than split evenly, since real school terms are uneven.
+  quarterMonthCounts Int[]            @default([]) @map("quarter_month_counts")
+  // Marks the plan's transport/van fee component — when a student has a
+  // TransportSlab assigned, its monthlyAmount overrides this item's manually
+  // entered amount for that student.
+  isTransportFee     Boolean          @default(false) @map("is_transport_fee")
+
+  feeStructure         FeeStructure          @relation(fields: [feeStructureId], references: [id], onDelete: Cascade)
+  studentFeeComponents StudentFeeComponent[]
+  studentDiscounts     StudentDiscount[]
 
   @@map("fee_items")
 }
@@ -300,16 +372,45 @@ model StudentFee {
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  student      Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  feeStructure FeeStructure   @relation(fields: [feeStructureId], references: [id])
+  tenant       Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student      Student               @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  feeStructure FeeStructure          @relation(fields: [feeStructureId], references: [id])
   orders       PaymentOrder[]
   receipts     Receipt[]
+  components   StudentFeeComponent[]
 
   @@unique([studentId, feeStructureId])
   @@index([tenantId])
   @@index([studentId])
   @@map("student_fees")
+}
+
+// The per-component, per-period ledger row exploded from a FeeItem's
+// billingFrequency when a StudentFee is assigned (1 row for one_time, 12 for
+// monthly, N for quarterly). This is what gives an always-current running
+// balance per fee component instead of one lump amount per plan.
+model StudentFeeComponent {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentFeeId String    @map("student_fee_id") @db.Uuid
+  feeItemId    String    @map("fee_item_id") @db.Uuid
+  // e.g. "2026-06" for a monthly period, or "Q1" for a quarterly one, "Full Year" for one_time
+  periodLabel  String    @map("period_label")
+  periodStart  DateTime  @map("period_start") @db.Date
+  periodEnd    DateTime  @map("period_end") @db.Date
+  dueDate      DateTime  @map("due_date") @db.Date
+  amountDue    Decimal   @map("amount_due") @db.Decimal(12, 2)
+  amountPaid   Decimal   @default(0) @map("amount_paid") @db.Decimal(12, 2)
+  status       FeeStatus @default(pending)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  studentFee  StudentFee          @relation(fields: [studentFeeId], references: [id], onDelete: Cascade)
+  feeItem     FeeItem             @relation(fields: [feeItemId], references: [id])
+  allocations ReceiptAllocation[]
+
+  @@unique([studentFeeId, feeItemId, periodLabel])
+  @@index([studentFeeId])
+  @@map("student_fee_components")
 }
 
 // ─── Payments ─────────────────────────────────────────────────────────────────
@@ -376,17 +477,36 @@ model Receipt {
   paymentOrderId String?       @unique @map("payment_order_id") @db.Uuid
   createdAt      DateTime      @default(now()) @map("created_at")
 
-  tenant         Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  studentFee     StudentFee @relation(fields: [studentFeeId], references: [id])
-  student        Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  class          Class      @relation(fields: [classId], references: [id])
-  recordedByUser User?      @relation("ReceiptRecordedBy", fields: [recordedBy], references: [id])
+  tenant         Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  studentFee     StudentFee          @relation(fields: [studentFeeId], references: [id])
+  student        Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class          Class               @relation(fields: [classId], references: [id])
+  recordedByUser User?               @relation("ReceiptRecordedBy", fields: [recordedBy], references: [id])
+  allocations    ReceiptAllocation[]
 
   @@unique([tenantId, receiptNumber])
   @@index([tenantId, paidOn])
   @@index([studentId])
   @@index([classId])
   @@map("receipts")
+}
+
+// Lets one receipt cover multiple fee components in a single transaction
+// (e.g. Poorna's "Tuition & Van Fee" combined cash receipts). The parent
+// Receipt.amount remains the total; these rows are how much of it went to
+// which StudentFeeComponent.
+model ReceiptAllocation {
+  id                    String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  receiptId             String  @map("receipt_id") @db.Uuid
+  studentFeeComponentId String  @map("student_fee_component_id") @db.Uuid
+  amount                Decimal @db.Decimal(12, 2)
+
+  receipt             Receipt             @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  studentFeeComponent StudentFeeComponent @relation(fields: [studentFeeComponentId], references: [id])
+
+  @@index([receiptId])
+  @@index([studentFeeComponentId])
+  @@map("receipt_allocations")
 }
 
 // ─── Reports ──────────────────────────────────────────────────────────────────
@@ -470,6 +590,114 @@ model AuditLog {
   @@index([actorId])
   @@index([entityType, entityId])
   @@map("audit_logs")
+}
+
+// ─── Discounts / Concessions ──────────────────────────────────────────────────
+
+// Per-tenant catalog of discount types (Sibling Discount, Concession, Full
+// Waiver, a named sponsor, ...) — names/kinds vary school to school.
+model DiscountType {
+  id        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String       @map("tenant_id") @db.Uuid
+  name      String
+  kind      DiscountKind
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignments StudentDiscount[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("discount_types")
+}
+
+// A discount tagged onto a student, applied automatically when their
+// StudentFeeComponent rows are generated. feeItemId null = applies pro-rata
+// across every component on the plan; set = scoped to one component.
+model StudentDiscount {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  studentId      String   @map("student_id") @db.Uuid
+  discountTypeId String   @map("discount_type_id") @db.Uuid
+  feeItemId      String?  @map("fee_item_id") @db.Uuid
+  percentage     Decimal? @db.Decimal(5, 2)
+  fixedAmount    Decimal? @map("fixed_amount") @db.Decimal(12, 2)
+  reason         String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student      Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  discountType DiscountType @relation(fields: [discountTypeId], references: [id])
+  feeItem      FeeItem?     @relation(fields: [feeItemId], references: [id])
+
+  @@index([tenantId])
+  @@index([studentId])
+  @@map("student_discounts")
+}
+
+// ─── Custom Student Fields ────────────────────────────────────────────────────
+
+// Admin-defined extra student fields (e.g. Karnataka's "SATS No", a
+// religion/mother-tongue "Category") — schema stays universal, schools
+// configure what they specifically need to capture.
+model CustomFieldDefinition {
+  id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String          @map("tenant_id") @db.Uuid
+  label       String
+  fieldType   CustomFieldType @map("field_type")
+  // Choices for fieldType = dropdown, e.g. ["Hindu/Kannada", "Christian/English", ...]
+  options     Json?
+  // Sensitive fields are restricted to admin/super_admin view and excluded from exports.
+  isSensitive Boolean         @default(false) @map("is_sensitive")
+  sortOrder   Int             @default(0) @map("sort_order")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  tenant Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  values StudentCustomFieldValue[]
+
+  @@unique([tenantId, label])
+  @@index([tenantId])
+  @@map("custom_field_definitions")
+}
+
+model StudentCustomFieldValue {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId          String   @map("tenant_id") @db.Uuid
+  studentId         String   @map("student_id") @db.Uuid
+  fieldDefinitionId String   @map("field_definition_id") @db.Uuid
+  value             String
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  tenant          Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student         Student               @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  fieldDefinition CustomFieldDefinition @relation(fields: [fieldDefinitionId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, fieldDefinitionId])
+  @@index([tenantId])
+  @@map("student_custom_field_values")
+}
+
+// ─── Transport ────────────────────────────────────────────────────────────────
+
+// Distance-range → monthly amount, per tenant. Gated by the existing
+// Tenant.features.transportFeeModule flag.
+model TransportSlab {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  minDistanceKm Decimal  @map("min_distance_km") @db.Decimal(6, 2)
+  maxDistanceKm Decimal  @map("max_distance_km") @db.Decimal(6, 2)
+  monthlyAmount Decimal  @map("monthly_amount") @db.Decimal(12, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  students Student[]
+
+  @@index([tenantId])
+  @@map("transport_slabs")
 }
 
 // ─── Bulk Import ──────────────────────────────────────────────────────────────

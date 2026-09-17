@@ -20,12 +20,21 @@ function makeMockTx() {
       create: jest.fn<Promise<{ id: string }>, [CreateArgs]>(),
       update: jest.fn(),
     },
+    classTeacher: {
+      upsert: jest.fn(),
+    },
     feeStructure: {
       findFirst: jest.fn(),
+      findUnique: jest.fn(),
       create: jest.fn<Promise<{ id: string }>, [CreateArgs]>(),
       update: jest.fn(),
     },
-    feeItem: { deleteMany: jest.fn() },
+    feeItem: {
+      findFirst: jest.fn(),
+      findMany: jest.fn<Promise<Array<{ amount: unknown }>>, [unknown]>().mockResolvedValue([]),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
     student: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
     studentParent: { findUnique: jest.fn(), create: jest.fn() },
   };
@@ -236,7 +245,8 @@ describe('ImportsService.commit', () => {
       .mockResolvedValueOnce({ id: 'parent-1' }); // parent created
     mockTx.class.findFirst.mockResolvedValue(null);
     mockTx.class.create.mockResolvedValue({ id: 'class-1' });
-    mockTx.feeStructure.findFirst.mockResolvedValue(null);
+    mockTx.classTeacher.upsert.mockResolvedValue({});
+    mockTx.feeStructure.findUnique.mockResolvedValue(null);
     mockTx.feeStructure.create.mockResolvedValue({ id: 'fs-1' });
     mockTx.student.findUnique.mockResolvedValue(null);
     mockTx.student.create.mockResolvedValue({ id: 'student-1' });
@@ -261,14 +271,20 @@ describe('ImportsService.commit', () => {
     );
     expect(mockQueue.add).not.toHaveBeenCalled();
 
-    // Class gets the teacher's resolved id
-    const classCreateArgs = mockTx.class.create.mock.calls[0][0];
-    expect(classCreateArgs.data.teacherId).toBe('teacher-1');
+    // Class gets the teacher's resolved id via the ClassTeacher join — added
+    // as a co-teacher (upsert), never replacing an existing assignment
+    expect(mockTx.classTeacher.upsert).toHaveBeenCalledWith({
+      where: { classId_teacherId: { classId: 'class-1', teacherId: 'teacher-1' } },
+      create: { classId: 'class-1', teacherId: 'teacher-1' },
+      update: {},
+    });
 
-    // Fee structure groups both components into one structure with a summed total
+    // Fee structure groups both components into one structure with a summed total,
+    // linked to its class and named uniquely per-class (plan names are now
+    // unique tenant-wide since a plan can span multiple classes)
     const feeStructureCreateArgs = mockTx.feeStructure.create.mock.calls[0][0];
-    expect(feeStructureCreateArgs.data.classId).toBe('class-1');
-    expect(feeStructureCreateArgs.data.name).toBe('Term 1');
+    expect(feeStructureCreateArgs.data.classes).toEqual({ create: [{ classId: 'class-1' }] });
+    expect(feeStructureCreateArgs.data.name).toBe('Term 1 — Grade 5 A');
     const items = feeStructureCreateArgs.data.items as {
       create: Array<{ label: string }>;
     };
@@ -301,7 +317,6 @@ describe('ImportsService.commit', () => {
 
     mockTx.class.findFirst.mockResolvedValue({
       id: 'class-1',
-      teacherId: null,
     });
     mockTx.class.update.mockResolvedValue({});
     mockTx.student.findUnique.mockResolvedValue({ id: 'student-1', dob: null });
@@ -323,6 +338,84 @@ describe('ImportsService.commit', () => {
     expect(result.summary!.students).toEqual({ created: 0, updated: 1 });
     expect(mockTx.user.create).not.toHaveBeenCalled();
     expect(mockTx.studentParent.create).not.toHaveBeenCalled();
+  });
+
+  it('adds a co-teacher to an existing class without removing whoever is already assigned', async () => {
+    const buffer = await buildFixtureWorkbook({
+      Classes: [
+        {
+          'Class Name': 'Grade 5',
+          Section: 'A',
+          'Academic Year': '2025-26',
+          'Class Teacher Email': 'newteacher@school.edu',
+        },
+      ],
+      Users: [
+        {
+          'Full Name': 'New Teacher',
+          Email: 'newteacher@school.edu',
+          Role: 'teacher',
+        },
+      ],
+    });
+
+    mockTx.class.findFirst.mockResolvedValue({ id: 'class-1' });
+    mockTx.user.findUnique.mockResolvedValue(null);
+    mockTx.user.create.mockResolvedValue({ id: 'teacher-2' });
+    mockTx.classTeacher.upsert.mockResolvedValue({});
+
+    await service.commit(TENANT, ACTOR, 'onboarding.xlsx', buffer);
+
+    // Additive upsert, not deleteMany+create — an existing co-teacher (not
+    // touched by this mock) would survive a real transaction untouched.
+    expect(mockTx.classTeacher.upsert).toHaveBeenCalledWith({
+      where: { classId_teacherId: { classId: 'class-1', teacherId: 'teacher-2' } },
+      create: { classId: 'class-1', teacherId: 'teacher-2' },
+      update: {},
+    });
+  });
+
+  it('merges fee items into an existing fee structure instead of deleting components missing from this file', async () => {
+    const buffer = await buildFixtureWorkbook({
+      Classes: [
+        { 'Class Name': 'Grade 5', Section: 'A', 'Academic Year': '2025-26' },
+      ],
+      'Fee Structures': [
+        {
+          'Class Name': 'Grade 5',
+          Section: 'A',
+          Term: 'Term 1',
+          'Fee Component': 'Transport',
+          Amount: 3500,
+          'Due Date': '2025-06-01',
+        },
+      ],
+    });
+
+    mockTx.class.findFirst.mockResolvedValue({ id: 'class-1' });
+    mockTx.class.update.mockResolvedValue({});
+    mockTx.feeStructure.findUnique.mockResolvedValue({ id: 'fs-1' });
+    // "Transport" already exists on this plan (e.g. from a prior import) — this
+    // file only re-states its new amount, and must not wipe "Tuition" alongside it.
+    mockTx.feeItem.findFirst.mockResolvedValue({ id: 'item-transport', amount: 3000 });
+    mockTx.feeItem.findMany.mockResolvedValue([
+      { amount: 3500 }, // Transport, just updated
+      { amount: 25000 }, // Tuition, pre-existing, untouched by this import
+    ]);
+
+    await service.commit(TENANT, ACTOR, 'onboarding.xlsx', buffer);
+
+    expect(mockTx.feeItem.create).not.toHaveBeenCalled();
+    const itemUpdateArgs = mockTx.feeItem.update.mock.calls[0][0] as {
+      where: { id: string };
+      data: { amount: { toString(): string } };
+    };
+    expect(itemUpdateArgs.where).toEqual({ id: 'item-transport' });
+    expect(itemUpdateArgs.data.amount.toString()).toBe('3500');
+
+    const updateArgs = mockTx.feeStructure.update.mock.calls[0][0] as UpdateArgs;
+    // Total reflects both the updated Transport item and the untouched Tuition item.
+    expect(String(updateArgs.data.totalAmount)).toBe('28500');
   });
 
   it('throws UnprocessableEntityException and never opens a transaction when validation fails', async () => {

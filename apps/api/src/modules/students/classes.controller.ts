@@ -14,6 +14,7 @@ import { Role } from '@prisma/client';
 import { ClassesService } from './classes.service';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
+import { AddClassTeacherDto } from './dto/add-class-teacher.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { TenantId } from '../../common/decorators/tenant.decorator';
@@ -40,13 +41,13 @@ export class ClassesController {
     return this.classesService.findOne(tenantId, id, user);
   }
 
-  @Roles(Role.admin, Role.super_admin)
+  @Roles(Role.admin, Role.teacher, Role.super_admin)
   @Post()
   create(@TenantId() tenantId: string, @Body() dto: CreateClassDto) {
     return this.classesService.create(tenantId, dto);
   }
 
-  @Roles(Role.admin, Role.super_admin)
+  @Roles(Role.admin, Role.teacher, Role.super_admin)
   @Patch(':id')
   update(
     @TenantId() tenantId: string,
@@ -61,5 +62,28 @@ export class ClassesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@TenantId() tenantId: string, @Param('id', ParseUUIDPipe) id: string) {
     await this.classesService.remove(tenantId, id);
+  }
+
+  // ─── Co-teacher assignment (a class may have more than one teacher) ──────────
+
+  @Roles(Role.admin, Role.super_admin)
+  @Post(':id/teachers')
+  addTeacher(
+    @TenantId() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AddClassTeacherDto,
+  ) {
+    return this.classesService.addTeacher(tenantId, id, dto);
+  }
+
+  @Roles(Role.admin, Role.super_admin)
+  @Delete(':id/teachers/:teacherId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeTeacher(
+    @TenantId() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('teacherId', ParseUUIDPipe) teacherId: string,
+  ) {
+    await this.classesService.removeTeacher(tenantId, id, teacherId);
   }
 }

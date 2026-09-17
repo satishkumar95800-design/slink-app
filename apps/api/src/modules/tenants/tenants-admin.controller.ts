@@ -14,9 +14,12 @@ import {
 import { Role } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantsService } from './tenants.service';
+import { UsersService } from '../users/users.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { TenantQueryDto } from './dto/tenant-query.dto';
+import { PurgeTenantDto } from './dto/purge-tenant.dto';
+import { CreateTenantUserDto } from './dto/create-tenant-user.dto';
 
 /**
  * Platform-level tenant management for super_admin.
@@ -25,7 +28,10 @@ import { TenantQueryDto } from './dto/tenant-query.dto';
 @Controller('tenants')
 @Roles(Role.super_admin)
 export class TenantsAdminController {
-  constructor(private readonly tenantsService: TenantsService) {}
+  constructor(
+    private readonly tenantsService: TenantsService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @Post()
   create(@Body() dto: CreateTenantDto) {
@@ -54,5 +60,22 @@ export class TenantsAdminController {
   @HttpCode(HttpStatus.OK)
   deactivate(@Param('id', ParseUUIDPipe) id: string) {
     return this.tenantsService.deactivate(id);
+  }
+
+  /** Irreversible — permanently deletes the tenant and every row scoped to it. */
+  @Delete(':id/purge')
+  @HttpCode(HttpStatus.OK)
+  purge(@Param('id', ParseUUIDPipe) id: string, @Body() dto: PurgeTenantDto) {
+    return this.tenantsService.purge(id, dto.confirmSlug);
+  }
+
+  /** Bootstraps a staff or developer-support account directly on a tenant — the only
+   * way to get a brand-new tenant its first admin without going through bulk import. */
+  @Post(':id/users')
+  createUser(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateTenantUserDto,
+  ) {
+    return this.usersService.create(id, dto);
   }
 }

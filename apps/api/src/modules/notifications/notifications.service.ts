@@ -167,10 +167,10 @@ export class NotificationsService {
 
     const cls = await this.prisma.class.findUnique({
       where: { id: dto.targetId, tenantId },
-      select: { teacherId: true },
+      select: { teachers: { select: { teacherId: true } } },
     });
     if (!cls) throw new NotFoundException('Class not found');
-    if (cls.teacherId !== actor.id) {
+    if (!cls.teachers.some((t) => t.teacherId === actor.id)) {
       throw new ForbiddenException(
         'Teachers can only broadcast to their own class',
       );

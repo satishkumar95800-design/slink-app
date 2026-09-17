@@ -1,4 +1,5 @@
 import {
+  IsUUID,
   IsNumber,
   IsDateString,
   IsOptional,
@@ -7,6 +8,10 @@ import {
 } from 'class-validator';
 
 export class AssignFeeStructureDto {
+  /** Which of this plan's linked classes to assign — a plan may span more than one */
+  @IsUUID()
+  classId: string;
+
   /** Override the amount due for this assignment (e.g. custom scholarship amount) */
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0.01)

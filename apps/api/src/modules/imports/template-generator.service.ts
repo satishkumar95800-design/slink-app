@@ -6,6 +6,7 @@ import {
   CASTE_TEMPLATE_OPTIONS,
   COMMON_FEE_COMPONENTS,
   DISPLAY_HEADERS,
+  GUARDIAN_RELATION_TEMPLATE_OPTIONS,
   TAB_HEADERS,
 } from './tab-schema';
 
@@ -107,12 +108,28 @@ export class TemplateGeneratorService {
       'A',
       '2015-06-12',
       'Sunita Kumar',
+      'Mother',
       '+919876543211',
       'sunita.kumar@example.com',
+      'Engineer',
+      'Ravi Kumar',
+      'Father',
+      '+919876543212',
+      'ravi.kumar@example.com',
+      'Business',
       'A+',
       'General',
-      'Engineer',
     ]);
+
+    const guardian1RelationColumn = TAB_HEADERS.Students.indexOf('Guardian 1 Relation') + 1;
+    this.applyDropdown(sheet, guardian1RelationColumn, GUARDIAN_RELATION_TEMPLATE_OPTIONS, {
+      blocking: true,
+    });
+
+    const guardian2RelationColumn = TAB_HEADERS.Students.indexOf('Guardian 2 Relation') + 1;
+    this.applyDropdown(sheet, guardian2RelationColumn, GUARDIAN_RELATION_TEMPLATE_OPTIONS, {
+      blocking: true,
+    });
 
     const bloodGroupColumn = TAB_HEADERS.Students.indexOf('Blood Group') + 1;
     this.applyDropdown(sheet, bloodGroupColumn, BLOOD_GROUP_TEMPLATE_OPTIONS, {

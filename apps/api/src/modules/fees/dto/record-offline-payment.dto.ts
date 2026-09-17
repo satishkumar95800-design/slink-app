@@ -1,13 +1,16 @@
 import {
-  IsNumber,
   IsIn,
   IsString,
   IsDateString,
   IsOptional,
-  Min,
   MaxLength,
+  IsArray,
+  ArrayMinSize,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { PaymentMethod } from '@prisma/client';
+import { FeeAllocationDto } from './fee-allocation.dto';
 
 /** Every PaymentMethod except "gateway" — that value is reserved for online-gateway receipts. */
 export const OFFLINE_PAYMENT_METHODS = [
@@ -18,10 +21,12 @@ export const OFFLINE_PAYMENT_METHODS = [
 ] as const;
 
 export class RecordOfflinePaymentDto {
-  /** Amount received, in major currency units (e.g. INR) */
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0.01)
-  amount: number;
+  /** Which fee component(s) this payment covers, and how much of each — e.g. one cash receipt covering "Tuition & Van Fee" */
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => FeeAllocationDto)
+  allocations: FeeAllocationDto[];
 
   @IsIn(OFFLINE_PAYMENT_METHODS)
   method: (typeof OFFLINE_PAYMENT_METHODS)[number];

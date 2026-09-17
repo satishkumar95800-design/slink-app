@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/models/active_user.dart';
+import '../../shared/widgets/authenticated_scaffold.dart';
 import '../auth/session_controller.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -16,7 +17,7 @@ class ProfilePage extends ConsumerWidget {
       );
     }
 
-    return Scaffold(
+    return AuthenticatedScaffold(
       appBar: AppBar(title: const Text('Profile')),
       body: SafeArea(
         child: Padding(

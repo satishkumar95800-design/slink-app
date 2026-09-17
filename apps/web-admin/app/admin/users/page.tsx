@@ -13,6 +13,7 @@ import { Modal } from '../../../components/ui/modal';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
+import { getSession } from '../../../lib/auth';
 import type { Role } from '@slink/types';
 
 interface User {
@@ -40,7 +41,7 @@ const editSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Enter a valid email').optional().or(z.literal('')),
   phone: z.string().optional(),
-  role: z.enum(['teacher', 'admin', 'accounts']),
+  role: z.enum(['teacher', 'admin', 'accounts']).optional(),
 });
 
 type EditFormData = z.infer<typeof editSchema>;
@@ -50,6 +51,12 @@ const roleOptions = [
   { value: 'admin', label: 'Admin' },
   { value: 'accounts', label: 'Accounts' },
 ];
+
+// The role field can only ever change between these three — parent (and any
+// platform role like developer/super_admin) isn't reassignable from this form.
+function isStaffRole(role: string): role is 'teacher' | 'admin' | 'accounts' {
+  return role === 'teacher' || role === 'admin' || role === 'accounts';
+}
 
 const roleVariant = (role: string): 'blue' | 'green' | 'orange' | 'gray' => {
   const map: Record<string, 'blue' | 'green' | 'orange' | 'gray'> = {
@@ -62,6 +69,9 @@ const roleVariant = (role: string): 'blue' | 'green' | 'orange' | 'gray' => {
 
 export default function UsersPage() {
   const { toast } = useToast();
+  // Creating/editing/deleting users is admin-only on the backend (accounts can only
+  // view) — hide the actions here instead of letting them fail with "Forbidden resource".
+  const isAdmin = getSession()?.role === 'admin';
   const [users, setUsers] = useState<User[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -120,7 +130,7 @@ export default function UsersPage() {
       name: user.name,
       email: user.email ?? '',
       phone: user.phone ?? '',
-      role: user.role === 'teacher' || user.role === 'admin' || user.role === 'accounts' ? user.role : 'admin',
+      role: isStaffRole(user.role) ? user.role : undefined,
     });
   }
 
@@ -131,7 +141,9 @@ export default function UsersPage() {
         name: data.name,
         email: data.email || undefined,
         phone: data.phone || undefined,
-        role: data.role,
+        // Omitted entirely for parent/other non-staff roles — never send a role
+        // change the form never actually offered a choice for.
+        ...(data.role ? { role: data.role } : {}),
       });
       toast('User updated successfully', 'success');
       setEditingUser(null);
@@ -159,7 +171,7 @@ export default function UsersPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-500">{total} user{total !== 1 ? 's' : ''}</p>
-        <Button onClick={() => setShowModal(true)}>+ Add User</Button>
+        {isAdmin && <Button onClick={() => setShowModal(true)}>+ Add User</Button>}
       </div>
 
       {loading ? (
@@ -172,7 +184,7 @@ export default function UsersPage() {
         <EmptyState
           title="No users yet"
           description="Add teachers, admins, and accounts staff."
-          action={<Button onClick={() => setShowModal(true)}>+ Add User</Button>}
+          action={isAdmin ? <Button onClick={() => setShowModal(true)}>+ Add User</Button> : undefined}
         />
       ) : (
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -203,21 +215,23 @@ export default function UsersPage() {
                     {new Date(u.createdAt).toLocaleDateString('en-IN')}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-3">
-                      <button
-                        onClick={() => openEdit(u)}
-                        className="text-xs text-blue-600 hover:underline"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(u.id)}
-                        disabled={deletingId === u.id}
-                        className="text-xs text-red-600 hover:underline disabled:opacity-50"
-                      >
-                        {deletingId === u.id ? 'Deleting…' : 'Delete'}
-                      </button>
-                    </div>
+                    {isAdmin && (
+                      <div className="flex items-center justify-end gap-3">
+                        <button
+                          onClick={() => openEdit(u)}
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(u.id)}
+                          disabled={deletingId === u.id}
+                          className="text-xs text-red-600 hover:underline disabled:opacity-50"
+                        >
+                          {deletingId === u.id ? 'Deleting…' : 'Delete'}
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -268,13 +282,23 @@ export default function UsersPage() {
           <Input label="Full Name" error={editErrors.name?.message} {...registerEdit('name')} />
           <Input label="Email" type="email" error={editErrors.email?.message} {...registerEdit('email')} />
           <Input label="Phone" placeholder="+91..." error={editErrors.phone?.message} {...registerEdit('phone')} />
-          <Select
-            label="Role"
-            options={roleOptions}
-            placeholder="Select a role"
-            error={editErrors.role?.message}
-            {...registerEdit('role')}
-          />
+          {editingUser && isStaffRole(editingUser.role) ? (
+            <Select
+              label="Role"
+              options={roleOptions}
+              placeholder="Select a role"
+              error={editErrors.role?.message}
+              {...registerEdit('role')}
+            />
+          ) : (
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-medium text-gray-700">Role</span>
+              <div className="flex items-center gap-2">
+                <Badge variant={roleVariant(editingUser?.role ?? '')}>{editingUser?.role}</Badge>
+                <span className="text-xs text-gray-500">Not editable from this form</span>
+              </div>
+            </div>
+          )}
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setEditingUser(null)}>
               Cancel

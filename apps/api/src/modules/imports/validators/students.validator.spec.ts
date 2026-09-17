@@ -170,4 +170,95 @@ describe('validateStudentsTab', () => {
     expect(result.validRows[0].caste).toBeUndefined();
     expect(result.validRows[0].parentProfession).toBeUndefined();
   });
+
+  it('defaults Guardian 1 Relation to "guardian" when left blank', () => {
+    const result = validateStudentsTab(makeTab([baseRow()]), CLASSES);
+    expect(result.errors).toHaveLength(0);
+    expect(result.validRows[0].parentRelation).toBe('guardian');
+  });
+
+  it('accepts a valid Guardian 1 Relation and lowercases it to match the Prisma enum', () => {
+    const result = validateStudentsTab(
+      makeTab([baseRow({ 'Guardian 1 Relation': 'Mother' })]),
+      CLASSES,
+    );
+    expect(result.errors).toHaveLength(0);
+    expect(result.validRows[0].parentRelation).toBe('mother');
+  });
+
+  it('rejects an invalid Guardian 1 Relation', () => {
+    const result = validateStudentsTab(
+      makeTab([baseRow({ 'Guardian 1 Relation': 'Uncle' })]),
+      CLASSES,
+    );
+    expect(result.errors.some((e) => e.column === 'Guardian 1 Relation')).toBe(true);
+  });
+
+  it('leaves guardian 2 fields undefined when Guardian 2 Name is blank', () => {
+    const result = validateStudentsTab(makeTab([baseRow()]), CLASSES);
+    expect(result.errors).toHaveLength(0);
+    expect(result.validRows[0].guardian2Name).toBeUndefined();
+    expect(result.validRows[0].guardian2Phone).toBeUndefined();
+    expect(result.validRows[0].guardian2Relation).toBeUndefined();
+  });
+
+  it('accepts a full second guardian and defaults their relation to "guardian"', () => {
+    const result = validateStudentsTab(
+      makeTab([
+        baseRow({
+          'Guardian 2 Name': 'Dave',
+          'Guardian 2 Mobile Number': '+919876543299',
+          'Guardian 2 Email': 'dave@example.com',
+        }),
+      ]),
+      CLASSES,
+    );
+    expect(result.errors).toHaveLength(0);
+    expect(result.validRows[0].guardian2Name).toBe('Dave');
+    expect(result.validRows[0].guardian2Phone).toBe('+919876543299');
+    expect(result.validRows[0].guardian2Relation).toBe('guardian');
+  });
+
+  it('requires Guardian 2 Mobile Number when Guardian 2 Name is filled in', () => {
+    const result = validateStudentsTab(
+      makeTab([baseRow({ 'Guardian 2 Name': 'Dave' })]),
+      CLASSES,
+    );
+    expect(
+      result.errors.some((e) => e.column === 'Guardian 2 Mobile Number'),
+    ).toBe(true);
+  });
+
+  it('rejects a Guardian 2 Mobile Number matching Guardian 1', () => {
+    const result = validateStudentsTab(
+      makeTab([
+        baseRow({
+          'Guardian 2 Name': 'Dave',
+          'Guardian 2 Mobile Number': '+919876543210',
+        }),
+      ]),
+      CLASSES,
+    );
+    expect(
+      result.errors.some(
+        (e) =>
+          e.column === 'Guardian 2 Mobile Number' &&
+          e.reason.includes('must be different'),
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects an invalid Guardian 2 Relation', () => {
+    const result = validateStudentsTab(
+      makeTab([
+        baseRow({
+          'Guardian 2 Name': 'Dave',
+          'Guardian 2 Mobile Number': '+919876543299',
+          'Guardian 2 Relation': 'Uncle',
+        }),
+      ]),
+      CLASSES,
+    );
+    expect(result.errors.some((e) => e.column === 'Guardian 2 Relation')).toBe(true);
+  });
 });

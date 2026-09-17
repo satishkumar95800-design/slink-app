@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../shared/models/report.dart';
+import '../../shared/widgets/authenticated_scaffold.dart';
 import 'reports_providers.dart';
 
 class ReportsListPage extends ConsumerWidget {
@@ -24,7 +25,7 @@ class ReportsListPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final reportsAsync = ref.watch(reportsProvider);
 
-    return Scaffold(
+    return AuthenticatedScaffold(
       appBar: AppBar(title: const Text('Reports')),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(reportsProvider),

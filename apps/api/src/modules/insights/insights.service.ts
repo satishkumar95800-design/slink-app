@@ -71,7 +71,7 @@ export class InsightsService {
 
     if (user.role === Role.teacher) {
       const teacherClasses = await this.prisma.class.findMany({
-        where: { tenantId, teacherId: user.id },
+        where: { tenantId, teachers: { some: { teacherId: user.id } } },
         select: { id: true },
       });
       const allowed = new Set(teacherClasses.map((c) => c.id));

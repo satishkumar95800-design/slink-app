@@ -21,8 +21,11 @@ export class CreateFeeStructureDto {
   @MaxLength(150)
   name: string;
 
-  @IsUUID()
-  classId: string;
+  /** One plan can span multiple classes/groups (e.g. an AS/A-Level plan spanning Groups 11 & 12) */
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsUUID('4', { each: true })
+  classIds: string[];
 
   /** e.g. "2025-26" */
   @IsString()

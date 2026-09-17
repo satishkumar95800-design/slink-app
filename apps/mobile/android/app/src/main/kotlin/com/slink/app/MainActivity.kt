@@ -1,4 +1,4 @@
-package com.schoolconnect.school_connect
+package com.slink.app
 
 import io.flutter.embedding.android.FlutterActivity
 

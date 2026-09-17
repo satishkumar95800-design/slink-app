@@ -8,7 +8,6 @@ import {
 import { Prisma, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateSelfDto } from './dto/update-self.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -37,7 +36,10 @@ export class UsersService {
 
   // ─── Admin: create staff account ─────────────────────────────────────────────
 
-  async create(tenantId: string, dto: CreateUserDto) {
+  async create(
+    tenantId: string,
+    dto: { name: string; email: string; password: string; role: Role; phone?: string },
+  ) {
     await this.assertEmailUnique(tenantId, dto.email);
 
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);

@@ -12,15 +12,24 @@ import { UpdateStudentDto } from './dto/update-student.dto';
 import { LinkParentDto } from './dto/link-parent.dto';
 import { StudentQueryDto } from './dto/student-query.dto';
 import { BulkCreateStudentsDto } from './dto/bulk-create-students.dto';
+import { SetCustomFieldValuesDto } from '../custom-fields/dto/set-custom-field-values.dto';
 
 // Reusable include shape for student queries
 const studentInclude = {
   class: { select: { id: true, name: true, academicYear: true } },
+  transportSlab: { select: { id: true, minDistanceKm: true, maxDistanceKm: true, monthlyAmount: true } },
   parents: {
     select: {
       relation: true,
       isPrimary: true,
       parent: { select: { id: true, name: true, phone: true, profession: true } },
+    },
+  },
+  customFieldValues: {
+    select: {
+      id: true,
+      value: true,
+      fieldDefinition: { select: { id: true, label: true, fieldType: true, isSensitive: true } },
     },
   },
 } satisfies Prisma.StudentInclude;
@@ -63,7 +72,14 @@ export class StudentsService {
         student: { include: studentInclude },
       },
     });
-    return links.map((l) => l.student);
+    const parentUser: ActiveUser = {
+      id: parentId,
+      tenantId,
+      role: Role.parent,
+      name: '',
+      isVerified: true,
+    };
+    return links.map((l) => this.sanitiseForRole(l.student, parentUser));
   }
 
   // ─── Get one ─────────────────────────────────────────────────────────────────
@@ -148,6 +164,7 @@ export class StudentsService {
     await this.requireStudent(tenantId, studentId);
 
     if (dto.classId) await this.requireClass(tenantId, dto.classId);
+    if (dto.transportSlabId) await this.requireTransportSlab(tenantId, dto.transportSlabId);
 
     return this.prisma.student.update({
       where: { id: studentId },
@@ -158,6 +175,7 @@ export class StudentsService {
         bloodGroup: dto.bloodGroup,
         caste: dto.caste,
         photoUrl: dto.photoUrl,
+        transportSlabId: dto.transportSlabId,
       },
       include: studentInclude,
     });
@@ -187,6 +205,38 @@ export class StudentsService {
 
     await this.prisma.studentParent.delete({
       where: { studentId_parentId: { studentId, parentId } },
+    });
+  }
+
+  // ─── Custom fields ───────────────────────────────────────────────────────────
+
+  async setCustomFieldValues(tenantId: string, studentId: string, dto: SetCustomFieldValuesDto) {
+    await this.requireStudent(tenantId, studentId);
+
+    const definitionIds = dto.values.map((v) => v.fieldDefinitionId);
+    const definitions = await this.prisma.customFieldDefinition.findMany({
+      where: { id: { in: definitionIds }, tenantId },
+      select: { id: true },
+    });
+    if (definitions.length !== new Set(definitionIds).size) {
+      throw new NotFoundException('One or more custom field definitions not found');
+    }
+
+    await this.prisma.$transaction(
+      dto.values.map((v) =>
+        this.prisma.studentCustomFieldValue.upsert({
+          where: {
+            studentId_fieldDefinitionId: { studentId, fieldDefinitionId: v.fieldDefinitionId },
+          },
+          create: { tenantId, studentId, fieldDefinitionId: v.fieldDefinitionId, value: v.value },
+          update: { value: v.value },
+        }),
+      ),
+    );
+
+    return this.prisma.studentCustomFieldValue.findMany({
+      where: { tenantId, studentId },
+      include: { fieldDefinition: { select: { id: true, label: true, fieldType: true, isSensitive: true } } },
     });
   }
 
@@ -254,7 +304,7 @@ export class StudentsService {
     if (user.role === Role.teacher) {
       // Teacher sees only students in their assigned class(es)
       const teacherClasses = await this.prisma.class.findMany({
-        where: { tenantId, teacherId: user.id },
+        where: { tenantId, teachers: { some: { teacherId: user.id } } },
         select: { id: true },
       });
       const classIds = teacherClasses.map((c) => c.id);
@@ -290,9 +340,9 @@ export class StudentsService {
     if (user.role === Role.teacher) {
       const cls = await this.prisma.class.findUnique({
         where: { id: student.classId },
-        select: { teacherId: true },
+        select: { teachers: { select: { teacherId: true } } },
       });
-      if (cls?.teacherId !== user.id) {
+      if (!cls?.teachers.some((t) => t.teacherId === user.id)) {
         throw new ForbiddenException('This student is not in your class');
       }
       return;
@@ -303,18 +353,34 @@ export class StudentsService {
    * Strip sensitive parent contact info when returning data to parents, and
    * strip caste (sensitive demographic data) when returning data to teachers.
    * Blood group stays visible to teachers — useful in a medical emergency.
+   * Custom fields flagged "sensitive" (e.g. religion/caste-adjacent fields a
+   * school defines itself) are restricted to admin/accounts view.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private sanitiseForRole(student: any, user: ActiveUser) {
+    const isFinanceOrAdmin =
+      user.role === Role.admin || user.role === Role.accounts || user.role === Role.super_admin;
+
+    let result = student;
+    if (!isFinanceOrAdmin) {
+      result = {
+        ...result,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        customFieldValues: (result.customFieldValues as any[]).filter(
+          (v) => !v.fieldDefinition.isSensitive,
+        ),
+      };
+    }
+
     if (user.role === Role.teacher) {
-      const { caste: _caste, ...rest } = student;
+      const { caste: _caste, ...rest } = result;
       return rest;
     }
-    if (user.role !== Role.parent) return student;
+    if (user.role !== Role.parent) return result;
     return {
-      ...student,
+      ...result,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      parents: (student.parents as any[]).filter((p) => p.parent.id === user.id),
+      parents: (result.parents as any[]).filter((p) => p.parent.id === user.id),
     };
   }
 
@@ -328,5 +394,11 @@ export class StudentsService {
     const c = await this.prisma.class.findUnique({ where: { id: classId, tenantId } });
     if (!c) throw new NotFoundException('Class not found');
     return c;
+  }
+
+  private async requireTransportSlab(tenantId: string, transportSlabId: string) {
+    const s = await this.prisma.transportSlab.findUnique({ where: { id: transportSlabId, tenantId } });
+    if (!s) throw new NotFoundException('Transport slab not found');
+    return s;
   }
 }

@@ -54,7 +54,7 @@ class _TenantEntryPageState extends ConsumerState<TenantEntryPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('School Connect', style: Theme.of(context).textTheme.headlineMedium),
+              Text('slink', style: Theme.of(context).textTheme.headlineMedium),
               const SizedBox(height: 8),
               Text(
                 'Enter the school code your school gave you to get started.',

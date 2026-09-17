@@ -25,6 +25,9 @@ import { ImportsModule } from './modules/imports/imports.module';
 import { ReceiptsModule } from './modules/receipts/receipts.module';
 import { InsightsModule } from './modules/insights/insights.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { DiscountsModule } from './modules/discounts/discounts.module';
+import { CustomFieldsModule } from './modules/custom-fields/custom-fields.module';
+import { TransportModule } from './modules/transport/transport.module';
 
 @Module({
   imports: [
@@ -54,6 +57,9 @@ import { AuditModule } from './modules/audit/audit.module';
     ReceiptsModule,
     InsightsModule,
     AuditModule,
+    DiscountsModule,
+    CustomFieldsModule,
+    TransportModule,
   ],
 })
 export class AppModule implements NestModule {

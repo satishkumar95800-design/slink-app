@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../shared/models/student_fee.dart';
+import '../../shared/widgets/authenticated_scaffold.dart';
 import 'fees_providers.dart';
 
 class FeesListPage extends ConsumerWidget {
@@ -11,7 +12,7 @@ class FeesListPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final feesAsync = ref.watch(studentFeesProvider);
 
-    return Scaffold(
+    return AuthenticatedScaffold(
       appBar: AppBar(title: const Text('Fees')),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(studentFeesProvider),

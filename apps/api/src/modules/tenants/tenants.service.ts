@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -17,8 +18,10 @@ const tenantSelect = {
   slug: true,
   name: true,
   logoUrl: true,
+  backgroundImageUrl: true,
   primaryColor: true,
   accentColor: true,
+  classLabel: true,
   timezone: true,
   isActive: true,
   branding: true,
@@ -120,6 +123,23 @@ export class TenantsService {
     });
   }
 
+  /**
+   * Permanently deletes a tenant and, via FK cascade, every row scoped to it
+   * (users, students, fees, payments, reports, etc.). Irreversible — only allowed
+   * on an already-deactivated tenant so it can never fire against a live school.
+   */
+  async purge(id: string, confirmSlug: string) {
+    const tenant = await this.requireTenant(id);
+    if (tenant.isActive) {
+      throw new BadRequestException('Deactivate the tenant before permanently deleting it');
+    }
+    if (confirmSlug !== tenant.slug) {
+      throw new BadRequestException('Confirmation slug does not match this tenant');
+    }
+    await this.prisma.tenant.delete({ where: { id } });
+    return { id, slug: tenant.slug, deleted: true };
+  }
+
   // ── admin (own tenant) operations ─────────────────────────────────────────────
 
   async getSelf(tenantId: string) {
@@ -131,10 +151,15 @@ export class TenantsService {
 
   async updateSelf(tenantId: string, dto: UpdateTenantSelfDto) {
     let logoUrl: string | undefined;
+    let backgroundImageUrl: string | undefined;
 
     if (dto.logoKey) {
       // Convert the uploaded S3 key to its public URL
       logoUrl = await this.files.getSignedUrl(dto.logoKey, tenantId);
+    }
+
+    if (dto.backgroundImageKey) {
+      backgroundImageUrl = await this.files.getSignedUrl(dto.backgroundImageKey, tenantId);
     }
 
     const brandingUpdate = dto.branding
@@ -148,7 +173,9 @@ export class TenantsService {
         ...(dto.timezone !== undefined && { timezone: dto.timezone }),
         ...(dto.primaryColor !== undefined && { primaryColor: dto.primaryColor }),
         ...(dto.accentColor !== undefined && { accentColor: dto.accentColor }),
+        ...(dto.classLabel !== undefined && { classLabel: dto.classLabel }),
         ...(logoUrl !== undefined && { logoUrl }),
+        ...(backgroundImageUrl !== undefined && { backgroundImageUrl }),
         ...(brandingUpdate !== undefined && { branding: brandingUpdate }),
       },
       select: tenantSelect,

@@ -428,7 +428,7 @@ export class ImportsService {
   ) {
     const classKeyToId = new Map<
       string,
-      { id: string; academicYear: string }
+      { id: string; academicYear: string; name: string; section: string }
     >();
     const summary: EntitySummary = { created: 0, updated: 0 };
 
@@ -447,10 +447,6 @@ export class ImportsService {
 
       let classId: string;
       if (existing) {
-        await tx.class.update({
-          where: { id: existing.id },
-          data: { teacherId: teacherId ?? existing.teacherId },
-        });
         classId = existing.id;
         summary.updated++;
       } else {
@@ -460,16 +456,29 @@ export class ImportsService {
             name: row.name,
             section: row.section,
             academicYear: row.academicYear,
-            teacherId: teacherId ?? null,
           },
         });
         classId = created.id;
         summary.created++;
       }
 
+      // A missing Class Teacher Email leaves the class's existing teacher
+      // assignment(s) untouched; a provided one is added as a co-teacher rather
+      // than replacing whoever is already assigned (classes support more than
+      // one teacher — re-importing must never silently drop an existing one).
+      if (teacherId) {
+        await tx.classTeacher.upsert({
+          where: { classId_teacherId: { classId, teacherId } },
+          create: { classId, teacherId },
+          update: {},
+        });
+      }
+
       classKeyToId.set(classKey(row.name, row.section, row.academicYear), {
         id: classId,
         academicYear: row.academicYear,
+        name: row.name,
+        section: row.section,
       });
     }
 
@@ -482,7 +491,7 @@ export class ImportsService {
     tx: Prisma.TransactionClient,
     tenantId: string,
     rows: ValidFeeStructureRow[],
-    classKeyToId: Map<string, { id: string; academicYear: string }>,
+    classKeyToId: Map<string, { id: string; academicYear: string; name: string; section: string }>,
   ) {
     const summary: EntitySummary = { created: 0, updated: 0 };
     const groups = new Map<string, ValidFeeStructureRow[]>();
@@ -505,25 +514,53 @@ export class ImportsService {
       }));
       const dueDate = new Date(first.dueDate);
       const lateFeePerDay = first.lateFee ?? 0;
+      // Disambiguated per-class since the plan name is now unique tenant-wide
+      // (a plan can span multiple classes — see Addendum 3 §2.1) while this
+      // spreadsheet format still lists one class per row.
+      const structureName = `${first.term} — ${classInfo.name}${classInfo.section ? ` ${classInfo.section}` : ''}`;
 
-      const existing = await tx.feeStructure.findFirst({
+      const existing = await tx.feeStructure.findUnique({
         where: {
-          tenantId,
-          classId: classInfo.id,
-          name: first.term,
-          academicYear: classInfo.academicYear,
+          tenantId_name_academicYear: {
+            tenantId,
+            name: structureName,
+            academicYear: classInfo.academicYear,
+          },
         },
       });
 
       if (existing) {
-        await tx.feeItem.deleteMany({ where: { feeStructureId: existing.id } });
+        // Merge by component label rather than wiping and recreating — a fee
+        // component already configured for this plan (e.g. via the UI, or a
+        // prior import that didn't mention it) must survive a re-import that
+        // only lists a subset of components.
+        for (const item of items) {
+          const existingItem = await tx.feeItem.findFirst({
+            where: { feeStructureId: existing.id, label: item.label },
+          });
+          if (existingItem) {
+            await tx.feeItem.update({
+              where: { id: existingItem.id },
+              data: { amount: item.amount },
+            });
+          } else {
+            await tx.feeItem.create({
+              data: { feeStructureId: existing.id, ...item },
+            });
+          }
+        }
+        const allItems = await tx.feeItem.findMany({
+          where: { feeStructureId: existing.id },
+          select: { amount: true },
+        });
+        const mergedTotal = allItems.reduce((sum, i) => sum.plus(i.amount), new Prisma.Decimal(0));
+
         await tx.feeStructure.update({
           where: { id: existing.id },
           data: {
-            totalAmount: new Prisma.Decimal(totalAmount.toFixed(2)),
+            totalAmount: mergedTotal,
             dueDate,
             lateFeePerDay,
-            items: { create: items },
           },
         });
         summary.updated++;
@@ -531,12 +568,12 @@ export class ImportsService {
         await tx.feeStructure.create({
           data: {
             tenantId,
-            classId: classInfo.id,
-            name: first.term,
+            name: structureName,
             academicYear: classInfo.academicYear,
             totalAmount: new Prisma.Decimal(totalAmount.toFixed(2)),
             dueDate,
             lateFeePerDay,
+            classes: { create: [{ classId: classInfo.id }] },
             items: { create: items },
           },
         });
@@ -553,7 +590,7 @@ export class ImportsService {
     tx: Prisma.TransactionClient,
     tenantId: string,
     rows: ValidStudentRow[],
-    classKeyToId: Map<string, { id: string }>,
+    classKeyToId: Map<string, { id: string; academicYear: string; name: string; section: string }>,
   ) {
     const summary: EntitySummary = { created: 0, updated: 0 };
 
@@ -597,39 +634,75 @@ export class ImportsService {
         summary.created++;
       }
 
-      let parent = await tx.user.findUnique({
-        where: { tenantId_phone: { tenantId, phone: row.parentPhone } },
+      await this.linkGuardian(tx, tenantId, studentId, {
+        phone: row.parentPhone,
+        email: row.parentEmail,
+        name: row.parentName,
+        profession: row.parentProfession,
+        relation: row.parentRelation,
+        isPrimary: true,
       });
-      if (!parent) {
-        parent = await tx.user.create({
-          data: {
-            tenantId,
-            phone: row.parentPhone,
-            email: row.parentEmail ?? null,
-            name: row.parentName,
-            role: Role.parent,
-            profession: row.parentProfession ?? null,
-            isVerified: false,
-          },
-        });
-      }
 
-      const existingLink = await tx.studentParent.findUnique({
-        where: { studentId_parentId: { studentId, parentId: parent.id } },
-      });
-      if (!existingLink) {
-        await tx.studentParent.create({
-          data: {
-            studentId,
-            parentId: parent.id,
-            relation: GuardianRelation.guardian,
-            isPrimary: true,
-          },
+      if (row.guardian2Phone) {
+        await this.linkGuardian(tx, tenantId, studentId, {
+          phone: row.guardian2Phone,
+          email: row.guardian2Email,
+          name: row.guardian2Name!,
+          profession: row.guardian2Profession,
+          relation: row.guardian2Relation ?? GuardianRelation.guardian,
+          isPrimary: false,
         });
       }
     }
 
     return summary;
+  }
+
+  /** Finds-or-creates the parent user by phone (tenant-unique) and links them to the
+   * student if not already linked — used for both the primary and second guardian. */
+  private async linkGuardian(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    studentId: string,
+    guardian: {
+      phone: string;
+      email?: string;
+      name: string;
+      profession?: string;
+      relation: GuardianRelation;
+      isPrimary: boolean;
+    },
+  ) {
+    let parent = await tx.user.findUnique({
+      where: { tenantId_phone: { tenantId, phone: guardian.phone } },
+    });
+    if (!parent) {
+      parent = await tx.user.create({
+        data: {
+          tenantId,
+          phone: guardian.phone,
+          email: guardian.email ?? null,
+          name: guardian.name,
+          role: Role.parent,
+          profession: guardian.profession ?? null,
+          isVerified: false,
+        },
+      });
+    }
+
+    const existingLink = await tx.studentParent.findUnique({
+      where: { studentId_parentId: { studentId, parentId: parent.id } },
+    });
+    if (!existingLink) {
+      await tx.studentParent.create({
+        data: {
+          studentId,
+          parentId: parent.id,
+          relation: guardian.relation,
+          isPrimary: guardian.isPrimary,
+        },
+      });
+    }
   }
 }
 

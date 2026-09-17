@@ -1,4 +1,4 @@
-import { Caste } from '@prisma/client';
+import { Caste, GuardianRelation } from '@prisma/client';
 import {
   ParsedTab,
   TabValidation,
@@ -12,11 +12,21 @@ import {
   issue,
   resolveClass,
 } from './shared';
-import { BLOOD_GROUP_TEMPLATE_OPTIONS, CASTE_TEMPLATE_OPTIONS } from '../tab-schema';
+import {
+  BLOOD_GROUP_TEMPLATE_OPTIONS,
+  CASTE_TEMPLATE_OPTIONS,
+  GUARDIAN_RELATION_TEMPLATE_OPTIONS,
+} from '../tab-schema';
 import { BLOOD_GROUP_DISPLAY_TO_ENUM } from '../../../common/blood-group';
 
 const TAB = 'Students' as const;
 const CASTE_SET = new Set<string>(CASTE_TEMPLATE_OPTIONS);
+const GUARDIAN_RELATION_SET = new Set<string>(GUARDIAN_RELATION_TEMPLATE_OPTIONS);
+
+/** "Father" -> GuardianRelation.father; falls back to "guardian" when the cell is blank. */
+function parseGuardianRelation(raw: string): GuardianRelation {
+  return (raw ? raw.toLowerCase() : 'guardian') as GuardianRelation;
+}
 
 export function validateStudentsTab(
   tab: ParsedTab,
@@ -35,11 +45,17 @@ export function validateStudentsTab(
     const section = row.cells['Section'];
     const dob = row.cells['Date of Birth'];
     const parentName = row.cells['Parent Name'];
+    const parentRelationRaw = row.cells['Guardian 1 Relation'];
     const parentPhone = row.cells['Parent Mobile Number'];
     const parentEmail = row.cells['Parent Email'];
+    const parentProfession = row.cells['Parent Profession'];
+    const guardian2Name = row.cells['Guardian 2 Name'];
+    const guardian2RelationRaw = row.cells['Guardian 2 Relation'];
+    const guardian2Phone = row.cells['Guardian 2 Mobile Number'];
+    const guardian2Email = row.cells['Guardian 2 Email'];
+    const guardian2Profession = row.cells['Guardian 2 Profession'];
     const bloodGroupRaw = row.cells['Blood Group'];
     const casteRaw = row.cells['Caste'];
-    const parentProfession = row.cells['Parent Profession'];
 
     let hasError = false;
 
@@ -100,6 +116,67 @@ export function validateStudentsTab(
         ),
       );
       hasError = true;
+    }
+    if (parentRelationRaw && !GUARDIAN_RELATION_SET.has(parentRelationRaw)) {
+      errors.push(
+        issue(
+          TAB,
+          row.rowNumber,
+          'Guardian 1 Relation',
+          `must be one of ${GUARDIAN_RELATION_TEMPLATE_OPTIONS.join(', ')}`,
+        ),
+      );
+      hasError = true;
+    }
+    if (guardian2Name) {
+      if (!guardian2Phone) {
+        errors.push(
+          issue(
+            TAB,
+            row.rowNumber,
+            'Guardian 2 Mobile Number',
+            'is required when Guardian 2 Name is filled in',
+          ),
+        );
+        hasError = true;
+      } else if (!PHONE_REGEX.test(guardian2Phone)) {
+        errors.push(
+          issue(
+            TAB,
+            row.rowNumber,
+            'Guardian 2 Mobile Number',
+            'must be in E.164 format, e.g. +919876543210',
+          ),
+        );
+        hasError = true;
+      } else if (guardian2Phone === parentPhone) {
+        errors.push(
+          issue(
+            TAB,
+            row.rowNumber,
+            'Guardian 2 Mobile Number',
+            'must be different from Parent Mobile Number',
+          ),
+        );
+        hasError = true;
+      }
+      if (guardian2Email && !EMAIL_REGEX.test(guardian2Email)) {
+        errors.push(
+          issue(TAB, row.rowNumber, 'Guardian 2 Email', 'is not a valid email address'),
+        );
+        hasError = true;
+      }
+      if (guardian2RelationRaw && !GUARDIAN_RELATION_SET.has(guardian2RelationRaw)) {
+        errors.push(
+          issue(
+            TAB,
+            row.rowNumber,
+            'Guardian 2 Relation',
+            `must be one of ${GUARDIAN_RELATION_TEMPLATE_OPTIONS.join(', ')}`,
+          ),
+        );
+        hasError = true;
+      }
     }
     if (bloodGroupRaw && !BLOOD_GROUP_DISPLAY_TO_ENUM[bloodGroupRaw]) {
       errors.push(
@@ -182,9 +259,15 @@ export function validateStudentsTab(
       bloodGroup: bloodGroupRaw ? BLOOD_GROUP_DISPLAY_TO_ENUM[bloodGroupRaw] : undefined,
       caste: casteRaw ? (casteRaw as Caste) : undefined,
       parentName,
+      parentRelation: parseGuardianRelation(parentRelationRaw),
       parentPhone,
       parentEmail: parentEmail || undefined,
       parentProfession: parentProfession || undefined,
+      guardian2Name: guardian2Name || undefined,
+      guardian2Relation: guardian2Name ? parseGuardianRelation(guardian2RelationRaw) : undefined,
+      guardian2Phone: guardian2Name ? guardian2Phone : undefined,
+      guardian2Email: guardian2Name ? guardian2Email || undefined : undefined,
+      guardian2Profession: guardian2Name ? guardian2Profession || undefined : undefined,
     });
   }
 

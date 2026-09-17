@@ -2,11 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { getSession } from '../../lib/auth';
 
 interface NavItem {
   label: string;
   href: string;
   icon: string;
+  /** Roles that should not see this item in the sidebar (still reachable by direct URL if the API allows it). */
+  hiddenForRoles?: string[];
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -14,12 +17,13 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Users', href: '/admin/users', icon: '👤' },
   { label: 'Students', href: '/admin/students', icon: '🎓' },
   { label: 'Classes', href: '/admin/classes', icon: '🏫' },
-  { label: 'Fee Structures', href: '/admin/fees', icon: '📋' },
-  { label: 'Student Fees', href: '/admin/student-fees', icon: '💰' },
-  { label: 'Payments', href: '/admin/payments', icon: '💳' },
-  { label: 'Fee Reports', href: '/admin/fee-reports', icon: '📈' },
+  { label: 'Fee Structures', href: '/admin/fees', icon: '📋', hiddenForRoles: ['teacher'] },
+  { label: 'Student Fees', href: '/admin/student-fees', icon: '💰', hiddenForRoles: ['teacher'] },
+  { label: 'Payments', href: '/admin/payments', icon: '💳', hiddenForRoles: ['teacher'] },
+  { label: 'Fee Reports', href: '/admin/fee-reports', icon: '📈', hiddenForRoles: ['teacher'] },
   { label: 'Reports', href: '/admin/reports', icon: '📊' },
-  { label: 'Import Data', href: '/admin/import', icon: '📥' },
+  { label: 'Import Data', href: '/admin/import', icon: '📥', hiddenForRoles: ['teacher'] },
+  { label: 'Settings', href: '/admin/settings', icon: '⚙️', hiddenForRoles: ['teacher'] },
 ];
 
 interface SidebarProps {
@@ -28,6 +32,8 @@ interface SidebarProps {
 
 export function Sidebar({ tenant }: SidebarProps) {
   const pathname = usePathname();
+  const role = getSession()?.role;
+  const items = NAV_ITEMS.filter((item) => !role || !item.hiddenForRoles?.includes(role));
 
   return (
     <aside className="flex h-screen w-60 flex-shrink-0 flex-col bg-slate-900 text-slate-200">
@@ -43,7 +49,7 @@ export function Sidebar({ tenant }: SidebarProps) {
       </div>
       <nav className="flex-1 overflow-y-auto py-4 px-3">
         <ul className="space-y-0.5">
-          {NAV_ITEMS.map((item) => {
+          {items.map((item) => {
             const active =
               item.href === '/admin'
                 ? pathname === '/admin'

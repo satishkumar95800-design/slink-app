@@ -12,6 +12,7 @@ interface TenantBrand {
   id: string;
   name: string;
   logoUrl: string | null;
+  backgroundImageUrl: string | null;
 }
 
 const ROUTE_TITLES: Record<string, string> = {
@@ -25,6 +26,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/admin/fee-reports': 'Fee Reports',
   '/admin/reports': 'Reports',
   '/admin/import': 'Import Data',
+  '/admin/settings': 'Settings',
 };
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -76,7 +78,18 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </div>
             <LogoutButton />
           </header>
-          <main className="flex-1 overflow-y-auto p-6">{children}</main>
+          <main
+            className="flex-1 overflow-y-auto bg-cover bg-center bg-fixed p-6"
+            style={
+              tenant?.backgroundImageUrl
+                ? {
+                    backgroundImage: `linear-gradient(rgba(249,250,251,.92), rgba(249,250,251,.92)), url(${tenant.backgroundImageUrl})`,
+                  }
+                : undefined
+            }
+          >
+            {children}
+          </main>
         </div>
       </div>
     </ToastProvider>

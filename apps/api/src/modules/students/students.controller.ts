@@ -18,6 +18,7 @@ import { UpdateStudentDto } from './dto/update-student.dto';
 import { LinkParentDto } from './dto/link-parent.dto';
 import { StudentQueryDto } from './dto/student-query.dto';
 import { BulkCreateStudentsDto } from './dto/bulk-create-students.dto';
+import { SetCustomFieldValuesDto } from '../custom-fields/dto/set-custom-field-values.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { TenantId } from '../../common/decorators/tenant.decorator';
@@ -85,6 +86,16 @@ export class StudentsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@TenantId() tenantId: string, @Param('id', ParseUUIDPipe) id: string) {
     await this.studentsService.remove(tenantId, id);
+  }
+
+  @Roles(Role.admin, Role.super_admin)
+  @Patch(':id/custom-fields')
+  setCustomFieldValues(
+    @TenantId() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SetCustomFieldValuesDto,
+  ) {
+    return this.studentsService.setCustomFieldValues(tenantId, id, dto);
   }
 
   // ─── Parent linkage (admin only — changing this changes who can see a child) ──

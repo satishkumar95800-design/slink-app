@@ -26,7 +26,7 @@ const baseClass = {
   tenantId: TENANT,
   name: 'Grade 5',
   academicYear: '2025-26',
-  teacherId: TEACHER_ID,
+  teachers: [{ teacher: { id: TEACHER_ID, name: 'Teacher' } }],
   createdAt: new Date(),
   updatedAt: new Date(),
   _count: { students: 10 },
@@ -46,6 +46,11 @@ const mockPrisma = {
   },
   user: {
     findUnique: jest.fn(),
+  },
+  classTeacher: {
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    delete: jest.fn(),
   },
 };
 
@@ -85,7 +90,7 @@ describe('ClassesService', () => {
 
       expect(mockPrisma.class.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { tenantId: TENANT, teacherId: TEACHER_ID },
+          where: { tenantId: TENANT, teachers: { some: { teacherId: TEACHER_ID } } },
         }),
       );
     });
@@ -178,46 +183,70 @@ describe('ClassesService', () => {
       expect(result.name).toBe('Grade 6');
     });
 
-    it('validates teacherId belongs to a teacher in the tenant', async () => {
-      mockPrisma.class.findUnique.mockResolvedValue(baseClass);
-      mockPrisma.user.findUnique.mockResolvedValue({ role: Role.teacher });
-      mockPrisma.class.update.mockResolvedValue({
-        ...baseClass,
-        teacherId: TEACHER_ID,
-      });
-
-      await service.update(TENANT, CLASS_ID, { teacherId: TEACHER_ID });
-
-      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: TEACHER_ID, tenantId: TENANT },
-        }),
-      );
-    });
-
-    it('throws NotFoundException when teacherId is not a teacher', async () => {
-      mockPrisma.class.findUnique.mockResolvedValue(baseClass);
-      mockPrisma.user.findUnique.mockResolvedValue({ role: Role.admin }); // wrong role
-
-      await expect(
-        service.update(TENANT, CLASS_ID, { teacherId: 'admin-uuid' }),
-      ).rejects.toThrow(NotFoundException);
-    });
-
-    it('throws NotFoundException when teacherId user does not exist', async () => {
-      mockPrisma.class.findUnique.mockResolvedValue(baseClass);
-      mockPrisma.user.findUnique.mockResolvedValue(null);
-
-      await expect(
-        service.update(TENANT, CLASS_ID, { teacherId: 'bad-uuid' }),
-      ).rejects.toThrow(NotFoundException);
-    });
-
     it('throws NotFoundException when class does not exist', async () => {
       mockPrisma.class.findUnique.mockResolvedValue(null);
 
       await expect(
         service.update(TENANT, 'bad-id', { name: 'X' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // ── addTeacher / removeTeacher ────────────────────────────────────────────────
+
+  describe('addTeacher', () => {
+    it('assigns a co-teacher to a class', async () => {
+      mockPrisma.class.findUnique.mockResolvedValue(baseClass);
+      mockPrisma.user.findUnique.mockResolvedValue({ role: Role.teacher });
+      mockPrisma.classTeacher.findUnique.mockResolvedValue(null);
+      mockPrisma.classTeacher.create.mockResolvedValue({ classId: CLASS_ID, teacherId: 'teacher-2' });
+
+      await service.addTeacher(TENANT, CLASS_ID, { teacherId: 'teacher-2' });
+
+      expect(mockPrisma.classTeacher.create).toHaveBeenCalledWith({
+        data: { classId: CLASS_ID, teacherId: 'teacher-2' },
+      });
+    });
+
+    it('throws NotFoundException when teacherId is not a teacher', async () => {
+      mockPrisma.class.findUnique.mockResolvedValue(baseClass);
+      mockPrisma.user.findUnique.mockResolvedValue({ role: Role.admin });
+
+      await expect(
+        service.addTeacher(TENANT, CLASS_ID, { teacherId: 'admin-uuid' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws ConflictException when teacher is already assigned', async () => {
+      mockPrisma.class.findUnique.mockResolvedValue(baseClass);
+      mockPrisma.user.findUnique.mockResolvedValue({ role: Role.teacher });
+      mockPrisma.classTeacher.findUnique.mockResolvedValue({ classId: CLASS_ID, teacherId: TEACHER_ID });
+
+      await expect(
+        service.addTeacher(TENANT, CLASS_ID, { teacherId: TEACHER_ID }),
+      ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('removeTeacher', () => {
+    it('removes a teacher from a class', async () => {
+      mockPrisma.class.findUnique.mockResolvedValue(baseClass);
+      mockPrisma.classTeacher.findUnique.mockResolvedValue({ classId: CLASS_ID, teacherId: TEACHER_ID });
+      mockPrisma.classTeacher.delete.mockResolvedValue({});
+
+      await service.removeTeacher(TENANT, CLASS_ID, TEACHER_ID);
+
+      expect(mockPrisma.classTeacher.delete).toHaveBeenCalledWith({
+        where: { classId_teacherId: { classId: CLASS_ID, teacherId: TEACHER_ID } },
+      });
+    });
+
+    it('throws NotFoundException when the teacher is not assigned to the class', async () => {
+      mockPrisma.class.findUnique.mockResolvedValue(baseClass);
+      mockPrisma.classTeacher.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.removeTeacher(TENANT, CLASS_ID, 'not-assigned'),
       ).rejects.toThrow(NotFoundException);
     });
   });

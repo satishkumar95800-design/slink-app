@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../shared/models/active_user.dart';
 import '../../shared/models/student.dart';
+import '../../shared/widgets/authenticated_scaffold.dart';
 import '../auth/session_controller.dart';
 import 'students_repository.dart';
 
@@ -15,9 +16,9 @@ class DashboardPage extends ConsumerWidget {
     final user = session.user;
     final isTeacher = user?.role == UserRole.teacher;
 
-    return Scaffold(
+    return AuthenticatedScaffold(
       appBar: AppBar(
-        title: Text(user != null ? 'Hi, ${user.name}' : 'School Connect'),
+        title: Text(user != null ? 'Hi, ${user.name}' : 'slink'),
         actions: [
           if (user != null)
             IconButton(

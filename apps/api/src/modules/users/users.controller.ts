@@ -52,7 +52,7 @@ export class UsersController {
 
   // ─── Admin endpoints ──────────────────────────────────────────────────────────
 
-  @Roles(Role.admin, Role.accounts)
+  @Roles(Role.admin, Role.accounts, Role.teacher)
   @Get()
   findAll(@TenantId() tenantId: string, @Query() query: UserQueryDto) {
     return this.usersService.findAll(tenantId, query);
@@ -64,7 +64,7 @@ export class UsersController {
     return this.usersService.create(tenantId, dto);
   }
 
-  @Roles(Role.admin, Role.accounts)
+  @Roles(Role.admin, Role.accounts, Role.teacher)
   @Get(':id')
   findOne(
     @TenantId() tenantId: string,

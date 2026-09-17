@@ -246,7 +246,7 @@ describe('NotificationsService', () => {
   describe('broadcast — teacher authorization', () => {
     it('allows a teacher to broadcast to a class they own', async () => {
       mockPrisma.class.findUnique.mockResolvedValue({
-        teacherId: teacherActor.id,
+        teachers: [{ teacherId: teacherActor.id }],
       });
       const parent = makeUser({ id: 'p1', fcmTokens: ['tok1'] });
       mockPrisma.studentParent.findMany.mockResolvedValue([{ parent }]);
@@ -270,7 +270,7 @@ describe('NotificationsService', () => {
 
     it('rejects a teacher broadcasting to a class they do not own', async () => {
       mockPrisma.class.findUnique.mockResolvedValue({
-        teacherId: 'other-teacher-uuid',
+        teachers: [{ teacherId: 'other-teacher-uuid' }],
       });
 
       await expect(

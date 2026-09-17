@@ -32,6 +32,7 @@ const baseStudent = {
   updatedAt: new Date(),
   class: { id: CLASS_ID, name: 'Grade 5', academicYear: '2025-26' },
   parents: [{ relation: GuardianRelation.mother, isPrimary: true, parent: { id: PARENT_ID, name: 'Jane', phone: '+911234567890' } }],
+  customFieldValues: [],
 };
 
 const prismaMock = {
@@ -117,7 +118,7 @@ describe('StudentsService', () => {
       await service.findAll(TENANT, makeUser(Role.teacher, TEACHER_ID), {});
 
       expect(prismaMock.class.findMany).toHaveBeenCalledWith({
-        where: { tenantId: TENANT, teacherId: TEACHER_ID },
+        where: { tenantId: TENANT, teachers: { some: { teacherId: TEACHER_ID } } },
         select: { id: true },
       });
       expect(prismaMock.student.findMany).toHaveBeenCalledWith(
@@ -168,7 +169,7 @@ describe('StudentsService', () => {
 
     it('teacher can access a student in their class', async () => {
       prismaMock.student.findUnique.mockResolvedValue(baseStudent);
-      prismaMock.class.findUnique.mockResolvedValue({ teacherId: TEACHER_ID });
+      prismaMock.class.findUnique.mockResolvedValue({ teachers: [{ teacherId: TEACHER_ID }] });
 
       const result = await service.findOne(TENANT, STUDENT_ID, makeUser(Role.teacher, TEACHER_ID));
       expect(result.id).toBe(STUDENT_ID);
@@ -176,7 +177,7 @@ describe('StudentsService', () => {
 
     it('teacher cannot access a student not in their class', async () => {
       prismaMock.student.findUnique.mockResolvedValue(baseStudent);
-      prismaMock.class.findUnique.mockResolvedValue({ teacherId: 'other-teacher' });
+      prismaMock.class.findUnique.mockResolvedValue({ teachers: [{ teacherId: 'other-teacher' }] });
 
       await expect(
         service.findOne(TENANT, STUDENT_ID, makeUser(Role.teacher, TEACHER_ID)),

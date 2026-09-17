@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { FeeStatus, PaymentMethod, Role } from '@prisma/client';
+import { FeeStatus, PaymentMethod, Role, BillingFrequency } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { StudentFeesService } from './student-fees.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -24,6 +24,21 @@ const parentUser: ActiveUser = {
   isVerified: true,
 };
 
+const makeComponent = (overrides: Partial<Record<string, unknown>> = {}) => ({
+  id: 'component-uuid',
+  studentFeeId: 'fee-uuid',
+  feeItemId: 'item-uuid',
+  periodLabel: 'Full Year',
+  periodStart: new Date('2025-06-01'),
+  periodEnd: new Date('2026-05-31'),
+  dueDate: new Date('2099-12-31'),
+  amountDue: new Prisma.Decimal('5000.00'),
+  amountPaid: new Prisma.Decimal('0.00'),
+  status: FeeStatus.pending,
+  feeItem: { id: 'item-uuid', label: 'Tuition' },
+  ...overrides,
+});
+
 const makeFee = (overrides: Partial<Record<string, unknown>> = {}) => ({
   id: 'fee-uuid',
   tenantId: 'tenant-uuid',
@@ -46,6 +61,7 @@ const makeFee = (overrides: Partial<Record<string, unknown>> = {}) => ({
     academicYear: '2025-26',
     items: [{ id: 'item-uuid', label: 'Tuition', amount: new Prisma.Decimal('5000.00') }],
   },
+  components: [makeComponent()],
   ...overrides,
 });
 
@@ -56,6 +72,9 @@ const mockPrisma = {
     create: jest.fn(),
     update: jest.fn(),
     count: jest.fn(),
+  },
+  studentFeeComponent: {
+    update: jest.fn(),
   },
   student: {
     findUnique: jest.fn(),
@@ -70,6 +89,9 @@ const mockPrisma = {
   studentParent: {
     findUnique: jest.fn(),
   },
+  studentDiscount: {
+    findMany: jest.fn(),
+  },
   auditLog: {
     create: jest.fn(),
   },
@@ -79,6 +101,8 @@ const mockPrisma = {
 /** tx surface used inside recordOfflinePayment's callback-form transaction */
 const mockTx = {
   studentFee: { update: jest.fn() },
+  studentFeeComponent: { update: jest.fn() },
+  receiptAllocation: { create: jest.fn() },
   auditLog: { create: jest.fn() },
 };
 
@@ -100,6 +124,7 @@ describe('StudentFeesService', () => {
 
     service = module.get<StudentFeesService>(StudentFeesService);
     jest.clearAllMocks();
+    mockTx.receiptAllocation.create.mockResolvedValue({});
   });
 
   describe('findAll', () => {
@@ -114,9 +139,6 @@ describe('StudentFeesService', () => {
     it('scopes parent to their students', async () => {
       mockPrisma.$transaction.mockResolvedValue([[], 0]);
       await service.findAll('tenant-uuid', parentUser, {});
-      const [query] = mockPrisma.$transaction.mock.calls[0][0];
-      // The $transaction call receives an array; first element is the findMany args
-      // We verify via the mocked $transaction receiving the correct args
       expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
     });
   });
@@ -146,14 +168,29 @@ describe('StudentFeesService', () => {
   });
 
   describe('assignOne', () => {
+    const structure = {
+      id: 'fs-uuid',
+      academicYear: '2025-26',
+      dueDate: new Date('2025-06-01'),
+      items: [
+        {
+          id: 'item-uuid',
+          amount: new Prisma.Decimal('5000.00'),
+          billingFrequency: BillingFrequency.one_time,
+          quarterMonthCounts: [],
+          isTransportFee: false,
+        },
+      ],
+    };
+
+    beforeEach(() => {
+      mockPrisma.studentDiscount.findMany.mockResolvedValue([]);
+    });
+
     it('creates a student fee assignment', async () => {
       const fee = makeFee();
-      mockPrisma.student.findUnique.mockResolvedValue({ id: 'student-uuid' });
-      mockPrisma.feeStructure.findUnique.mockResolvedValue({
-        id: 'fs-uuid',
-        totalAmount: new Prisma.Decimal('5000.00'),
-        dueDate: new Date('2025-06-01'),
-      });
+      mockPrisma.student.findUnique.mockResolvedValue({ id: 'student-uuid', transportSlab: null });
+      mockPrisma.feeStructure.findUnique.mockResolvedValue(structure);
       mockPrisma.studentFee.findUnique.mockResolvedValue(null);
       mockPrisma.studentFee.create.mockResolvedValue(fee);
 
@@ -162,11 +199,14 @@ describe('StudentFeesService', () => {
         feeStructureId: 'fs-uuid',
       });
       expect(result).toEqual(fee);
+      const call = mockPrisma.studentFee.create.mock.calls[0][0];
+      expect(call.data.amountDue.toFixed(2)).toBe('5000.00');
+      expect(call.data.components.create).toHaveLength(1);
     });
 
     it('throws BadRequestException when already assigned', async () => {
-      mockPrisma.student.findUnique.mockResolvedValue({ id: 'student-uuid' });
-      mockPrisma.feeStructure.findUnique.mockResolvedValue({ id: 'fs-uuid', totalAmount: new Prisma.Decimal('5000.00'), dueDate: new Date() });
+      mockPrisma.student.findUnique.mockResolvedValue({ id: 'student-uuid', transportSlab: null });
+      mockPrisma.feeStructure.findUnique.mockResolvedValue(structure);
       mockPrisma.studentFee.findUnique.mockResolvedValue(makeFee());
 
       await expect(
@@ -179,7 +219,7 @@ describe('StudentFeesService', () => {
 
     it('throws NotFoundException when student does not exist', async () => {
       mockPrisma.student.findUnique.mockResolvedValue(null);
-      mockPrisma.feeStructure.findUnique.mockResolvedValue({ id: 'fs-uuid' });
+      mockPrisma.feeStructure.findUnique.mockResolvedValue(structure);
       await expect(
         service.assignOne('tenant-uuid', { studentId: 'bad-id', feeStructureId: 'fs-uuid' }),
       ).rejects.toThrow(NotFoundException);
@@ -188,10 +228,16 @@ describe('StudentFeesService', () => {
 
   describe('recordOfflinePayment', () => {
     it('updates amountPaid, recalculates status to paid, and creates a receipt', async () => {
+      const component = makeComponent({
+        amountDue: new Prisma.Decimal('1000.00'),
+        amountPaid: new Prisma.Decimal('0.00'),
+        status: FeeStatus.pending,
+      });
       const fee = makeFee({
         amountDue: new Prisma.Decimal('1000.00'),
         amountPaid: new Prisma.Decimal('0.00'),
         status: FeeStatus.pending,
+        components: [component],
       });
       mockPrisma.studentFee.findUnique.mockResolvedValue(fee);
       const updatedFee = makeFee({ amountPaid: new Prisma.Decimal('1000.00'), status: FeeStatus.paid });
@@ -200,13 +246,14 @@ describe('StudentFeesService', () => {
         typeof cb === 'function' ? cb(mockTx) : Promise.all(cb as Promise<unknown>[]),
       );
       mockTx.studentFee.update.mockResolvedValue(updatedFee);
+      mockTx.studentFeeComponent.update.mockResolvedValue({});
       mockTx.auditLog.create.mockResolvedValue({});
       mockReceiptsService.createForPayment.mockResolvedValue(fakeReceipt);
 
       const result = await service.recordOfflinePayment(
         'tenant-uuid',
         'fee-uuid',
-        { amount: 1000, method: PaymentMethod.cash },
+        { allocations: [{ studentFeeComponentId: 'component-uuid', amount: 1000 }], method: PaymentMethod.cash },
         'admin-uuid',
       );
       expect(result).toEqual({ studentFee: updatedFee, receipt: fakeReceipt });
@@ -221,6 +268,9 @@ describe('StudentFeesService', () => {
           recordedBy: 'admin-uuid',
         }),
       );
+      expect(mockTx.receiptAllocation.create).toHaveBeenCalledWith({
+        data: { receiptId: 'receipt-uuid', studentFeeComponentId: 'component-uuid', amount: expect.any(Object) },
+      });
     });
 
     it('throws BadRequestException for waived fees', async () => {
@@ -228,28 +278,71 @@ describe('StudentFeesService', () => {
         makeFee({ status: FeeStatus.waived }),
       );
       await expect(
-        service.recordOfflinePayment('tenant-uuid', 'fee-uuid', { amount: 100, method: PaymentMethod.cash }, 'admin-uuid'),
+        service.recordOfflinePayment(
+          'tenant-uuid',
+          'fee-uuid',
+          { allocations: [{ studentFeeComponentId: 'component-uuid', amount: 100 }], method: PaymentMethod.cash },
+          'admin-uuid',
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
     it('throws NotFoundException when fee does not exist', async () => {
       mockPrisma.studentFee.findUnique.mockResolvedValue(null);
       await expect(
-        service.recordOfflinePayment('tenant-uuid', 'bad-id', { amount: 100, method: PaymentMethod.cash }, 'admin-uuid'),
+        service.recordOfflinePayment(
+          'tenant-uuid',
+          'bad-id',
+          { allocations: [{ studentFeeComponentId: 'component-uuid', amount: 100 }], method: PaymentMethod.cash },
+          'admin-uuid',
+        ),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws BadRequestException when an allocation targets a component not on this fee', async () => {
+      mockPrisma.studentFee.findUnique.mockResolvedValue(makeFee());
+      await expect(
+        service.recordOfflinePayment(
+          'tenant-uuid',
+          'fee-uuid',
+          { allocations: [{ studentFeeComponentId: 'not-a-real-component', amount: 100 }], method: PaymentMethod.cash },
+          'admin-uuid',
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException when an allocation exceeds the component outstanding amount', async () => {
+      const component = makeComponent({
+        amountDue: new Prisma.Decimal('100.00'),
+        amountPaid: new Prisma.Decimal('0.00'),
+      });
+      mockPrisma.studentFee.findUnique.mockResolvedValue(makeFee({ components: [component] }));
+      await expect(
+        service.recordOfflinePayment(
+          'tenant-uuid',
+          'fee-uuid',
+          { allocations: [{ studentFeeComponentId: 'component-uuid', amount: 500 }], method: PaymentMethod.cash },
+          'admin-uuid',
+        ),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
   describe('adjust', () => {
     it('applies discount and reduces amountDue', async () => {
+      const component = makeComponent({
+        amountDue: new Prisma.Decimal('5000.00'),
+        amountPaid: new Prisma.Decimal('0.00'),
+      });
       const fee = makeFee({
         amountDue: new Prisma.Decimal('5000.00'),
         amountPaid: new Prisma.Decimal('0.00'),
         status: FeeStatus.pending,
+        components: [component],
       });
       mockPrisma.studentFee.findUnique.mockResolvedValue(fee);
       const updatedFee = makeFee({ amountDue: new Prisma.Decimal('4500.00') });
-      mockPrisma.$transaction.mockResolvedValue([updatedFee, {}]);
+      mockPrisma.$transaction.mockResolvedValue([updatedFee, {}, {}]);
 
       const result = await service.adjust(
         'tenant-uuid',
@@ -258,13 +351,19 @@ describe('StudentFeesService', () => {
         'admin-uuid',
       );
       expect(result).toEqual(updatedFee);
+      const [ops] = mockPrisma.$transaction.mock.calls[0];
+      expect(ops).toHaveLength(3); // studentFee.update + 1 component.update + auditLog.create
     });
 
-    it('sets status to waived for waive adjustments', async () => {
-      const fee = makeFee({ status: FeeStatus.pending });
+    it('sets amountDue to 0 for waive adjustments', async () => {
+      const component = makeComponent({
+        amountDue: new Prisma.Decimal('5000.00'),
+        amountPaid: new Prisma.Decimal('0.00'),
+      });
+      const fee = makeFee({ status: FeeStatus.pending, components: [component] });
       mockPrisma.studentFee.findUnique.mockResolvedValue(fee);
-      const updatedFee = makeFee({ status: FeeStatus.waived });
-      mockPrisma.$transaction.mockResolvedValue([updatedFee, {}]);
+      const updatedFee = makeFee({ status: FeeStatus.waived, amountDue: new Prisma.Decimal('0.00') });
+      mockPrisma.$transaction.mockResolvedValue([updatedFee, {}, {}]);
 
       await service.adjust(
         'tenant-uuid',
@@ -273,16 +372,19 @@ describe('StudentFeesService', () => {
         'admin-uuid',
       );
       const [txOps] = mockPrisma.$transaction.mock.calls[0];
-      // We don't have direct access to the update args here because they are Prisma calls,
-      // but we verify that the transaction ran with 2 ops
-      expect(txOps).toHaveLength(2);
+      expect(txOps).toHaveLength(3);
     });
 
     it('throws BadRequestException when discount exceeds outstanding balance', async () => {
+      const component = makeComponent({
+        amountDue: new Prisma.Decimal('1000.00'),
+        amountPaid: new Prisma.Decimal('800.00'),
+      });
       const fee = makeFee({
         amountDue: new Prisma.Decimal('1000.00'),
         amountPaid: new Prisma.Decimal('800.00'),
         status: FeeStatus.partial,
+        components: [component],
       });
       mockPrisma.studentFee.findUnique.mockResolvedValue(fee);
 
@@ -317,54 +419,80 @@ describe('StudentFeesService', () => {
         ),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('throws NotFoundException when studentFeeComponentId does not belong to the fee', async () => {
+      const fee = makeFee({ status: FeeStatus.pending });
+      mockPrisma.studentFee.findUnique.mockResolvedValue(fee);
+      await expect(
+        service.adjust(
+          'tenant-uuid',
+          'fee-uuid',
+          { type: AdjustmentType.WAIVE, studentFeeComponentId: 'not-a-component', reason: 'x' },
+          'admin-uuid',
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
   });
 
   describe('recalcStatus (via recordOfflinePayment)', () => {
     it('returns partial when payment is partial and not overdue', async () => {
+      const component = makeComponent({
+        amountDue: new Prisma.Decimal('1000.00'),
+        amountPaid: new Prisma.Decimal('0.00'),
+        dueDate: new Date('2099-12-31'),
+      });
       const fee = makeFee({
         amountDue: new Prisma.Decimal('1000.00'),
         amountPaid: new Prisma.Decimal('0.00'),
         dueDate: new Date('2099-12-31'),
         status: FeeStatus.pending,
+        components: [component],
       });
       mockPrisma.studentFee.findUnique.mockResolvedValue(fee);
       mockPrisma.$transaction.mockImplementation((cb: unknown) =>
         typeof cb === 'function' ? cb(mockTx) : Promise.resolve(cb),
       );
       mockTx.studentFee.update.mockResolvedValue(makeFee({ status: FeeStatus.partial, amountPaid: new Prisma.Decimal('400.00') }));
+      mockTx.studentFeeComponent.update.mockResolvedValue({});
       mockTx.auditLog.create.mockResolvedValue({});
       mockReceiptsService.createForPayment.mockResolvedValue({ id: 'receipt-uuid' });
 
       await service.recordOfflinePayment(
         'tenant-uuid',
         'fee-uuid',
-        { amount: 400, method: PaymentMethod.cash },
+        { allocations: [{ studentFeeComponentId: 'component-uuid', amount: 400 }], method: PaymentMethod.cash },
         'admin-uuid',
       );
-      // The update call should have status = partial
       const updateCall = mockTx.studentFee.update.mock.calls[0][0];
       expect(updateCall.data.status).toBe(FeeStatus.partial);
     });
 
     it('returns overdue when past due date and unpaid', async () => {
-      const fee = makeFee({
+      const component = makeComponent({
         amountDue: new Prisma.Decimal('1000.00'),
         amountPaid: new Prisma.Decimal('0.00'),
         dueDate: new Date('2000-01-01'), // in the past
+      });
+      const fee = makeFee({
+        amountDue: new Prisma.Decimal('1000.00'),
+        amountPaid: new Prisma.Decimal('0.00'),
+        dueDate: new Date('2000-01-01'),
         status: FeeStatus.overdue,
+        components: [component],
       });
       mockPrisma.studentFee.findUnique.mockResolvedValue(fee);
       mockPrisma.$transaction.mockImplementation((cb: unknown) =>
         typeof cb === 'function' ? cb(mockTx) : Promise.resolve(cb),
       );
       mockTx.studentFee.update.mockResolvedValue(makeFee({ status: FeeStatus.overdue, amountPaid: new Prisma.Decimal('100.00') }));
+      mockTx.studentFeeComponent.update.mockResolvedValue({});
       mockTx.auditLog.create.mockResolvedValue({});
       mockReceiptsService.createForPayment.mockResolvedValue({ id: 'receipt-uuid' });
 
       await service.recordOfflinePayment(
         'tenant-uuid',
         'fee-uuid',
-        { amount: 100, method: PaymentMethod.cash },
+        { allocations: [{ studentFeeComponentId: 'component-uuid', amount: 100 }], method: PaymentMethod.cash },
         'admin-uuid',
       );
       const updateCall = mockTx.studentFee.update.mock.calls[0][0];

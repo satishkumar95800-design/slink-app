@@ -49,19 +49,26 @@ async function refreshAccessToken(): Promise<string | null> {
   return body.accessToken as string;
 }
 
+interface RequestOptions extends RequestInit {
+  /** Overrides the logged-in user's own tenant for this call — used by the platform
+   * console, where a super_admin acts on a tenant other than the one they belong to. */
+  tenantOverride?: string;
+}
+
 export async function apiRequest<T>(
   path: string,
-  options: RequestInit = {},
+  options: RequestOptions = {},
   isRetry = false,
 ): Promise<T> {
   const { token, tenantId } = getAuth();
+  const effectiveTenant = options.tenantOverride ?? tenantId;
 
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
+      ...(effectiveTenant ? { 'X-Tenant-ID': effectiveTenant } : {}),
       ...(options.headers as Record<string, string>),
     },
   });
@@ -90,26 +97,40 @@ export async function apiRequest<T>(
 }
 
 export const api = {
-  get: <T>(path: string) => apiRequest<T>(path),
-  post: <T>(path: string, data: unknown) =>
-    apiRequest<T>(path, { method: 'POST', body: JSON.stringify(data) }),
-  patch: <T>(path: string, data: unknown) =>
-    apiRequest<T>(path, { method: 'PATCH', body: JSON.stringify(data) }),
-  delete: <T>(path: string) => apiRequest<T>(path, { method: 'DELETE' }),
+  get: <T>(path: string, opts?: { tenantOverride?: string }) => apiRequest<T>(path, opts),
+  post: <T>(path: string, data: unknown, opts?: { tenantOverride?: string }) =>
+    apiRequest<T>(path, { method: 'POST', body: JSON.stringify(data), ...opts }),
+  patch: <T>(path: string, data: unknown, opts?: { tenantOverride?: string }) =>
+    apiRequest<T>(path, { method: 'PATCH', body: JSON.stringify(data), ...opts }),
+  delete: <T>(path: string, data?: unknown, opts?: { tenantOverride?: string }) =>
+    apiRequest<T>(path, {
+      method: 'DELETE',
+      ...(data !== undefined ? { body: JSON.stringify(data) } : {}),
+      ...opts,
+    }),
 };
 
 /** Multipart upload — omits Content-Type so the browser sets the multipart boundary itself. */
-export async function apiUpload<T>(path: string, file: File): Promise<T> {
+export async function apiUpload<T>(
+  path: string,
+  file: File,
+  fields?: Record<string, string>,
+  tenantOverride?: string,
+): Promise<T> {
   const { token, tenantId } = getAuth();
+  const effectiveTenant = tenantOverride ?? tenantId;
   const formData = new FormData();
   formData.append('file', file);
+  if (fields) {
+    for (const [key, value] of Object.entries(fields)) formData.append(key, value);
+  }
 
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
     body: formData,
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
+      ...(effectiveTenant ? { 'X-Tenant-ID': effectiveTenant } : {}),
     },
   });
 
@@ -127,13 +148,14 @@ export async function apiUpload<T>(path: string, file: File): Promise<T> {
 }
 
 /** Downloads a binary response (e.g. the import template) and triggers a browser save. */
-export async function apiDownload(path: string, filename: string): Promise<void> {
+export async function apiDownload(path: string, filename: string, tenantOverride?: string): Promise<void> {
   const { token, tenantId } = getAuth();
+  const effectiveTenant = tenantOverride ?? tenantId;
 
   const res = await fetch(`${API_BASE}${path}`, {
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
+      ...(effectiveTenant ? { 'X-Tenant-ID': effectiveTenant } : {}),
     },
   });
 

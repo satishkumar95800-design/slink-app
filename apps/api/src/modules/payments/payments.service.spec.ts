@@ -99,6 +99,8 @@ const mockTx = {
   paymentOrder: { update: jest.fn() },
   paymentTransaction: { create: jest.fn() },
   studentFee: { update: jest.fn() },
+  studentFeeComponent: { update: jest.fn() },
+  receiptAllocation: { create: jest.fn() },
   auditLog: { create: jest.fn() },
 };
 
@@ -303,6 +305,14 @@ describe('PaymentsService', () => {
         status: FeeStatus.pending,
         dueDate: new Date('2099-12-31'),
         student: { id: 'student-uuid', classId: 'class-uuid' },
+        components: [
+          {
+            id: 'component-uuid',
+            amountDue: new Prisma.Decimal('5000.00'),
+            amountPaid: new Prisma.Decimal('0.00'),
+            dueDate: new Date('2099-12-31'),
+          },
+        ],
       };
       mockPrisma.studentFee.findUniqueOrThrow.mockResolvedValue(fee);
       mockPrisma.$transaction.mockImplementation((cb: unknown) =>
@@ -311,6 +321,8 @@ describe('PaymentsService', () => {
       mockTx.paymentOrder.update.mockResolvedValue({});
       mockTx.paymentTransaction.create.mockResolvedValue({});
       mockTx.studentFee.update.mockResolvedValue({});
+      mockTx.studentFeeComponent.update.mockResolvedValue({});
+      mockTx.receiptAllocation.create.mockResolvedValue({});
       mockTx.auditLog.create.mockResolvedValue({});
       mockReceiptsService.createForPayment.mockResolvedValue({ id: 'receipt-uuid' });
 

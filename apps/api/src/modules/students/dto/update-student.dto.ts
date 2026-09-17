@@ -32,4 +32,9 @@ export class UpdateStudentDto {
   @IsUrl({ require_tld: false })
   @IsOptional()
   photoUrl?: string;
+
+  /** Assigns a distance-based transport slab; the plan's transport fee then auto-calculates from it */
+  @IsUUID()
+  @IsOptional()
+  transportSlabId?: string;
 }

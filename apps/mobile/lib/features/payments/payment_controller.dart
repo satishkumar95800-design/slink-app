@@ -71,7 +71,7 @@ class PaymentController extends StateNotifier<PaymentState> {
       'amount': order.amountInPaise,
       'currency': order.currency,
       'order_id': order.gatewayOrderId,
-      'name': 'School Connect',
+      'name': 'slink',
       'description': 'Fee payment — ${order.studentFee.studentName}',
       if (parentPhone != null) 'prefill': {'contact': parentPhone},
     });

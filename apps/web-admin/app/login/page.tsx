@@ -63,7 +63,7 @@ export default function LoginPage() {
         refreshToken,
       );
 
-      router.push('/admin');
+      router.push(user.role === 'super_admin' ? '/platform/tenants' : '/admin');
     } catch {
       setError('Network error — check your connection and try again.');
     }

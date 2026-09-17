@@ -145,6 +145,8 @@ export class FilesService {
     switch (category) {
       case FileCategory.LOGO:
         return `public/${tenantId}/logos/${uuid}${ext}`;
+      case FileCategory.BACKGROUND:
+        return `public/${tenantId}/backgrounds/${uuid}${ext}`;
       case FileCategory.REPORT_PDF:
         return `private/${tenantId}/reports/${entityId ?? uuid}/${uuid}${ext}`;
       case FileCategory.ATTACHMENT:

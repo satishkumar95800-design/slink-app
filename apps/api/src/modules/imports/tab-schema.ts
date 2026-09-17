@@ -19,11 +19,17 @@ export const TAB_HEADERS: Record<
     'Section',
     'Date of Birth',
     'Parent Name',
+    'Guardian 1 Relation',
     'Parent Mobile Number',
     'Parent Email',
+    'Parent Profession',
+    'Guardian 2 Name',
+    'Guardian 2 Relation',
+    'Guardian 2 Mobile Number',
+    'Guardian 2 Email',
+    'Guardian 2 Profession',
     'Blood Group',
     'Caste',
-    'Parent Profession',
   ],
   'Fee Structures': [
     'Class Name',
@@ -55,11 +61,17 @@ export const DISPLAY_HEADERS: Record<
     'Section*',
     'Date of Birth',
     'Parent Name*',
+    'Guardian 1 Relation',
     'Parent Mobile Number*',
     'Parent Email',
+    'Parent Profession',
+    'Guardian 2 Name',
+    'Guardian 2 Relation',
+    'Guardian 2 Mobile Number',
+    'Guardian 2 Email',
+    'Guardian 2 Profession',
     'Blood Group',
     'Caste',
-    'Parent Profession',
   ],
   'Fee Structures': [
     'Class Name*',
@@ -85,3 +97,5 @@ export const COMMON_FEE_COMPONENTS = [
 
 export const BLOOD_GROUP_TEMPLATE_OPTIONS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 export const CASTE_TEMPLATE_OPTIONS = ['General', 'OBC', 'SC', 'ST', 'EWS', 'Other'];
+/** Display casing shown in the template dropdown; stored lowercase to match the Prisma enum directly. */
+export const GUARDIAN_RELATION_TEMPLATE_OPTIONS = ['Father', 'Mother', 'Guardian'];

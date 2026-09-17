@@ -101,9 +101,9 @@ export class ReceiptsService {
     } else if (user.role === Role.teacher) {
       const cls = await this.prisma.class.findUnique({
         where: { id: receipt.classId },
-        select: { teacherId: true },
+        select: { teachers: { select: { teacherId: true } } },
       });
-      if (cls?.teacherId !== user.id) {
+      if (!cls?.teachers.some((t) => t.teacherId === user.id)) {
         throw new ForbiddenException('This receipt is not for a student in your class');
       }
     }
@@ -126,7 +126,7 @@ export class ReceiptsService {
 
     if (user.role === Role.teacher) {
       const teacherClasses = await this.prisma.class.findMany({
-        where: { tenantId, teacherId: user.id },
+        where: { tenantId, teachers: { some: { teacherId: user.id } } },
         select: { id: true },
       });
       const classIds = teacherClasses.map((c) => c.id);
