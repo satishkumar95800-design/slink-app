@@ -204,7 +204,7 @@ describe('ClassesService', () => {
       await service.addTeacher(TENANT, CLASS_ID, { teacherId: 'teacher-2' });
 
       expect(mockPrisma.classTeacher.create).toHaveBeenCalledWith({
-        data: { classId: CLASS_ID, teacherId: 'teacher-2' },
+        data: { classId: CLASS_ID, teacherId: 'teacher-2', isClassTeacher: true },
       });
     });
 

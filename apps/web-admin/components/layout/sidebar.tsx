@@ -17,6 +17,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Users', href: '/admin/users', icon: '👤' },
   { label: 'Students', href: '/admin/students', icon: '🎓' },
   { label: 'Classes', href: '/admin/classes', icon: '🏫' },
+  { label: 'Teachers', href: '/admin/teachers', icon: '🧑‍🏫', hiddenForRoles: ['teacher'] },
   { label: 'Fee Structures', href: '/admin/fees', icon: '📋', hiddenForRoles: ['teacher'] },
   { label: 'Student Fees', href: '/admin/student-fees', icon: '💰', hiddenForRoles: ['teacher'] },
   { label: 'Payments', href: '/admin/payments', icon: '💳', hiddenForRoles: ['teacher'] },

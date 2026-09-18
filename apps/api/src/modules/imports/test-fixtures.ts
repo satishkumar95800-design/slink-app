@@ -3,6 +3,7 @@ import ExcelJS from 'exceljs';
 export interface FixtureTabs {
   Classes?: Array<Record<string, string | number>>;
   Users?: Array<Record<string, string | number>>;
+  Teachers?: Array<Record<string, string | number>>;
   Students?: Array<Record<string, string | number>>;
   'Fee Structures'?: Array<Record<string, string | number>>;
   Instructions?: string;
@@ -11,6 +12,15 @@ export interface FixtureTabs {
 const DEFAULT_HEADERS: Record<string, string[]> = {
   Classes: ['Class Name', 'Section', 'Academic Year', 'Class Teacher Email'],
   Users: ['Full Name', 'Email', 'Phone Number', 'Role', 'Assigned Class (Teachers only)'],
+  Teachers: [
+    'Teacher Name',
+    'Phone Number',
+    'Email',
+    'Class Name',
+    'Section',
+    'Subject Name',
+    'Is Class Teacher',
+  ],
   Students: [
     'Student Name',
     'Admission Number',
@@ -53,6 +63,7 @@ export async function buildFixtureWorkbook(
   for (const tabName of [
     'Classes',
     'Users',
+    'Teachers',
     'Students',
     'Fee Structures',
   ] as const) {

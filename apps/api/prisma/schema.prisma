@@ -165,6 +165,8 @@ model Tenant {
   customFieldDefinitions   CustomFieldDefinition[]
   studentCustomFieldValues StudentCustomFieldValue[]
   transportSlabs           TransportSlab[]
+  subjects                 Subject[]
+  teacherSubjects          TeacherSubject[]
 
   @@map("tenants")
 }
@@ -192,6 +194,7 @@ model User {
   notifications    Notification[]
   recordedReceipts Receipt[]       @relation("ReceiptRecordedBy")
   taughtClasses    ClassTeacher[]
+  taughtSubjects   TeacherSubject[]
 
   @@unique([tenantId, phone])
   @@unique([tenantId, email])
@@ -273,12 +276,13 @@ model Class {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  tenant            Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  students          Student[]
-  teachers          ClassTeacher[]
-  feeStructureLinks FeeStructureClass[]
-  reports           Report[]
-  receipts          Receipt[]
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  students           Student[]
+  teachers           ClassTeacher[]
+  subjectAssignments TeacherSubject[]
+  feeStructureLinks  FeeStructureClass[]
+  reports            Report[]
+  receipts           Receipt[]
 
   @@unique([tenantId, name, section, academicYear])
   @@index([tenantId])
@@ -286,9 +290,13 @@ model Class {
 }
 
 // Many-to-many: a class can have co-teachers, a teacher can teach several classes.
+// isClassTeacher distinguishes the class's homeroom/in-charge teacher (who may
+// broadcast text notices to the whole class) from a co-/subject-teacher who only
+// gained access to the class via a TeacherSubject assignment (homework-only).
 model ClassTeacher {
-  classId   String @map("class_id") @db.Uuid
-  teacherId String @map("teacher_id") @db.Uuid
+  classId        String  @map("class_id") @db.Uuid
+  teacherId      String  @map("teacher_id") @db.Uuid
+  isClassTeacher Boolean @default(false) @map("is_class_teacher")
 
   class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
   teacher User  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
@@ -296,6 +304,44 @@ model ClassTeacher {
   @@id([classId, teacherId])
   @@index([teacherId])
   @@map("class_teachers")
+}
+
+// ─── Subjects ─────────────────────────────────────────────────────────────────
+
+model Subject {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant             Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teacherAssignments TeacherSubject[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("subjects")
+}
+
+// A teacher teaches a subject in a class. Creating this row also upserts a
+// ClassTeacher row (see TeachersService) so the teacher gains broadcast access to
+// the class without being flagged as its class teacher.
+model TeacherSubject {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  teacherId String   @map("teacher_id") @db.Uuid
+  subjectId String   @map("subject_id") @db.Uuid
+  classId   String   @map("class_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teacher User    @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, subjectId, classId])
+  @@index([teacherId])
+  @@index([classId])
+  @@map("teacher_subjects")
 }
 
 // ─── Fees ─────────────────────────────────────────────────────────────────────

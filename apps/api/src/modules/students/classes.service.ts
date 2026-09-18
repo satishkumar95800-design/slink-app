@@ -16,7 +16,9 @@ const classListSelect = {
   name: true,
   section: true,
   academicYear: true,
-  teachers: { select: { teacher: { select: { id: true, name: true } } } },
+  teachers: {
+    select: { isClassTeacher: true, teacher: { select: { id: true, name: true } } },
+  },
   _count: { select: { students: true } },
 } as const;
 
@@ -41,7 +43,9 @@ export class ClassesService {
     const cls = await this.prisma.class.findUnique({
       where: { id: classId, tenantId },
       include: {
-        teachers: { select: { teacher: { select: { id: true, name: true } } } },
+        teachers: {
+          select: { isClassTeacher: true, teacher: { select: { id: true, name: true } } },
+        },
         _count: { select: { students: true } },
       },
     });
@@ -110,7 +114,7 @@ export class ClassesService {
     if (existing) throw new ConflictException('This teacher is already assigned to the class');
 
     return this.prisma.classTeacher.create({
-      data: { classId, teacherId: dto.teacherId },
+      data: { classId, teacherId: dto.teacherId, isClassTeacher: dto.isClassTeacher ?? true },
     });
   }
 

@@ -7,6 +7,9 @@ import '../../features/auth/splash_page.dart';
 import '../../features/auth/tenant_entry_page.dart';
 import '../../features/dashboard/dashboard_page.dart';
 import '../../features/fees/fees_list_page.dart';
+import '../../features/homework/send_homework_page.dart';
+import '../../features/notices/notice_detail_page.dart';
+import '../../features/notices/send_notice_page.dart';
 import '../../features/payments/checkout_page.dart';
 import '../../features/profile/profile_page.dart';
 import '../../features/reports/report_detail_page.dart';
@@ -57,6 +60,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/reports/:id',
         builder: (_, state) => ReportDetailPage(reportId: state.pathParameters['id']!),
+      ),
+      GoRoute(path: '/notices/send', builder: (_, __) => const SendNoticePage()),
+      GoRoute(path: '/homework/send', builder: (_, __) => const SendHomeworkPage()),
+      GoRoute(
+        path: '/notices/detail',
+        builder: (_, state) {
+          final data = (state.extra as Map<String, dynamic>?) ?? const {};
+          return NoticeDetailPage(
+            title: data['title']?.toString() ?? 'Notice',
+            body: data['body']?.toString() ?? '',
+            attachmentUrl: data['attachmentUrl']?.toString(),
+          );
+        },
       ),
     ],
   );

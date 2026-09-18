@@ -37,26 +37,27 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
 
   Future<void> _configurePushNotifications() async {
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
-      _handleNotificationRoute(message.data);
+      _handleNotificationRoute(message);
     });
 
     final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
     if (initialMessage != null) {
-      _handleNotificationRoute(initialMessage.data);
+      _handleNotificationRoute(initialMessage);
     }
   }
 
-  void _handleNotificationRoute(Map<String, dynamic> data) {
-    final targetRoute = _resolveNotificationRoute(data);
-    if (targetRoute == null) return;
+  void _handleNotificationRoute(RemoteMessage message) {
+    final target = _resolveNotificationRoute(message);
+    if (target == null) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref.read(appRouterProvider).go(targetRoute);
+      ref.read(appRouterProvider).go(target.route, extra: target.extra);
     });
   }
 
-  String? _resolveNotificationRoute(Map<String, dynamic> data) {
+  ({String route, Object? extra})? _resolveNotificationRoute(RemoteMessage message) {
+    final data = message.data;
     final type = data['type']?.toString();
     final feeId = data['feeId'] ?? data['studentFeeId'];
     final reportId = data['reportId'];
@@ -65,22 +66,32 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
       case 'fee_due':
       case 'fee_payment':
       case 'payment':
-        if (feeId != null) return '/fees/$feeId/pay';
+        if (feeId != null) return (route: '/fees/$feeId/pay', extra: null);
         break;
       case 'report':
       case 'report_published':
-        if (reportId != null) return '/reports/$reportId';
+        if (reportId != null) return (route: '/reports/$reportId', extra: null);
         break;
+      case 'notice':
+      case 'homework':
+        return (
+          route: '/notices/detail',
+          extra: {
+            'title': message.notification?.title ?? data['title'] ?? (type == 'homework' ? 'Homework' : 'Notice'),
+            'body': message.notification?.body ?? data['body'] ?? '',
+            'attachmentUrl': data['attachmentUrl'],
+          },
+        );
       case 'dashboard':
-        return '/dashboard';
+        return (route: '/dashboard', extra: null);
     }
 
     if (feeId != null && feeId is String && feeId.isNotEmpty) {
-      return '/fees/$feeId/pay';
+      return (route: '/fees/$feeId/pay', extra: null);
     }
 
     if (reportId != null && reportId is String && reportId.isNotEmpty) {
-      return '/reports/$reportId';
+      return (route: '/reports/$reportId', extra: null);
     }
 
     return null;

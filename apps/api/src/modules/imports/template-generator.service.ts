@@ -8,6 +8,7 @@ import {
   DISPLAY_HEADERS,
   GUARDIAN_RELATION_TEMPLATE_OPTIONS,
   TAB_HEADERS,
+  YES_NO_TEMPLATE_OPTIONS,
 } from './tab-schema';
 
 const EXAMPLE_ROW_FILL: ExcelJS.Fill = {
@@ -27,6 +28,7 @@ export class TemplateGeneratorService {
     this.buildInstructionsTab(workbook);
     this.buildClassesTab(workbook);
     this.buildUsersTab(workbook);
+    this.buildTeachersTab(workbook);
     this.buildStudentsTab(workbook);
     this.buildFeeStructuresTab(workbook);
 
@@ -41,11 +43,12 @@ export class TemplateGeneratorService {
     const lines = [
       'School Connect — Bulk Onboarding Template',
       '',
-      'Fill order (Students and Fee Structures reference Classes; Users reference Classes for Assigned Class):',
+      'Fill order (Students, Teachers, and Fee Structures reference Classes; Users reference Classes for Assigned Class):',
       '  1. Classes',
       '  2. Users',
-      '  3. Students',
-      '  4. Fee Structures',
+      '  3. Teachers',
+      '  4. Students',
+      '  5. Fee Structures',
       '',
       'Each data tab has one highlighted example row with realistic sample values.',
       'Delete the highlighted row before importing — it is not a real record.',
@@ -91,6 +94,24 @@ export class TemplateGeneratorService {
 
     const roleColumn = TAB_HEADERS.Users.indexOf('Role') + 1;
     this.applyDropdown(sheet, roleColumn, [...ALLOWED_ROLES], {
+      blocking: true,
+    });
+  }
+
+  private buildTeachersTab(workbook: ExcelJS.Workbook) {
+    const sheet = this.addDataSheet(workbook, 'Teachers', DISPLAY_HEADERS.Teachers);
+    this.addExampleRow(sheet, [
+      'Jane Doe',
+      '+919876543210',
+      'jane.doe@example-school.edu',
+      'Grade 5',
+      'A',
+      'Mathematics',
+      'Yes',
+    ]);
+
+    const isClassTeacherColumn = TAB_HEADERS.Teachers.indexOf('Is Class Teacher') + 1;
+    this.applyDropdown(sheet, isClassTeacherColumn, YES_NO_TEMPLATE_OPTIONS, {
       blocking: true,
     });
   }

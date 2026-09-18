@@ -59,6 +59,17 @@ describe('WorkbookParserService', () => {
       .addWorksheet('Users')
       .addRow(['Full Name', 'Email', 'Phone Number', 'Role', 'Assigned Class (Teachers only)']);
     workbook
+      .addWorksheet('Teachers')
+      .addRow([
+        'Teacher Name',
+        'Phone Number',
+        'Email',
+        'Class Name',
+        'Section',
+        'Subject Name',
+        'Is Class Teacher',
+      ]);
+    workbook
       .addWorksheet('Students')
       .addRow([
         'Student Name',
@@ -181,6 +192,17 @@ describe('WorkbookParserService', () => {
       .addWorksheet('Users')
       .addRow(['Full Name', 'Email', 'Phone Number', 'Role', 'Assigned Class (Teachers only)']);
     workbook
+      .addWorksheet('Teachers')
+      .addRow([
+        'Teacher Name',
+        'Phone Number',
+        'Email',
+        'Class Name',
+        'Section',
+        'Subject Name',
+        'Is Class Teacher',
+      ]);
+    workbook
       .addWorksheet('Students')
       .addRow([
         'Student Name',
@@ -233,6 +255,17 @@ describe('WorkbookParserService', () => {
     workbook
       .addWorksheet('Users')
       .addRow(['Full Name', 'Email', 'Phone Number', 'Role', 'Assigned Class (Teachers only)']);
+    workbook
+      .addWorksheet('Teachers')
+      .addRow([
+        'Teacher Name',
+        'Phone Number',
+        'Email',
+        'Class Name',
+        'Section',
+        'Subject Name',
+        'Is Class Teacher',
+      ]);
     const studentsSheet = workbook.addWorksheet('Students');
     studentsSheet.addRow([
       'Student Name',

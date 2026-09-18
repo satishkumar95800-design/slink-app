@@ -28,6 +28,8 @@ import { AuditModule } from './modules/audit/audit.module';
 import { DiscountsModule } from './modules/discounts/discounts.module';
 import { CustomFieldsModule } from './modules/custom-fields/custom-fields.module';
 import { TransportModule } from './modules/transport/transport.module';
+import { SubjectsModule } from './modules/subjects/subjects.module';
+import { TeachersModule } from './modules/teachers/teachers.module';
 
 @Module({
   imports: [
@@ -60,6 +62,8 @@ import { TransportModule } from './modules/transport/transport.module';
     DiscountsModule,
     CustomFieldsModule,
     TransportModule,
+    SubjectsModule,
+    TeachersModule,
   ],
 })
 export class AppModule implements NestModule {

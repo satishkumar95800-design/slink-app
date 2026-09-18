@@ -18,8 +18,7 @@ interface Class {
   name: string;
   academicYear: string;
   section: string | null;
-  teacherId: string | null;
-  teacher?: { id: string; name: string };
+  teachers: Array<{ isClassTeacher: boolean; teacher: { id: string; name: string } }>;
   _count?: { students: number };
 }
 
@@ -32,10 +31,15 @@ const schema = z.object({
   name: z.string().min(1, 'Class name is required'),
   academicYear: z.string().min(4, 'e.g. 2024-25'),
   section: z.string().optional(),
-  teacherId: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
+
+const assignSchema = z.object({
+  teacherId: z.string().min(1, 'Select a teacher'),
+});
+
+type AssignFormData = z.infer<typeof assignSchema>;
 
 export default function ClassesPage() {
   const { toast } = useToast();
@@ -45,6 +49,7 @@ export default function ClassesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [assigningClass, setAssigningClass] = useState<Class | null>(null);
 
   const {
     register,
@@ -52,6 +57,13 @@ export default function ClassesPage() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
+
+  const {
+    register: registerAssign,
+    handleSubmit: handleAssignSubmit,
+    reset: resetAssign,
+    formState: { errors: assignErrors, isSubmitting: isAssignSubmitting },
+  } = useForm<AssignFormData>({ resolver: zodResolver(assignSchema) });
 
   async function fetchClasses() {
     try {
@@ -79,7 +91,6 @@ export default function ClassesPage() {
     try {
       await api.post('/classes', {
         ...data,
-        teacherId: data.teacherId || undefined,
         section: data.section || undefined,
       });
       toast('Class created', 'success');
@@ -91,7 +102,32 @@ export default function ClassesPage() {
     }
   }
 
+  function openAssign(cls: Class) {
+    setAssigningClass(cls);
+    resetAssign({ teacherId: '' });
+  }
+
+  async function onAssignSubmit(data: AssignFormData) {
+    if (!assigningClass) return;
+    try {
+      await api.post(`/classes/${assigningClass.id}/teachers`, {
+        teacherId: data.teacherId,
+        isClassTeacher: true,
+      });
+      toast('Class teacher assigned', 'success');
+      setAssigningClass(null);
+      fetchClasses();
+    } catch (e) {
+      toast((e as ApiError).message, 'error');
+    }
+  }
+
   const teacherOptions = teachers.map((t) => ({ value: t.id, label: t.name }));
+
+  function classTeacherNames(cls: Class): string {
+    const names = cls.teachers.filter((t) => t.isClassTeacher).map((t) => t.teacher.name);
+    return names.length > 0 ? names.join(', ') : '—';
+  }
 
   return (
     <div className="space-y-4">
@@ -117,7 +153,7 @@ export default function ClassesPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                {['Name', 'Academic Year', 'Section', 'Class Teacher', 'Students'].map((h) => (
+                {['Name', 'Academic Year', 'Section', 'Class Teacher', 'Students', ''].map((h) => (
                   <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                     {h}
                   </th>
@@ -130,8 +166,16 @@ export default function ClassesPage() {
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{c.name}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{c.academicYear}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{c.section ?? '—'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{c.teacher?.name ?? '—'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{classTeacherNames(c)}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{c._count?.students ?? 0}</td>
+                  <td className="px-6 py-4 text-right">
+                    <button
+                      onClick={() => openAssign(c)}
+                      className="text-xs text-blue-600 hover:underline"
+                    >
+                      Assign teacher
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -148,19 +192,36 @@ export default function ClassesPage() {
           <Input label="Class Name" placeholder="e.g. Grade 5" error={errors.name?.message} {...register('name')} />
           <Input label="Academic Year" placeholder="2024-25" error={errors.academicYear?.message} {...register('academicYear')} />
           <Input label="Section" placeholder="A" error={errors.section?.message} {...register('section')} />
-          <Select
-            label="Class Teacher (optional)"
-            options={teacherOptions}
-            placeholder="Select a teacher"
-            error={errors.teacherId?.message}
-            {...register('teacherId')}
-          />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => { setShowModal(false); reset(); }}>
               Cancel
             </Button>
             <Button type="submit" loading={isSubmitting}>
               Create Class
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={!!assigningClass}
+        onClose={() => setAssigningClass(null)}
+        title={`Assign Class Teacher — ${assigningClass?.name ?? ''}`}
+      >
+        <form onSubmit={handleAssignSubmit(onAssignSubmit)} className="space-y-4">
+          <Select
+            label="Teacher"
+            options={teacherOptions}
+            placeholder="Select a teacher"
+            error={assignErrors.teacherId?.message}
+            {...registerAssign('teacherId')}
+          />
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" type="button" onClick={() => setAssigningClass(null)}>
+              Cancel
+            </Button>
+            <Button type="submit" loading={isAssignSubmitting}>
+              Assign
             </Button>
           </div>
         </form>

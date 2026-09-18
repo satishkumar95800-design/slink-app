@@ -275,8 +275,8 @@ describe('ImportsService.commit', () => {
     // as a co-teacher (upsert), never replacing an existing assignment
     expect(mockTx.classTeacher.upsert).toHaveBeenCalledWith({
       where: { classId_teacherId: { classId: 'class-1', teacherId: 'teacher-1' } },
-      create: { classId: 'class-1', teacherId: 'teacher-1' },
-      update: {},
+      create: { classId: 'class-1', teacherId: 'teacher-1', isClassTeacher: true },
+      update: { isClassTeacher: true },
     });
 
     // Fee structure groups both components into one structure with a summed total,
@@ -370,8 +370,8 @@ describe('ImportsService.commit', () => {
     // touched by this mock) would survive a real transaction untouched.
     expect(mockTx.classTeacher.upsert).toHaveBeenCalledWith({
       where: { classId_teacherId: { classId: 'class-1', teacherId: 'teacher-2' } },
-      create: { classId: 'class-1', teacherId: 'teacher-2' },
-      update: {},
+      create: { classId: 'class-1', teacherId: 'teacher-2', isClassTeacher: true },
+      update: { isClassTeacher: true },
     });
   });
 

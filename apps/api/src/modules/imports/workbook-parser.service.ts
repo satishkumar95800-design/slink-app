@@ -37,6 +37,7 @@ export class WorkbookParserService {
         'Fee Structures',
         TAB_HEADERS['Fee Structures'],
       ),
+      teachers: this.parseTab(workbook, 'Teachers', TAB_HEADERS.Teachers),
     };
   }
 

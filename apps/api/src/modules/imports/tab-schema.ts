@@ -4,14 +4,24 @@ export const REQUIRED_TABS = [
   'Users',
   'Students',
   'Fee Structures',
+  'Teachers',
 ] as const;
 
 export const TAB_HEADERS: Record<
-  'Classes' | 'Users' | 'Students' | 'Fee Structures',
+  'Classes' | 'Users' | 'Students' | 'Fee Structures' | 'Teachers',
   string[]
 > = {
   Classes: ['Class Name', 'Section', 'Academic Year', 'Class Teacher Email'],
   Users: ['Full Name', 'Email', 'Phone Number', 'Role', 'Assigned Class (Teachers only)'],
+  Teachers: [
+    'Teacher Name',
+    'Phone Number',
+    'Email',
+    'Class Name',
+    'Section',
+    'Subject Name',
+    'Is Class Teacher',
+  ],
   Students: [
     'Student Name',
     'Admission Number',
@@ -49,11 +59,20 @@ export const TAB_HEADERS: Record<
  * TAB_HEADERS stays the canonical (asterisk-free) name used everywhere internally.
  */
 export const DISPLAY_HEADERS: Record<
-  'Classes' | 'Users' | 'Students' | 'Fee Structures',
+  'Classes' | 'Users' | 'Students' | 'Fee Structures' | 'Teachers',
   string[]
 > = {
   Classes: ['Class Name*', 'Section*', 'Academic Year*', 'Class Teacher Email'],
   Users: ['Full Name*', 'Email*', 'Phone Number', 'Role*', 'Assigned Class (Teachers only)'],
+  Teachers: [
+    'Teacher Name*',
+    'Phone Number*',
+    'Email',
+    'Class Name*',
+    'Section',
+    'Subject Name*',
+    'Is Class Teacher',
+  ],
   Students: [
     'Student Name*',
     'Admission Number*',
@@ -99,3 +118,4 @@ export const BLOOD_GROUP_TEMPLATE_OPTIONS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-
 export const CASTE_TEMPLATE_OPTIONS = ['General', 'OBC', 'SC', 'ST', 'EWS', 'Other'];
 /** Display casing shown in the template dropdown; stored lowercase to match the Prisma enum directly. */
 export const GUARDIAN_RELATION_TEMPLATE_OPTIONS = ['Father', 'Mother', 'Guardian'];
+export const YES_NO_TEMPLATE_OPTIONS = ['Yes', 'No'];

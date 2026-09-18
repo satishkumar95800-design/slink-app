@@ -246,7 +246,7 @@ describe('NotificationsService', () => {
   describe('broadcast — teacher authorization', () => {
     it('allows a teacher to broadcast to a class they own', async () => {
       mockPrisma.class.findUnique.mockResolvedValue({
-        teachers: [{ teacherId: teacherActor.id }],
+        teachers: [{ teacherId: teacherActor.id, isClassTeacher: true }],
       });
       const parent = makeUser({ id: 'p1', fcmTokens: ['tok1'] });
       mockPrisma.studentParent.findMany.mockResolvedValue([{ parent }]);
@@ -266,6 +266,50 @@ describe('NotificationsService', () => {
       );
 
       expect(result.queued).toBe(1);
+    });
+
+    it('allows a co-teacher (not the class teacher) to send homework with a fileKey', async () => {
+      mockPrisma.class.findUnique.mockResolvedValue({
+        teachers: [{ teacherId: teacherActor.id, isClassTeacher: false }],
+      });
+      const parent = makeUser({ id: 'p1', fcmTokens: ['tok1'] });
+      mockPrisma.studentParent.findMany.mockResolvedValue([{ parent }]);
+      mockPrisma.$transaction.mockResolvedValue([{ id: 'n1', userId: 'p1' }]);
+      mockPrisma.notification.update.mockResolvedValue({});
+
+      const result = await service.broadcast(
+        'tenant-uuid',
+        {
+          channel: NotificationChannel.fcm,
+          title: 'Homework',
+          body: 'Complete chapter 4 by tomorrow',
+          targetType: BroadcastTarget.CLASS,
+          targetId: 'class-uuid',
+          fileKey: 'private/tenant/attachments/homework.jpg',
+        },
+        teacherActor,
+      );
+
+      expect(result.queued).toBe(1);
+    });
+
+    it('rejects a co-teacher (not the class teacher) sending a plain text notice', async () => {
+      mockPrisma.class.findUnique.mockResolvedValue({
+        teachers: [{ teacherId: teacherActor.id, isClassTeacher: false }],
+      });
+
+      await expect(
+        service.broadcast(
+          'tenant-uuid',
+          {
+            channel: NotificationChannel.fcm,
+            body: 'No homework today',
+            targetType: BroadcastTarget.CLASS,
+            targetId: 'class-uuid',
+          },
+          teacherActor,
+        ),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('rejects a teacher broadcasting to a class they do not own', async () => {

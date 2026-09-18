@@ -43,6 +43,7 @@ interface ImportSummary {
   users: EntitySummary;
   students: EntitySummary;
   feeStructures: EntitySummary;
+  teachers: EntitySummary;
   createdUserCredentials: CreatedUserCredential[];
 }
 
@@ -356,6 +357,7 @@ function ImportSummaryView({ summary, onReset }: { summary: ImportSummary; onRes
   const rows: Array<{ label: string; value: EntitySummary }> = [
     { label: 'Classes', value: summary.classes },
     { label: 'Users', value: summary.users },
+    { label: 'Teachers', value: summary.teachers },
     { label: 'Students', value: summary.students },
     { label: 'Fee structures', value: summary.feeStructures },
   ];

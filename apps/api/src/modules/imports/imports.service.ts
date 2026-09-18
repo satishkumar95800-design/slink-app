@@ -14,6 +14,7 @@ import { validateClassesTab } from './validators/classes.validator';
 import { validateUsersTab } from './validators/users.validator';
 import { validateStudentsTab } from './validators/students.validator';
 import { validateFeeStructuresTab } from './validators/fee-structures.validator';
+import { validateTeachersTab } from './validators/teachers.validator';
 import { classKey, normalizedName } from './validators/shared';
 import {
   CommitResult,
@@ -31,6 +32,7 @@ import {
   ValidClassRow,
   ValidFeeStructureRow,
   ValidStudentRow,
+  ValidTeacherRow,
   ValidUserRow,
 } from './types';
 
@@ -48,6 +50,7 @@ interface RunValidationResult {
   users: TabValidation<ValidUserRow>;
   students: TabValidation<ValidStudentRow>;
   feeStructures: TabValidation<ValidFeeStructureRow>;
+  teachers: TabValidation<ValidTeacherRow>;
 }
 
 @Injectable()
@@ -76,7 +79,7 @@ export class ImportsService {
     fileName: string,
     buffer: Buffer,
   ): Promise<CommitResult> {
-    const { report, classes, users, students, feeStructures } =
+    const { report, classes, users, students, feeStructures, teachers } =
       await this.runValidation(buffer);
 
     if (report.totalErrors > 0) {
@@ -87,7 +90,8 @@ export class ImportsService {
       classes.validRows.length +
       users.validRows.length +
       students.validRows.length +
-      feeStructures.validRows.length;
+      feeStructures.validRows.length +
+      teachers.validRows.length;
 
     if (totalRows > SYNC_ROW_LIMIT) {
       const importJob = await this.prisma.importJob.create({
@@ -122,6 +126,7 @@ export class ImportsService {
         users,
         students,
         feeStructures,
+        teachers,
       );
       await this.markCompleted(importJob.id, summary);
       return { importJobId: importJob.id, status: 'completed', summary };
@@ -137,7 +142,7 @@ export class ImportsService {
     tenantId: string,
     buffer: Buffer,
   ): Promise<void> {
-    const { report, classes, users, students, feeStructures } =
+    const { report, classes, users, students, feeStructures, teachers } =
       await this.runValidation(buffer);
 
     if (report.totalErrors > 0) {
@@ -164,6 +169,7 @@ export class ImportsService {
         users,
         students,
         feeStructures,
+        teachers,
       );
       await this.markCompleted(importJobId, summary);
     } catch (err) {
@@ -222,6 +228,7 @@ export class ImportsService {
     users: TabValidation<ValidUserRow>,
     students: TabValidation<ValidStudentRow>,
     feeStructures: TabValidation<ValidFeeStructureRow>,
+    teachers: TabValidation<ValidTeacherRow>,
   ): Promise<ImportSummary> {
     return this.prisma.$transaction(
       async (tx) => {
@@ -244,12 +251,19 @@ export class ImportsService {
           students.validRows,
           classKeyToId,
         );
+        const teachersSummary = await this.commitTeachers(
+          tx,
+          tenantId,
+          teachers.validRows,
+          classKeyToId,
+        );
 
         return {
           classes: classesSummary,
           users: usersSummary,
           students: studentsSummary,
           feeStructures: feeStructuresSummary,
+          teachers: teachersSummary,
           createdUserCredentials: credentials,
         } satisfies ImportSummary;
       },
@@ -273,6 +287,7 @@ export class ImportsService {
       workbook.feeStructures,
       classes.validRows,
     );
+    const teachers = validateTeachersTab(workbook.teachers, classes.validRows);
 
     const classTeacherWarnings = this.checkClassTeacherEmails(
       classes.validRows,
@@ -285,6 +300,12 @@ export class ImportsService {
         ...classTeacherWarnings,
       ]),
       this.toTabReport('Users', workbook.users, users.errors, users.warnings),
+      this.toTabReport(
+        'Teachers',
+        workbook.teachers,
+        teachers.errors,
+        teachers.warnings,
+      ),
       this.toTabReport(
         'Students',
         workbook.students,
@@ -313,6 +334,7 @@ export class ImportsService {
       users,
       students,
       feeStructures,
+      teachers,
     };
   }
 
@@ -466,11 +488,13 @@ export class ImportsService {
       // assignment(s) untouched; a provided one is added as a co-teacher rather
       // than replacing whoever is already assigned (classes support more than
       // one teacher — re-importing must never silently drop an existing one).
+      // "Class Teacher Email" designates the class's homeroom/in-charge teacher —
+      // isClassTeacher: true, same as the web-admin "Assign class teacher" action.
       if (teacherId) {
         await tx.classTeacher.upsert({
           where: { classId_teacherId: { classId, teacherId } },
-          create: { classId, teacherId },
-          update: {},
+          create: { classId, teacherId, isClassTeacher: true },
+          update: { isClassTeacher: true },
         });
       }
 
@@ -703,6 +727,80 @@ export class ImportsService {
         },
       });
     }
+  }
+
+  // ─── Commit: Teachers tab ─────────────────────────────────────────────────────
+
+  private async commitTeachers(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    rows: ValidTeacherRow[],
+    classKeyToId: Map<string, { id: string; academicYear: string; name: string; section: string }>,
+  ) {
+    const summary: EntitySummary = { created: 0, updated: 0 };
+
+    for (const row of rows) {
+      const classInfo = classKeyToId.get(row.classKey);
+      if (!classInfo) continue; // resolved during validation; a miss here would indicate a bug upstream
+
+      let teacher = await tx.user.findUnique({
+        where: { tenantId_phone: { tenantId, phone: row.phone } },
+      });
+      if (!teacher) {
+        teacher = await tx.user.create({
+          data: {
+            tenantId,
+            name: row.name,
+            phone: row.phone,
+            email: row.email ?? null,
+            role: Role.teacher,
+            isVerified: true,
+          },
+        });
+      } else if (teacher.role !== Role.teacher) {
+        teacher = await tx.user.update({
+          where: { id: teacher.id },
+          data: { role: Role.teacher },
+        });
+      }
+
+      const subjectName = row.subjectName.trim();
+      let subject = await tx.subject.findUnique({
+        where: { tenantId_name: { tenantId, name: subjectName } },
+      });
+      if (!subject) {
+        subject = await tx.subject.create({ data: { tenantId, name: subjectName } });
+      }
+
+      const existingAssignment = await tx.teacherSubject.findUnique({
+        where: {
+          teacherId_subjectId_classId: {
+            teacherId: teacher.id,
+            subjectId: subject.id,
+            classId: classInfo.id,
+          },
+        },
+      });
+
+      if (existingAssignment) {
+        summary.updated++;
+      } else {
+        await tx.teacherSubject.create({
+          data: { tenantId, teacherId: teacher.id, subjectId: subject.id, classId: classInfo.id },
+        });
+        summary.created++;
+      }
+
+      // A "No" never demotes an existing class-teacher designation — only an
+      // explicit "Yes" promotes, mirroring the Classes tab's Class Teacher Email.
+      await tx.classTeacher.upsert({
+        where: { classId_teacherId: { classId: classInfo.id, teacherId: teacher.id } },
+        create: { classId: classInfo.id, teacherId: teacher.id, isClassTeacher: row.isClassTeacher },
+        update: row.isClassTeacher ? { isClassTeacher: true } : {},
+      });
+    }
+
+    return summary;
   }
 }
 

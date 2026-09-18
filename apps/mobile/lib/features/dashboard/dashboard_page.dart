@@ -5,6 +5,7 @@ import '../../shared/models/active_user.dart';
 import '../../shared/models/student.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
 import '../auth/session_controller.dart';
+import '../classes/classes_repository.dart';
 import 'students_repository.dart';
 
 class DashboardPage extends ConsumerWidget {
@@ -73,13 +74,17 @@ class _ParentDashboardBody extends ConsumerWidget {
   }
 }
 
-class _TeacherDashboardBody extends StatelessWidget {
+class _TeacherDashboardBody extends ConsumerWidget {
   final ActiveUser user;
 
   const _TeacherDashboardBody({required this.user});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final classesAsync = ref.watch(myClassesProvider);
+    final isClassTeacherOfAny = classesAsync.valueOrNull?.any((c) => c.isClassTeacherFor(user.id)) ?? false;
+    final hasAnyClass = classesAsync.valueOrNull?.isNotEmpty ?? false;
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -89,6 +94,24 @@ class _TeacherDashboardBody extends StatelessWidget {
           const SizedBox(height: 8),
           Text('Signed in as ${user.name}', style: Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height: 24),
+          if (isClassTeacherOfAny) ...[
+            _NavCard(
+              icon: Icons.campaign_outlined,
+              title: 'Send Notice',
+              subtitle: 'Message all parents in your class',
+              onTap: () => context.push('/notices/send'),
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (hasAnyClass) ...[
+            _NavCard(
+              icon: Icons.camera_alt_outlined,
+              title: 'Send Homework',
+              subtitle: 'Take a photo and send it to a class',
+              onTap: () => context.push('/homework/send'),
+            ),
+            const SizedBox(height: 12),
+          ],
           _NavCard(
             icon: Icons.assignment,
             title: 'Reports',

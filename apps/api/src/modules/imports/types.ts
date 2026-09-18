@@ -17,9 +17,10 @@ export interface ParsedWorkbook {
   users: ParsedTab;
   students: ParsedTab;
   feeStructures: ParsedTab;
+  teachers: ParsedTab;
 }
 
-export type ImportTabName = 'Classes' | 'Users' | 'Students' | 'Fee Structures';
+export type ImportTabName = 'Classes' | 'Users' | 'Students' | 'Fee Structures' | 'Teachers';
 
 export interface ImportIssue {
   tab: ImportTabName;
@@ -71,6 +72,16 @@ export interface ValidStudentRow {
   guardian2Profession?: string;
 }
 
+export interface ValidTeacherRow {
+  row: number;
+  name: string;
+  phone: string;
+  email?: string;
+  classKey: string;
+  subjectName: string;
+  isClassTeacher: boolean;
+}
+
 export interface ValidFeeStructureRow {
   row: number;
   classKey: string;
@@ -111,6 +122,7 @@ export interface ImportSummary {
   users: EntitySummary;
   students: EntitySummary;
   feeStructures: EntitySummary;
+  teachers: EntitySummary;
   createdUserCredentials: CreatedUserCredential[];
 }
 

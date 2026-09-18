@@ -153,7 +153,13 @@ export class NotificationsService {
 
   // ── Internal helpers ─────────────────────────────────────────────────────────
 
-  /** Teachers may only broadcast to a class they own — mirrors the check in ReportsService */
+  /**
+   * Teachers may only broadcast to a class they're linked to (mirrors the check in
+   * ReportsService). A plain text notice (no fileKey) additionally requires the
+   * teacher to be the class's designated class teacher — a co-/subject-teacher who
+   * only has class access via a TeacherSubject assignment may send homework
+   * (fileKey present) but not whole-class notices.
+   */
   private async assertTeacherCanBroadcast(
     tenantId: string,
     dto: BroadcastNotificationDto,
@@ -167,12 +173,20 @@ export class NotificationsService {
 
     const cls = await this.prisma.class.findUnique({
       where: { id: dto.targetId, tenantId },
-      select: { teachers: { select: { teacherId: true } } },
+      select: { teachers: { select: { teacherId: true, isClassTeacher: true } } },
     });
     if (!cls) throw new NotFoundException('Class not found');
-    if (!cls.teachers.some((t) => t.teacherId === actor.id)) {
+
+    const link = cls.teachers.find((t) => t.teacherId === actor.id);
+    if (!link) {
       throw new ForbiddenException(
         'Teachers can only broadcast to their own class',
+      );
+    }
+
+    if (!dto.fileKey && !link.isClassTeacher) {
+      throw new ForbiddenException(
+        'Only the class teacher can send a text notice to the whole class',
       );
     }
   }
