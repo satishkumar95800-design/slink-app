@@ -17,7 +17,7 @@ export default function DataDeletionPage() {
 
         <h2 className="mt-10 text-xl font-semibold text-gray-900">How to request deletion</h2>
         <p className="mt-4 text-gray-700">
-          Email <a href="mailto:[Support Email]" className="text-blue-600 hover:underline">[Support Email]</a>{' '}
+          Email <a href="mailto:support@schoolinkd.in" className="text-blue-600 hover:underline">support@schoolinkd.in</a>{' '}
           from the email address or phone number linked to your account, with the subject &quot;Account
           Deletion Request&quot;. Include your name, your school&apos;s name, and the phone number you use to
           sign in.

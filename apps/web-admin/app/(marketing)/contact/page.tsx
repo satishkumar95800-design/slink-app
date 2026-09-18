@@ -18,8 +18,8 @@ export default function ContactPage() {
         <div className="flex flex-col items-center rounded-xl border border-gray-200 bg-white p-6 text-center shadow-sm">
           <Mail className="h-6 w-6 text-blue-600" />
           <p className="mt-3 text-sm font-medium text-gray-900">Email</p>
-          <a href="mailto:[Support Email]" className="mt-1 text-sm text-gray-600 hover:text-blue-600">
-            [Support Email]
+          <a href="mailto:support@schoolinkd.in" className="mt-1 text-sm text-gray-600 hover:text-blue-600">
+            support@schoolinkd.in
           </a>
         </div>
         <div className="flex flex-col items-center rounded-xl border border-gray-200 bg-white p-6 text-center shadow-sm">

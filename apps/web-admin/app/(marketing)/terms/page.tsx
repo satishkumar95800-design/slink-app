@@ -52,7 +52,7 @@ export default function TermsPage() {
         <h2 className="mt-10 text-xl font-semibold text-gray-900">Contact us</h2>
         <p className="mt-4 text-gray-700">
           Questions about these terms can be sent to{' '}
-          <a href="mailto:[Support Email]" className="text-blue-600 hover:underline">[Support Email]</a>.
+          <a href="mailto:support@schoolinkd.in" className="text-blue-600 hover:underline">support@schoolinkd.in</a>.
         </p>
       </div>
     </Section>

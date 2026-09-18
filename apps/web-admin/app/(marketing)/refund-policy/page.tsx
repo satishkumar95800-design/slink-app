@@ -19,7 +19,7 @@ export default function RefundPolicyPage() {
         <p className="mt-4 text-gray-700">
           If a fee payment was made in error, made twice, or needs to be refunded for any other reason,
           contact your school&apos;s accounts office directly, or write to{' '}
-          <a href="mailto:[Support Email]" className="text-blue-600 hover:underline">[Support Email]</a> with
+          <a href="mailto:billing@schoolinkd.in" className="text-blue-600 hover:underline">billing@schoolinkd.in</a> with
           the payment date, amount, and student/admission number. Refund decisions for school fees are made by
           the school; we facilitate the transaction on the school&apos;s behalf.
         </p>
@@ -40,7 +40,7 @@ export default function RefundPolicyPage() {
         <h2 className="mt-10 text-xl font-semibold text-gray-900">Contact us</h2>
         <p className="mt-4 text-gray-700">
           For any payment issue, reach us at{' '}
-          <a href="mailto:[Support Email]" className="text-blue-600 hover:underline">[Support Email]</a> or see
+          <a href="mailto:billing@schoolinkd.in" className="text-blue-600 hover:underline">billing@schoolinkd.in</a> or see
           our <a href="/contact" className="text-blue-600 hover:underline">Contact</a> page.
         </p>
       </div>
