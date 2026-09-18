@@ -8,11 +8,11 @@ export default function TermsPage() {
     <Section tone="light">
       <div className="mx-auto max-w-3xl">
         <h1 className="text-3xl font-bold text-gray-900">Terms of Service</h1>
-        <p className="mt-2 text-sm text-gray-500">Last updated: [Date]</p>
+        <p className="mt-2 text-sm text-gray-500">Last updated: September 18, 2026</p>
 
         <p className="mt-8 text-gray-700">
           These terms govern use of the Slink mobile app and admin web console (the &quot;Service&quot;),
-          provided by [Business/Legal Entity Name] (&quot;we&quot;, &quot;us&quot;). By creating an account or
+          provided by Arins Studios (&quot;we&quot;, &quot;us&quot;). By creating an account or
           using the Service, you agree to these terms.
         </p>
 

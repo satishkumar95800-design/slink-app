@@ -25,14 +25,14 @@ export default function ContactPage() {
         <div className="flex flex-col items-center rounded-xl border border-gray-200 bg-white p-6 text-center shadow-sm">
           <Phone className="h-6 w-6 text-blue-600" />
           <p className="mt-3 text-sm font-medium text-gray-900">Phone</p>
-          <a href="tel:[Support Phone]" className="mt-1 text-sm text-gray-600 hover:text-blue-600">
-            [Support Phone]
+          <a href="tel:+917259708722" className="mt-1 text-sm text-gray-600 hover:text-blue-600">
+            +91 72597 08722
           </a>
         </div>
         <div className="flex flex-col items-center rounded-xl border border-gray-200 bg-white p-6 text-center shadow-sm">
           <MapPin className="h-6 w-6 text-blue-600" />
           <p className="mt-3 text-sm font-medium text-gray-900">Address</p>
-          <p className="mt-1 text-sm text-gray-600">[Registered Address]</p>
+          <p className="mt-1 text-sm text-gray-600">Bommanahalli, Bengaluru</p>
         </div>
       </div>
     </Section>

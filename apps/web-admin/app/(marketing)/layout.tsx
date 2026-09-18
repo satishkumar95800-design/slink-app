@@ -46,7 +46,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
 
       <footer className="border-t border-gray-200 bg-white">
         <Container className="flex flex-col items-center justify-between gap-4 py-8 text-sm text-gray-500 sm:flex-row">
-          <p>&copy; {new Date().getFullYear()} [Business/Legal Entity Name]. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Arins Studios. All rights reserved.</p>
           <nav className="flex flex-wrap items-center gap-4">
             {NAV_LINKS.map((link) => (
               <Link key={link.href} href={link.href} className="hover:text-gray-700">

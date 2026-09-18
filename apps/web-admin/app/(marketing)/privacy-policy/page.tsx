@@ -8,10 +8,10 @@ export default function PrivacyPolicyPage() {
     <Section tone="light">
       <div className="mx-auto max-w-3xl">
         <h1 className="text-3xl font-bold text-gray-900">Privacy Policy</h1>
-        <p className="mt-2 text-sm text-gray-500">Last updated: [Date]</p>
+        <p className="mt-2 text-sm text-gray-500">Last updated: September 18, 2026</p>
 
         <p className="mt-8 text-gray-700">
-          [Business/Legal Entity Name] (&quot;we&quot;, &quot;us&quot;) operates the Slink mobile app and admin
+          Arins Studios (&quot;we&quot;, &quot;us&quot;) operates the Slink mobile app and admin
           web console (together, the &quot;Service&quot;), used by schools, teachers, and parents. This policy
           explains what information we collect, why, and how it is handled.
         </p>

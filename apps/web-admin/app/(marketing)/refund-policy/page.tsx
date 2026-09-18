@@ -8,10 +8,10 @@ export default function RefundPolicyPage() {
     <Section tone="light">
       <div className="mx-auto max-w-3xl">
         <h1 className="text-3xl font-bold text-gray-900">Refund &amp; Cancellation Policy</h1>
-        <p className="mt-2 text-sm text-gray-500">Last updated: [Date]</p>
+        <p className="mt-2 text-sm text-gray-500">Last updated: September 18, 2026</p>
 
         <p className="mt-8 text-gray-700">
-          Fee payments made through Slink are collected by [Business/Legal Entity Name] on behalf of your
+          Fee payments made through Slink are collected by Arins Studios on behalf of your
           school and processed via Razorpay. This policy covers refunds for those payments.
         </p>
 
