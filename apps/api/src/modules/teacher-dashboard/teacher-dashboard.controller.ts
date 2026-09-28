@@ -17,9 +17,9 @@ export class TeacherDashboardController {
     return this.service.getMyClasses(tenantId, user.id);
   }
 
-  /** Addendum 4 / A14 — Admin Dashboard "Teacher Workload" widget. */
+  /** Addendum 4 / A14 — Admin Dashboard "Teacher Workload" widget. Admin-only per the spec — not accounts/super_admin. */
   @Get('workload')
-  @Roles(Role.admin, Role.accounts, Role.super_admin)
+  @Roles(Role.admin)
   getWorkload(@TenantId() tenantId: string) {
     return this.service.getWorkload(tenantId);
   }
