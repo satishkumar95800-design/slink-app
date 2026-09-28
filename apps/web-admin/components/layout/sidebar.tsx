@@ -23,6 +23,9 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Payments', href: '/admin/payments', icon: '💳', hiddenForRoles: ['teacher'] },
   { label: 'Fee Reports', href: '/admin/fee-reports', icon: '📈', hiddenForRoles: ['teacher'] },
   { label: 'Reports', href: '/admin/reports', icon: '📊' },
+  { label: 'Documents', href: '/admin/documents', icon: '🗂️', hiddenForRoles: ['teacher'] },
+  { label: 'Timetable', href: '/admin/timetable', icon: '🗓️', hiddenForRoles: ['teacher'] },
+  { label: 'Payment Claims', href: '/admin/payment-claims', icon: '🧾', hiddenForRoles: ['teacher'] },
   { label: 'Import Data', href: '/admin/import', icon: '📥', hiddenForRoles: ['teacher'] },
   { label: 'Settings', href: '/admin/settings', icon: '⚙️', hiddenForRoles: ['teacher'] },
 ];

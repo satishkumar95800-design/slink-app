@@ -11,7 +11,7 @@ import { setSession } from '../../lib/auth';
 import type { Role } from '@slink/types';
 
 const schema = z.object({
-  tenantId: z.string().min(1, 'Tenant ID or slug is required'),
+  tenantId: z.string().optional(),
   email: z.string().email('Enter a valid email'),
   password: z.string().min(1, 'Password is required'),
 });
@@ -33,14 +33,18 @@ export default function LoginPage() {
   async function onSubmit(data: FormData) {
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/auth/email/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Tenant-ID': data.tenantId,
+      const tenantId = data.tenantId?.trim();
+      const res = await fetch(
+        `${API_BASE}${tenantId ? '/auth/email/login' : '/auth/super-admin/login'}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
+          },
+          body: JSON.stringify({ email: data.email, password: data.password }),
         },
-        body: JSON.stringify({ email: data.email, password: data.password }),
-      });
+      );
 
       const body = await res.json();
 
@@ -84,6 +88,7 @@ export default function LoginPage() {
             <Input
               label="Tenant ID / Slug"
               placeholder="e.g. test-school"
+              helpText="Leave blank if signing in as a super admin."
               error={errors.tenantId?.message}
               {...register('tenantId')}
             />

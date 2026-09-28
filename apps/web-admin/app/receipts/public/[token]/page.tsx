@@ -1,30 +1,37 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { api, ApiError } from '../../../../lib/api-client';
-import { isLoggedIn } from '../../../../lib/auth';
+import { useParams } from 'next/navigation';
 import { Spinner } from '../../../../components/ui/spinner';
 import { ReceiptCard, type ReceiptDetail } from '../../../../components/receipts/receipt-card';
 
-export default function ReceiptPrintPage() {
-  const params = useParams<{ id: string }>();
-  const router = useRouter();
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/v1';
+
+/**
+ * Addendum 4 / A9 — the SMS/push receipt link target. Deliberately outside
+ * any authenticated layout: the parent opening this from a text message has
+ * no web-admin session. The signed token in the URL is the only credential;
+ * this page never attaches a Bearer token or X-Tenant-ID header.
+ */
+export default function PublicReceiptPage() {
+  const params = useParams<{ token: string }>();
   const [receipt, setReceipt] = useState<ReceiptDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isLoggedIn()) {
-      router.replace('/login');
-      return;
-    }
-    api
-      .get<ReceiptDetail>(`/receipts/${params.id}`)
+    fetch(`${API_BASE}/receipts/public/${params.token}`)
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.message ?? 'This receipt link has expired or is invalid');
+        }
+        return res.json();
+      })
       .then(setReceipt)
-      .catch((e) => setError((e as ApiError).message))
+      .catch((e) => setError((e as Error).message))
       .finally(() => setLoading(false));
-  }, [params.id, router]);
+  }, [params.token]);
 
   if (loading) {
     return (
@@ -54,7 +61,6 @@ export default function ReceiptPrintPage() {
           Print / Save as PDF
         </button>
       </div>
-
       <ReceiptCard receipt={receipt} />
     </div>
   );

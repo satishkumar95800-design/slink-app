@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { api, ApiError } from '../../../lib/api-client';
@@ -16,6 +16,13 @@ import { useToast } from '../../../components/ui/toast';
 
 type FeeStatus = 'pending' | 'partial' | 'paid' | 'overdue' | 'waived';
 
+interface StudentFeeComponent {
+  id: string;
+  amountDue: number;
+  amountPaid: number;
+  feeItem: { id: string; label: string };
+}
+
 interface StudentFee {
   id: string;
   amountDue: number;
@@ -24,6 +31,7 @@ interface StudentFee {
   dueDate: string;
   student?: { name: string; admissionNo: string };
   feeStructure?: { name: string };
+  components: StudentFeeComponent[];
 }
 
 interface Student {
@@ -38,6 +46,11 @@ interface FeeStructure {
   totalAmount: number;
 }
 
+interface DiscountType {
+  id: string;
+  name: string;
+}
+
 const assignSchema = z.object({
   studentId: z.string().min(1, 'Student is required'),
   feeStructureId: z.string().min(1, 'Fee structure is required'),
@@ -45,11 +58,23 @@ const assignSchema = z.object({
 
 const offlineSchema = z.object({
   studentFeeId: z.string().min(1),
-  amount: z.number().min(0.01, 'Amount required'),
+  allocations: z
+    .array(
+      z.object({
+        studentFeeComponentId: z.string(),
+        label: z.string(),
+        balance: z.number(),
+        amount: z.number().min(0),
+      }),
+    )
+    .refine((rows) => rows.some((r) => r.amount > 0), 'Enter an amount for at least one fee component'),
   method: z.enum(['cash', 'cheque', 'bank_transfer', 'demand_draft']),
   reference: z.string().optional(),
   paidOn: z.string().optional(),
   notes: z.string().optional(),
+  discountTypeId: z.string().optional(),
+  discountAmount: z.number().optional(),
+  discountNote: z.string().optional(),
 });
 
 type AssignData = z.infer<typeof assignSchema>;
@@ -75,6 +100,7 @@ export default function StudentFeesPage() {
   const [fees, setFees] = useState<StudentFee[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [structures, setStructures] = useState<FeeStructure[]>([]);
+  const [discountTypes, setDiscountTypes] = useState<DiscountType[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,21 +109,28 @@ export default function StudentFeesPage() {
   const [statusFilter, setStatusFilter] = useState('');
 
   const assignForm = useForm<AssignData>({ resolver: zodResolver(assignSchema) });
-  const offlineForm = useForm<OfflineData>({ resolver: zodResolver(offlineSchema) });
+  const offlineForm = useForm<OfflineData>({
+    resolver: zodResolver(offlineSchema),
+    defaultValues: { allocations: [] },
+  });
+  const allocationFields = useFieldArray({ control: offlineForm.control, name: 'allocations' });
+  const selectedDiscountTypeId = offlineForm.watch('discountTypeId');
 
   async function fetchFees(status?: string) {
     try {
       setLoading(true);
       const qs = status ? `?status=${status}&limit=100` : '?limit=100';
-      const [feesRes, studentsRes, structuresRes] = await Promise.all([
+      const [feesRes, studentsRes, structuresRes, discountTypesRes] = await Promise.all([
         api.get<{ data: StudentFee[]; total: number }>(`/student-fees${qs}`),
         api.get<{ data: Student[]; meta: { total: number } }>('/students?limit=100'),
         api.get<FeeStructure[]>('/fee-structures'),
+        api.get<DiscountType[]>('/discount-types'),
       ]);
       setFees(feesRes.data);
       setTotal(feesRes.total);
       setStudents(studentsRes.data);
       setStructures(structuresRes);
+      setDiscountTypes(discountTypesRes);
       setError(null);
     } catch (e) {
       setError((e as Error).message);
@@ -124,18 +157,25 @@ export default function StudentFeesPage() {
 
   async function onOfflinePayment(data: OfflineData) {
     try {
-      const { studentFeeId, ...body } = data;
+      const allocations = data.allocations
+        .filter((a) => a.amount > 0)
+        .map((a) => ({ studentFeeComponentId: a.studentFeeComponentId, amount: a.amount }));
       const res = await api.post<{ studentFee: StudentFee; receipt: { id: string } }>(
-        `/student-fees/${studentFeeId}/offline-payment`,
+        `/student-fees/${data.studentFeeId}/offline-payment`,
         {
-          ...body,
-          reference: body.reference || undefined,
-          paidOn: body.paidOn || undefined,
+          allocations,
+          method: data.method,
+          reference: data.reference || undefined,
+          paidOn: data.paidOn || undefined,
+          notes: data.notes || undefined,
+          discountTypeId: data.discountTypeId || undefined,
+          discountAmount: data.discountTypeId ? data.discountAmount : undefined,
+          discountNote: data.discountTypeId ? data.discountNote || undefined : undefined,
         },
       );
       toast('Offline payment recorded', 'success');
       setSelectedFee(null);
-      offlineForm.reset();
+      offlineForm.reset({ allocations: [] });
       fetchFees(statusFilter);
       window.open(`/receipts/${res.receipt.id}/print`, '_blank');
     } catch (e) {
@@ -145,8 +185,18 @@ export default function StudentFeesPage() {
 
   function openOffline(fee: StudentFee) {
     setSelectedFee(fee);
-    offlineForm.setValue('studentFeeId', fee.id);
-    offlineForm.setValue('paidOn', new Date().toISOString().slice(0, 10));
+    offlineForm.reset({
+      studentFeeId: fee.id,
+      paidOn: new Date().toISOString().slice(0, 10),
+      allocations: fee.components
+        .filter((c) => c.amountDue - c.amountPaid > 0)
+        .map((c) => ({
+          studentFeeComponentId: c.id,
+          label: c.feeItem.label,
+          balance: c.amountDue - c.amountPaid,
+          amount: c.amountDue - c.amountPaid,
+        })),
+    });
   }
 
   const studentOptions = students.map((s) => ({
@@ -296,14 +346,26 @@ export default function StudentFeesPage() {
                 Balance: <span className="font-semibold text-gray-900">{formatCurrency(Math.max(0, selectedFee.amountDue - selectedFee.amountPaid))}</span>
               </p>
             </div>
-            <Input
-              label="Amount (₹)"
-              type="number"
-              step="0.01"
-              placeholder="e.g. 1000"
-              error={offlineForm.formState.errors.amount?.message}
-              {...offlineForm.register('amount', { valueAsNumber: true })}
-            />
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-gray-700">Amount per fee component (₹)</p>
+              {allocationFields.fields.map((field, index) => (
+                <div key={field.id} className="flex items-center justify-between gap-4">
+                  <label htmlFor={`allocation-${index}`} className="text-sm text-gray-600">
+                    {field.label} <span className="text-gray-400">(balance {formatCurrency(field.balance)})</span>
+                  </label>
+                  <Input
+                    id={`allocation-${index}`}
+                    type="number"
+                    step="0.01"
+                    className="w-32"
+                    {...offlineForm.register(`allocations.${index}.amount`, { valueAsNumber: true })}
+                  />
+                </div>
+              ))}
+              {offlineForm.formState.errors.allocations && (
+                <p className="text-xs text-red-600">{offlineForm.formState.errors.allocations.message}</p>
+              )}
+            </div>
             <Select
               label="Method"
               options={[
@@ -332,6 +394,27 @@ export default function StudentFeesPage() {
               placeholder="Any additional notes"
               {...offlineForm.register('notes')}
             />
+            <Select
+              label="Discount/Concession Type (optional)"
+              options={discountTypes.map((d) => ({ value: d.id, label: d.name }))}
+              placeholder="None"
+              {...offlineForm.register('discountTypeId')}
+            />
+            {selectedDiscountTypeId && (
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Discount Amount (₹)"
+                  type="number"
+                  step="0.01"
+                  {...offlineForm.register('discountAmount', { valueAsNumber: true })}
+                />
+                <Input
+                  label="Note"
+                  placeholder="e.g. Sibling of ADM-2025-0001"
+                  {...offlineForm.register('discountNote')}
+                />
+              </div>
+            )}
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="secondary" type="button" onClick={() => { setSelectedFee(null); offlineForm.reset(); }}>
                 Cancel

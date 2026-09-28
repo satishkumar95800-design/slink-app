@@ -27,7 +27,7 @@ interface Tenant {
   _count: { users: number; students: number };
 }
 
-type Tab = 'overview' | 'import' | 'settings';
+type Tab = 'overview' | 'import' | 'users' | 'settings';
 
 export default function TenantDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -80,7 +80,7 @@ export default function TenantDetailPage() {
       </div>
 
       <div className="flex gap-1 border-b">
-        {(['overview', 'import', 'settings'] as Tab[]).map((t) => (
+        {(['overview', 'import', 'users', 'settings'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -95,6 +95,7 @@ export default function TenantDetailPage() {
 
       {tab === 'overview' && <OverviewTab tenant={tenant} />}
       {tab === 'import' && <ImportWorkflow tenantOverride={tenant.slug} />}
+      {tab === 'users' && <UsersTab tenant={tenant} onChanged={fetchTenant} />}
       {tab === 'settings' && <SettingsTab tenant={tenant} onSaved={fetchTenant} />}
     </div>
   );
@@ -336,6 +337,178 @@ function AddTenantUserCard({ tenant, onCreated }: { tenant: Tenant; onCreated: (
         </div>
       )}
     </div>
+  );
+}
+
+interface TenantUser {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  role: string;
+}
+
+function UsersTab({ tenant, onChanged }: { tenant: Tenant; onChanged: () => void }) {
+  const { toast } = useToast();
+  const [search, setSearch] = useState('');
+  const [users, setUsers] = useState<TenantUser[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<TenantUser | null>(null);
+
+  async function runSearch(q: string) {
+    setLoading(true);
+    try {
+      const res = await api.get<{ data: TenantUser[] }>(
+        `/tenants/${tenant.id}/users${q.trim() ? `?search=${encodeURIComponent(q.trim())}` : ''}`,
+      );
+      setUsers(res.data);
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : 'Could not search users', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    runSearch('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenant.id]);
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border bg-white p-5">
+        <p className="text-sm font-semibold text-gray-900">Find a user in this tenant</p>
+        <p className="mt-1 text-xs text-gray-500">
+          Search by name, email, or phone — e.g. to locate an account for a data-deletion request.
+        </p>
+        <form
+          className="mt-4 flex gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            runSearch(search);
+          }}
+        >
+          <div className="flex-1">
+            <Input
+              placeholder="Search by name, email, or phone"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <Button type="submit" loading={loading}>
+            Search
+          </Button>
+        </form>
+      </div>
+
+      <div className="overflow-hidden rounded-lg border bg-white">
+        <table className="w-full text-sm">
+          <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
+            <tr>
+              <th className="px-4 py-2">Name</th>
+              <th className="px-4 py-2">Contact</th>
+              <th className="px-4 py-2">Role</th>
+              <th className="px-4 py-2" />
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {users.map((u) => (
+              <tr key={u.id}>
+                <td className="px-4 py-2 text-gray-900">{u.name}</td>
+                <td className="px-4 py-2 text-gray-500">{u.email ?? u.phone ?? '—'}</td>
+                <td className="px-4 py-2 capitalize text-gray-500">{u.role}</td>
+                <td className="px-4 py-2 text-right">
+                  <Button variant="danger" onClick={() => setDeleteTarget(u)}>
+                    Delete
+                  </Button>
+                </td>
+              </tr>
+            ))}
+            {users.length === 0 && !loading && (
+              <tr>
+                <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
+                  No matching users.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <DeleteUserModal
+        tenant={tenant}
+        user={deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onDeleted={() => {
+          setDeleteTarget(null);
+          toast('User and their data were permanently deleted', 'success');
+          runSearch(search);
+          onChanged();
+        }}
+      />
+    </div>
+  );
+}
+
+function DeleteUserModal({
+  tenant,
+  user,
+  onClose,
+  onDeleted,
+}: {
+  tenant: Tenant;
+  user: TenantUser | null;
+  onClose: () => void;
+  onDeleted: () => void;
+}) {
+  const { toast } = useToast();
+  const [confirmName, setConfirmName] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    setConfirmName('');
+  }, [user]);
+
+  async function handleDelete() {
+    if (!user) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/tenants/${tenant.id}/users/${user.id}`);
+      onDeleted();
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : 'Could not delete user', 'error');
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <Modal open={!!user} onClose={onClose} title={user ? `Permanently delete "${user.name}"?` : ''}>
+      {user && (
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            This immediately and irreversibly deletes this user&apos;s account, sessions, parent-student links,
+            class/subject assignments, and notification history. Type{' '}
+            <span className="font-mono font-semibold text-gray-900">{user.name}</span> to confirm.
+          </p>
+          <Input placeholder={user.name} value={confirmName} onChange={(e) => setConfirmName(e.target.value)} />
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="secondary" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              disabled={confirmName !== user.name}
+              loading={deleting}
+              onClick={handleDelete}
+            >
+              Delete permanently
+            </Button>
+          </div>
+        </div>
+      )}
+    </Modal>
   );
 }
 
