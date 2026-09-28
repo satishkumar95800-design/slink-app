@@ -63,6 +63,7 @@ class _FeeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final canPay = fee.outstanding > 0 && fee.status != FeeStatus.waived;
+    final hasReceipt = fee.status == FeeStatus.paid || fee.status == FeeStatus.partial;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -103,11 +104,25 @@ class _FeeCard extends StatelessWidget {
                   canPay ? '₹${fee.outstanding.toStringAsFixed(2)} due' : 'Paid in full',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                if (canPay)
-                  FilledButton(
-                    onPressed: () => context.push('/fees/${fee.id}/pay'),
-                    child: const Text('Pay now'),
-                  ),
+                Row(
+                  children: [
+                    if (hasReceipt)
+                      TextButton(
+                        onPressed: () => context.push('/fees/${fee.id}/receipts'),
+                        child: const Text('View Receipt'),
+                      ),
+                    if (canPay)
+                      TextButton(
+                        onPressed: () => context.push('/fees/${fee.id}/claim', extra: fee.outstanding),
+                        child: const Text('Already paid? Upload receipt'),
+                      ),
+                    if (canPay)
+                      FilledButton(
+                        onPressed: () => context.push('/fees/${fee.id}/pay'),
+                        child: const Text('Pay now'),
+                      ),
+                  ],
+                ),
               ],
             ),
           ],

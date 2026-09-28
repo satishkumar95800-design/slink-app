@@ -6,14 +6,21 @@ import '../../features/auth/session_controller.dart';
 import '../../features/auth/splash_page.dart';
 import '../../features/auth/tenant_entry_page.dart';
 import '../../features/dashboard/dashboard_page.dart';
+import '../../features/dashboard/my_classes_page.dart';
 import '../../features/fees/fees_list_page.dart';
 import '../../features/homework/send_homework_page.dart';
 import '../../features/notices/notice_detail_page.dart';
 import '../../features/notices/send_notice_page.dart';
+import '../../features/notifications/notification_history_page.dart';
+import '../../features/payment_claims/my_payment_claims_page.dart';
+import '../../features/payment_claims/submit_payment_claim_page.dart';
 import '../../features/payments/checkout_page.dart';
 import '../../features/profile/profile_page.dart';
+import '../../features/receipts/fee_receipts_page.dart';
+import '../../features/receipts/receipt_detail_page.dart';
 import '../../features/reports/report_detail_page.dart';
 import '../../features/reports/reports_list_page.dart';
+import '../../features/timetable/weekly_routine_page.dart';
 import '../../shared/services/secure_storage_service.dart';
 
 const _authRoutes = ['/onboarding/tenant', '/login/phone', '/login/otp'];
@@ -22,6 +29,14 @@ const _authRoutes = ['/onboarding/tenant', '/login/phone', '/login/otp'];
 /// which intentionally resets the navigation stack at exactly those moments.
 final appRouterProvider = Provider<GoRouter>((ref) {
   final sessionState = ref.watch(sessionControllerProvider);
+  // Captured synchronously, before any `await` — the redirect callback below
+  // is async, and if session status changes while it's mid-flight, this whole
+  // provider rebuilds and disposes `ref`. Calling `ref.read(...)` again after
+  // the `await` would then throw ("Cannot use ref functions after the
+  // dependency of a provider changed but before the provider rebuilt"). The
+  // plain repository instance itself stays valid to use, so we hold onto it
+  // instead of touching `ref` again post-await.
+  final secureStorage = ref.read(secureStorageServiceProvider);
 
   return GoRouter(
     initialLocation: '/splash',
@@ -33,7 +48,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       if (sessionState.status == SessionStatus.loggedOut) {
-        final tenantId = await ref.read(secureStorageServiceProvider).readTenantId();
+        final tenantId = await secureStorage.readTenantId();
         if (tenantId == null) {
           return location == '/onboarding/tenant' ? null : '/onboarding/tenant';
         }
@@ -53,9 +68,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/profile', builder: (_, __) => const ProfilePage()),
       GoRoute(path: '/dashboard/fees', builder: (_, __) => const FeesListPage()),
       GoRoute(path: '/dashboard/reports', builder: (_, __) => const ReportsListPage()),
+      GoRoute(path: '/dashboard/notifications', builder: (_, __) => const NotificationHistoryPage()),
+      GoRoute(path: '/dashboard/routine', builder: (_, __) => const WeeklyRoutinePage()),
+      GoRoute(path: '/dashboard/my-classes', builder: (_, __) => const MyClassesPage()),
       GoRoute(
         path: '/fees/:feeId/pay',
         builder: (_, state) => CheckoutPage(feeId: state.pathParameters['feeId']!),
+      ),
+      GoRoute(
+        path: '/fees/:feeId/claim',
+        builder: (_, state) => SubmitPaymentClaimPage(
+          feeId: state.pathParameters['feeId']!,
+          outstandingAmount: state.extra as double?,
+        ),
+      ),
+      GoRoute(
+        path: '/fees/:feeId/receipts',
+        builder: (_, state) => FeeReceiptsPage(feeId: state.pathParameters['feeId']!),
+      ),
+      GoRoute(path: '/payment-claims/mine', builder: (_, __) => const MyPaymentClaimsPage()),
+      GoRoute(
+        path: '/receipts/:id',
+        builder: (_, state) => ReceiptDetailPage(receiptId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/reports/:id',

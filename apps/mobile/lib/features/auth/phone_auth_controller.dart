@@ -36,6 +36,25 @@ class PhoneAuthController extends StateNotifier<PhoneAuthState> {
     state = PhoneAuthState(phoneNumber: phoneNumber, isLoading: true);
 
     try {
+      final isRegistered = await _ref.read(authRepositoryProvider).isPhoneRegistered(phoneNumber);
+      if (!isRegistered) {
+        state = PhoneAuthState(
+          phoneNumber: phoneNumber,
+          error: "This number isn't registered. Please contact your school admin to add it.",
+        );
+        return;
+      }
+    } catch (e) {
+      final message = switch (e) {
+        ApiException() => e.message,
+        DioException() => ApiException.fromDioError(e).message,
+        _ => 'Could not verify your number. Please try again.',
+      };
+      state = PhoneAuthState(phoneNumber: phoneNumber, error: message);
+      return;
+    }
+
+    try {
       await FirebaseAuth.instance.verifyPhoneNumber(
         phoneNumber: phoneNumber,
         verificationCompleted: (credential) async {

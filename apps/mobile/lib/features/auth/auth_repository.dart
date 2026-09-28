@@ -16,6 +16,16 @@ class AuthRepository {
     return AuthResult.fromJson(response.data!);
   }
 
+  /// Checked before triggering Firebase's OTP send, so an unregistered
+  /// number never gets sent a code at all.
+  Future<bool> isPhoneRegistered(String phone) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/auth/phone/check',
+      data: {'phone': phone},
+    );
+    return response.data!['exists'] as bool;
+  }
+
   Future<void> logout(String refreshToken) async {
     await _dio.post('/auth/logout', data: {'refreshToken': refreshToken});
   }

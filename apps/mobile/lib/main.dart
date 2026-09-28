@@ -61,12 +61,16 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
     final type = data['type']?.toString();
     final feeId = data['feeId'] ?? data['studentFeeId'];
     final reportId = data['reportId'];
+    final receiptId = data['receiptId'];
 
     switch (type) {
       case 'fee_due':
       case 'fee_payment':
       case 'payment':
         if (feeId != null) return (route: '/fees/$feeId/pay', extra: null);
+        break;
+      case 'receipt':
+        if (receiptId != null) return (route: '/receipts/$receiptId', extra: null);
         break;
       case 'report':
       case 'report_published':
