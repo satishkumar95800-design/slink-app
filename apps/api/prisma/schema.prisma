@@ -81,6 +81,12 @@ enum Caste {
   Other
 }
 
+enum Gender {
+  male
+  female
+  other
+}
+
 enum NotificationChannel {
   fcm
   sms
@@ -114,6 +120,19 @@ enum BillingFrequency {
   one_time
   monthly
   quarterly
+}
+
+enum ClaimPaymentMode {
+  cash
+  cheque
+  bank_transfer
+  upi
+}
+
+enum PaymentClaimStatus {
+  pending
+  approved
+  rejected
 }
 
 enum DiscountKind {
@@ -167,6 +186,10 @@ model Tenant {
   transportSlabs           TransportSlab[]
   subjects                 Subject[]
   teacherSubjects          TeacherSubject[]
+  documentCategories       DocumentCategory[]
+  accountantDocuments      AccountantDocument[]
+  timetableSlots           TimetableSlot[]
+  paymentClaims            PaymentClaim[]
 
   @@map("tenants")
 }
@@ -195,6 +218,9 @@ model User {
   recordedReceipts Receipt[]       @relation("ReceiptRecordedBy")
   taughtClasses    ClassTeacher[]
   taughtSubjects   TeacherSubject[]
+  timetableSlots   TimetableSlot[]
+  submittedClaims  PaymentClaim[]  @relation("PaymentClaimSubmitter")
+  reviewedClaims   PaymentClaim[]  @relation("PaymentClaimReviewer")
 
   @@unique([tenantId, phone])
   @@unique([tenantId, email])
@@ -227,6 +253,7 @@ model Student {
   name            String
   admissionNo     String      @map("admission_no")
   dob             DateTime?   @db.Date
+  gender          Gender?
   bloodGroup      BloodGroup? @map("blood_group")
   caste           Caste?
   photoUrl        String?     @map("photo_url")
@@ -244,6 +271,7 @@ model Student {
   receipts          Receipt[]
   discounts         StudentDiscount[]
   customFieldValues StudentCustomFieldValue[]
+  paymentClaims     PaymentClaim[]
 
   @@unique([tenantId, admissionNo])
   @@index([tenantId])
@@ -283,6 +311,7 @@ model Class {
   feeStructureLinks  FeeStructureClass[]
   reports            Report[]
   receipts           Receipt[]
+  timetableSlots     TimetableSlot[]
 
   @@unique([tenantId, name, section, academicYear])
   @@index([tenantId])
@@ -316,6 +345,7 @@ model Subject {
 
   tenant             Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   teacherAssignments TeacherSubject[]
+  timetableSlots     TimetableSlot[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -342,6 +372,32 @@ model TeacherSubject {
   @@index([teacherId])
   @@index([classId])
   @@map("teacher_subjects")
+}
+
+// ─── Timetable (Addendum 4 / A10) ──────────────────────────────────────────────
+
+// One period, one class, one day — the admin-managed weekly grid a teacher's
+// dashboard reads from. dayOfWeek: 1=Monday .. 6=Saturday.
+model TimetableSlot {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  teacherId    String   @map("teacher_id") @db.Uuid
+  classId      String   @map("class_id") @db.Uuid
+  subjectId    String   @map("subject_id") @db.Uuid
+  dayOfWeek    Int      @map("day_of_week")
+  periodNumber Int      @map("period_number")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teacher User    @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, classId, dayOfWeek, periodNumber])
+  @@index([tenantId, teacherId])
+  @@index([tenantId, classId])
+  @@map("timetable_slots")
 }
 
 // ─── Fees ─────────────────────────────────────────────────────────────────────
@@ -424,6 +480,7 @@ model StudentFee {
   orders       PaymentOrder[]
   receipts     Receipt[]
   components   StudentFeeComponent[]
+  paymentClaims PaymentClaim[]
 
   @@unique([studentId, feeStructureId])
   @@index([tenantId])
@@ -523,11 +580,23 @@ model Receipt {
   paymentOrderId String?       @unique @map("payment_order_id") @db.Uuid
   createdAt      DateTime      @default(now()) @map("created_at")
 
+  // Addendum 4 / A8 — optional discount/concession label on the transaction.
+  // Record-keeping only: does not itself alter amountDue/amountPaid.
+  discountTypeId String?  @map("discount_type_id") @db.Uuid
+  discountAmount Decimal? @map("discount_amount") @db.Decimal(12, 2)
+  discountNote   String?  @map("discount_note")
+
+  // Addendum 4 / A9 — generated receipt PDF + delivery tracking.
+  pdfKey             String?   @map("pdf_key")
+  pdfGeneratedAt     DateTime? @map("pdf_generated_at")
+  receiptDeliveredAt DateTime? @map("receipt_delivered_at")
+
   tenant         Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   studentFee     StudentFee          @relation(fields: [studentFeeId], references: [id])
   student        Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
   class          Class               @relation(fields: [classId], references: [id])
   recordedByUser User?               @relation("ReceiptRecordedBy", fields: [recordedBy], references: [id])
+  discountType   DiscountType?       @relation(fields: [discountTypeId], references: [id])
   allocations    ReceiptAllocation[]
 
   @@unique([tenantId, receiptNumber])
@@ -553,6 +622,41 @@ model ReceiptAllocation {
   @@index([receiptId])
   @@index([studentFeeComponentId])
   @@map("receipt_allocations")
+}
+
+// ─── Payment Claims (Addendum 4 / A12) ─────────────────────────────────────────
+
+// A parent's self-reported "I already paid this elsewhere" submission. Never
+// written straight to Receipt/StudentFee — kept as its own pending record
+// until an accountant/admin approves it, so an unverified claim can never look
+// identical to a verified, staff-recorded payment on the official fee ledger.
+model PaymentClaim {
+  id            String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String             @map("tenant_id") @db.Uuid
+  studentId     String             @map("student_id") @db.Uuid
+  studentFeeId  String             @map("student_fee_id") @db.Uuid
+  submittedBy   String             @map("submitted_by") @db.Uuid
+  fileKey       String             @map("file_key")
+  claimedAmount Decimal?           @map("claimed_amount") @db.Decimal(12, 2)
+  claimedDate   DateTime?          @map("claimed_date") @db.Date
+  claimedMode   ClaimPaymentMode?  @map("claimed_mode")
+  note          String?
+  status        PaymentClaimStatus @default(pending)
+  reviewedBy    String?            @map("reviewed_by") @db.Uuid
+  reviewedAt    DateTime?          @map("reviewed_at")
+  reviewNote    String?            @map("review_note")
+  createdAt     DateTime           @default(now()) @map("created_at")
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentFee StudentFee @relation(fields: [studentFeeId], references: [id], onDelete: Cascade)
+  submitter  User       @relation("PaymentClaimSubmitter", fields: [submittedBy], references: [id], onDelete: Cascade)
+  reviewer   User?      @relation("PaymentClaimReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([tenantId])
+  @@index([studentFeeId])
+  @@index([status])
+  @@map("payment_claims")
 }
 
 // ─── Reports ──────────────────────────────────────────────────────────────────
@@ -652,6 +756,7 @@ model DiscountType {
 
   tenant      Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   assignments StudentDiscount[]
+  receipts    Receipt[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -761,4 +866,42 @@ model ImportJob {
 
   @@index([tenantId])
   @@map("import_jobs")
+}
+
+// ─── Accountant Documents (Addendum 4 / A13) ──────────────────────────────────
+
+// Per-tenant catalog of document categories ("Bank Statement", "Reconciliation
+// Sheet", "Cheque Scan", ...) — mirrors DiscountType's admin-configurable-list pattern.
+model DocumentCategory {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant    Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  documents AccountantDocument[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("document_categories")
+}
+
+// General-purpose working storage for the accounts team's own supporting
+// documents — intentionally simple storage/retrieval, no auto-processing.
+model AccountantDocument {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  uploadedBy String   @map("uploaded_by") @db.Uuid
+  fileKey    String   @map("file_key")
+  categoryId String   @map("category_id") @db.Uuid
+  note       String?
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category DocumentCategory @relation(fields: [categoryId], references: [id])
+
+  @@index([tenantId])
+  @@index([categoryId])
+  @@map("accountant_documents")
 }

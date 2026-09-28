@@ -8,6 +8,8 @@ import {
   NotificationChannel,
   NotificationStatus,
   Prisma,
+  ReportStatus,
+  ReportType,
   Role,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -103,7 +105,59 @@ export class NotificationsService {
       await this.broadcastSms(tenantId, users, dto);
     }
 
+    // Homework broadcast (class target + attached photo) also persists a
+    // published Report per student, so it shows up under Reports later —
+    // not just as a push notification a parent might dismiss and lose.
+    if (
+      actor.role === Role.teacher &&
+      dto.targetType === BroadcastTarget.CLASS &&
+      dto.fileKey &&
+      dto.targetId
+    ) {
+      await this.createHomeworkReports(
+        tenantId,
+        dto.targetId,
+        actor.id,
+        dto.body,
+        data?.attachmentUrl,
+      );
+    }
+
     return { queued: users.length };
+  }
+
+  /** One published Report(type=homework) per student in the class — mirrors
+   * the permission check already done in assertTeacherCanBroadcast (any
+   * teacher linked to the class may send homework), so no extra check here. */
+  private async createHomeworkReports(
+    tenantId: string,
+    classId: string,
+    teacherId: string,
+    caption: string,
+    attachmentUrl: string | undefined,
+  ): Promise<void> {
+    const cls = await this.prisma.class.findUnique({
+      where: { id: classId, tenantId },
+      select: { academicYear: true, students: { select: { id: true } } },
+    });
+    if (!cls || cls.students.length === 0) return;
+
+    const term = new Date().toISOString().slice(0, 10);
+
+    await this.prisma.report.createMany({
+      data: cls.students.map((student) => ({
+        tenantId,
+        studentId: student.id,
+        classId,
+        teacherId,
+        type: ReportType.homework,
+        term,
+        academicYear: cls.academicYear,
+        content: { caption, attachmentUrl: attachmentUrl ?? null },
+        status: ReportStatus.published,
+        publishedAt: new Date(),
+      })),
+    });
   }
 
   // ── Send to a single user (used internally by other modules) ────────────────
@@ -144,6 +198,36 @@ export class NotificationsService {
         skip: ((query.page ?? 1) - 1) * (query.limit ?? 20),
         take: query.limit ?? 20,
         include: { user: { select: { id: true, name: true, phone: true } } },
+      }),
+      this.prisma.notification.count({ where }),
+    ]);
+
+    return { data, total, page: query.page ?? 1, limit: query.limit ?? 20 };
+  }
+
+  /**
+   * A user's own notification history (parent/teacher "view later" list) —
+   * always scoped to the caller's own id, never a client-supplied userId.
+   */
+  async findMine(tenantId: string, userId: string, query: NotificationQueryDto) {
+    const where: Prisma.NotificationWhereInput = { tenantId, userId };
+    if (query.channel) where.channel = query.channel;
+
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.notification.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: ((query.page ?? 1) - 1) * (query.limit ?? 20),
+        take: query.limit ?? 20,
+        select: {
+          id: true,
+          title: true,
+          body: true,
+          data: true,
+          channel: true,
+          status: true,
+          createdAt: true,
+        },
       }),
       this.prisma.notification.count({ where }),
     ]);

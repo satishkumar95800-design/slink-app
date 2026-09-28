@@ -3,6 +3,8 @@ import {
   IsString,
   IsDateString,
   IsOptional,
+  IsUUID,
+  IsNumber,
   MaxLength,
   IsArray,
   ArrayMinSize,
@@ -46,4 +48,18 @@ export class RecordOfflinePaymentDto {
   @MaxLength(500)
   @IsOptional()
   notes?: string;
+
+  /** Addendum 4 / A8 — optional discount/concession label for this payment. Record-keeping only. */
+  @IsUUID()
+  @IsOptional()
+  discountTypeId?: string;
+
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsOptional()
+  discountAmount?: number;
+
+  @IsString()
+  @MaxLength(500)
+  @IsOptional()
+  discountNote?: string;
 }

@@ -69,6 +69,13 @@ export class InsightsController {
     return this.insightsService.getCollectionRegister(tenantId, query);
   }
 
+  /** Addendum 4 / A11 — Accountant Dashboard "Collection Forecast" widget. */
+  @Get('collection-forecast')
+  @Roles(Role.admin, Role.accounts, Role.super_admin)
+  collectionForecast(@TenantId() tenantId: string) {
+    return this.insightsService.getCollectionForecast(tenantId);
+  }
+
   private respond(res: Response, query: InsightsQueryDto, data: unknown[], filename: string) {
     if (query.format === 'csv') {
       const csv = this.insightsService.toCsv(data as Record<string, unknown>[]);

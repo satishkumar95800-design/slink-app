@@ -153,6 +153,10 @@ export class FilesService {
         return `private/${tenantId}/attachments/${entityId ? `${entityId}/` : ''}${uuid}${ext}`;
       case FileCategory.STUDENT_PHOTO:
         return `private/${tenantId}/students/${entityId ?? uuid}/${uuid}${ext}`;
+      case FileCategory.GENERAL_DOCUMENT:
+        return `private/${tenantId}/documents/${uuid}${ext}`;
+      case FileCategory.PAYMENT_CLAIM_PROOF:
+        return `private/${tenantId}/payment-claims/${uuid}${ext}`;
     }
   }
 
@@ -182,6 +186,8 @@ export class FilesService {
       'image/svg+xml': '.svg',
       'application/pdf': '.pdf',
       'text/plain': '.txt',
+      'application/vnd.ms-excel': '.xls',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
     };
     return map[mimeType] ?? '';
   }

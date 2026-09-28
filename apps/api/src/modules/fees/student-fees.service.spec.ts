@@ -108,6 +108,7 @@ const mockTx = {
 
 const mockReceiptsService = {
   createForPayment: jest.fn(),
+  deliverReceiptNotifications: jest.fn(),
 };
 
 describe('StudentFeesService', () => {

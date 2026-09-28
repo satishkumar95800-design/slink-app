@@ -180,7 +180,7 @@ export class PaymentsService {
     const fee = await this.prisma.studentFee.findUniqueOrThrow({
       where: { id: order.studentFeeId },
       include: {
-        student: { select: { id: true, classId: true } },
+        student: { select: { id: true, name: true, classId: true } },
         components: { orderBy: { dueDate: 'asc' } },
       },
     });
@@ -220,7 +220,7 @@ export class PaymentsService {
     // Callback-form transaction (not the array form used elsewhere in this file) —
     // receipt-number generation needs to read the incremented tenant sequence
     // before inserting the Receipt row, which the array form can't express.
-    await this.prisma.$transaction(async (tx) => {
+    const receipt = await this.prisma.$transaction(async (tx) => {
       await tx.paymentOrder.update({
         where: { id: order.id },
         data: { status: PaymentOrderStatus.paid },
@@ -261,7 +261,7 @@ export class PaymentsService {
           },
         },
       });
-      const receipt = await this.receiptsService.createForPayment(tx, {
+      const createdReceipt = await this.receiptsService.createForPayment(tx, {
         tenantId: order.tenantId,
         studentFeeId: order.studentFeeId,
         studentId: fee.student.id,
@@ -274,9 +274,20 @@ export class PaymentsService {
       });
       for (const alloc of componentAllocations) {
         await tx.receiptAllocation.create({
-          data: { receiptId: receipt.id, studentFeeComponentId: alloc.id, amount: alloc.amount },
+          data: { receiptId: createdReceipt.id, studentFeeComponentId: alloc.id, amount: alloc.amount },
         });
       }
+      return createdReceipt;
+    });
+
+    // Addendum 4 / A9 — SMS + push delivery, outside the transaction (see
+    // student-fees.service.ts's offline-payment equivalent for the same reasoning).
+    await this.receiptsService.deliverReceiptNotifications({
+      tenantId: order.tenantId,
+      receiptId: receipt.id,
+      studentId: fee.student.id,
+      studentName: fee.student.name,
+      amount: order.amount,
     });
   }
 

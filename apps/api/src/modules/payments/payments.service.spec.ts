@@ -114,6 +114,7 @@ const mockSecrets = {
 
 const mockReceiptsService = {
   createForPayment: jest.fn(),
+  deliverReceiptNotifications: jest.fn(),
 };
 
 describe('PaymentsService', () => {
@@ -304,7 +305,7 @@ describe('PaymentsService', () => {
         amountPaid: new Prisma.Decimal('0.00'),
         status: FeeStatus.pending,
         dueDate: new Date('2099-12-31'),
-        student: { id: 'student-uuid', classId: 'class-uuid' },
+        student: { id: 'student-uuid', name: 'Test Student', classId: 'class-uuid' },
         components: [
           {
             id: 'component-uuid',
@@ -354,6 +355,14 @@ describe('PaymentsService', () => {
           paidOn: paidAt,
           recordedBy: null,
           paymentOrderId: 'order-uuid',
+        }),
+      );
+      expect(mockReceiptsService.deliverReceiptNotifications).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId: 'tenant-uuid',
+          receiptId: 'receipt-uuid',
+          studentId: 'student-uuid',
+          studentName: 'Test Student',
         }),
       );
     });

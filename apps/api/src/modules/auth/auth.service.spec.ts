@@ -73,23 +73,15 @@ describe('AuthService', () => {
   });
 
   describe('verifyPhoneOtp', () => {
-    it('creates a new user on first login and returns tokens', async () => {
+    it('rejects an unregistered phone number without creating an account', async () => {
       firebaseMock.verifyIdToken.mockResolvedValue({ phone_number: '+911234567890' });
       prismaMock.user.findUnique.mockResolvedValue(null);
-      prismaMock.user.create.mockResolvedValue(mockUser);
-      prismaMock.refreshToken.create.mockResolvedValue({});
 
-      const result = await service.verifyPhoneOtp('tenant-uuid', {
-        firebaseIdToken: 'firebase.id.token',
-      });
+      await expect(
+        service.verifyPhoneOtp('tenant-uuid', { firebaseIdToken: 'firebase.id.token' }),
+      ).rejects.toThrow(ForbiddenException);
 
-      expect(prismaMock.user.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ phone: '+911234567890', role: Role.parent }),
-        }),
-      );
-      expect(result.accessToken).toBe('signed.jwt.token');
-      expect(result.refreshToken).toMatch(/^[0-9a-f-]{36}$/);
+      expect(prismaMock.user.create).not.toHaveBeenCalled();
     });
 
     it('returns tokens for existing verified user without re-creating', async () => {

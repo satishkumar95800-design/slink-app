@@ -20,6 +20,7 @@ import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { TenantQueryDto } from './dto/tenant-query.dto';
 import { PurgeTenantDto } from './dto/purge-tenant.dto';
 import { CreateTenantUserDto } from './dto/create-tenant-user.dto';
+import { UserQueryDto } from '../users/dto/user-query.dto';
 
 /**
  * Platform-level tenant management for super_admin.
@@ -77,5 +78,26 @@ export class TenantsAdminController {
     @Body() dto: CreateTenantUserDto,
   ) {
     return this.usersService.create(id, dto);
+  }
+
+  /** Search this tenant's users by name/email/phone — used to locate a specific
+   * account for a data-erasure request without browsing the full list. */
+  @Get(':id/users')
+  findUsers(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() query: UserQueryDto,
+  ) {
+    return this.usersService.findAll(id, query);
+  }
+
+  /** Erasure request: permanently deletes one user and every row scoped to them
+   * (sessions, parent-student links, class/subject assignments, notifications). */
+  @Delete(':id/users/:userId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteUser(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+  ) {
+    await this.usersService.remove(id, userId);
   }
 }

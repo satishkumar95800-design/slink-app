@@ -30,6 +30,10 @@ import { CustomFieldsModule } from './modules/custom-fields/custom-fields.module
 import { TransportModule } from './modules/transport/transport.module';
 import { SubjectsModule } from './modules/subjects/subjects.module';
 import { TeachersModule } from './modules/teachers/teachers.module';
+import { AccountantDocumentsModule } from './modules/accountant-documents/accountant-documents.module';
+import { TimetableModule } from './modules/timetable/timetable.module';
+import { TeacherDashboardModule } from './modules/teacher-dashboard/teacher-dashboard.module';
+import { PaymentClaimsModule } from './modules/payment-claims/payment-claims.module';
 
 @Module({
   imports: [
@@ -64,6 +68,10 @@ import { TeachersModule } from './modules/teachers/teachers.module';
     TransportModule,
     SubjectsModule,
     TeachersModule,
+    AccountantDocumentsModule,
+    TimetableModule,
+    TeacherDashboardModule,
+    PaymentClaimsModule,
   ],
 })
 export class AppModule implements NestModule {
@@ -75,9 +83,17 @@ export class AppModule implements NestModule {
       .exclude(
         { path: 'health', method: RequestMethod.GET },
         { path: 'payments/webhook', method: RequestMethod.POST },
+        { path: 'auth/super-admin/login', method: RequestMethod.POST },
         { path: 'tenants', method: RequestMethod.ALL },
         { path: 'tenants/:id', method: RequestMethod.ALL },
+        { path: 'tenants/:id/users', method: RequestMethod.ALL },
+        { path: 'tenants/:id/users/:userId', method: RequestMethod.ALL },
+        { path: 'tenants/:id/purge', method: RequestMethod.ALL },
         { path: 'dev/audit-logs', method: RequestMethod.ALL },
+        // Addendum 4 / A9 — unauthenticated receipt link: no X-Tenant-ID header
+        // (opened straight from an SMS/push, not a logged-in session); the
+        // signed token itself carries the tenantId instead.
+        { path: 'receipts/public/:token', method: RequestMethod.GET },
       )
       .forRoutes('*');
   }

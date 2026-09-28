@@ -38,6 +38,7 @@ export class InsightsService {
       method: query.method,
       dateFrom: query.dateFrom,
       dateTo: query.dateTo,
+      discountTypeId: query.discountTypeId,
       page: isCsv ? 1 : query.page,
       limit: isCsv ? CSV_EXPORT_ROW_CAP : query.limit,
     });
@@ -153,6 +154,48 @@ export class InsightsService {
         totalAmount: g._sum.amount ?? new Prisma.Decimal(0),
         count: g._count.id,
       })),
+    };
+  }
+
+  /**
+   * Addendum 4 / A11 — "Collection Forecast" widget: last 3 completed calendar
+   * months' actual collection (from Receipt, already used by every other
+   * report here) plus a simple moving-average projection for next month.
+   * Starts with the simpler blended total per the addendum's own guidance —
+   * no per-fee-component breakdown yet. Computed on request rather than
+   * cached/nightly: a school's receipt volume is small enough that this
+   * three-month aggregate is cheap on every dashboard load.
+   */
+  async getCollectionForecast(tenantId: string) {
+    const now = new Date();
+    const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthStarts = [3, 2, 1].map(
+      (monthsAgo) => new Date(now.getFullYear(), now.getMonth() - monthsAgo, 1),
+    );
+    const startOfWindow = monthStarts[0];
+
+    const rows = await this.prisma.$queryRaw<{ month: Date; total: Prisma.Decimal }[]>`
+      SELECT date_trunc('month', paid_on) AS month, SUM(amount) AS total
+      FROM receipts
+      WHERE tenant_id = ${tenantId}::uuid
+        AND paid_on >= ${startOfWindow}
+        AND paid_on < ${startOfCurrentMonth}
+      GROUP BY month
+    `;
+    const actualByMonth = new Map(
+      rows.map((r) => [r.month.toISOString().slice(0, 7), Number(r.total)]),
+    );
+
+    const months = monthStarts.map((d) => {
+      const key = d.toISOString().slice(0, 7);
+      return { month: key, actual: actualByMonth.get(key) ?? 0 };
+    });
+    const projectedNextMonth = months.reduce((sum, m) => sum + m.actual, 0) / months.length;
+
+    return {
+      months,
+      projectedNextMonth,
+      label: 'Projected, based on the last 3 months — not a guarantee',
     };
   }
 

@@ -1,6 +1,6 @@
 import { IsString, IsUUID, IsOptional, IsEnum, MinLength, MaxLength, IsDateString, IsUrl } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { BloodGroup, Caste } from '@prisma/client';
+import { BloodGroup, Caste, Gender } from '@prisma/client';
 import { BLOOD_GROUP_DISPLAY_TO_ENUM, BLOOD_GROUP_OPTIONS } from '../../../common/blood-group';
 
 export class UpdateStudentDto {
@@ -17,6 +17,10 @@ export class UpdateStudentDto {
   @IsDateString()
   @IsOptional()
   dob?: string;
+
+  @IsEnum(Gender)
+  @IsOptional()
+  gender?: Gender;
 
   @Transform(({ value }) => BLOOD_GROUP_DISPLAY_TO_ENUM[value] ?? value)
   @IsEnum(BloodGroup, {

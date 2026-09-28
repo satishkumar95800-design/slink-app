@@ -152,7 +152,7 @@ export class StudentFeesService {
     const fee = await this.prisma.studentFee.findUnique({
       where: { id, tenantId },
       include: {
-        student: { select: { id: true, classId: true } },
+        student: { select: { id: true, name: true, classId: true } },
         components: { include: { feeItem: { select: { label: true } } } },
       },
     });
@@ -160,6 +160,13 @@ export class StudentFeesService {
 
     if (fee.status === FeeStatus.waived) {
       throw new BadRequestException('Cannot record payment for a waived fee');
+    }
+
+    if (dto.discountTypeId) {
+      const discountType = await this.prisma.discountType.findUnique({
+        where: { id: dto.discountTypeId, tenantId },
+      });
+      if (!discountType) throw new BadRequestException('Discount type not found');
     }
 
     const componentsById = new Map(fee.components.map((c) => [c.id, c]));
@@ -238,6 +245,8 @@ export class StudentFeesService {
             previousAmountPaid: fee.amountPaid.toFixed(2),
             newAmountPaid: newAmountPaid.toFixed(2),
             newStatus,
+            discountTypeId: dto.discountTypeId ?? null,
+            discountAmount: dto.discountAmount ?? null,
           },
         },
       });
@@ -253,6 +262,9 @@ export class StudentFeesService {
         paidOn,
         notes: dto.notes ?? autoNotes,
         recordedBy: actorId,
+        discountTypeId: dto.discountTypeId ?? null,
+        discountAmount: dto.discountAmount ?? null,
+        discountNote: dto.discountNote ?? null,
       });
 
       for (const u of componentUpdates) {
@@ -262,6 +274,16 @@ export class StudentFeesService {
       }
 
       return [updated, createdReceipt] as const;
+    });
+
+    // Addendum 4 / A9 — SMS + push delivery, outside the transaction: a
+    // notification hiccup should never roll back an already-recorded payment.
+    await this.receiptsService.deliverReceiptNotifications({
+      tenantId,
+      receiptId: receipt.id,
+      studentId: fee.student.id,
+      studentName: fee.student.name,
+      amount: totalIncoming,
     });
 
     return { studentFee, receipt };

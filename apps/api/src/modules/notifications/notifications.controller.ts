@@ -47,6 +47,20 @@ export class NotificationsController {
   }
 
   /**
+   * A user's own notification/homework history — for parents (and teachers)
+   * to check back on something they missed or dismissed when it first arrived.
+   */
+  @Get('me')
+  @Roles(Role.parent, Role.teacher, Role.admin, Role.accounts)
+  findMine(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @Query() query: NotificationQueryDto,
+  ) {
+    return this.notificationsService.findMine(tenantId, user.id, query);
+  }
+
+  /**
    * Mobile app registers an FCM token after login.
    * Any authenticated role can call this (parent, teacher, admin).
    */

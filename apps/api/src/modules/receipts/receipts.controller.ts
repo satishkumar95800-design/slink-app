@@ -1,5 +1,6 @@
-import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { Role } from '@prisma/client';
+import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { TenantId } from '../../common/decorators/tenant.decorator';
@@ -10,6 +11,40 @@ import { ReceiptsService } from './receipts.service';
 @Controller('receipts')
 export class ReceiptsController {
   constructor(private readonly receiptsService: ReceiptsService) {}
+
+  /**
+   * Addendum 4 / A9 — unauthenticated view behind a signed, time-limited
+   * token (the SMS link/push-tap target). No X-Tenant-ID header is available
+   * here, so this route is excluded from TenantMiddleware in app.module.ts;
+   * the verified token itself carries the tenantId.
+   */
+  @Public()
+  @Get('public/:token')
+  findByToken(@Param('token') token: string) {
+    return this.receiptsService.findByToken(token);
+  }
+
+  /** Addendum 4 / A9 — mobile in-app "Download" action for a receipt the caller already has access to. */
+  @Get(':id/download-link')
+  @Roles(Role.admin, Role.accounts, Role.teacher, Role.parent)
+  getDownloadLink(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.receiptsService.getDownloadLink(tenantId, id, user);
+  }
+
+  /** Receipts for one student fee — e.g. mobile's Fees list "View Receipt" action. */
+  @Get()
+  @Roles(Role.admin, Role.accounts, Role.teacher, Role.parent)
+  findForStudentFee(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @Query('studentFeeId', ParseUUIDPipe) studentFeeId: string,
+  ) {
+    return this.receiptsService.findForStudentFee(tenantId, studentFeeId, user);
+  }
 
   @Get(':id')
   @Roles(Role.admin, Role.accounts, Role.teacher, Role.parent)

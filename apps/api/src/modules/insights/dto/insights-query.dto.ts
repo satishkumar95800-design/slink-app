@@ -36,6 +36,11 @@ export class InsightsQueryDto {
   @IsOptional()
   method?: PaymentMethod;
 
+  /** Addendum 4 / A8 — optional filter for paid-history / collection-register by discount label. */
+  @IsUUID()
+  @IsOptional()
+  discountTypeId?: string;
+
   @IsDateString()
   @IsOptional()
   dateFrom?: string;

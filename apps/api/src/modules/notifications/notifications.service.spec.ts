@@ -41,6 +41,7 @@ const mockPrisma = {
   },
   class: { findUnique: jest.fn() },
   studentParent: { findMany: jest.fn() },
+  report: { createMany: jest.fn() },
   notification: {
     create: jest.fn(),
     update: jest.fn(),
@@ -269,9 +270,13 @@ describe('NotificationsService', () => {
     });
 
     it('allows a co-teacher (not the class teacher) to send homework with a fileKey', async () => {
-      mockPrisma.class.findUnique.mockResolvedValue({
-        teachers: [{ teacherId: teacherActor.id, isClassTeacher: false }],
-      });
+      // Two separate class.findUnique calls happen here: the permission check
+      // (assertTeacherCanBroadcast, selects teachers) and the homework-report
+      // creation this triggers (createHomeworkReports, selects academicYear +
+      // students) — each needs its own mocked shape.
+      mockPrisma.class.findUnique
+        .mockResolvedValueOnce({ teachers: [{ teacherId: teacherActor.id, isClassTeacher: false }] })
+        .mockResolvedValueOnce({ academicYear: '2025-26', students: [{ id: 'student-1' }] });
       const parent = makeUser({ id: 'p1', fcmTokens: ['tok1'] });
       mockPrisma.studentParent.findMany.mockResolvedValue([{ parent }]);
       mockPrisma.$transaction.mockResolvedValue([{ id: 'n1', userId: 'p1' }]);

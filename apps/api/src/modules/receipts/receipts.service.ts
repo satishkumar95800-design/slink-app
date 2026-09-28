@@ -1,7 +1,21 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { Prisma, Role, PaymentMethod } from '@prisma/client';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { Prisma, Role, PaymentMethod, NotificationChannel } from '@prisma/client';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import type { ActiveUser } from '../../common/types/active-user.type';
+
+/** Marks a signed JWT as a receipt-link token, not a session access token. */
+const RECEIPT_LINK_PURPOSE = 'receipt-link';
+/** How long the SMS/push receipt link stays valid before the parent must ask
+ * the school to re-send it (Addendum 4 / A9 — "signed, time-limited"). */
+const RECEIPT_LINK_TTL = '7d';
 
 const receiptInclude = {
   student: {
@@ -20,6 +34,7 @@ const receiptInclude = {
     },
   },
   recordedByUser: { select: { id: true, name: true } },
+  discountType: { select: { id: true, name: true, kind: true } },
   tenant: {
     select: { id: true, name: true, logoUrl: true, primaryColor: true, branding: true },
   },
@@ -37,6 +52,18 @@ export interface CreateReceiptForPaymentParams {
   notes?: string | null;
   recordedBy?: string | null;
   paymentOrderId?: string | null;
+  /** Addendum 4 / A8 — optional discount/concession label. Record-keeping only. */
+  discountTypeId?: string | null;
+  discountAmount?: Prisma.Decimal | number | null;
+  discountNote?: string | null;
+}
+
+export interface DeliverReceiptParams {
+  tenantId: string;
+  receiptId: string;
+  studentId: string;
+  studentName: string;
+  amount: Prisma.Decimal;
 }
 
 export interface ReceiptListQuery {
@@ -45,13 +72,20 @@ export interface ReceiptListQuery {
   method?: PaymentMethod;
   dateFrom?: string;
   dateTo?: string;
+  /** Addendum 4 / A8 — optional filter for the "Refunds & Adjustments" / "Fee Collection Summary" reports. */
+  discountTypeId?: string;
   page?: number;
   limit?: number;
 }
 
 @Injectable()
 export class ReceiptsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwt: JwtService,
+    private readonly config: ConfigService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   /**
    * Atomically bumps the tenant's receipt sequence and inserts the Receipt row.
@@ -84,6 +118,9 @@ export class ReceiptsService {
         notes: params.notes ?? null,
         recordedBy: params.recordedBy ?? null,
         paymentOrderId: params.paymentOrderId ?? null,
+        discountTypeId: params.discountTypeId ?? null,
+        discountAmount: params.discountAmount ?? null,
+        discountNote: params.discountNote ?? null,
       },
     });
   }
@@ -111,12 +148,134 @@ export class ReceiptsService {
     return receipt;
   }
 
+  /**
+   * Receipts for one student fee, e.g. mobile's "View Receipt" action from the
+   * Fees list — a partially-paid fee can have more than one receipt. Access
+   * check mirrors findOne's (parent must be linked to the student; teacher
+   * must teach the student's class).
+   */
+  async findForStudentFee(tenantId: string, studentFeeId: string, user: ActiveUser) {
+    const fee = await this.prisma.studentFee.findUnique({
+      where: { id: studentFeeId, tenantId },
+      select: {
+        student: {
+          select: { classId: true, parents: { select: { parentId: true } } },
+        },
+      },
+    });
+    if (!fee) throw new NotFoundException('Student fee not found');
+
+    if (user.role === Role.parent) {
+      const isLinked = fee.student.parents.some((p) => p.parentId === user.id);
+      if (!isLinked) throw new ForbiddenException('You do not have access to this fee');
+    } else if (user.role === Role.teacher) {
+      const cls = await this.prisma.class.findUnique({
+        where: { id: fee.student.classId },
+        select: { teachers: { select: { teacherId: true } } },
+      });
+      if (!cls?.teachers.some((t) => t.teacherId === user.id)) {
+        throw new ForbiddenException('This fee is not for a student in your class');
+      }
+    }
+
+    return this.prisma.receipt.findMany({
+      where: { tenantId, studentFeeId },
+      include: receiptInclude,
+      orderBy: { paidOn: 'desc' },
+    });
+  }
+
+  /** Signed, time-limited link a parent can open without logging in — used
+   * for the SMS link and as the target of a "receipt ready" push tap. */
+  private async signPublicLink(tenantId: string, receiptId: string): Promise<string> {
+    const token = await this.jwt.signAsync(
+      { receiptId, tenantId, purpose: RECEIPT_LINK_PURPOSE },
+      { expiresIn: RECEIPT_LINK_TTL },
+    );
+    const adminBaseUrl = this.config.get<string>('ADMIN_BASE_URL') ?? 'http://localhost:3001';
+    return `${adminBaseUrl}/receipts/public/${token}`;
+  }
+
+  /** Authenticated equivalent of signPublicLink — used by the mobile app's
+   * in-app "Download" action, gated by findOne's normal role/ownership check. */
+  async getDownloadLink(tenantId: string, id: string, user: ActiveUser): Promise<{ url: string }> {
+    await this.findOne(tenantId, id, user);
+    return { url: await this.signPublicLink(tenantId, id) };
+  }
+
+  /** Resolves the unauthenticated public receipt link — the verified token is
+   * the only credential, so this never touches @TenantId()/req.user. */
+  async findByToken(token: string) {
+    let payload: { receiptId: string; tenantId: string; purpose: string };
+    try {
+      payload = await this.jwt.verifyAsync(token);
+    } catch {
+      throw new UnauthorizedException('This receipt link has expired or is invalid');
+    }
+    if (payload.purpose !== RECEIPT_LINK_PURPOSE) {
+      throw new UnauthorizedException('Invalid receipt link');
+    }
+
+    const receipt = await this.prisma.receipt.findUnique({
+      where: { id: payload.receiptId, tenantId: payload.tenantId },
+      include: receiptInclude,
+    });
+    if (!receipt) throw new NotFoundException('Receipt not found');
+    return receipt;
+  }
+
+  /**
+   * Addendum 4 / A9 — SMS + push delivery immediately after a cash receipt is
+   * generated, plus the receiptDeliveredAt timestamp for support/troubleshooting.
+   * Notification failures are per-recipient (NotificationsService.dispatch
+   * already catches and marks them failed) so this never throws back into the
+   * payment-recording flow that calls it.
+   */
+  async deliverReceiptNotifications(params: DeliverReceiptParams): Promise<void> {
+    const parents = await this.prisma.studentParent.findMany({
+      where: { studentId: params.studentId },
+      select: { parent: { select: { id: true } } },
+    });
+    if (parents.length === 0) return;
+
+    const url = await this.signPublicLink(params.tenantId, params.receiptId);
+    const amountLabel = `₹${params.amount.toFixed(2)}`;
+    const smsBody = `Your payment receipt for ${params.studentName} (${amountLabel}) is ready. View/download: ${url}`;
+
+    await Promise.all(
+      parents.map((p) =>
+        Promise.all([
+          this.notifications.send({
+            tenantId: params.tenantId,
+            userId: p.parent.id,
+            channel: NotificationChannel.sms,
+            body: smsBody,
+          }),
+          this.notifications.send({
+            tenantId: params.tenantId,
+            userId: p.parent.id,
+            channel: NotificationChannel.fcm,
+            title: 'Payment receipt ready',
+            body: `Your payment receipt for ${params.studentName} is ready.`,
+            data: { type: 'receipt', receiptId: params.receiptId },
+          }),
+        ]),
+      ),
+    );
+
+    await this.prisma.receipt.update({
+      where: { id: params.receiptId },
+      data: { receiptDeliveredAt: new Date() },
+    });
+  }
+
   async findAll(tenantId: string, user: ActiveUser, query: ReceiptListQuery) {
     const where: Prisma.ReceiptWhereInput = { tenantId };
 
     if (query.studentId) where.studentId = query.studentId;
     if (query.classId) where.classId = query.classId;
     if (query.method) where.method = query.method;
+    if (query.discountTypeId) where.discountTypeId = query.discountTypeId;
     if (query.dateFrom || query.dateTo) {
       where.paidOn = {
         ...(query.dateFrom ? { gte: new Date(query.dateFrom) } : {}),

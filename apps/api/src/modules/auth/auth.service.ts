@@ -13,6 +13,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { FirebaseAdminService } from '../../firebase/firebase-admin.service';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { EmailLoginDto } from './dto/email-login.dto';
+import { SuperAdminLoginDto } from './dto/super-admin-login.dto';
+import { CheckPhoneDto } from './dto/check-phone.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
 
 const BCRYPT_ROUNDS = 12;
@@ -40,7 +42,10 @@ export class AuthService {
 
   /**
    * Exchange a Firebase Phone Auth ID token for our own JWT pair.
-   * Creates the user record on first login.
+   * The phone must already belong to a user created by the school admin
+   * (via student linking or bulk import) — this never self-registers a new
+   * parent, so a verified-but-unrecognized phone is rejected rather than
+   * silently given an account.
    */
   async verifyPhoneOtp(tenantId: string, dto: VerifyOtpDto): Promise<AuthResult> {
     let phone: string;
@@ -55,24 +60,33 @@ export class AuthService {
       throw new UnauthorizedException('Invalid Firebase ID token');
     }
 
-    // Upsert instead of find-then-create: concurrent OTP verifications for the
-    // same phone number (e.g. a double-submit on the client) would otherwise
-    // race on the create and throw a unique-constraint error.
-    const user = await this.prisma.user.upsert({
+    const user = await this.prisma.user.findUnique({
       where: { tenantId_phone: { tenantId, phone } },
-      update: { isVerified: true },
-      create: {
-        tenantId,
-        phone,
-        // First-time login: create parent account.
-        // The parent will only see linked students — linkage is done by admin.
-        name: 'Parent',
-        role: Role.parent,
-        isVerified: true,
-      },
     });
 
+    if (!user) {
+      throw new ForbiddenException(
+        'This phone number is not registered — please contact your school admin to add it.',
+      );
+    }
+
+    if (!user.isVerified) {
+      await this.prisma.user.update({ where: { id: user.id }, data: { isVerified: true } });
+    }
+
     return this.issueTokens(user, dto.deviceId);
+  }
+
+  /**
+   * Lets the mobile app check a phone number before spending a Firebase SMS
+   * send on it — mirrors the registration check in verifyPhoneOtp above.
+   */
+  async checkPhoneExists(tenantId: string, dto: CheckPhoneDto): Promise<{ exists: boolean }> {
+    const user = await this.prisma.user.findUnique({
+      where: { tenantId_phone: { tenantId, phone: dto.phone } },
+      select: { id: true },
+    });
+    return { exists: !!user };
   }
 
   /**
@@ -92,6 +106,28 @@ export class AuthService {
     }
 
     if (!user.passwordHash) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
+    if (!passwordMatch) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    return this.issueTokens(user, dto.deviceId);
+  }
+
+  /**
+   * Email + password login for super_admin — no tenant context, since a super_admin
+   * operates across every tenant. Looked up by email + role only, never by tenant_id,
+   * so this never trusts a client-supplied tenant like the tenant-scoped login does.
+   */
+  async superAdminLogin(dto: SuperAdminLoginDto): Promise<AuthResult> {
+    const user = await this.prisma.user.findFirst({
+      where: { email: dto.email, role: Role.super_admin },
+    });
+
+    if (!user || !user.passwordHash) {
       throw new UnauthorizedException('Invalid credentials');
     }
 

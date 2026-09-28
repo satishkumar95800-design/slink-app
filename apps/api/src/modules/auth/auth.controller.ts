@@ -3,6 +3,8 @@ import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { EmailLoginDto } from './dto/email-login.dto';
+import { SuperAdminLoginDto } from './dto/super-admin-login.dto';
+import { CheckPhoneDto } from './dto/check-phone.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -24,6 +26,17 @@ export class AuthController {
   }
 
   /**
+   * Checked by the mobile app before triggering Firebase's OTP send, so an
+   * unregistered number never gets an SMS or a code-entry screen at all.
+   */
+  @Public()
+  @Post('phone/check')
+  @HttpCode(HttpStatus.OK)
+  checkPhone(@TenantId() tenantId: string, @Body() dto: CheckPhoneDto) {
+    return this.authService.checkPhoneExists(tenantId, dto);
+  }
+
+  /**
    * Email + password login for teachers and admin/accounts staff.
    */
   @Public()
@@ -31,6 +44,17 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   emailLogin(@TenantId() tenantId: string, @Body() dto: EmailLoginDto) {
     return this.authService.emailLogin(tenantId, dto);
+  }
+
+  /**
+   * Email + password login for super_admin — no X-Tenant-ID required; the account
+   * is located by email + role across all tenants.
+   */
+  @Public()
+  @Post('super-admin/login')
+  @HttpCode(HttpStatus.OK)
+  superAdminLogin(@Body() dto: SuperAdminLoginDto) {
+    return this.authService.superAdminLogin(dto);
   }
 
   /**

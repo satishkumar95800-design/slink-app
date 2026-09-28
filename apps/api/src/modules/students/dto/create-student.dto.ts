@@ -10,7 +10,7 @@ import {
   Matches,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { GuardianRelation, BloodGroup, Caste } from '@prisma/client';
+import { GuardianRelation, BloodGroup, Caste, Gender } from '@prisma/client';
 import { BLOOD_GROUP_DISPLAY_TO_ENUM, BLOOD_GROUP_OPTIONS } from '../../../common/blood-group';
 
 export class CreateStudentDto {
@@ -28,6 +28,11 @@ export class CreateStudentDto {
   @IsDateString()
   @IsOptional()
   dob?: string;
+
+  /** Addendum 4 / A10 — feeds the Teacher Dashboard's class-strength (boy/girl/total) stat. */
+  @IsEnum(Gender)
+  @IsOptional()
+  gender?: Gender;
 
   /** Accepts "A+", "A-", "B+", ... on the wire; translated to the Prisma enum here. */
   @Transform(({ value }) => BLOOD_GROUP_DISPLAY_TO_ENUM[value] ?? value)
