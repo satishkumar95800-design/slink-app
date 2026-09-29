@@ -87,6 +87,16 @@ export function ImportWorkflow({ tenantOverride }: ImportWorkflowProps) {
   // a toast) since it names exactly what to fix in the file, and re-uploading a new
   // file is the only way to recover.
   const [structuralError, setStructuralError] = useState<string | null>(null);
+  // The request never got a response at all (server down, CORS, connection dropped)
+  // — distinct from structuralError, which is a real response describing a problem
+  // with the file. Rendered separately so we never blame the file for a server/network
+  // problem, which just sends someone down the wrong troubleshooting path.
+  const [networkError, setNetworkError] = useState<string | null>(null);
+
+  const UNREACHABLE_MESSAGE =
+    'Could not reach the server — check your connection and try again in a moment.';
+  const UNREACHABLE_DETAIL =
+    'Check your connection and try again in a moment. If this keeps happening, the server may be temporarily down.';
 
   function reset() {
     if (pollTimer.current) clearTimeout(pollTimer.current);
@@ -96,6 +106,7 @@ export function ImportWorkflow({ tenantOverride }: ImportWorkflowProps) {
     setSummary(null);
     setFailureMessage(null);
     setStructuralError(null);
+    setNetworkError(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
@@ -110,6 +121,7 @@ export function ImportWorkflow({ tenantOverride }: ImportWorkflowProps) {
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     setReport(null);
     setStructuralError(null);
+    setNetworkError(null);
     setFile(e.target.files?.[0] ?? null);
   }
 
@@ -117,15 +129,23 @@ export function ImportWorkflow({ tenantOverride }: ImportWorkflowProps) {
     if (!file) return;
     setStage('validating');
     setStructuralError(null);
+    setNetworkError(null);
     try {
       const result = await apiUpload<ValidationReport>('/imports/validate', file, undefined, tenantOverride);
       setReport(result);
       setStage('validated');
     } catch (err) {
       setStage('idle');
-      const message = err instanceof ApiError ? err.message : 'Validation failed';
-      setStructuralError(message);
-      toast(message, 'error');
+      // ApiError means the server responded — a real, actionable problem with the
+      // file. Anything else (fetch() itself threw) means the request never got a
+      // response at all — a network/server problem, not a file problem.
+      if (err instanceof ApiError) {
+        setStructuralError(err.message);
+        toast(err.message, 'error');
+      } else {
+        setNetworkError(UNREACHABLE_DETAIL);
+        toast(UNREACHABLE_MESSAGE, 'error');
+      }
     }
   }
 
@@ -149,7 +169,7 @@ export function ImportWorkflow({ tenantOverride }: ImportWorkflowProps) {
         if (freshReport?.tabs) setReport(freshReport);
         toast('This file no longer validates — see the errors below', 'error');
       } else {
-        toast(err instanceof ApiError ? err.message : 'Import failed', 'error');
+        toast(err instanceof ApiError ? err.message : UNREACHABLE_MESSAGE, 'error');
       }
     }
   }
@@ -192,6 +212,13 @@ export function ImportWorkflow({ tenantOverride }: ImportWorkflowProps) {
           Download template
         </Button>
       </div>
+
+      {networkError && (stage === 'idle' || stage === 'validating') && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          <p className="font-medium">Could not reach the server</p>
+          <p className="mt-1">{networkError}</p>
+        </div>
+      )}
 
       {structuralError && (stage === 'idle' || stage === 'validating') && (
         <StructuralErrorBanner message={structuralError} />
