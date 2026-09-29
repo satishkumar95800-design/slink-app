@@ -46,6 +46,12 @@ const editSchema = z.object({
 
 type EditFormData = z.infer<typeof editSchema>;
 
+const resetPasswordSchema = z.object({
+  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
+
 const roleOptions = [
   { value: 'teacher', label: 'Teacher' },
   { value: 'admin', label: 'Admin' },
@@ -78,6 +84,7 @@ export default function UsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [resettingUser, setResettingUser] = useState<User | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const {
@@ -93,6 +100,13 @@ export default function UsersPage() {
     reset: resetEdit,
     formState: { errors: editErrors, isSubmitting: isEditSubmitting },
   } = useForm<EditFormData>({ resolver: zodResolver(editSchema) });
+
+  const {
+    register: registerResetPassword,
+    handleSubmit: handleResetPasswordSubmit,
+    reset: resetResetPasswordForm,
+    formState: { errors: resetPasswordErrors, isSubmitting: isResettingPassword },
+  } = useForm<ResetPasswordFormData>({ resolver: zodResolver(resetPasswordSchema) });
 
   async function fetchUsers() {
     try {
@@ -148,6 +162,18 @@ export default function UsersPage() {
       toast('User updated successfully', 'success');
       setEditingUser(null);
       fetchUsers();
+    } catch (e) {
+      toast((e as ApiError).message, 'error');
+    }
+  }
+
+  async function onResetPasswordSubmit(data: ResetPasswordFormData) {
+    if (!resettingUser) return;
+    try {
+      await api.post(`/users/${resettingUser.id}/reset-password`, data);
+      toast(`Password reset for ${resettingUser.name}`, 'success');
+      setResettingUser(null);
+      resetResetPasswordForm();
     } catch (e) {
       toast((e as ApiError).message, 'error');
     }
@@ -223,6 +249,14 @@ export default function UsersPage() {
                         >
                           Edit
                         </button>
+                        {u.role !== 'parent' && (
+                          <button
+                            onClick={() => setResettingUser(u)}
+                            className="text-xs text-blue-600 hover:underline"
+                          >
+                            Reset Password
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDelete(u.id)}
                           disabled={deletingId === u.id}
@@ -305,6 +339,37 @@ export default function UsersPage() {
             </Button>
             <Button type="submit" loading={isEditSubmitting}>
               Save Changes
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={!!resettingUser}
+        onClose={() => { setResettingUser(null); resetResetPasswordForm(); }}
+        title={`Reset Password${resettingUser ? ` — ${resettingUser.name}` : ''}`}
+      >
+        <form onSubmit={handleResetPasswordSubmit(onResetPasswordSubmit)} className="space-y-4">
+          <p className="text-sm text-gray-500">
+            Sets a new password for this user without needing their current one. Share it with
+            them securely — they can change it themselves afterwards from their account menu.
+          </p>
+          <Input
+            label="New Password"
+            type="password"
+            error={resetPasswordErrors.newPassword?.message}
+            {...registerResetPassword('newPassword')}
+          />
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => { setResettingUser(null); resetResetPasswordForm(); }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" loading={isResettingPassword}>
+              Reset Password
             </Button>
           </div>
         </form>

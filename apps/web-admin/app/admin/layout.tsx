@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from '../../components/layout/sidebar';
+import { ChangePasswordModal } from '../../components/layout/change-password-modal';
 import { isLoggedIn } from '../../lib/auth';
 import { ToastProvider } from '../../components/ui/toast';
 import { api } from '../../lib/api-client';
@@ -99,6 +100,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 function LogoutButton() {
   const router = useRouter();
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   useEffect(() => {
     const raw = localStorage.getItem('slink_user');
@@ -116,6 +118,8 @@ function LogoutButton() {
     router.push('/login');
   }
 
+  // Parents authenticate via phone OTP on mobile only — they never land on
+  // this web console, so no role here needs to be excluded from this action.
   return (
     <div className="flex items-center gap-4">
       {user && (
@@ -125,11 +129,18 @@ function LogoutButton() {
         </div>
       )}
       <button
+        onClick={() => setShowChangePassword(true)}
+        className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+      >
+        Change Password
+      </button>
+      <button
         onClick={handleLogout}
         className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
       >
         Logout
       </button>
+      <ChangePasswordModal open={showChangePassword} onClose={() => setShowChangePassword(false)} />
     </div>
   );
 }

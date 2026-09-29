@@ -6,12 +6,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { getSession, isLoggedIn, clearSession } from '../../lib/auth';
 import { ToastProvider } from '../../components/ui/toast';
+import { ChangePasswordModal } from '../../components/layout/change-password-modal';
 
 export default function PlatformLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const checked = useRef(false);
 
   useEffect(() => {
@@ -74,6 +76,12 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
               <p className="text-xs text-slate-400">Super Admin</p>
             </div>
             <button
+              onClick={() => setShowChangePassword(true)}
+              className="rounded-md border border-slate-600 bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-700 transition-colors cursor-pointer"
+            >
+              Change Password
+            </button>
+            <button
               onClick={handleLogout}
               className="rounded-md border border-slate-600 bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-700 transition-colors cursor-pointer"
             >
@@ -82,6 +90,7 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <ChangePasswordModal open={showChangePassword} onClose={() => setShowChangePassword(false)} />
       </div>
     </ToastProvider>
   );
