@@ -87,3 +87,26 @@ if (!copiedAnything) {
 }
 
 console.log(`Done: ${dest}`);
+
+// Same promotion problem, different folder: prisma/schema.prisma and
+// prisma/migrations are siblings of dist/, not inside it, so they're dropped
+// the same way node_modules was. start:prod runs `prisma migrate deploy`
+// against dist/prisma/schema.prisma — without this copy, that command can't
+// find a schema at all in the promoted release, and the production database
+// silently drifts from whatever migrations ship in the repo (this is what
+// caused the `students.gender does not exist` crash — the column's migration
+// was never applied to production).
+const prismaSrc = path.join(apiDir, 'prisma');
+const prismaDest = path.join(apiDir, 'dist', 'prisma');
+
+if (fs.existsSync(path.join(prismaSrc, 'schema.prisma'))) {
+  console.log(`Copying ${path.join(prismaSrc, 'schema.prisma')} -> ${prismaDest}`);
+  fs.cpSync(path.join(prismaSrc, 'schema.prisma'), path.join(prismaDest, 'schema.prisma'));
+} else {
+  throw new Error(`Could not find ${path.join(prismaSrc, 'schema.prisma')}`);
+}
+
+if (fs.existsSync(path.join(prismaSrc, 'migrations'))) {
+  console.log(`Copying ${path.join(prismaSrc, 'migrations')} -> ${path.join(prismaDest, 'migrations')}`);
+  fs.cpSync(path.join(prismaSrc, 'migrations'), path.join(prismaDest, 'migrations'), { recursive: true });
+}
