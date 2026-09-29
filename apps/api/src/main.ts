@@ -42,6 +42,13 @@ function runPendingMigrations() {
   try {
     execFileSync(process.execPath, [prismaCli, 'migrate', 'deploy', '--schema', schemaPath], {
       stdio: 'inherit',
+      // A hung schema engine (e.g. DB unreachable) previously blocked this
+      // synchronous call for 60+ seconds, which froze the event loop long
+      // enough to miss Hostinger's "must call listen() within 3 seconds"
+      // watchdog — leaving the app permanently unroutable even after it
+      // eventually did call listen(). Capping this ensures listen() is
+      // never delayed by more than a few seconds regardless of DB state.
+      timeout: 8000,
     });
     logger.log('Migrations up to date.');
   } catch (err) {
