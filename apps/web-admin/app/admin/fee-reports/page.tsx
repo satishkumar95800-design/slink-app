@@ -15,7 +15,8 @@ type ReportType =
   | 'defaulters'
   | 'students-in-class'
   | 'class-collection-summary'
-  | 'collection-register';
+  | 'collection-register'
+  | 'student-fee-summary';
 
 interface Class {
   id: string;
@@ -30,6 +31,7 @@ const REPORT_OPTIONS: { value: ReportType; label: string }[] = [
   { value: 'students-in-class', label: 'Students in a Class' },
   { value: 'class-collection-summary', label: 'Class-wise Collection Summary' },
   { value: 'collection-register', label: 'Daily Collection Register' },
+  { value: 'student-fee-summary', label: 'Student Fee Summary (Whole Year)' },
 ];
 
 function formatCurrency(amount: number | string | null | undefined) {
@@ -45,6 +47,7 @@ export default function FeeReportsPage() {
   const [reportType, setReportType] = useState<ReportType>('fee-pending');
   const [classes, setClasses] = useState<Class[]>([]);
   const [classId, setClassId] = useState('');
+  const [academicYear, setAcademicYear] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
@@ -73,6 +76,7 @@ export default function FeeReportsPage() {
 
       const params = new URLSearchParams();
       if (classId) params.set('classId', classId);
+      if (academicYear) params.set('academicYear', academicYear);
       if (dateFrom) params.set('dateFrom', dateFrom);
       if (dateTo) params.set('dateTo', dateTo);
 
@@ -96,6 +100,7 @@ export default function FeeReportsPage() {
     try {
       const params = new URLSearchParams({ format: 'csv' });
       if (classId) params.set('classId', classId);
+      if (academicYear) params.set('academicYear', academicYear);
       if (dateFrom) params.set('dateFrom', dateFrom);
       if (dateTo) params.set('dateTo', dateTo);
       await apiDownload(`/insights/${reportType}?${params.toString()}`, `${reportType}.csv`);
@@ -107,6 +112,7 @@ export default function FeeReportsPage() {
   const classOptions = classes.map((c) => ({ value: c.id, label: `${c.name} (${c.academicYear})` }));
   const showDateRange = ['paid-history', 'class-collection-summary', 'collection-register'].includes(reportType);
   const showClassFilter = reportType !== 'collection-register';
+  const showAcademicYearFilter = ['class-collection-summary', 'student-fee-summary'].includes(reportType);
   const supportsCsvExport = reportType !== 'students-in-class';
 
   return (
@@ -128,6 +134,16 @@ export default function FeeReportsPage() {
               placeholder="All classes"
               value={classId}
               onChange={(e) => setClassId(e.target.value)}
+            />
+          </div>
+        )}
+        {showAcademicYearFilter && (
+          <div className="w-40">
+            <Input
+              label="Academic Year (optional)"
+              placeholder="e.g. 2025-26"
+              value={academicYear}
+              onChange={(e) => setAcademicYear(e.target.value)}
             />
           </div>
         )}
@@ -207,6 +223,22 @@ function ReportTable({ reportType, rows }: { reportType: ReportType; rows: Recor
           s.admissionNo,
           s.name,
           s.dob ? new Date(s.dob).toLocaleDateString('en-IN') : '—',
+        ]}
+      />
+    );
+  }
+
+  if (reportType === 'student-fee-summary') {
+    return (
+      <Table
+        headers={['Student', 'Class', 'Total Due', 'Total Collected', 'Outstanding']}
+        rows={rows}
+        render={(s: any) => [
+          `${s.studentName}${s.admissionNo ? ` (${s.admissionNo})` : ''}`,
+          s.class ? `${s.class.name}${s.class.section ? ` (${s.class.section})` : ''}` : '—',
+          formatCurrency(s.totalDue),
+          formatCurrency(s.totalCollected),
+          formatCurrency(s.outstanding),
         ]}
       />
     );

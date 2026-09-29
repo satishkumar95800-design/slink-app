@@ -63,6 +63,17 @@ export class InsightsController {
     return this.insightsService.getClassCollectionSummary(tenantId, user, query);
   }
 
+  @Get('student-fee-summary')
+  @Roles(Role.admin, Role.accounts, Role.super_admin)
+  async studentFeeSummary(
+    @TenantId() tenantId: string,
+    @Query() query: InsightsQueryDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.insightsService.getStudentFeeSummary(tenantId, query);
+    return this.respond(res, query, result.data, 'student-fee-summary');
+  }
+
   @Get('collection-register')
   @Roles(Role.admin, Role.accounts, Role.super_admin)
   collectionRegister(@TenantId() tenantId: string, @Query() query: InsightsQueryDto) {

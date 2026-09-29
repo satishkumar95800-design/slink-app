@@ -128,6 +128,59 @@ export class InsightsService {
     return { data };
   }
 
+  /**
+   * Student-wise whole-year fee summary: sums amountDue/amountPaid across
+   * every fee structure a student is assigned (tuition, transport, arrears,
+   * ...) into one row per student, rather than the per-assignment grain
+   * `student-fees`/`fee-pending` use. Admin/accounts/super_admin only —
+   * the same visibility as the other whole-tenant money aggregates below.
+   */
+  async getStudentFeeSummary(tenantId: string, query: InsightsQueryDto) {
+    const groups = await this.prisma.studentFee.groupBy({
+      by: ['studentId'],
+      where: {
+        tenantId,
+        ...(query.classId ? { student: { classId: query.classId } } : {}),
+        ...(query.academicYear ? { feeStructure: { academicYear: query.academicYear } } : {}),
+      },
+      _sum: { amountDue: true, amountPaid: true },
+    });
+
+    if (groups.length === 0) return { data: [] };
+
+    const students = await this.prisma.student.findMany({
+      where: { id: { in: groups.map((g) => g.studentId) } },
+      select: {
+        id: true,
+        name: true,
+        admissionNo: true,
+        class: { select: { id: true, name: true, section: true } },
+      },
+    });
+    const studentById = new Map(students.map((s) => [s.id, s]));
+
+    const data = groups
+      .map((g) => {
+        const student = studentById.get(g.studentId);
+        if (!student) return null;
+        const totalDue = g._sum.amountDue ?? new Prisma.Decimal(0);
+        const totalCollected = g._sum.amountPaid ?? new Prisma.Decimal(0);
+        return {
+          studentId: student.id,
+          studentName: student.name,
+          admissionNo: student.admissionNo,
+          class: student.class,
+          totalDue,
+          totalCollected,
+          outstanding: Prisma.Decimal.max(totalDue.sub(totalCollected), 0),
+        };
+      })
+      .filter((row): row is NonNullable<typeof row> => row !== null)
+      .sort((a, b) => a.studentName.localeCompare(b.studentName));
+
+    return { data };
+  }
+
   /** Daily/monthly cash-collection register grouped by date and payment method. Admin/accounts/super_admin only. */
   async getCollectionRegister(tenantId: string, query: InsightsQueryDto) {
     const where: Prisma.ReceiptWhereInput = { tenantId };
