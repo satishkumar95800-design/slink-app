@@ -28,6 +28,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Used to take a photo when sending homework to a class.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Used to attach a photo from your library as proof of payment or when sending homework to a class.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
