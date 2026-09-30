@@ -9,55 +9,98 @@ export const metadata: Metadata = {
 };
 
 const NAV_LINKS = [
+  { label: 'Features', href: '/#features' },
+  { label: 'How it works', href: '/#how-it-works' },
+  { label: 'Privacy Policy', href: '/privacy-policy' },
+  { label: 'Contact', href: '/contact' },
+];
+
+const EXPLORE_LINKS = [
+  { label: 'Features', href: '/#features' },
+  { label: 'How it works', href: '/#how-it-works' },
+  { label: 'Contact', href: '/contact' },
+];
+
+const LEGAL_LINKS = [
   { label: 'Privacy Policy', href: '/privacy-policy' },
   { label: 'Terms', href: '/terms' },
   { label: 'Refund Policy', href: '/refund-policy' },
-  { label: 'Contact', href: '/contact' },
+  { label: 'Data Deletion', href: '/data-deletion' },
 ];
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="font-sans flex min-h-full flex-col">
-      <header className="border-b border-gray-200 bg-white">
+    <div className="font-sans flex min-h-full flex-col bg-cream">
+      <header className="sticky top-0 z-40 border-b border-black/5 bg-cream/90 backdrop-blur">
         <Container className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-600 text-sm font-bold text-white">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal text-sm font-extrabold text-white">
               S
             </div>
-            <span className="text-sm font-bold tracking-tight text-gray-900">Slink</span>
+            <span className="text-sm font-extrabold tracking-tight text-gray-900">Slink</span>
           </Link>
           <nav className="hidden items-center gap-6 sm:flex">
             {NAV_LINKS.map((link) => (
-              <Link key={link.href} href={link.href} className="text-sm text-gray-600 hover:text-gray-900">
+              <Link key={link.href} href={link.href} className="text-sm font-medium text-gray-700 hover:text-gray-900">
                 {link.label}
               </Link>
             ))}
           </nav>
           <Link
             href="/login"
-            className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            className="inline-flex items-center rounded-full bg-coral px-5 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-coral-dark"
           >
-            Login
+            School Login
           </Link>
         </Container>
       </header>
 
       <main className="flex-1">{children}</main>
 
-      <footer className="border-t border-gray-200 bg-white">
-        <Container className="flex flex-col items-center justify-between gap-4 py-8 text-sm text-gray-500 sm:flex-row">
-          <p>&copy; {new Date().getFullYear()} Arins Studios. All rights reserved.</p>
-          <nav className="flex flex-wrap items-center gap-4">
-            {NAV_LINKS.map((link) => (
-              <Link key={link.href} href={link.href} className="hover:text-gray-700">
-                {link.label}
-              </Link>
-            ))}
-            <Link href="/data-deletion" className="hover:text-gray-700">
-              Data Deletion
-            </Link>
-          </nav>
+      <footer className="border-t border-black/5 bg-gray-50">
+        <Container className="grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="lg:col-span-2">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal text-sm font-extrabold text-white">
+                S
+              </div>
+              <span className="text-sm font-extrabold tracking-tight text-gray-900">Slink</span>
+            </div>
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-gray-600">
+              Slink pairs a parent &amp; teacher mobile app with an admin web console — fees, progress reports,
+              report cards, notices, homework, and bulk onboarding, all in one connected system built for schools.
+            </p>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Explore</h4>
+            <ul className="mt-4 space-y-3">
+              {EXPLORE_LINKS.map((link) => (
+                <li key={link.label}>
+                  <Link href={link.href} className="text-sm text-gray-600 hover:text-gray-900">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Legal</h4>
+            <ul className="mt-4 space-y-3">
+              {LEGAL_LINKS.map((link) => (
+                <li key={link.label}>
+                  <Link href={link.href} className="text-sm text-gray-600 hover:text-gray-900">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </Container>
+        <div className="border-t border-black/5 py-6">
+          <Container>
+            <p className="text-xs text-gray-500">&copy; {new Date().getFullYear()} Arins Studios. All rights reserved.</p>
+          </Container>
+        </div>
       </footer>
     </div>
   );

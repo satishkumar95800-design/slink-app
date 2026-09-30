@@ -4,19 +4,21 @@ import { Container } from './container';
 interface SectionProps {
   children: ReactNode;
   className?: string;
-  /** Vertical padding + background tone. 'dark' matches the admin sidebar's slate-900. */
-  tone?: 'light' | 'muted' | 'dark';
+  id?: string;
+  /** Vertical padding + background tone. 'dark' uses the deep teal brand color. */
+  tone?: 'light' | 'muted' | 'dark' | 'cream';
 }
 
 const toneClasses: Record<NonNullable<SectionProps['tone']>, string> = {
   light: 'bg-white text-gray-900',
   muted: 'bg-gray-50 text-gray-900',
-  dark: 'bg-slate-900 text-white',
+  dark: 'bg-teal text-white',
+  cream: 'bg-cream text-gray-900',
 };
 
-export function Section({ children, className = '', tone = 'light' }: SectionProps) {
+export function Section({ children, className = '', id, tone = 'light' }: SectionProps) {
   return (
-    <section className={`py-16 sm:py-20 ${toneClasses[tone]} ${className}`}>
+    <section id={id} className={`py-16 sm:py-20 ${toneClasses[tone]} ${className}`}>
       <Container>{children}</Container>
     </section>
   );
