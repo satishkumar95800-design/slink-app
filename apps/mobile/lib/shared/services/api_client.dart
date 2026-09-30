@@ -1,9 +1,25 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'secure_storage_service.dart';
 
-const _baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:3000/v1');
+const _rawBaseUrl = String.fromEnvironment('API_BASE_URL');
+
+/// Release builds must always be given `--dart-define=API_BASE_URL=...` explicitly.
+/// Falling back to localhost here previously let a release .aab silently ship
+/// pointed at the phone's own loopback address — every request "connection
+/// error"'d, surfacing to users as a misleading "No internet connection."
+/// Debug/profile builds still default to localhost for local-dev convenience.
+final String _baseUrl = _rawBaseUrl.isNotEmpty
+    ? _rawBaseUrl
+    : (kReleaseMode
+        ? throw StateError(
+            'API_BASE_URL was not provided. Release builds must be built with '
+            '--dart-define=API_BASE_URL=https://api.schoolinkd.in/v1 (or the '
+            'correct target), otherwise every API call silently fails.',
+          )
+        : 'http://localhost:3000/v1');
 
 final apiClientProvider = Provider<Dio>((ref) {
   final dio = Dio(BaseOptions(
