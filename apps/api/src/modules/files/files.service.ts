@@ -35,15 +35,17 @@ export interface UploadResult {
 export class FilesService {
   private readonly s3: S3Client;
   private readonly bucket: string;
+  private readonly region: string;
   private readonly endpoint: string | undefined;
   private readonly logger = new Logger(FilesService.name);
 
   constructor(private readonly config: ConfigService) {
     this.endpoint = config.get<string>('S3_ENDPOINT');
     this.bucket = config.get<string>('S3_BUCKET_NAME') ?? 'slink-assets';
+    this.region = config.get<string>('AWS_REGION') ?? 'ap-south-1';
 
     this.s3 = new S3Client({
-      region: config.get<string>('AWS_REGION') ?? 'ap-south-1',
+      region: this.region,
       ...(this.endpoint ? { endpoint: this.endpoint, forcePathStyle: true } : {}),
     });
   }
@@ -59,21 +61,33 @@ export class FilesService {
     const key = this.buildKey(tenantId, category, file, entityId);
     const isPublic = key.startsWith('public/');
 
-    await this.s3.send(
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-        ContentLength: file.size,
-        ...(isPublic ? { ACL: 'public-read' } : {}),
-        Metadata: {
-          tenantId,
-          category,
-          ...(entityId ? { entityId } : {}),
-        },
-      }),
-    );
+    try {
+      await this.s3.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+          ContentLength: file.size,
+          ...(isPublic ? { ACL: 'public-read' } : {}),
+          Metadata: {
+            tenantId,
+            category,
+            ...(entityId ? { entityId } : {}),
+          },
+        }),
+      );
+    } catch (err) {
+      // Without this, a missing/misconfigured AWS credential or wrong-region
+      // client surfaces to the caller as a bare 500 with no clue why — this
+      // happened in production when AWS_REGION/AWS_ACCESS_KEY_ID/etc. were
+      // never set on the host, and the only log line was the success path.
+      this.logger.error(
+        `S3 upload failed for key ${key} (bucket ${this.bucket}, region ${this.region})`,
+        err instanceof Error ? err.stack : String(err),
+      );
+      throw err;
+    }
 
     this.logger.log(`Uploaded ${key} (${file.size} bytes)`);
 
