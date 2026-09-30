@@ -50,6 +50,14 @@ enum ReportType {
   attendance
   behavior
   homework
+  report_card
+}
+
+enum StudentNoteType {
+  note
+  mom
+  complaint
+  parent_discussion
 }
 
 enum GuardianRelation {
@@ -190,6 +198,7 @@ model Tenant {
   accountantDocuments      AccountantDocument[]
   timetableSlots           TimetableSlot[]
   paymentClaims            PaymentClaim[]
+  studentNotes             StudentNote[]
 
   @@map("tenants")
 }
@@ -221,6 +230,7 @@ model User {
   timetableSlots   TimetableSlot[]
   submittedClaims  PaymentClaim[]  @relation("PaymentClaimSubmitter")
   reviewedClaims   PaymentClaim[]  @relation("PaymentClaimReviewer")
+  authoredStudentNotes StudentNote[]
 
   @@unique([tenantId, phone])
   @@unique([tenantId, email])
@@ -272,6 +282,7 @@ model Student {
   discounts         StudentDiscount[]
   customFieldValues StudentCustomFieldValue[]
   paymentClaims     PaymentClaim[]
+  notes             StudentNote[]
 
   @@unique([tenantId, admissionNo])
   @@index([tenantId])
@@ -698,6 +709,29 @@ model ReportReadReceipt {
 
   @@id([reportId, userId])
   @@map("report_read_receipts")
+}
+
+// ─── Student Notes ────────────────────────────────────────────────────────────
+// A private running log a teacher (scoped to their own classes) or
+// admin/super_admin can add about one student — free-text notes, minutes of
+// meeting, complaints, or "discussion with parent" entries. Deliberately a
+// separate model from Report (the *parent-visible* progress report) — these
+// rows must never be exposed to a parent or accounts role.
+model StudentNote {
+  id        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String          @map("tenant_id") @db.Uuid
+  studentId String          @map("student_id") @db.Uuid
+  authorId  String          @map("author_id") @db.Uuid
+  type      StudentNoteType @default(note)
+  content   String          @db.Text
+  createdAt DateTime        @default(now()) @map("created_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  author  User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, studentId])
+  @@map("student_notes")
 }
 
 // ─── Notifications ────────────────────────────────────────────────────────────

@@ -15,4 +15,8 @@ export class UpdateReportDto {
   @IsObject()
   @IsOptional()
   content?: Record<string, unknown>;
+
+  @IsString()
+  @IsOptional()
+  pdfKey?: string;
 }

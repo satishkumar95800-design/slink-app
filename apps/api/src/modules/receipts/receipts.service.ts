@@ -269,6 +269,23 @@ export class ReceiptsService {
     });
   }
 
+  /**
+   * Admin dashboard "Recent Payments" widget — deliberately reuses findAll
+   * (method-agnostic across cash/cheque/bank_transfer/gateway, via the
+   * `receipts` table) rather than the gateway-only PaymentOrder table the
+   * widget used to read from, which silently excluded every offline payment.
+   */
+  async getRecent(tenantId: string, user: ActiveUser, limit: number) {
+    const { data } = await this.findAll(tenantId, user, { limit });
+    return data.map((r) => ({
+      id: r.id,
+      studentName: r.student.name,
+      amount: r.amount,
+      method: r.method,
+      paidOn: r.paidOn,
+    }));
+  }
+
   async findAll(tenantId: string, user: ActiveUser, query: ReceiptListQuery) {
     const where: Prisma.ReceiptWhereInput = { tenantId };
 

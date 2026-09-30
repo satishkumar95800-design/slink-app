@@ -6,6 +6,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { TenantId } from '../../common/decorators/tenant.decorator';
 import type { ActiveUser } from '../../common/types/active-user.type';
 import { ReceiptsService } from './receipts.service';
+import { RecentReceiptsQueryDto } from './dto/recent-receipts-query.dto';
 
 /** Single-receipt fetch for the printable receipt view. Listing lives under /insights/paid-history. */
 @Controller('receipts')
@@ -44,6 +45,17 @@ export class ReceiptsController {
     @Query('studentFeeId', ParseUUIDPipe) studentFeeId: string,
   ) {
     return this.receiptsService.findForStudentFee(tenantId, studentFeeId, user);
+  }
+
+  /** Admin dashboard "Recent Payments" widget — must stay declared before the `:id` route below, or Nest/Express would route `/receipts/recent` into `findOne`'s ParseUUIDPipe and 400. */
+  @Get('recent')
+  @Roles(Role.admin, Role.accounts, Role.super_admin)
+  getRecent(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @Query() query: RecentReceiptsQueryDto,
+  ) {
+    return this.receiptsService.getRecent(tenantId, user, query.limit ?? 5);
   }
 
   @Get(':id')

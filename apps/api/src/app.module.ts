@@ -34,6 +34,7 @@ import { AccountantDocumentsModule } from './modules/accountant-documents/accoun
 import { TimetableModule } from './modules/timetable/timetable.module';
 import { TeacherDashboardModule } from './modules/teacher-dashboard/teacher-dashboard.module';
 import { PaymentClaimsModule } from './modules/payment-claims/payment-claims.module';
+import { StudentNotesModule } from './modules/student-notes/student-notes.module';
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { PaymentClaimsModule } from './modules/payment-claims/payment-claims.mod
     TimetableModule,
     TeacherDashboardModule,
     PaymentClaimsModule,
+    StudentNotesModule,
   ],
 })
 export class AppModule implements NestModule {

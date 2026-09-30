@@ -96,6 +96,7 @@ export class ReportsService {
         ...(dto.type !== undefined && { type: dto.type }),
         ...(dto.term !== undefined && { term: dto.term }),
         ...(dto.content !== undefined && { content: dto.content as Prisma.InputJsonValue }),
+        ...(dto.pdfKey !== undefined && { pdfKey: dto.pdfKey }),
       },
       include: reportInclude,
     });
