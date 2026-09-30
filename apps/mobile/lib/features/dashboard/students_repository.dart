@@ -13,6 +13,17 @@ class StudentsRepository {
     final response = await _dio.get<List<dynamic>>('/students/me');
     return response.data!.map((e) => Student.fromJson(e as Map<String, dynamic>)).toList();
   }
+
+  /// GET /students?classId= — already scoped server-side to a teacher's own
+  /// classes; used to populate the student picker for report-card upload.
+  Future<List<Student>> getStudentsForClass(String classId) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/students',
+      queryParameters: {'classId': classId, 'limit': 100},
+    );
+    final data = response.data!['data'] as List<dynamic>;
+    return data.map((e) => Student.fromJson(e as Map<String, dynamic>)).toList();
+  }
 }
 
 final studentsRepositoryProvider = Provider<StudentsRepository>((ref) {

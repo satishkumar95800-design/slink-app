@@ -20,6 +20,7 @@ import '../../features/receipts/fee_receipts_page.dart';
 import '../../features/receipts/receipt_detail_page.dart';
 import '../../features/reports/report_detail_page.dart';
 import '../../features/reports/reports_list_page.dart';
+import '../../features/reports/upload_report_card_page.dart';
 import '../../features/timetable/weekly_routine_page.dart';
 import '../../shared/services/secure_storage_service.dart';
 
@@ -97,6 +98,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/notices/send', builder: (_, __) => const SendNoticePage()),
       GoRoute(path: '/homework/send', builder: (_, __) => const SendHomeworkPage()),
+      GoRoute(path: '/reports/upload', builder: (_, __) => const UploadReportCardPage()),
       GoRoute(
         path: '/notices/detail',
         builder: (_, state) {

@@ -1,12 +1,15 @@
 import 'parsing.dart';
 
-enum ReportType { academic, attendance, behavior, homework }
+enum ReportType { academic, attendance, behavior, homework, reportCard }
 enum ReportStatus { draft, published }
 
-ReportType _parseReportType(String raw) => ReportType.values.firstWhere(
-      (t) => t.name == raw,
-      orElse: () => ReportType.academic,
-    );
+ReportType _parseReportType(String raw) {
+  if (raw == 'report_card') return ReportType.reportCard;
+  return ReportType.values.firstWhere(
+    (t) => t.name == raw,
+    orElse: () => ReportType.academic,
+  );
+}
 
 ReportStatus _parseReportStatus(String raw) => ReportStatus.values.firstWhere(
       (s) => s.name == raw,

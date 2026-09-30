@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../shared/models/active_user.dart';
 import '../../shared/models/report.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
+import '../auth/session_controller.dart';
 import 'reports_providers.dart';
 
 class ReportsListPage extends ConsumerWidget {
@@ -18,15 +20,28 @@ class ReportsListPage extends ConsumerWidget {
         return Icons.emoji_people;
       case ReportType.homework:
         return Icons.assignment;
+      case ReportType.reportCard:
+        return Icons.picture_as_pdf;
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final reportsAsync = ref.watch(reportsProvider);
+    final isTeacher = ref.watch(sessionControllerProvider).user?.role == UserRole.teacher;
 
     return AuthenticatedScaffold(
-      appBar: AppBar(title: const Text('Reports')),
+      appBar: AppBar(
+        title: const Text('Reports'),
+        actions: [
+          if (isTeacher)
+            IconButton(
+              icon: const Icon(Icons.upload_file),
+              tooltip: 'Upload Report Card',
+              onPressed: () => context.push('/reports/upload'),
+            ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(reportsProvider),
         child: reportsAsync.when(

@@ -31,6 +31,31 @@ class ReportsRepository {
   Future<void> markRead(String id) async {
     await _dio.post('/reports/$id/read');
   }
+
+  /// Creates a draft report-card report — the caller then uploads the PDF via
+  /// FilesRepository.upload(..., entityId: report.id) and calls [attachPdf].
+  Future<Report> createReportCard({
+    required String studentId,
+    required String term,
+    required String academicYear,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>('/reports', data: {
+      'studentId': studentId,
+      'type': 'report_card',
+      'term': term,
+      'academicYear': academicYear,
+      'content': <String, dynamic>{},
+    });
+    return Report.fromJson(response.data!);
+  }
+
+  Future<void> attachPdf(String reportId, String pdfKey) async {
+    await _dio.patch('/reports/$reportId', data: {'pdfKey': pdfKey});
+  }
+
+  Future<void> publish(String reportId) async {
+    await _dio.post('/reports/$reportId/publish');
+  }
 }
 
 final reportsRepositoryProvider = Provider<ReportsRepository>((ref) {
