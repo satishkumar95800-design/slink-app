@@ -14,7 +14,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', href: '/admin', icon: '◼' },
-  { label: 'Users', href: '/admin/users', icon: '👤' },
+  { label: 'Users', href: '/admin/users', icon: '👤', hiddenForRoles: ['teacher'] },
   { label: 'Students', href: '/admin/students', icon: '🎓' },
   { label: 'Classes', href: '/admin/classes', icon: '🏫' },
   { label: 'Teachers', href: '/admin/teachers', icon: '🧑‍🏫', hiddenForRoles: ['teacher'] },

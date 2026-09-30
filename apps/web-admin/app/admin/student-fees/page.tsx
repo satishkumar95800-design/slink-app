@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,6 +26,7 @@ interface StudentFeeComponent {
 
 interface StudentFee {
   id: string;
+  studentId: string;
   amountDue: number;
   amountPaid: number;
   status: FeeStatus;
@@ -267,7 +269,9 @@ export default function StudentFeesPage() {
               {fees.map((f) => (
                 <tr key={f.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
-                    <p className="text-sm font-medium text-gray-900">{f.student?.name ?? '—'}</p>
+                    <Link href={`/admin/students/${f.studentId}`} className="text-sm font-medium text-blue-600 hover:underline">
+                      {f.student?.name ?? '—'}
+                    </Link>
                     <p className="text-xs text-gray-500">{f.student?.admissionNo ?? ''}</p>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{f.feeStructure?.name ?? '—'}</td>

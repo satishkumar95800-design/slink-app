@@ -23,6 +23,10 @@ interface Teacher {
   name: string;
   phone: string;
   email: string | null;
+  taughtSubjects: Array<{
+    subject: { id: string; name: string };
+    class: { id: string; name: string; section: string | null; academicYear: string };
+  }>;
 }
 
 interface Subject {
@@ -185,6 +189,21 @@ export default function TimetablePage() {
   const activeSlot = activeCell ? slotFor(activeCell.dayOfWeek, activeCell.periodNumber) : undefined;
   const activeDayLabel = activeCell ? DAYS.find((d) => d.value === activeCell.dayOfWeek)?.label : '';
 
+  // Addendum — soft, non-blocking check: warn (don't prevent saving) when the
+  // selected teacher has no TeacherSubject assignment matching this subject
+  // + class, e.g. a substitute being slotted in ad hoc is still allowed.
+  const selectedTeacher = teachers.find((t) => t.id === formTeacherId);
+  const isMismatch = Boolean(
+    formTeacherId &&
+      formSubjectId &&
+      selectedClassId &&
+      !selectedTeacher?.taughtSubjects.some(
+        (ts) => ts.subject.id === formSubjectId && ts.class.id === selectedClassId,
+      ),
+  );
+  const selectedSubjectName = subjects.find((s) => s.id === formSubjectId)?.name;
+  const selectedClassLabel = classes.find((c) => c.id === selectedClassId);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
@@ -298,6 +317,13 @@ export default function TimetablePage() {
             value={formTeacherId}
             onChange={(e) => setFormTeacherId(e.target.value)}
           />
+          {isMismatch && (
+            <div className="rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
+              ⚠ {selectedTeacher?.name} is not assigned to teach {selectedSubjectName} for{' '}
+              {selectedClassLabel ? classLabel(selectedClassLabel) : 'this class'} — you can still
+              save this slot.
+            </div>
+          )}
           <div className="flex items-center justify-between gap-3 pt-2">
             {activeSlot ? (
               <Button variant="danger" type="button" loading={removing} onClick={onRemoveCell}>

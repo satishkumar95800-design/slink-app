@@ -13,10 +13,10 @@ interface Stats {
   feesOutstanding: number;
   recentPayments: {
     id: string;
+    studentName: string;
     amount: number;
-    status: string;
-    createdAt: string;
-    student?: { name: string };
+    method: string;
+    paidOn: string;
   }[];
 }
 
@@ -90,11 +90,11 @@ function formatMonthLabel(month: string) {
   return MONTH_LABEL_FORMATTER.format(new Date(`${month}-01`));
 }
 
-const statusVariant = (status: string): 'green' | 'red' | 'yellow' | 'gray' => {
-  const map: Record<string, 'green' | 'red' | 'yellow' | 'gray'> = {
-    paid: 'green', pending: 'yellow', partial: 'gray', overdue: 'red',
+const methodVariant = (method: string): 'green' | 'blue' | 'gray' => {
+  const map: Record<string, 'green' | 'blue' | 'gray'> = {
+    cash: 'green', gateway: 'blue',
   };
-  return map[status] ?? 'gray';
+  return map[method] ?? 'gray';
 };
 
 export default function DashboardPage() {
@@ -121,7 +121,7 @@ export default function DashboardPage() {
         const [usersRes, studentsRes, paymentsRes, feesRes] = await Promise.allSettled([
           api.get<{ data: unknown[]; meta: { total: number } }>('/users?limit=1'),
           api.get<{ data: unknown[]; meta: { total: number } }>('/students?limit=1'),
-          api.get<{ data: { id: string; amount: number; status: string; createdAt: string; studentFee?: { student?: { name: string } } }[]; total: number }>('/payments/orders?limit=5'),
+          api.get<{ id: string; studentName: string; amount: number; method: string; paidOn: string }[]>('/receipts/recent?limit=5'),
           api.get<{ data: { amountDue: number; amountPaid: number; status: string }[] }>('/student-fees?limit=1000'),
         ]);
 
@@ -130,10 +130,7 @@ export default function DashboardPage() {
         if (usersRes.status === 'fulfilled') partialStats.userCount = usersRes.value.meta.total;
         if (studentsRes.status === 'fulfilled') partialStats.studentCount = studentsRes.value.meta.total;
         if (paymentsRes.status === 'fulfilled') {
-          partialStats.recentPayments = paymentsRes.value.data.map((p) => ({
-            id: p.id, amount: p.amount, status: p.status, createdAt: p.createdAt,
-            student: p.studentFee?.student,
-          }));
+          partialStats.recentPayments = paymentsRes.value;
         }
         if (feesRes.status === 'fulfilled') {
           const fees = feesRes.value.data;
@@ -231,12 +228,12 @@ export default function DashboardPage() {
                 stats.recentPayments!.map((p) => (
                   <div key={p.id} className="flex items-center justify-between px-6 py-3">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{p.student?.name ?? 'Unknown'}</p>
-                      <p className="text-xs text-gray-500">{new Date(p.createdAt).toLocaleDateString('en-IN')}</p>
+                      <p className="text-sm font-medium text-gray-900">{p.studentName}</p>
+                      <p className="text-xs text-gray-500">{new Date(p.paidOn).toLocaleDateString('en-IN')}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-semibold text-gray-900">{formatCurrency(p.amount)}</span>
-                      <Badge variant={statusVariant(p.status)}>{p.status}</Badge>
+                      <span className="text-sm font-semibold text-gray-900">{formatRupees(p.amount)}</span>
+                      <Badge variant={methodVariant(p.method)}>{p.method}</Badge>
                     </div>
                   </div>
                 ))

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -292,7 +293,9 @@ export default function StudentsPage() {
                           </div>
                         )}
                       </div>
-                      <span>{s.name}</span>
+                      <Link href={`/admin/students/${s.id}`} className="text-blue-600 hover:underline">
+                        {s.name}
+                      </Link>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
