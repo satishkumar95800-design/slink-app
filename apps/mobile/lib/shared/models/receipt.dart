@@ -10,6 +10,9 @@ class Receipt {
   final String? notes;
   final String studentName;
   final String feeStructureName;
+  final String? discountTypeName;
+  final double? discountAmount;
+  final String? discountNote;
 
   const Receipt({
     required this.id,
@@ -21,12 +24,16 @@ class Receipt {
     this.notes,
     required this.studentName,
     required this.feeStructureName,
+    this.discountTypeName,
+    this.discountAmount,
+    this.discountNote,
   });
 
   factory Receipt.fromJson(Map<String, dynamic> json) {
     final student = json['student'] as Map<String, dynamic>;
     final studentFee = json['studentFee'] as Map<String, dynamic>;
     final feeStructure = studentFee['feeStructure'] as Map<String, dynamic>;
+    final discountType = json['discountType'] as Map<String, dynamic>?;
     return Receipt(
       id: json['id'] as String,
       receiptNumber: json['receiptNumber'] as String,
@@ -37,6 +44,9 @@ class Receipt {
       notes: json['notes'] as String?,
       studentName: student['name'] as String,
       feeStructureName: feeStructure['name'] as String,
+      discountTypeName: discountType?['name'] as String?,
+      discountAmount: parseDecimalOrNull(json['discountAmount']),
+      discountNote: json['discountNote'] as String?,
     );
   }
 }

@@ -48,10 +48,15 @@ class _FeeReceiptsPageState extends ConsumerState<FeeReceiptsPage> {
             separatorBuilder: (_, __) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final receipt = receipts[index];
+              final paidOnLabel = receipt.paidOn.toLocal().toString().split(' ').first;
               return Card(
                 child: ListTile(
                   title: Text('₹${receipt.amount.toStringAsFixed(2)} · ${receipt.receiptNumber}'),
-                  subtitle: Text(receipt.paidOn.toLocal().toString().split(' ').first),
+                  subtitle: Text(
+                    receipt.discountAmount != null
+                        ? '$paidOnLabel · Discount applied'
+                        : paidOnLabel,
+                  ),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => context.push('/receipts/${receipt.id}'),
                 ),

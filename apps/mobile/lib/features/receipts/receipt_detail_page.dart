@@ -76,6 +76,35 @@ class _ReceiptDetailPageState extends ConsumerState<ReceiptDetailPage> {
                   '₹${receipt.amount.toStringAsFixed(2)}',
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
+                if (receipt.discountAmount != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          receipt.discountTypeName != null
+                              ? 'Discount applied: ${receipt.discountTypeName}'
+                              : 'Discount applied',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        Text('−₹${receipt.discountAmount!.toStringAsFixed(2)}'),
+                        if (receipt.discountNote != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            receipt.discountNote!,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 Text('Method: ${_methodLabels[receipt.method] ?? receipt.method}'),
                 Text('Paid on: ${receipt.paidOn.toLocal().toString().split(' ').first}'),
