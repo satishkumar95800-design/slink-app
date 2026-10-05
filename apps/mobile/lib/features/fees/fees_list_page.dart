@@ -97,34 +97,36 @@ class _FeeCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text('${fee.student.name} • Due ${fee.dueDate.toLocal().toString().split(' ').first}'),
             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  canPay ? '₹${fee.outstanding.toStringAsFixed(2)} due' : 'Paid in full',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                Row(
-                  children: [
-                    if (hasReceipt)
-                      TextButton(
-                        onPressed: () => context.push('/fees/${fee.id}/receipts'),
-                        child: const Text('View Receipt'),
-                      ),
-                    if (canPay)
-                      TextButton(
-                        onPressed: () => context.push('/fees/${fee.id}/claim', extra: fee.outstanding),
-                        child: const Text('Already paid? Upload receipt'),
-                      ),
-                    if (canPay)
-                      FilledButton(
-                        onPressed: () => context.push('/fees/${fee.id}/pay'),
-                        child: const Text('Pay now'),
-                      ),
-                  ],
-                ),
-              ],
+            Text(
+              canPay ? '₹${fee.outstanding.toStringAsFixed(2)} due' : 'Paid in full',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
+            if (hasReceipt || canPay) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  if (hasReceipt)
+                    TextButton(
+                      onPressed: () => context.push('/fees/${fee.id}/receipts'),
+                      child: const Text('View Receipt'),
+                    ),
+                  if (canPay)
+                    TextButton(
+                      onPressed: () => context.push('/fees/${fee.id}/claim', extra: fee.outstanding),
+                      child: const Text('Already paid? Upload receipt'),
+                    ),
+                  if (canPay)
+                    FilledButton(
+                      onPressed: () => context.push('/fees/${fee.id}/pay'),
+                      child: const Text('Pay now'),
+                    ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
