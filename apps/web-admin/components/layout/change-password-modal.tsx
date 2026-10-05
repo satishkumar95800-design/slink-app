@@ -55,19 +55,19 @@ export function ChangePasswordModal({ open, onClose }: { open: boolean; onClose:
     <Modal open={open} onClose={close} title="Change Password">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Input
-          label="Current Password"
+          label="Current Password" required
           type="password"
           error={errors.currentPassword?.message}
           {...register('currentPassword')}
         />
         <Input
-          label="New Password"
+          label="New Password" required
           type="password"
           error={errors.newPassword?.message}
           {...register('newPassword')}
         />
         <Input
-          label="Confirm New Password"
+          label="Confirm New Password" required
           type="password"
           error={errors.confirmPassword?.message}
           {...register('confirmPassword')}

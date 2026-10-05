@@ -238,10 +238,10 @@ export default function StudentsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <form onSubmit={handleSearch} className="flex gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+        <form onSubmit={handleSearch} className="flex w-full gap-2 sm:w-auto">
           <input
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+            className="min-w-0 flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-coral focus:ring-1 focus:ring-coral outline-none"
             placeholder="Search by name or admission no…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -256,7 +256,7 @@ export default function StudentsPage() {
 
       {loading ? (
         <div className="flex h-64 items-center justify-center">
-          <Spinner className="h-8 w-8 text-blue-600" />
+          <Spinner className="h-8 w-8 text-teal" />
         </div>
       ) : error ? (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
@@ -267,12 +267,12 @@ export default function StudentsPage() {
           action={<Button onClick={() => setShowModal(true)}>+ Add Student</Button>}
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-cream/60">
               <tr>
                 {['Admission No', 'Name', 'Class', 'Date of Birth', 'Blood Group', 'Enrolled', ''].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
                     {h}
                   </th>
                 ))}
@@ -293,7 +293,7 @@ export default function StudentsPage() {
                           </div>
                         )}
                       </div>
-                      <Link href={`/admin/students/${s.id}`} className="text-blue-600 hover:underline">
+                      <Link href={`/admin/students/${s.id}`} className="text-teal hover:underline">
                         {s.name}
                       </Link>
                     </div>
@@ -315,7 +315,7 @@ export default function StudentsPage() {
                       <button
                         type="button"
                         onClick={() => openEdit(s)}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
+                        className="text-teal hover:text-coral-dark font-medium"
                       >
                         Edit
                       </button>
@@ -335,21 +335,21 @@ export default function StudentsPage() {
         size="lg"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Full Name" error={errors.name?.message} {...register('name')} />
-            <Input label="Admission No" error={errors.admissionNo?.message} {...register('admissionNo')} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input label="Full Name" required error={errors.name?.message} {...register('name')} />
+            <Input label="Admission No" required error={errors.admissionNo?.message} {...register('admissionNo')} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input label="Date of Birth" type="date" error={errors.dob?.message} {...register('dob')} />
             <Select
-              label="Class"
+              label="Class" required
               options={classOptions}
               placeholder="Select a class"
               error={errors.classId?.message}
               {...register('classId')}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Select
               label="Blood Group (optional)"
               options={bloodGroupOptions}
@@ -369,8 +369,8 @@ export default function StudentsPage() {
           </div>
           <div className="border-t pt-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Parent / Guardian</p>
-            <div className="grid grid-cols-2 gap-4">
-              <Input label="Parent Phone" placeholder="+91..." error={errors.parentPhone?.message} {...register('parentPhone')} />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Input label="Parent Phone" required placeholder="+91..." error={errors.parentPhone?.message} {...register('parentPhone')} />
               <Select
                 label="Relation"
                 options={relationOptions}
@@ -398,17 +398,17 @@ export default function StudentsPage() {
         size="lg"
       >
         <form onSubmit={handleEditSubmit(onEditSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Full Name" error={editErrors.name?.message} {...registerEdit('name')} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input label="Full Name" required error={editErrors.name?.message} {...registerEdit('name')} />
             <Select
-              label="Class"
+              label="Class" required
               options={classOptions}
               placeholder="Select a class"
               error={editErrors.classId?.message}
               {...registerEdit('classId')}
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input label="Date of Birth" type="date" error={editErrors.dob?.message} {...registerEdit('dob')} />
             <Select
               label="Blood Group (optional)"

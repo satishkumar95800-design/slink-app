@@ -161,14 +161,14 @@ export default function PaymentClaimsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Payment Claims</h1>
+          <h1 className="text-xl font-extrabold tracking-tight text-gray-900">Payment Claims</h1>
           <p className="text-sm text-gray-500">
             Review offline payments parents have claimed to have made — approve to record the receipt, or reject with a reason.
           </p>
         </div>
-        <div className="w-40">
+        <div className="w-full sm:w-40">
           <Select
             options={STATUS_OPTIONS}
             value={statusFilter}
@@ -179,7 +179,7 @@ export default function PaymentClaimsPage() {
 
       {loading ? (
         <div className="flex h-64 items-center justify-center">
-          <Spinner className="h-8 w-8 text-blue-600" />
+          <Spinner className="h-8 w-8 text-teal" />
         </div>
       ) : error ? (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
@@ -193,7 +193,7 @@ export default function PaymentClaimsPage() {
           {claims.map((claim) => (
             <div
               key={claim.id}
-              className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+              className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="space-y-1">
@@ -266,7 +266,7 @@ export default function PaymentClaimsPage() {
               before approving. This will create a receipt and mark the fee accordingly.
             </p>
             <Input
-              label="Amount to confirm"
+              label="Amount to confirm" required
               type="number"
               step="0.01"
               min="0"

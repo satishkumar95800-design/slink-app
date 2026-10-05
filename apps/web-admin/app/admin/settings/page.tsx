@@ -52,7 +52,7 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div className="rounded-lg border bg-white p-5">
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
         <h2 className="text-base font-semibold text-gray-900">Branding</h2>
         <p className="mt-1 text-sm text-gray-500">
           Upload an image for your school. It's shown as a background across the admin console and the mobile
@@ -80,7 +80,7 @@ export default function SettingsPage() {
             accept="image/jpeg,image/png,image/webp"
             onChange={handleFileChange}
             disabled={stage === 'uploading'}
-            className="block text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
+            className="block text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-teal/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-teal hover:file:bg-teal/20"
           />
           {stage === 'uploading' && <Button loading disabled>Uploading…</Button>}
         </div>

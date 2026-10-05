@@ -35,8 +35,8 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
 
   if (!ready) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+      <div className="flex min-h-screen items-center justify-center bg-cream">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-coral border-t-transparent" />
       </div>
     );
   }
@@ -48,48 +48,48 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
 
   return (
     <ToastProvider>
-      <div className="flex h-screen flex-col overflow-hidden bg-gray-50">
-        <header className="flex h-16 flex-shrink-0 items-center justify-between border-b bg-slate-900 px-6">
-          <div className="flex items-center gap-6">
+      <div className="flex h-screen flex-col overflow-hidden bg-cream">
+        <header className="flex h-16 flex-shrink-0 items-center justify-between gap-2 border-b bg-teal px-3 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-6">
             <Link href="/platform/tenants" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-500/20 text-sm font-bold text-blue-200">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-coral/20 text-sm font-bold text-white/80">
                 S
               </div>
-              <span className="text-sm font-bold tracking-tight text-white">School Connect — Platform</span>
+              <span className="hidden text-sm font-bold tracking-tight text-white sm:inline">School Connect — Platform</span>
             </Link>
             <nav className="flex items-center gap-1">
               <Link
                 href="/platform/tenants"
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
                   pathname.startsWith('/platform/tenants')
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    ? 'bg-coral text-white'
+                    : 'text-white/80 hover:bg-white/10 hover:text-white'
                 }`}
               >
                 Tenants
               </Link>
             </nav>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
+          <div className="flex flex-shrink-0 items-center gap-2 sm:gap-4">
+            <div className="hidden text-right md:block">
               <p className="text-sm font-medium text-white">{userName}</p>
-              <p className="text-xs text-slate-400">Super Admin</p>
+              <p className="text-xs text-white/60">Super Admin</p>
             </div>
             <button
               onClick={() => setShowChangePassword(true)}
-              className="rounded-md border border-slate-600 bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-700 transition-colors cursor-pointer"
+              className="whitespace-nowrap rounded-full border border-white/20 bg-white/10 px-2 py-1.5 text-xs font-medium sm:px-3 sm:text-sm text-white hover:bg-white/20 transition-colors cursor-pointer"
             >
               Change Password
             </button>
             <button
               onClick={handleLogout}
-              className="rounded-md border border-slate-600 bg-slate-800 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-700 transition-colors cursor-pointer"
+              className="whitespace-nowrap rounded-full border border-white/20 bg-white/10 px-2 py-1.5 text-xs font-medium sm:px-3 sm:text-sm text-white hover:bg-white/20 transition-colors cursor-pointer"
             >
               Logout
             </button>
           </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">{children}</main>
         <ChangePasswordModal open={showChangePassword} onClose={() => setShowChangePassword(false)} />
       </div>
     </ToastProvider>

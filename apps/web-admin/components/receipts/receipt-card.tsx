@@ -31,7 +31,7 @@ function formatCurrency(amount: string) {
  * different access checks. */
 export function ReceiptCard({ receipt }: { receipt: ReceiptDetail }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm print:border-0 print:shadow-none">
+    <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm print:border-0 print:shadow-none">
       <div className="mb-6 flex items-center justify-between border-b pb-6">
         <div className="flex items-center gap-3">
           {receipt.tenant.logoUrl && (

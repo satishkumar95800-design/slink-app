@@ -36,7 +36,7 @@ export default function PublicReceiptPage() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <Spinner className="h-8 w-8 text-blue-600" />
+        <Spinner className="h-8 w-8 text-teal" />
       </div>
     );
   }
@@ -52,11 +52,11 @@ export default function PublicReceiptPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl p-8">
+    <div className="mx-auto max-w-2xl p-4 sm:p-8">
       <div className="print:hidden mb-6 flex justify-end">
         <button
           onClick={() => window.print()}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="rounded-full bg-coral px-5 py-2.5 text-sm font-bold shadow-sm text-white hover:bg-coral-dark"
         >
           Print / Save as PDF
         </button>

@@ -83,9 +83,9 @@ export default function TenantsListPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Tenants</h1>
+          <h1 className="text-xl font-extrabold tracking-tight text-gray-900">Tenants</h1>
           <p className="text-sm text-gray-500">{total} school{total === 1 ? '' : 's'} on this platform</p>
         </div>
         <Button onClick={() => setShowModal(true)}>+ New tenant</Button>
@@ -98,10 +98,10 @@ export default function TenantsListPage() {
         className="max-w-sm"
       />
 
-      <div className="overflow-hidden rounded-lg border bg-white">
+      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
         {loading ? (
           <div className="flex justify-center p-10">
-            <Spinner className="h-6 w-6 text-blue-600" />
+            <Spinner className="h-6 w-6 text-teal" />
           </div>
         ) : tenants.length === 0 ? (
           <EmptyState
@@ -110,7 +110,8 @@ export default function TenantsListPage() {
             action={!search && <Button onClick={() => setShowModal(true)}>+ New tenant</Button>}
           />
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+<table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-left text-gray-500">
                 <th className="px-4 py-3 font-medium">Name</th>
@@ -138,19 +139,20 @@ export default function TenantsListPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
       <Modal open={showModal} onClose={() => setShowModal(false)} title="New tenant">
         <form onSubmit={handleSubmit(onCreate)} className="space-y-4">
           <Input
-            label="School name"
+            label="School name" required
             placeholder="Greenfield Academy"
             error={errors.name?.message}
             {...register('name')}
           />
           <Input
-            label="Slug"
+            label="Slug" required
             placeholder="greenfield-academy"
             helpText="Used in the login screen and, later, as the subdomain."
             error={errors.slug?.message}

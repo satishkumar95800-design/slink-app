@@ -32,20 +32,31 @@ const NAV_ITEMS: NavItem[] = [
 
 interface SidebarProps {
   tenant?: { name: string; logoUrl: string | null } | null;
+  /** Mobile/tablet drawer state — the sidebar is always visible at lg and up. */
+  open?: boolean;
+  onClose?: () => void;
 }
 
-export function Sidebar({ tenant }: SidebarProps) {
+export function Sidebar({ tenant, open = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const role = getSession()?.role;
   const items = NAV_ITEMS.filter((item) => !role || !item.hiddenForRoles?.includes(role));
 
   return (
-    <aside className="flex h-screen w-60 flex-shrink-0 flex-col bg-slate-900 text-slate-200">
-      <div className="flex h-16 items-center gap-3 border-b border-slate-700 px-4">
+    <>
+      {open && (
+        <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={onClose} aria-hidden="true" />
+      )}
+    <aside
+      className={`fixed inset-y-0 left-0 z-40 flex h-screen w-60 flex-shrink-0 flex-col bg-teal text-white transition-transform duration-200 lg:static lg:z-auto lg:translate-x-0 ${
+        open ? 'translate-x-0' : '-translate-x-full'
+      }`}
+    >
+      <div className="flex h-16 items-center gap-3 border-b border-white/10 px-4">
         {tenant?.logoUrl ? (
-          <img src={tenant.logoUrl} alt={tenant.name} className="h-8 w-8 rounded-md object-cover ring-1 ring-slate-700" />
+          <img src={tenant.logoUrl} alt={tenant.name} className="h-8 w-8 rounded-md object-cover ring-1 ring-white/20" />
         ) : (
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-500/20 text-sm font-bold text-blue-200">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-coral/20 text-sm font-bold text-white/80">
             S
           </div>
         )}
@@ -62,10 +73,11 @@ export function Sidebar({ tenant }: SidebarProps) {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  onClick={onClose}
+                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
                     active
-                      ? 'bg-blue-600 text-white'
-                      : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                      ? 'bg-coral text-white'
+                      : 'text-white/70 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   <span className="text-base leading-none">{item.icon}</span>
@@ -77,5 +89,6 @@ export function Sidebar({ tenant }: SidebarProps) {
         </ul>
       </nav>
     </aside>
+    </>
   );
 }

@@ -222,10 +222,10 @@ export default function StudentFeesPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
         <div className="flex items-center gap-3">
           <select
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm bg-white focus:border-coral focus:ring-1 focus:ring-coral outline-none"
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value);
@@ -243,7 +243,7 @@ export default function StudentFeesPage() {
 
       {loading ? (
         <div className="flex h-64 items-center justify-center">
-          <Spinner className="h-8 w-8 text-blue-600" />
+          <Spinner className="h-8 w-8 text-teal" />
         </div>
       ) : error ? (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
@@ -254,12 +254,12 @@ export default function StudentFeesPage() {
           action={<Button onClick={() => setShowAssign(true)}>+ Assign Fee</Button>}
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-cream/60">
               <tr>
                 {['Student', 'Fee', 'Due', 'Paid', 'Balance', 'Status', 'Due Date', ''].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
                     {h}
                   </th>
                 ))}
@@ -269,7 +269,7 @@ export default function StudentFeesPage() {
               {fees.map((f) => (
                 <tr key={f.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
-                    <Link href={`/admin/students/${f.studentId}`} className="text-sm font-medium text-blue-600 hover:underline">
+                    <Link href={`/admin/students/${f.studentId}`} className="text-sm font-medium text-teal hover:underline">
                       {f.student?.name ?? '—'}
                     </Link>
                     <p className="text-xs text-gray-500">{f.student?.admissionNo ?? ''}</p>
@@ -290,7 +290,7 @@ export default function StudentFeesPage() {
                     {f.status !== 'paid' && f.status !== 'waived' && (
                       <button
                         onClick={() => openOffline(f)}
-                        className="text-xs text-blue-600 hover:underline"
+                        className="text-xs text-teal hover:underline"
                       >
                         Record payment
                       </button>
@@ -311,14 +311,14 @@ export default function StudentFeesPage() {
       >
         <form onSubmit={assignForm.handleSubmit(onAssign)} className="space-y-4">
           <Select
-            label="Student"
+            label="Student" required
             options={studentOptions}
             placeholder="Select a student"
             error={assignForm.formState.errors.studentId?.message}
             {...assignForm.register('studentId')}
           />
           <Select
-            label="Fee Structure"
+            label="Fee Structure" required
             options={structureOptions}
             placeholder="Select a fee structure"
             error={assignForm.formState.errors.feeStructureId?.message}
@@ -351,9 +351,9 @@ export default function StudentFeesPage() {
               </p>
             </div>
             <div className="space-y-3">
-              <p className="text-sm font-medium text-gray-700">Amount per fee component (₹)</p>
+              <p className="text-sm font-medium text-gray-700">Amount per fee component (₹)<span className="ml-0.5 text-red-500" aria-hidden="true">*</span></p>
               {allocationFields.fields.map((field, index) => (
-                <div key={field.id} className="flex items-center justify-between gap-4">
+                <div key={field.id} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                   <label htmlFor={`allocation-${index}`} className="text-sm text-gray-600">
                     {field.label} <span className="text-gray-400">(balance {formatCurrency(field.balance)})</span>
                   </label>
@@ -361,7 +361,7 @@ export default function StudentFeesPage() {
                     id={`allocation-${index}`}
                     type="number"
                     step="0.01"
-                    className="w-32"
+                    className="sm:w-32"
                     {...offlineForm.register(`allocations.${index}.amount`, { valueAsNumber: true })}
                   />
                 </div>
@@ -371,7 +371,7 @@ export default function StudentFeesPage() {
               )}
             </div>
             <Select
-              label="Method"
+              label="Method" required
               options={[
                 { value: 'cash', label: 'Cash' },
                 { value: 'cheque', label: 'Cheque' },
@@ -381,7 +381,7 @@ export default function StudentFeesPage() {
               error={offlineForm.formState.errors.method?.message}
               {...offlineForm.register('method')}
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Input
                 label="Reference (optional)"
                 placeholder="Cheque no. / UTR / DD no."
@@ -405,7 +405,7 @@ export default function StudentFeesPage() {
               {...offlineForm.register('discountTypeId')}
             />
             {selectedDiscountTypeId && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Input
                   label="Discount Amount (₹)"
                   type="number"

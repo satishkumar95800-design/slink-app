@@ -87,7 +87,7 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-gray-500">{total} report{total !== 1 ? 's' : ''}</p>
         {isTeacher && (
           <Button type="button" onClick={() => setUploadOpen(true)}>
@@ -98,7 +98,7 @@ export default function ReportsPage() {
 
       {loading ? (
         <div className="flex h-64 items-center justify-center">
-          <Spinner className="h-8 w-8 text-blue-600" />
+          <Spinner className="h-8 w-8 text-teal" />
         </div>
       ) : error ? (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
@@ -108,12 +108,12 @@ export default function ReportsPage() {
           description="Progress reports created by teachers will appear here."
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-cream/60">
               <tr>
                 {['Term', 'Academic Year', 'Student', 'Type', 'Author', 'Status', 'Published', 'Created', ''].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
                     {h}
                   </th>
                 ))}
@@ -146,7 +146,7 @@ export default function ReportsPage() {
                       <button
                         type="button"
                         onClick={() => onPublish(r.id)}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
+                        className="text-teal hover:text-coral-dark font-medium"
                       >
                         Publish
                       </button>
@@ -234,21 +234,21 @@ function UploadReportCardModal({ onClose, onUploaded }: { onClose: () => void; o
     <Modal open onClose={onClose} title="Upload Report Card">
       <div className="space-y-4">
         <Select
-          label="Student"
+          label="Student" required
           placeholder="Select a student"
           value={studentId}
           onChange={(e) => setStudentId(e.target.value)}
           options={students.map((s) => ({ value: s.id, label: `${s.name} (${s.admissionNo})` }))}
         />
-        <Input label="Term" value={term} onChange={(e) => setTerm(e.target.value)} placeholder="e.g. Term 1" />
+        <Input label="Term" required value={term} onChange={(e) => setTerm(e.target.value)} placeholder="e.g. Term 1" />
         <Input
-          label="Academic Year"
+          label="Academic Year" required
           value={academicYear}
           onChange={(e) => setAcademicYear(e.target.value)}
           placeholder="e.g. 2026-27"
         />
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700">Report Card (PDF)</label>
+          <label className="text-sm font-medium text-gray-700">Report Card (PDF)<span className="ml-0.5 text-red-500" aria-hidden="true">*</span></label>
           <input
             type="file"
             accept="application/pdf"

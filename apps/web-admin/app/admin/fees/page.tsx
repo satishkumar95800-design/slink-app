@@ -151,14 +151,14 @@ export default function FeesPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-gray-500">{total} structure{total !== 1 ? 's' : ''}</p>
         <Button onClick={() => setShowModal(true)}>+ Add Structure</Button>
       </div>
 
       {loading ? (
         <div className="flex h-64 items-center justify-center">
-          <Spinner className="h-8 w-8 text-blue-600" />
+          <Spinner className="h-8 w-8 text-teal" />
         </div>
       ) : error ? (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
@@ -169,12 +169,12 @@ export default function FeesPage() {
           action={<Button onClick={() => setShowModal(true)}>+ Add Structure</Button>}
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-cream/60">
               <tr>
                 {['Name', 'Class', 'Academic Year', 'Total', 'Due Date', 'Late Fee/Day', ''].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
                     {h}
                   </th>
                 ))}
@@ -194,7 +194,7 @@ export default function FeesPage() {
                     {s.lateFeePerDay ? formatCurrency(s.lateFeePerDay) : '—'}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button onClick={() => openEdit(s)} className="text-xs text-blue-600 hover:underline">
+                    <button onClick={() => openEdit(s)} className="text-xs text-teal hover:underline">
                       Edit
                     </button>
                   </td>
@@ -212,19 +212,19 @@ export default function FeesPage() {
         size="lg"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Name" placeholder="Annual Fees" error={errors.name?.message} {...register('name')} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input label="Name" required placeholder="Annual Fees" error={errors.name?.message} {...register('name')} />
             <Select
-              label="Class"
+              label="Class" required
               options={classOptions}
               placeholder="Select a class"
               error={errors.classId?.message}
               {...register('classId')}
             />
           </div>
-          <div className="grid grid-cols-3 gap-4">
-            <Input label="Academic Year" placeholder="2024-25" error={errors.academicYear?.message} {...register('academicYear')} />
-            <Input label="Due Date" type="date" error={errors.dueDate?.message} {...register('dueDate')} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Input label="Academic Year" required placeholder="2024-25" error={errors.academicYear?.message} {...register('academicYear')} />
+            <Input label="Due Date" required type="date" error={errors.dueDate?.message} {...register('dueDate')} />
             <Input
               label="Late Fee / Day (₹)"
               type="number"
@@ -237,27 +237,27 @@ export default function FeesPage() {
 
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Fee Items</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Fee Items<span className="ml-0.5 text-red-500" aria-hidden="true">*</span></p>
               <button
                 type="button"
                 onClick={() => append({ label: '', amount: 0 })}
-                className="text-xs text-blue-600 hover:underline"
+                className="text-xs text-teal hover:underline"
               >
                 + Add item
               </button>
             </div>
             <div className="space-y-2">
               {fields.map((field, idx) => (
-                <div key={field.id} className="flex gap-2">
+                <div key={field.id} className="flex flex-wrap gap-2 sm:flex-nowrap">
                   <input
-                    className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                    className="min-w-0 flex-1 basis-full rounded-md border border-gray-300 px-3 py-1.5 sm:basis-auto text-sm focus:border-coral focus:ring-1 focus:ring-coral outline-none"
                     placeholder="Label (e.g. Tuition)"
                     {...register(`items.${idx}.label`)}
                   />
                   <input
                     type="number"
                     step="0.01"
-                    className="w-32 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                    className="w-28 flex-1 rounded-md border sm:w-32 sm:flex-none border-gray-300 px-3 py-1.5 text-sm focus:border-coral focus:ring-1 focus:ring-coral outline-none"
                     placeholder="Amount (₹)"
                     {...register(`items.${idx}.amount`, { valueAsNumber: true })}
                   />
@@ -298,19 +298,19 @@ export default function FeesPage() {
         size="lg"
       >
         <form onSubmit={handleEditSubmit(onEditSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Name" placeholder="Annual Fees" error={editErrors.name?.message} {...registerEdit('name')} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input label="Name" required placeholder="Annual Fees" error={editErrors.name?.message} {...registerEdit('name')} />
             <Select
-              label="Class"
+              label="Class" required
               options={classOptions}
               placeholder="Select a class"
               error={editErrors.classId?.message}
               {...registerEdit('classId')}
             />
           </div>
-          <div className="grid grid-cols-3 gap-4">
-            <Input label="Academic Year" placeholder="2024-25" error={editErrors.academicYear?.message} {...registerEdit('academicYear')} />
-            <Input label="Due Date" type="date" error={editErrors.dueDate?.message} {...registerEdit('dueDate')} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Input label="Academic Year" required placeholder="2024-25" error={editErrors.academicYear?.message} {...registerEdit('academicYear')} />
+            <Input label="Due Date" required type="date" error={editErrors.dueDate?.message} {...registerEdit('dueDate')} />
             <Input
               label="Late Fee / Day (₹)"
               type="number"
@@ -323,27 +323,27 @@ export default function FeesPage() {
 
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Fee Items</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Fee Items<span className="ml-0.5 text-red-500" aria-hidden="true">*</span></p>
               <button
                 type="button"
                 onClick={() => appendEdit({ label: '', amount: 0 })}
-                className="text-xs text-blue-600 hover:underline"
+                className="text-xs text-teal hover:underline"
               >
                 + Add item
               </button>
             </div>
             <div className="space-y-2">
               {editFields.map((field, idx) => (
-                <div key={field.id} className="flex gap-2">
+                <div key={field.id} className="flex flex-wrap gap-2 sm:flex-nowrap">
                   <input
-                    className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                    className="min-w-0 flex-1 basis-full rounded-md border border-gray-300 px-3 py-1.5 sm:basis-auto text-sm focus:border-coral focus:ring-1 focus:ring-coral outline-none"
                     placeholder="Label (e.g. Tuition)"
                     {...registerEdit(`items.${idx}.label`)}
                   />
                   <input
                     type="number"
                     step="0.01"
-                    className="w-32 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                    className="w-28 flex-1 rounded-md border sm:w-32 sm:flex-none border-gray-300 px-3 py-1.5 text-sm focus:border-coral focus:ring-1 focus:ring-coral outline-none"
                     placeholder="Amount (₹)"
                     {...registerEdit(`items.${idx}.amount`, { valueAsNumber: true })}
                   />

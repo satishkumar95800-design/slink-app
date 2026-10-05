@@ -147,7 +147,7 @@ export default function TeachersPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-gray-500">
           {teachers.length} teacher{teachers.length !== 1 ? 's' : ''}
         </p>
@@ -158,7 +158,7 @@ export default function TeachersPage() {
 
       {loading ? (
         <div className="flex h-64 items-center justify-center">
-          <Spinner className="h-8 w-8 text-blue-600" />
+          <Spinner className="h-8 w-8 text-teal" />
         </div>
       ) : error ? (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
@@ -170,15 +170,15 @@ export default function TeachersPage() {
       ) : (
         <div className="space-y-3">
           {teachers.map((t) => (
-            <div key={t.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-              <div className="flex items-center justify-between">
+            <div key={t.id} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-gray-900">{t.name}</p>
                   <p className="text-xs text-gray-500">{t.phone ?? '—'} · {t.email ?? '—'}</p>
                 </div>
                 <button
                   onClick={() => openAssign(t)}
-                  className="text-xs text-blue-600 hover:underline"
+                  className="text-xs text-teal hover:underline"
                 >
                   + Assign subject/class
                 </button>
@@ -230,14 +230,14 @@ export default function TeachersPage() {
       >
         <form onSubmit={handleAssignSubmit(onAssignSubmit)} className="space-y-4">
           <Select
-            label="Subject"
+            label="Subject" required
             options={subjectOptions}
             placeholder="Select a subject"
             error={assignErrors.subjectId?.message}
             {...registerAssign('subjectId')}
           />
           <Select
-            label="Class"
+            label="Class" required
             options={classOptions}
             placeholder="Select a class"
             error={assignErrors.classId?.message}
@@ -261,7 +261,7 @@ export default function TeachersPage() {
       >
         <form onSubmit={handleSubjectSubmit(onSubjectSubmit)} className="space-y-4">
           <Input
-            label="Subject Name"
+            label="Subject Name" required
             placeholder="e.g. Mathematics"
             error={subjectErrors.name?.message}
             {...registerSubject('name')}

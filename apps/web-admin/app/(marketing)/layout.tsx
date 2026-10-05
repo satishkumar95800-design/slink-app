@@ -53,6 +53,13 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             School Login
           </Link>
         </Container>
+        <Container className="flex gap-5 overflow-x-auto pb-3 sm:hidden">
+          {NAV_LINKS.map((link) => (
+            <Link key={link.href} href={link.href} className="whitespace-nowrap text-sm font-medium text-gray-700">
+              {link.label}
+            </Link>
+          ))}
+        </Container>
       </header>
 
       <main className="flex-1">{children}</main>

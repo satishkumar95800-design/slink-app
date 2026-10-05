@@ -58,7 +58,7 @@ export default function TenantDetailPage() {
   if (loading || !tenant) {
     return (
       <div className="flex justify-center p-16">
-        <Spinner className="h-6 w-6 text-blue-600" />
+        <Spinner className="h-6 w-6 text-teal" />
       </div>
     );
   }
@@ -73,7 +73,7 @@ export default function TenantDetailPage() {
           ← All tenants
         </button>
         <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold text-gray-900">{tenant.name}</h1>
+          <h1 className="text-xl font-extrabold tracking-tight text-gray-900">{tenant.name}</h1>
           <Badge variant={tenant.isActive ? 'green' : 'gray'}>{tenant.isActive ? 'Active' : 'Inactive'}</Badge>
         </div>
         <p className="font-mono text-xs text-gray-500">{tenant.slug}</p>
@@ -85,7 +85,7 @@ export default function TenantDetailPage() {
             key={t}
             onClick={() => setTab(t)}
             className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium capitalize transition-colors cursor-pointer ${
-              tab === t ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+              tab === t ? 'border-coral text-teal' : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
             {t === 'import' ? 'Import Data' : t}
@@ -104,15 +104,15 @@ export default function TenantDetailPage() {
 function OverviewTab({ tenant }: { tenant: Tenant }) {
   return (
     <div className="grid grid-cols-2 gap-4">
-      <div className="rounded-lg border bg-white p-5">
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
         <p className="text-sm text-gray-500">Users</p>
         <p className="text-2xl font-semibold text-gray-900">{tenant._count.users}</p>
       </div>
-      <div className="rounded-lg border bg-white p-5">
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
         <p className="text-sm text-gray-500">Students</p>
         <p className="text-2xl font-semibold text-gray-900">{tenant._count.students}</p>
       </div>
-      <div className="col-span-2 rounded-lg border bg-white p-5 text-sm text-gray-600">
+      <div className="col-span-2 rounded-2xl border border-gray-100 bg-white shadow-sm p-5 text-sm text-gray-600">
         <p>
           Created{' '}
           {new Date(tenant.createdAt).toLocaleDateString(undefined, {
@@ -124,7 +124,7 @@ function OverviewTab({ tenant }: { tenant: Tenant }) {
         <p className="mt-1">Timezone: {tenant.timezone}</p>
       </div>
       {tenant._count.users === 0 && (
-        <div className="col-span-2 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+        <div className="col-span-2 rounded-lg border border-teal/30 bg-teal/5 p-4 text-sm text-teal">
           This tenant has no users yet — use the <strong>Import Data</strong> tab to bulk-create its first admin,
           teachers, and students from the onboarding template.
         </div>
@@ -189,15 +189,15 @@ function SettingsTab({ tenant, onSaved }: { tenant: Tenant; onSaved: () => void 
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleSubmit(onSave)} className="space-y-4 rounded-lg border bg-white p-5">
-        <Input label="School name" error={errors.name?.message} {...register('name')} />
+      <form onSubmit={handleSubmit(onSave)} className="space-y-4 rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
+        <Input label="School name" required error={errors.name?.message} {...register('name')} />
         <Input
-          label="Slug"
+          label="Slug" required
           helpText="Changing this changes the login URL/tenant ID for every user."
           error={errors.slug?.message}
           {...register('slug')}
         />
-        <Input label="Timezone" error={errors.timezone?.message} {...register('timezone')} />
+        <Input label="Timezone" required error={errors.timezone?.message} {...register('timezone')} />
         <div className="flex justify-end">
           <Button type="submit" loading={isSubmitting}>
             Save changes
@@ -298,24 +298,24 @@ function AddTenantUserCard({ tenant, onCreated }: { tenant: Tenant; onCreated: (
   }
 
   return (
-    <div className="rounded-lg border bg-white p-5">
+    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
       <p className="text-sm font-semibold text-gray-900">Add a user to this tenant</p>
       <p className="mt-1 text-xs text-gray-500">
         For a single account — bootstrapping the first admin, or adding a developer support login. Use the
         Import Data tab instead for bulk onboarding of staff and students.
       </p>
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-4 grid grid-cols-2 gap-4">
-        <Input label="Full name" error={errors.name?.message} {...register('name')} />
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Input label="Full name" required error={errors.name?.message} {...register('name')} />
         <Select
-          label="Role"
+          label="Role" required
           options={TENANT_USER_ROLE_OPTIONS}
           error={errors.role?.message}
           {...register('role')}
         />
-        <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
+        <Input label="Email" required type="email" error={errors.email?.message} {...register('email')} />
         <Input label="Phone (optional)" error={errors.phone?.message} {...register('phone')} />
         <Input
-          label="Password"
+          label="Password" required
           type="password"
           helpText="At least 8 characters — share this with the account holder."
           error={errors.password?.message}
@@ -376,7 +376,7 @@ function UsersTab({ tenant, onChanged }: { tenant: Tenant; onChanged: () => void
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border bg-white p-5">
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
         <p className="text-sm font-semibold text-gray-900">Find a user in this tenant</p>
         <p className="mt-1 text-xs text-gray-500">
           Search by name, email, or phone — e.g. to locate an account for a data-deletion request.
@@ -401,9 +401,9 @@ function UsersTab({ tenant, onChanged }: { tenant: Tenant; onChanged: () => void
         </form>
       </div>
 
-      <div className="overflow-hidden rounded-lg border bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
         <table className="w-full text-sm">
-          <thead className="border-b bg-gray-50 text-left text-xs uppercase text-gray-500">
+          <thead className="border-b bg-gray-50 text-left text-xs uppercase text-teal/80">
             <tr>
               <th className="px-4 py-2">Name</th>
               <th className="px-4 py-2">Contact</th>

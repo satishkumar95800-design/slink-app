@@ -200,7 +200,7 @@ export function ImportWorkflow({ tenantOverride }: ImportWorkflowProps) {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex items-start justify-between rounded-lg border bg-white p-5">
+      <div className="flex items-start justify-between rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
         <div>
           <h2 className="text-base font-semibold text-gray-900">Bulk onboarding import</h2>
           <p className="mt-1 text-sm text-gray-500">
@@ -225,14 +225,14 @@ export function ImportWorkflow({ tenantOverride }: ImportWorkflowProps) {
       )}
 
       {(stage === 'idle' || stage === 'validating') && (
-        <div className="rounded-lg border bg-white p-5">
+        <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
           <label className="mb-2 block text-sm font-medium text-gray-700">Workbook (.xlsx)</label>
           <input
             ref={fileInputRef}
             type="file"
             accept=".xlsx"
             onChange={handleFileChange}
-            className="block w-full text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
+            className="block w-full text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-teal/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-teal hover:file:bg-teal/20"
           />
           <div className="mt-4 flex justify-end">
             <Button onClick={handleValidate} disabled={!file} loading={stage === 'validating'}>
@@ -256,15 +256,15 @@ export function ImportWorkflow({ tenantOverride }: ImportWorkflowProps) {
       )}
 
       {stage === 'committing' && (
-        <div className="flex items-center justify-center gap-3 rounded-lg border bg-white p-10 text-sm text-gray-600">
-          <Spinner className="h-5 w-5 text-blue-600" />
+        <div className="flex items-center justify-center gap-3 rounded-2xl border border-gray-100 bg-white shadow-sm p-10 text-sm text-gray-600">
+          <Spinner className="h-5 w-5 text-teal" />
           Writing changes…
         </div>
       )}
 
       {stage === 'polling' && (
-        <div className="flex flex-col items-center justify-center gap-2 rounded-lg border bg-white p-10 text-center text-sm text-gray-600">
-          <Spinner className="h-5 w-5 text-blue-600" />
+        <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-white shadow-sm p-10 text-center text-sm text-gray-600">
+          <Spinner className="h-5 w-5 text-teal" />
           <p>This file is large enough to process in the background.</p>
           <p>This page will update automatically — feel free to keep working elsewhere.</p>
         </div>
@@ -346,7 +346,7 @@ function ValidationReportView({ report }: { report: ValidationReport }) {
       </div>
 
       {report.tabs.map((tab) => (
-        <div key={tab.tab} className="rounded-lg border bg-white">
+        <div key={tab.tab} className="rounded-2xl border border-gray-100 bg-white shadow-sm">
           <div className="flex items-center justify-between border-b px-4 py-3">
             <h3 className="text-sm font-semibold text-gray-900">{tab.tab}</h3>
             <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -360,7 +360,7 @@ function ValidationReportView({ report }: { report: ValidationReport }) {
           {tab.errors.length === 0 && tab.warnings.length === 0 ? (
             <p className="px-4 py-3 text-sm text-gray-400">No issues</p>
           ) : (
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[480px] text-sm">
               <tbody className="divide-y">
                 {[...tab.errors, ...tab.warnings].map((issue, idx) => (
                   <tr key={idx}>
@@ -395,8 +395,8 @@ function ImportSummaryView({ summary, onReset }: { summary: ImportSummary; onRes
         Import completed successfully.
       </div>
 
-      <div className="rounded-lg border bg-white p-5">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
+        <table className="w-full min-w-[480px] text-sm">
           <thead>
             <tr className="border-b text-left text-gray-500">
               <th className="py-2 font-medium">Entity</th>
@@ -426,7 +426,7 @@ function ImportSummaryView({ summary, onReset }: { summary: ImportSummary; onRes
             These are shown once and cannot be retrieved later — share them with each person now, or reset their
             password from the Users screen if you lose this list.
           </p>
-          <table className="mt-3 w-full text-sm">
+          <table className="mt-3 w-full min-w-[480px] text-sm">
             <tbody className="divide-y divide-amber-200">
               {summary.createdUserCredentials.map((cred) => (
                 <tr key={cred.email}>

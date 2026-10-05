@@ -24,7 +24,7 @@ export function Header({ title }: HeaderProps) {
 
   return (
     <header className="flex h-16 items-center justify-between border-b bg-white px-6 shadow-sm">
-      <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
+      <h1 className="text-xl font-extrabold tracking-tight text-gray-900">{title}</h1>
       <div className="flex items-center gap-4">
         {user && (
           <div className="text-right">

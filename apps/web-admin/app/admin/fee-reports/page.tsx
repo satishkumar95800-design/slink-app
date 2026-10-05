@@ -117,8 +117,8 @@ export default function FeeReportsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="w-64">
+      <div className="flex flex-wrap items-end gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+        <div className="w-full sm:w-64">
           <Select
             label="Report"
             options={REPORT_OPTIONS}
@@ -127,7 +127,7 @@ export default function FeeReportsPage() {
           />
         </div>
         {showClassFilter && (
-          <div className="w-56">
+          <div className="w-full sm:w-56">
             <Select
               label="Class (optional)"
               options={classOptions}
@@ -138,7 +138,7 @@ export default function FeeReportsPage() {
           </div>
         )}
         {showAcademicYearFilter && (
-          <div className="w-40">
+          <div className="w-full sm:w-40">
             <Input
               label="Academic Year (optional)"
               placeholder="e.g. 2025-26"
@@ -163,7 +163,7 @@ export default function FeeReportsPage() {
 
       {loading ? (
         <div className="flex h-64 items-center justify-center">
-          <Spinner className="h-8 w-8 text-blue-600" />
+          <Spinner className="h-8 w-8 text-teal" />
         </div>
       ) : error ? (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
@@ -285,12 +285,12 @@ function Table({
   render: (row: any) => (string | number)[];
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
       <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+        <thead className="bg-cream/60">
           <tr>
             {headers.map((h) => (
-              <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+              <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
                 {h}
               </th>
             ))}

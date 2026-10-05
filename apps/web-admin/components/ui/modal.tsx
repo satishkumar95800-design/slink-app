@@ -27,19 +27,19 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4">
       <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-teal/40 backdrop-blur-sm"
         onClick={onClose}
       />
       <div
-        className={`relative w-full ${sizeClasses[size]} rounded-xl bg-white shadow-xl`}
+        className={`relative flex max-h-[92vh] w-full flex-col ${sizeClasses[size]} rounded-t-3xl bg-cream shadow-2xl sm:rounded-3xl`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
       >
-        <div className="flex items-center justify-between border-b px-6 py-4">
-          <h2 id="modal-title" className="text-base font-semibold text-gray-900">
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-black/5 px-4 py-4 sm:px-6">
+          <h2 id="modal-title" className="text-base font-extrabold text-gray-900">
             {title}
           </h2>
           <button
@@ -52,7 +52,7 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
             </svg>
           </button>
         </div>
-        <div className="px-6 py-5">{children}</div>
+        <div className="overflow-y-auto px-4 py-5 sm:px-6">{children}</div>
       </div>
     </div>
   );

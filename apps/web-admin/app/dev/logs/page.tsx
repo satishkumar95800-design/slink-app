@@ -103,7 +103,7 @@ export default function DevLogsPage() {
       ) : logs.length === 0 ? (
         <EmptyState title="No audit entries" description="No activity matches this filter." />
       ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-800">
+        <div className="overflow-x-auto rounded-lg border border-gray-800">
           <table className="min-w-full divide-y divide-gray-800">
             <thead className="bg-gray-900">
               <tr>

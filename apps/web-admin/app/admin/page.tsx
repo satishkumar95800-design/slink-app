@@ -64,13 +64,13 @@ const DAY_LABELS: Record<number, string> = {
 
 function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: string; color: string }) {
   return (
-    <div className="rounded-xl bg-white p-6 shadow-sm border border-gray-100">
-      <div className="flex items-center justify-between">
+    <div className="rounded-2xl bg-white p-6 shadow-sm border border-gray-100">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-gray-500">{label}</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">{value}</p>
+          <p className="mt-1 text-2xl font-extrabold text-gray-900">{value}</p>
         </div>
-        <div className={`rounded-lg p-3 text-2xl ${color}`}>{icon}</div>
+        <div className={`rounded-xl p-3 text-2xl ${color}`}>{icon}</div>
       </div>
     </div>
   );
@@ -193,7 +193,7 @@ export default function DashboardPage() {
     fetchForecast();
   }, [isTeacher]);
 
-  if (loading) return <div className="flex h-64 items-center justify-center"><Spinner className="h-8 w-8 text-blue-600" /></div>;
+  if (loading) return <div className="flex h-64 items-center justify-center"><Spinner className="h-8 w-8 text-teal" /></div>;
   if (error) return <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">Failed to load: {error}</div>;
 
   const slotsByDay = mySlots.reduce<Record<number, TimetableSlot[]>>((acc, slot) => {
@@ -211,13 +211,13 @@ export default function DashboardPage() {
       {!isTeacher && (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="Total Users" value={stats.userCount ?? '—'} icon="👤" color="bg-blue-50" />
+            <StatCard label="Total Users" value={stats.userCount ?? '—'} icon="👤" color="bg-teal/5" />
             <StatCard label="Total Students" value={stats.studentCount ?? '—'} icon="🎓" color="bg-purple-50" />
             <StatCard label="Fees Collected" value={stats.feesCollected != null ? formatCurrency(stats.feesCollected) : '—'} icon="✅" color="bg-green-50" />
             <StatCard label="Outstanding Fees" value={stats.feesOutstanding != null ? formatCurrency(stats.feesOutstanding) : '—'} icon="⏳" color="bg-orange-50" />
           </div>
 
-          <div className="rounded-xl bg-white shadow-sm border border-gray-100">
+          <div className="rounded-2xl bg-white shadow-sm border border-gray-100">
             <div className="border-b px-6 py-4">
               <h2 className="text-sm font-semibold text-gray-900">Recent Payments</h2>
             </div>
@@ -245,7 +245,7 @@ export default function DashboardPage() {
 
       {isTeacher && (
         <>
-          <div className="rounded-xl bg-white shadow-sm border border-gray-100">
+          <div className="rounded-2xl bg-white shadow-sm border border-gray-100">
             <div className="border-b px-6 py-4">
               <h2 className="text-sm font-semibold text-gray-900">Weekly Routine</h2>
             </div>
@@ -276,7 +276,7 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <div className="rounded-xl bg-white shadow-sm border border-gray-100">
+          <div className="rounded-2xl bg-white shadow-sm border border-gray-100">
             <div className="border-b px-6 py-4">
               <h2 className="text-sm font-semibold text-gray-900">About My Class(es)</h2>
             </div>
@@ -319,7 +319,7 @@ export default function DashboardPage() {
       )}
 
       {isAdmin && workload.length > 0 && (
-        <div className="rounded-xl bg-white shadow-sm border border-gray-100">
+        <div className="rounded-2xl bg-white shadow-sm border border-gray-100">
           <div className="border-b px-6 py-4">
             <h2 className="text-sm font-semibold text-gray-900">Teacher Workload</h2>
           </div>
@@ -353,7 +353,7 @@ export default function DashboardPage() {
       )}
 
       {!isTeacher && forecast && (
-        <div className="rounded-xl bg-white shadow-sm border border-gray-100">
+        <div className="rounded-2xl bg-white shadow-sm border border-gray-100">
           <div className="border-b px-6 py-4">
             <h2 className="text-sm font-semibold text-gray-900">Collection Forecast</h2>
             <p className="mt-0.5 text-xs text-gray-500">{forecast.label}</p>
@@ -366,8 +366,8 @@ export default function DashboardPage() {
               </div>
             ))}
             <div>
-              <p className="text-xs text-blue-600">Projected next month</p>
-              <p className="mt-1 text-lg font-semibold text-blue-700">
+              <p className="text-xs text-teal">Projected next month</p>
+              <p className="mt-1 text-lg font-semibold text-teal">
                 {formatRupees(forecast.projectedNextMonth)}
               </p>
             </div>

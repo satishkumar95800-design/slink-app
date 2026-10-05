@@ -120,9 +120,9 @@ export default function DocumentsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Documents</h1>
+          <h1 className="text-xl font-extrabold tracking-tight text-gray-900">Documents</h1>
           <p className="text-sm text-gray-500">
             General working storage for the accounts team — bank statements, reconciliation sheets, cheque scans.
           </p>
@@ -132,7 +132,7 @@ export default function DocumentsPage() {
 
       {loading ? (
         <div className="flex h-64 items-center justify-center">
-          <Spinner className="h-8 w-8 text-blue-600" />
+          <Spinner className="h-8 w-8 text-teal" />
         </div>
       ) : error ? (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
@@ -143,12 +143,12 @@ export default function DocumentsPage() {
           action={<Button onClick={() => setShowUpload(true)}>+ Upload Document</Button>}
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-cream/60">
               <tr>
                 {['File', 'Category', 'Note', 'Uploaded', ''].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
                     {h}
                   </th>
                 ))}
@@ -164,7 +164,7 @@ export default function DocumentsPage() {
                     {new Date(d.uploadedAt).toLocaleDateString('en-IN')}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button onClick={() => onView(d)} className="text-xs text-blue-600 hover:underline">
+                    <button onClick={() => onView(d)} className="text-xs text-teal hover:underline">
                       View / Download
                     </button>
                   </td>
@@ -182,16 +182,16 @@ export default function DocumentsPage() {
       >
         <form onSubmit={uploadForm.handleSubmit(onUpload)} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">File</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700">File<span className="ml-0.5 text-red-500" aria-hidden="true">*</span></label>
             <input
               ref={fileInputRef}
               type="file"
               accept=".xlsx,.xls,image/jpeg,image/png,application/pdf"
-              className="block w-full text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
+              className="block w-full text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-teal/10 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-teal hover:file:bg-teal/20"
             />
           </div>
           <Select
-            label="Category"
+            label="Category" required
             options={categoryOptions}
             placeholder="Select a category"
             error={uploadForm.formState.errors.categoryId?.message}

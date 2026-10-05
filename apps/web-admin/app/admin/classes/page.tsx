@@ -131,14 +131,14 @@ export default function ClassesPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-gray-500">{total} class{total !== 1 ? 'es' : ''}</p>
         <Button onClick={() => setShowModal(true)}>+ Add Class</Button>
       </div>
 
       {loading ? (
         <div className="flex h-64 items-center justify-center">
-          <Spinner className="h-8 w-8 text-blue-600" />
+          <Spinner className="h-8 w-8 text-teal" />
         </div>
       ) : error ? (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
@@ -149,12 +149,12 @@ export default function ClassesPage() {
           action={<Button onClick={() => setShowModal(true)}>+ Add Class</Button>}
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-cream/60">
               <tr>
                 {['Name', 'Academic Year', 'Section', 'Class Teacher', 'Students', ''].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
                     {h}
                   </th>
                 ))}
@@ -171,7 +171,7 @@ export default function ClassesPage() {
                   <td className="px-6 py-4 text-right">
                     <button
                       onClick={() => openAssign(c)}
-                      className="text-xs text-blue-600 hover:underline"
+                      className="text-xs text-teal hover:underline"
                     >
                       Assign teacher
                     </button>
@@ -189,8 +189,8 @@ export default function ClassesPage() {
         title="Add Class"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <Input label="Class Name" placeholder="e.g. Grade 5" error={errors.name?.message} {...register('name')} />
-          <Input label="Academic Year" placeholder="2024-25" error={errors.academicYear?.message} {...register('academicYear')} />
+          <Input label="Class Name" required placeholder="e.g. Grade 5" error={errors.name?.message} {...register('name')} />
+          <Input label="Academic Year" required placeholder="2024-25" error={errors.academicYear?.message} {...register('academicYear')} />
           <Input label="Section" placeholder="A" error={errors.section?.message} {...register('section')} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => { setShowModal(false); reset(); }}>
@@ -210,7 +210,7 @@ export default function ClassesPage() {
       >
         <form onSubmit={handleAssignSubmit(onAssignSubmit)} className="space-y-4">
           <Select
-            label="Teacher"
+            label="Teacher" required
             options={teacherOptions}
             placeholder="Select a teacher"
             error={assignErrors.teacherId?.message}

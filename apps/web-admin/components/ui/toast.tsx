@@ -19,7 +19,7 @@ const ToastContext = createContext<ToastContextValue>({ toast: () => {} });
 const typeClasses: Record<ToastType, string> = {
   success: 'bg-green-600',
   error: 'bg-red-600',
-  info: 'bg-blue-600',
+  info: 'bg-teal',
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -39,7 +39,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`rounded-lg px-4 py-3 text-sm text-white shadow-lg ${typeClasses[t.type]} animate-fade-in`}
+            className={`rounded-xl px-4 py-3 text-sm text-white shadow-lg ${typeClasses[t.type]} animate-fade-in`}
           >
             {t.message}
           </div>

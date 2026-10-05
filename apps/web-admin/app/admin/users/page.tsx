@@ -195,14 +195,14 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-gray-500">{total} user{total !== 1 ? 's' : ''}</p>
         {isAdmin && <Button onClick={() => setShowModal(true)}>+ Add User</Button>}
       </div>
 
       {loading ? (
         <div className="flex h-64 items-center justify-center">
-          <Spinner className="h-8 w-8 text-blue-600" />
+          <Spinner className="h-8 w-8 text-teal" />
         </div>
       ) : error ? (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
@@ -213,14 +213,14 @@ export default function UsersPage() {
           action={isAdmin ? <Button onClick={() => setShowModal(true)}>+ Add User</Button> : undefined}
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-cream/60">
               <tr>
                 {['Name', 'Email', 'Phone', 'Role', 'Students', 'Joined', ''].map((h) => (
                   <th
                     key={h}
-                    className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"
+                    className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80"
                   >
                     {h}
                   </th>
@@ -245,14 +245,14 @@ export default function UsersPage() {
                       <div className="flex items-center justify-end gap-3">
                         <button
                           onClick={() => openEdit(u)}
-                          className="text-xs text-blue-600 hover:underline"
+                          className="text-xs text-teal hover:underline"
                         >
                           Edit
                         </button>
                         {u.role !== 'parent' && (
                           <button
                             onClick={() => setResettingUser(u)}
-                            className="text-xs text-blue-600 hover:underline"
+                            className="text-xs text-teal hover:underline"
                           >
                             Reset Password
                           </button>
@@ -280,17 +280,17 @@ export default function UsersPage() {
         title="Add User"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <Input label="Full Name" error={errors.name?.message} {...register('name')} />
-          <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
+          <Input label="Full Name" required error={errors.name?.message} {...register('name')} />
+          <Input label="Email" required type="email" error={errors.email?.message} {...register('email')} />
           <Input label="Phone" placeholder="+91..." error={errors.phone?.message} {...register('phone')} />
           <Input
-            label="Password"
+            label="Password" required
             type="password"
             error={errors.password?.message}
             {...register('password')}
           />
           <Select
-            label="Role"
+            label="Role" required
             options={roleOptions}
             placeholder="Select a role"
             error={errors.role?.message}
@@ -313,7 +313,7 @@ export default function UsersPage() {
         title="Edit User"
       >
         <form onSubmit={handleEditSubmit(onEditSubmit)} className="space-y-4">
-          <Input label="Full Name" error={editErrors.name?.message} {...registerEdit('name')} />
+          <Input label="Full Name" required error={editErrors.name?.message} {...registerEdit('name')} />
           <Input label="Email" type="email" error={editErrors.email?.message} {...registerEdit('email')} />
           <Input label="Phone" placeholder="+91..." error={editErrors.phone?.message} {...registerEdit('phone')} />
           {editingUser && isStaffRole(editingUser.role) ? (
@@ -355,7 +355,7 @@ export default function UsersPage() {
             them securely — they can change it themselves afterwards from their account menu.
           </p>
           <Input
-            label="New Password"
+            label="New Password" required
             type="password"
             error={resetPasswordErrors.newPassword?.message}
             {...registerResetPassword('newPassword')}

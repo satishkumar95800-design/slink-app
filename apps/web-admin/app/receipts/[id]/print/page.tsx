@@ -29,7 +29,7 @@ export default function ReceiptPrintPage() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <Spinner className="h-8 w-8 text-blue-600" />
+        <Spinner className="h-8 w-8 text-teal" />
       </div>
     );
   }
@@ -49,7 +49,7 @@ export default function ReceiptPrintPage() {
       <div className="print:hidden mb-6 flex justify-end">
         <button
           onClick={() => window.print()}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="rounded-md bg-coral px-4 py-2 text-sm font-medium text-white hover:bg-coral-dark"
         >
           Print / Save as PDF
         </button>

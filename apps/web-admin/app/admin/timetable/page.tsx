@@ -206,9 +206,9 @@ export default function TimetablePage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Timetable</h1>
+          <h1 className="text-xl font-extrabold tracking-tight text-gray-900">Timetable</h1>
           <p className="text-sm text-gray-500">
             Manage the weekly period grid — which teacher teaches which subject, and when.
           </p>
@@ -217,7 +217,7 @@ export default function TimetablePage() {
 
       {loading ? (
         <div className="flex h-64 items-center justify-center">
-          <Spinner className="h-8 w-8 text-blue-600" />
+          <Spinner className="h-8 w-8 text-teal" />
         </div>
       ) : error ? (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
@@ -239,20 +239,20 @@ export default function TimetablePage() {
 
           {gridLoading ? (
             <div className="flex h-64 items-center justify-center">
-              <Spinner className="h-8 w-8 text-blue-600" />
+              <Spinner className="h-8 w-8 text-teal" />
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-cream/60">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
                       Period
                     </th>
                     {DAYS.map((d) => (
                       <th
                         key={d.value}
-                        className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"
+                        className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80"
                       >
                         {d.label}
                       </th>
@@ -272,8 +272,8 @@ export default function TimetablePage() {
                               onClick={() => openCell(d.value, period)}
                               className={`block w-full min-w-[110px] rounded-lg border px-3 py-2 text-left text-xs transition-colors ${
                                 slot
-                                  ? 'border-blue-200 bg-blue-50 hover:bg-blue-100'
-                                  : 'border-dashed border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-600'
+                                  ? 'border-teal/30 bg-teal/5 hover:bg-teal/20'
+                                  : 'border-dashed border-gray-300 text-gray-400 hover:border-teal/30 hover:text-coral-dark'
                               }`}
                             >
                               {slot ? (
@@ -304,14 +304,14 @@ export default function TimetablePage() {
       >
         <div className="space-y-4">
           <Select
-            label="Subject"
+            label="Subject" required
             options={subjectOptions}
             placeholder="Select a subject"
             value={formSubjectId}
             onChange={(e) => setFormSubjectId(e.target.value)}
           />
           <Select
-            label="Teacher"
+            label="Teacher" required
             options={teacherOptions}
             placeholder="Select a teacher"
             value={formTeacherId}

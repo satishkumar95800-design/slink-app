@@ -102,7 +102,7 @@ export default function StudentDetailPage() {
   if (loading || !student) {
     return (
       <div className="flex justify-center p-16">
-        <Spinner className="h-6 w-6 text-blue-600" />
+        <Spinner className="h-6 w-6 text-teal" />
       </div>
     );
   }
@@ -130,7 +130,7 @@ export default function StudentDetailPage() {
             )}
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">{student.name}</h1>
+            <h1 className="text-xl font-extrabold tracking-tight text-gray-900">{student.name}</h1>
             <p className="text-xs text-gray-500">
               {student.admissionNo}
               {student.class ? ` · ${student.class.name} · ${student.class.academicYear}` : ''}
@@ -145,7 +145,7 @@ export default function StudentDetailPage() {
             key={t}
             onClick={() => setTab(t)}
             className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors cursor-pointer ${
-              tab === t ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+              tab === t ? 'border-coral text-teal' : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
             {tabLabel[t]}
@@ -164,23 +164,23 @@ function OverviewTab({ student }: { student: Student }) {
   const primaryParent = student.parents?.find((p) => p.isPrimary) ?? student.parents?.[0];
   return (
     <div className="grid grid-cols-2 gap-4">
-      <div className="rounded-lg border bg-white p-5">
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
         <p className="text-sm text-gray-500">Admission Number</p>
         <p className="text-base font-medium text-gray-900">{student.admissionNo}</p>
       </div>
-      <div className="rounded-lg border bg-white p-5">
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
         <p className="text-sm text-gray-500">Class</p>
         <p className="text-base font-medium text-gray-900">
           {student.class ? `${student.class.name} · ${student.class.academicYear}` : '—'}
         </p>
       </div>
-      <div className="rounded-lg border bg-white p-5">
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
         <p className="text-sm text-gray-500">Date of Birth</p>
         <p className="text-base font-medium text-gray-900">
           {student.dob ? new Date(student.dob).toLocaleDateString('en-IN') : '—'}
         </p>
       </div>
-      <div className="rounded-lg border bg-white p-5">
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
         <p className="text-sm text-gray-500">Primary Parent</p>
         <p className="text-base font-medium text-gray-900">
           {primaryParent ? `${primaryParent.parent.name} (${primaryParent.relation})` : '—'}
@@ -235,7 +235,7 @@ function NotesTab({ studentId }: { studentId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border bg-white p-5 space-y-3">
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5 space-y-3">
         <div className="max-w-xs">
           <Select
             label="Type"
@@ -244,12 +244,17 @@ function NotesTab({ studentId }: { studentId: string }) {
             options={Object.entries(NOTE_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
           />
         </div>
+        <label htmlFor="student-note" className="block text-sm font-medium text-gray-700">
+          Note<span className="ml-0.5 text-red-500" aria-hidden="true">*</span>
+        </label>
         <textarea
+          id="student-note"
+          aria-required="true"
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="Write your note here…"
           rows={3}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm outline-none transition focus:border-coral focus:ring-1 focus:ring-coral"
         />
         <Button type="button" loading={saving} onClick={onSubmit}>
           Add Entry
@@ -258,14 +263,14 @@ function NotesTab({ studentId }: { studentId: string }) {
 
       {loading ? (
         <div className="flex justify-center p-8">
-          <Spinner className="h-6 w-6 text-blue-600" />
+          <Spinner className="h-6 w-6 text-teal" />
         </div>
       ) : notes.length === 0 ? (
         <p className="p-4 text-center text-sm text-gray-500">No entries yet.</p>
       ) : (
         <div className="space-y-3">
           {notes.map((n) => (
-            <div key={n.id} className="rounded-lg border bg-white p-4">
+            <div key={n.id} className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4">
               <div className="flex items-center justify-between">
                 <Badge variant="blue">{NOTE_TYPE_LABELS[n.type]}</Badge>
                 <span className="text-xs text-gray-500">
@@ -305,7 +310,7 @@ function FeeSummaryTab({ studentId }: { studentId: string }) {
   if (loading) {
     return (
       <div className="flex justify-center p-8">
-        <Spinner className="h-6 w-6 text-blue-600" />
+        <Spinner className="h-6 w-6 text-teal" />
       </div>
     );
   }
@@ -320,17 +325,18 @@ function FeeSummaryTab({ studentId }: { studentId: string }) {
   return (
     <div className="space-y-4">
       {fees.map((f) => (
-        <div key={f.id} className="rounded-lg border bg-white shadow-sm">
+        <div key={f.id} className="rounded-2xl border border-gray-100 bg-white shadow-sm shadow-sm">
           <div className="border-b px-5 py-3">
             <h3 className="text-sm font-semibold text-gray-900">
               {f.feeStructure?.name ?? 'Fee Structure'} · {f.feeStructure?.academicYear}
             </h3>
           </div>
-          <table className="min-w-full divide-y divide-gray-100">
-            <thead className="bg-gray-50">
+          <div className="overflow-x-auto">
+<table className="min-w-full divide-y divide-gray-100">
+            <thead className="bg-cream/60">
               <tr>
                 {['Component', 'Period', 'Due Date', 'Due', 'Paid', 'Pending', 'Status'].map((h) => (
-                  <th key={h} className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <th key={h} className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
                     {h}
                   </th>
                 ))}
@@ -354,15 +360,16 @@ function FeeSummaryTab({ studentId }: { studentId: string }) {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       ))}
 
-      <div className="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 px-5 py-4">
-        <span className="text-sm font-semibold text-blue-900">Yearly Total</span>
+      <div className="flex items-center justify-between rounded-lg border border-teal/30 bg-teal/5 px-5 py-4">
+        <span className="text-sm font-semibold text-teal">Yearly Total</span>
         <div className="flex gap-6 text-sm">
-          <span className="text-blue-900">Due: <strong>{formatRupees(grandTotalDue)}</strong></span>
-          <span className="text-blue-900">Paid: <strong>{formatRupees(grandTotalPaid)}</strong></span>
-          <span className="text-blue-900">Pending: <strong>{formatRupees(Math.max(0, grandTotalDue - grandTotalPaid))}</strong></span>
+          <span className="text-teal">Due: <strong>{formatRupees(grandTotalDue)}</strong></span>
+          <span className="text-teal">Paid: <strong>{formatRupees(grandTotalPaid)}</strong></span>
+          <span className="text-teal">Pending: <strong>{formatRupees(Math.max(0, grandTotalDue - grandTotalPaid))}</strong></span>
         </div>
       </div>
     </div>

@@ -74,15 +74,20 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-cream p-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-white">School Connect</h1>
-          <p className="mt-1 text-sm text-slate-400">Admin Console</p>
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-teal text-xl font-extrabold text-white">
+            S
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">School Connect</h1>
+          <span className="mt-2 inline-flex rounded-full bg-coral/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-coral-dark">
+            Admin Console
+          </span>
         </div>
 
-        <div className="rounded-2xl bg-white p-8 shadow-2xl">
-          <h2 className="mb-6 text-xl font-semibold text-gray-900">Sign in</h2>
+        <div className="rounded-3xl border border-black/5 bg-white p-6 shadow-xl sm:p-8">
+          <h2 className="mb-6 text-xl font-extrabold text-gray-900">Sign in</h2>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input
@@ -93,14 +98,14 @@ export default function LoginPage() {
               {...register('tenantId')}
             />
             <Input
-              label="Email"
+              label="Email" required
               type="email"
               placeholder="admin@school.edu"
               error={errors.email?.message}
               {...register('email')}
             />
             <Input
-              label="Password"
+              label="Password" required
               type="password"
               placeholder="••••••••"
               error={errors.password?.message}
