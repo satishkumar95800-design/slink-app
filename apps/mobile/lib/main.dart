@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/strings.dart';
+import 'features/dashboard/students_repository.dart';
 
 /// Must be a top-level function — the OS invokes this in a separate isolate
 /// when a push notification arrives while the app is backgrounded/terminated.
@@ -51,6 +52,11 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
     final target = _resolveNotificationRoute(message);
     if (target == null) return;
 
+    // Pushes about one child (attendance, fees, claims, reports) switch the
+    // parent's selected child first, so the screen opens for the right child.
+    final studentId = message.data['studentId']?.toString();
+    if (studentId != null && studentId.isNotEmpty) selectChild(ref, studentId);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       ref.read(appRouterProvider).go(target.route, extra: target.extra);
@@ -95,6 +101,8 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
           return (route: '/attendance/student/$studentId$month', extra: null);
         }
         break;
+      case 'payment_claim':
+        return (route: '/dashboard/fees', extra: null);
       case 'dashboard':
         return (route: '/dashboard', extra: null);
     }

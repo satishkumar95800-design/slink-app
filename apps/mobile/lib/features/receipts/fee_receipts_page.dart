@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../shared/models/receipt.dart';
 import 'receipts_repository.dart';
 import '../../core/format/money.dart';
+import '../../core/strings.dart';
+import '../home/parent_home_models.dart';
 
 /// A partially-paid fee can have more than one receipt (one per payment
 /// instalment), so "View Receipt" from the Fees list lands here first rather
@@ -49,7 +51,7 @@ class _FeeReceiptsPageState extends ConsumerState<FeeReceiptsPage> {
             separatorBuilder: (_, __) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final receipt = receipts[index];
-              final paidOnLabel = receipt.paidOn.toLocal().toString().split(' ').first;
+              final paidOnLabel = displayDate(receipt.paidOn);
               return Card(
                 child: ListTile(
                   title: Text('${formatRupees(receipt.amount)} · ${receipt.receiptNumber}'),
@@ -58,7 +60,11 @@ class _FeeReceiptsPageState extends ConsumerState<FeeReceiptsPage> {
                         ? '$paidOnLabel · Discount applied'
                         : paidOnLabel,
                   ),
-                  trailing: const Icon(Icons.chevron_right),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.download),
+                    tooltip: AppStrings.downloadReceipt,
+                    onPressed: () => openReceiptPdf(ref, context, receipt.id),
+                  ),
                   onTap: () => context.push('/receipts/${receipt.id}'),
                 ),
               );

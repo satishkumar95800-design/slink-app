@@ -165,7 +165,13 @@ export class PaymentClaimsService {
       channel: NotificationChannel.fcm,
       title: 'Payment claim approved',
       body: `Your payment claim for ${claim.student.name} was approved and recorded.`,
-      data: { type: 'payment_claim', claimId: claim.id, status: 'approved' },
+      data: {
+        type: 'payment_claim',
+        claimId: claim.id,
+        status: 'approved',
+        studentId: claim.studentId,
+        studentFeeId: claim.studentFeeId,
+      },
     });
 
     return { claim: updated, receipt };
@@ -200,7 +206,13 @@ export class PaymentClaimsService {
       body: dto.reviewNote
         ? `Your payment claim for ${claim.student.name} was rejected: ${dto.reviewNote}`
         : `Your payment claim for ${claim.student.name} was rejected. Please re-check and resubmit.`,
-      data: { type: 'payment_claim', claimId: claim.id, status: 'rejected' },
+      data: {
+        type: 'payment_claim',
+        claimId: claim.id,
+        status: 'rejected',
+        studentId: claim.studentId,
+        studentFeeId: claim.studentFeeId,
+      },
     });
 
     return updated;

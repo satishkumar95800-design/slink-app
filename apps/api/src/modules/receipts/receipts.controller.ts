@@ -1,4 +1,5 @@
-import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Query, Res, StreamableFile } from '@nestjs/common';
+import type { Response } from 'express';
 import { Role } from '@prisma/client';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -23,6 +24,30 @@ export class ReceiptsController {
   @Get('public/:token')
   findByToken(@Param('token') token: string) {
     return this.receiptsService.findByToken(token);
+  }
+
+  /** Same signed token as the public receipt page, but returns the PDF — opened from the app in the phone's browser. */
+  @Public()
+  @Get('public/:token/pdf')
+  async findPdfByToken(@Param('token') token: string, @Res({ passthrough: true }) res: Response) {
+    const receipt = await this.receiptsService.findByToken(token);
+    const { filename, pdf } = await this.receiptsService.renderPdf(receipt);
+    res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${filename}"` });
+    return new StreamableFile(pdf);
+  }
+
+  /** Receipt as a PDF file (school, student, amount, method, discount, date, receipt no.). Same access rules as viewing it. */
+  @Get(':id/pdf')
+  @Roles(Role.admin, Role.accounts, Role.teacher, Role.parent)
+  async getPdf(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { filename, pdf } = await this.receiptsService.getPdf(tenantId, id, user);
+    res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${filename}"` });
+    return new StreamableFile(pdf);
   }
 
   /** Addendum 4 / A9 — mobile in-app "Download" action for a receipt the caller already has access to. */

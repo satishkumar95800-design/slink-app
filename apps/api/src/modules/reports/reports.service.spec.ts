@@ -8,6 +8,8 @@ import {
 import { Role, ReportStatus, ReportType } from '@prisma/client';
 import { ReportsService } from './reports.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { FilesService } from '../files/files.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import type { ActiveUser } from '../../common/types/active-user.type';
 
 const teacherUser: ActiveUser = {
@@ -73,10 +75,16 @@ const mockPrisma = {
   },
   student: { findUnique: jest.fn() },
   class: { findUnique: jest.fn(), findMany: jest.fn() },
-  studentParent: { findUnique: jest.fn() },
+  studentParent: { findUnique: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
   reportReadReceipt: { upsert: jest.fn(), findMany: jest.fn() },
   $transaction: jest.fn(),
 };
+
+const mockFiles = {
+  getSignedUrl: jest.fn().mockResolvedValue('https://signed.example/fresh'),
+  keyFromUrl: jest.fn((url: string) => new URL(url).pathname.slice(1)),
+};
+const mockNotifications = { send: jest.fn().mockResolvedValue(undefined) };
 
 describe('ReportsService', () => {
   let service: ReportsService;
@@ -86,11 +94,15 @@ describe('ReportsService', () => {
       providers: [
         ReportsService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: FilesService, useValue: mockFiles },
+        { provide: NotificationsService, useValue: mockNotifications },
       ],
     }).compile();
 
     service = module.get<ReportsService>(ReportsService);
     jest.clearAllMocks();
+    mockPrisma.studentParent.findMany.mockResolvedValue([]);
+    mockFiles.getSignedUrl.mockResolvedValue('https://signed.example/fresh');
   });
 
   // ── create ──────────────────────────────────────────────────────────────────
@@ -228,6 +240,26 @@ describe('ReportsService', () => {
       expect(call.data.publishedAt).toBeInstanceOf(Date);
     });
 
+    it("pushes the student's parents when a report card is published", async () => {
+      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ type: ReportType.report_card }));
+      mockPrisma.report.update.mockResolvedValue(
+        makeDraftReport({ type: ReportType.report_card, status: ReportStatus.published, publishedAt: new Date() }),
+      );
+      mockPrisma.studentParent.findMany.mockResolvedValue([{ parentId: 'parent-uuid' }]);
+
+      await service.publish('tenant-uuid', 'report-uuid', teacherUser);
+
+      expect(mockNotifications.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId: 'tenant-uuid',
+          userId: 'parent-uuid',
+          title: 'Report card published',
+          body: "John's report card is ready to view.",
+          data: { type: 'report_published', reportId: 'report-uuid', studentId: 'student-uuid' },
+        }),
+      );
+    });
+
     it('throws ConflictException when already published', async () => {
       mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ status: ReportStatus.published }));
       await expect(service.publish('tenant-uuid', 'report-uuid', teacherUser)).rejects.toThrow(ConflictException);
@@ -316,6 +348,36 @@ describe('ReportsService', () => {
       await expect(
         service.getReadReceipts('tenant-uuid', 'report-uuid', teacherUser),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('homework photo links', () => {
+    const homework = (content: Record<string, unknown>) =>
+      makeDraftReport({ type: ReportType.homework, status: ReportStatus.published, content });
+
+    it('re-signs from the stored fileKey', async () => {
+      mockPrisma.report.findUnique.mockResolvedValue(homework({ caption: 'Ch 3', fileKey: 'tenant-uuid/attachment/a.jpg', attachmentUrl: 'https://old.example/x' }));
+
+      const report = await service.findOne('tenant-uuid', 'report-uuid', adminUser);
+
+      expect(mockFiles.getSignedUrl).toHaveBeenCalledWith('tenant-uuid/attachment/a.jpg', 'tenant-uuid', 3600, { verifyExists: false });
+      expect(report.content).toEqual({ caption: 'Ch 3', fileKey: 'tenant-uuid/attachment/a.jpg', attachmentUrl: 'https://signed.example/fresh' });
+    });
+
+    it('recovers the key from an older expired signed URL', async () => {
+      mockPrisma.report.findUnique.mockResolvedValue(
+        homework({ caption: 'Ch 3', attachmentUrl: 'https://bucket.s3.amazonaws.com/tenant-uuid/attachment/b.jpg?X-Amz-Expires=86400' }),
+      );
+
+      await service.findOne('tenant-uuid', 'report-uuid', adminUser);
+
+      expect(mockFiles.getSignedUrl).toHaveBeenCalledWith('tenant-uuid/attachment/b.jpg', 'tenant-uuid', 3600, { verifyExists: false });
+    });
+
+    it('leaves non-homework reports untouched', async () => {
+      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ status: ReportStatus.published }));
+      await service.findOne('tenant-uuid', 'report-uuid', adminUser);
+      expect(mockFiles.getSignedUrl).not.toHaveBeenCalled();
     });
   });
 });

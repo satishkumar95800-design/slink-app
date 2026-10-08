@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../shared/models/active_user.dart';
-import '../../shared/models/student.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
 import '../auth/session_controller.dart';
 import '../classes/classes_repository.dart';
 import 'students_repository.dart';
+import '../home/parent_home_body.dart';
 import '../../core/strings.dart';
 import '../attendance/attendance_outbox.dart';
 import '../attendance/attendance_repository.dart';
@@ -23,7 +23,7 @@ class DashboardPage extends ConsumerWidget {
 
     return AuthenticatedScaffold(
       appBar: AppBar(
-        title: Text(user != null ? 'Hi, ${user.name}' : 'slink'),
+        title: Text(user != null ? 'Hi, ${user.name}' : AppStrings.appName),
         actions: [
           if (user != null)
             IconButton(
@@ -31,11 +31,6 @@ class DashboardPage extends ConsumerWidget {
               tooltip: 'Profile',
               onPressed: () => context.push('/profile'),
             ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
-            onPressed: () => ref.read(sessionControllerProvider.notifier).logout(),
-          ),
         ],
       ),
       body: isTeacher ? _TeacherDashboardBody(user: user!) : _ParentDashboardBody(user: user),
@@ -65,7 +60,7 @@ class _ParentDashboardBody extends ConsumerWidget {
             ),
           );
         }
-        return _DashboardBody(children: children);
+        return ParentHomeBody(children: children);
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) => Center(
@@ -143,88 +138,6 @@ class _TeacherDashboardBody extends ConsumerWidget {
             title: 'Profile',
             subtitle: 'View account details and sign out',
             onTap: () => context.push('/profile'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DashboardBody extends ConsumerWidget {
-  final List<Student> children;
-
-  const _DashboardBody({required this.children});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selectedChildId = ref.watch(selectedChildIdProvider);
-
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (children.length > 1) ...[
-            Text('Children', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: [
-                ChoiceChip(
-                  label: const Text('All'),
-                  selected: selectedChildId == null,
-                  onSelected: (_) => ref.read(selectedChildIdProvider.notifier).state = null,
-                ),
-                for (final child in children)
-                  ChoiceChip(
-                    label: Text(child.name),
-                    selected: selectedChildId == child.id,
-                    onSelected: (_) => ref.read(selectedChildIdProvider.notifier).state = child.id,
-                  ),
-              ],
-            ),
-            const SizedBox(height: 24),
-          ] else if (children.length == 1) ...[
-            Text(children.first.name, style: Theme.of(context).textTheme.titleLarge),
-            Text(children.first.studentClass?.name ?? ''),
-            const SizedBox(height: 24),
-          ],
-          // With "All" selected, one attendance card per child; otherwise just the selected child.
-          for (final child in children.where((c) => selectedChildId == null || c.id == selectedChildId)) ...[
-            _NavCard(
-              icon: Icons.event_available_outlined,
-              title: children.length > 1 ? '${AppStrings.attendance} · ${child.name}' : AppStrings.attendance,
-              subtitle: AppStrings.attendanceSubtitle,
-              onTap: () => context.push('/attendance/student/${child.id}'),
-            ),
-            const SizedBox(height: 12),
-          ],
-          _NavCard(
-            icon: Icons.receipt_long,
-            title: 'Fees',
-            subtitle: 'View dues and pay online',
-            onTap: () => context.push('/dashboard/fees'),
-          ),
-          const SizedBox(height: 12),
-          _NavCard(
-            icon: Icons.assignment,
-            title: 'Reports',
-            subtitle: 'Academic and homework updates from teachers',
-            onTap: () => context.push('/dashboard/reports'),
-          ),
-          const SizedBox(height: 12),
-          _NavCard(
-            icon: Icons.notifications_outlined,
-            title: 'Notifications',
-            subtitle: 'Notices and homework sent to you, in case you missed one',
-            onTap: () => context.push('/dashboard/notifications'),
-          ),
-          const SizedBox(height: 12),
-          _NavCard(
-            icon: Icons.receipt_outlined,
-            title: 'My Payment Claims',
-            subtitle: 'Track payments you reported as already paid',
-            onTap: () => context.push('/payment-claims/mine'),
           ),
         ],
       ),

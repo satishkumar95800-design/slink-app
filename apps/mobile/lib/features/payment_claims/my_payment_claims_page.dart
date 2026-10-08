@@ -5,6 +5,7 @@ import '../../shared/widgets/authenticated_scaffold.dart';
 import 'payment_claims_repository.dart';
 import '../../core/format/money.dart';
 import '../../core/strings.dart';
+import '../home/parent_home_models.dart';
 
 final myPaymentClaimsProvider = FutureProvider.autoDispose<List<PaymentClaim>>((ref) {
   return ref.watch(paymentClaimsRepositoryProvider).getMyClaims();
@@ -29,7 +30,7 @@ class MyPaymentClaimsPage extends ConsumerWidget {
             return ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: claims.length,
-              itemBuilder: (context, index) => _ClaimCard(claim: claims[index]),
+              itemBuilder: (context, index) => PaymentClaimCard(claim: claims[index]),
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -45,10 +46,17 @@ class MyPaymentClaimsPage extends ConsumerWidget {
   }
 }
 
-class _ClaimCard extends StatelessWidget {
+/// One uploaded payment proof and its review status — used here and on the Fees screen.
+class PaymentClaimCard extends StatelessWidget {
   final PaymentClaim claim;
 
-  const _ClaimCard({required this.claim});
+  const PaymentClaimCard({super.key, required this.claim});
+
+  String _statusLabel() => switch (claim.status) {
+        PaymentClaimStatus.pending => AppStrings.claimStatusPending,
+        PaymentClaimStatus.approved => AppStrings.claimStatusApproved,
+        PaymentClaimStatus.rejected => AppStrings.claimStatusRejected,
+      };
 
   Color _statusColor() {
     switch (claim.status) {
@@ -86,14 +94,14 @@ class _ClaimCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    claim.status.name.toUpperCase(),
+                    _statusLabel(),
                     style: TextStyle(color: _statusColor(), fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 4),
-            Text('Submitted ${claim.createdAt.toLocal().toString().split(' ').first}'),
+            Text(AppStrings.claimSubmitted(displayDate(claim.createdAt))),
             if (claim.claimedAmount != null) Text(AppStrings.claimedAmount(formatRupees(claim.claimedAmount))),
             if (claim.claimedMode != null) Text('Mode: ${claim.claimedMode}'),
             if (claim.note != null && claim.note!.isNotEmpty) ...[
@@ -103,7 +111,7 @@ class _ClaimCard extends StatelessWidget {
             if (claim.status == PaymentClaimStatus.rejected && claim.reviewNote != null && claim.reviewNote!.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
-                'School note: ${claim.reviewNote}',
+                AppStrings.claimRejectedReason(claim.reviewNote!),
                 style: TextStyle(color: Colors.red.shade700, fontStyle: FontStyle.italic),
               ),
             ],

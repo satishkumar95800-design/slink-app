@@ -4,6 +4,7 @@ import '../../shared/models/active_user.dart';
 import '../../shared/services/branding_repository.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
 import '../auth/session_controller.dart';
+import '../../core/strings.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -53,11 +54,24 @@ class ProfilePage extends ConsumerWidget {
               ),
               const SizedBox(height: 24),
               if (schoolName != null) _InfoRow(label: 'School', value: schoolName),
+              const Spacer(),
               const Divider(height: 32),
               ListTile(
                 leading: const Icon(Icons.logout),
-                title: const Text('Log out'),
-                onTap: () => ref.read(sessionControllerProvider.notifier).logout(),
+                title: const Text(AppStrings.logout),
+                onTap: () async {
+                  final ok = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      content: const Text(AppStrings.logoutConfirm),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text(AppStrings.cancel)),
+                        FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text(AppStrings.logout)),
+                      ],
+                    ),
+                  );
+                  if (ok == true) await ref.read(sessionControllerProvider.notifier).logout();
+                },
               ),
             ],
           ),

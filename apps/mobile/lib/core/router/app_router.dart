@@ -25,6 +25,8 @@ import '../../features/timetable/weekly_routine_page.dart';
 import '../../shared/services/secure_storage_service.dart';
 import '../../features/attendance/attendance_calendar_page.dart';
 import '../../features/attendance/mark_attendance_page.dart';
+import '../../features/homework/homework_list_page.dart';
+import '../../features/notices/notices_list_page.dart';
 
 const _authRoutes = ['/onboarding/tenant', '/login/phone', '/login/otp'];
 
@@ -100,6 +102,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/reports/:id',
         builder: (_, state) => ReportDetailPage(reportId: state.pathParameters['id']!),
       ),
+      GoRoute(path: '/homework', builder: (_, __) => const HomeworkListPage()),
+      GoRoute(path: '/notices', builder: (_, __) => const NoticesListPage()),
       GoRoute(path: '/attendance/mark', builder: (_, __) => const MarkAttendanceEntryPage()),
       GoRoute(
         path: '/attendance/mark/:classId',

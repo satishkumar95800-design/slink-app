@@ -11,6 +11,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import type { ActiveUser } from '../../common/types/active-user.type';
 import { formatRupees } from '../../common/format';
+import { buildReceiptPdf } from './receipt-pdf';
 
 /** Marks a signed JWT as a receipt-link token, not a session access token. */
 const RECEIPT_LINK_PURPOSE = 'receipt-link';
@@ -126,6 +127,15 @@ export class ReceiptsService {
     });
   }
 
+  async getPdf(tenantId: string, id: string, user: ActiveUser) {
+    return this.renderPdf(await this.findOne(tenantId, id, user));
+  }
+
+  async renderPdf(receipt: Parameters<typeof buildReceiptPdf>[0]) {
+    const pdf = await buildReceiptPdf(receipt);
+    return { filename: `receipt-${receipt.receiptNumber.replace(/[^A-Za-z0-9_-]/g, '_')}.pdf`, pdf };
+  }
+
   async findOne(tenantId: string, id: string, user: ActiveUser) {
     const receipt = await this.prisma.receipt.findUnique({
       where: { id, tenantId },
@@ -188,20 +198,24 @@ export class ReceiptsService {
 
   /** Signed, time-limited link a parent can open without logging in — used
    * for the SMS link and as the target of a "receipt ready" push tap. */
+  private signPublicToken(tenantId: string, receiptId: string): Promise<string> {
+    return this.jwt.signAsync({ receiptId, tenantId, purpose: RECEIPT_LINK_PURPOSE }, { expiresIn: RECEIPT_LINK_TTL });
+  }
+
   private async signPublicLink(tenantId: string, receiptId: string): Promise<string> {
-    const token = await this.jwt.signAsync(
-      { receiptId, tenantId, purpose: RECEIPT_LINK_PURPOSE },
-      { expiresIn: RECEIPT_LINK_TTL },
-    );
+    const token = await this.signPublicToken(tenantId, receiptId);
     const adminBaseUrl = this.config.get<string>('ADMIN_BASE_URL') ?? 'http://localhost:3001';
     return `${adminBaseUrl}/receipts/public/${token}`;
   }
 
   /** Authenticated equivalent of signPublicLink — used by the mobile app's
    * in-app "Download" action, gated by findOne's normal role/ownership check. */
-  async getDownloadLink(tenantId: string, id: string, user: ActiveUser): Promise<{ url: string }> {
+  async getDownloadLink(tenantId: string, id: string, user: ActiveUser): Promise<{ url: string; pdfPath: string }> {
     await this.findOne(tenantId, id, user);
-    return { url: await this.signPublicLink(tenantId, id) };
+    const token = await this.signPublicToken(tenantId, id);
+    const adminBaseUrl = this.config.get<string>('ADMIN_BASE_URL') ?? 'http://localhost:3001';
+    // pdfPath is relative to the API base URL, which the app already knows.
+    return { url: `${adminBaseUrl}/receipts/public/${token}`, pdfPath: `/receipts/public/${token}/pdf` };
   }
 
   /** Resolves the unauthenticated public receipt link — the verified token is

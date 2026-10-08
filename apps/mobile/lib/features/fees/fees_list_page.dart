@@ -6,6 +6,10 @@ import '../../shared/widgets/authenticated_scaffold.dart';
 import 'fees_providers.dart';
 import '../../core/format/money.dart';
 import '../../core/strings.dart';
+import '../../shared/models/payment_claim.dart';
+import '../dashboard/students_repository.dart';
+import '../home/parent_home_models.dart';
+import '../payment_claims/my_payment_claims_page.dart';
 
 class FeesListPage extends ConsumerWidget {
   const FeesListPage({super.key});
@@ -13,20 +17,34 @@ class FeesListPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final feesAsync = ref.watch(studentFeesProvider);
+    final selectedChildId = ref.watch(selectedChildIdProvider);
+    // The parent's claims for the selected child, shown under the fees (§3.4).
+    final claims = (ref.watch(myPaymentClaimsProvider).valueOrNull ?? const <PaymentClaim>[])
+        .where((c) => selectedChildId == null || c.student.id == selectedChildId)
+        .toList();
 
     return AuthenticatedScaffold(
-      appBar: AppBar(title: const Text('Fees')),
+      appBar: AppBar(title: const Text(AppStrings.menuFees)),
       body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(studentFeesProvider),
+        onRefresh: () async {
+          ref.invalidate(studentFeesProvider);
+          ref.invalidate(myPaymentClaimsProvider);
+        },
         child: feesAsync.when(
           data: (fees) {
-            if (fees.isEmpty) {
-              return const Center(child: Text('No fees found.'));
-            }
-            return ListView.builder(
+            return ListView(
               padding: const EdgeInsets.all(16),
-              itemCount: fees.length,
-              itemBuilder: (context, index) => _FeeCard(fee: fees[index]),
+              children: [
+                if (fees.isEmpty)
+                  const Padding(padding: EdgeInsets.symmetric(vertical: 48), child: Center(child: Text(AppStrings.noFees))),
+                for (final fee in fees) _FeeCard(fee: fee),
+                if (claims.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Text(AppStrings.myClaims, style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  for (final claim in claims) PaymentClaimCard(claim: claim),
+                ],
+              ],
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -97,38 +115,33 @@ class _FeeCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 4),
-            Text('${fee.student.name} • Due ${fee.dueDate.toLocal().toString().split(' ').first}'),
+            Text('${fee.student.name} • ${AppStrings.dueOn(displayDate(fee.dueDate))}'),
             const SizedBox(height: 12),
             Text(
-              canPay ? AppStrings.amountDue(formatRupees(fee.outstanding)) : 'Paid in full',
+              canPay ? AppStrings.amountDue(formatRupees(fee.outstanding)) : AppStrings.paidInFull,
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
-            if (hasReceipt || canPay) ...[
+            if (canPay) ...[
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () => context.push('/fees/${fee.id}/pay'),
+                child: const Text(AppStrings.payOnline),
+              ),
               const SizedBox(height: 8),
-              Wrap(
-                alignment: WrapAlignment.end,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 8,
-                runSpacing: 4,
-                children: [
-                  if (hasReceipt)
-                    TextButton(
-                      onPressed: () => context.push('/fees/${fee.id}/receipts'),
-                      child: const Text('View Receipt'),
-                    ),
-                  if (canPay)
-                    TextButton(
-                      onPressed: () => context.push('/fees/${fee.id}/claim', extra: fee.outstanding),
-                      child: const Text('Already paid? Upload receipt'),
-                    ),
-                  if (canPay)
-                    FilledButton(
-                      onPressed: () => context.push('/fees/${fee.id}/pay'),
-                      child: const Text('Pay now'),
-                    ),
-                ],
+              OutlinedButton(
+                onPressed: () => context.push('/fees/${fee.id}/claim', extra: fee.outstanding),
+                child: const Text(AppStrings.paidByCashOrCheque, textAlign: TextAlign.center),
               ),
             ],
+            if (hasReceipt)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => context.push('/fees/${fee.id}/receipts'),
+                  icon: const Icon(Icons.receipt_outlined),
+                  label: const Text(AppStrings.viewReceipts),
+                ),
+              ),
           ],
         ),
       ),

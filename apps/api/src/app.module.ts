@@ -36,6 +36,8 @@ import { TeacherDashboardModule } from './modules/teacher-dashboard/teacher-dash
 import { PaymentClaimsModule } from './modules/payment-claims/payment-claims.module';
 import { StudentNotesModule } from './modules/student-notes/student-notes.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
+import { ParentModule } from './modules/parent/parent.module';
+import { FeeRemindersModule } from './modules/fee-reminders/fee-reminders.module';
 
 @Module({
   imports: [
@@ -76,6 +78,8 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
     PaymentClaimsModule,
     StudentNotesModule,
     AttendanceModule,
+    ParentModule,
+    FeeRemindersModule,
   ],
 })
 export class AppModule implements NestModule {
@@ -98,6 +102,7 @@ export class AppModule implements NestModule {
         // (opened straight from an SMS/push, not a logged-in session); the
         // signed token itself carries the tenantId instead.
         { path: 'receipts/public/:token', method: RequestMethod.GET },
+        { path: 'receipts/public/:token/pdf', method: RequestMethod.GET },
       )
       .forRoutes('*');
   }

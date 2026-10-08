@@ -72,6 +72,8 @@ pnpm db:generate   # regenerates the Prisma client
 | notifications | done | FCM push (multicast), Twilio SMS, broadcast, audit log, FCM token management |
 | files | done | S3 upload/download, presigned URLs, tenant-isolated key paths |
 | attendance | done | Daily class attendance (bulk upsert), absent/correction pushes, school holidays, summaries + CSV report |
+| parent | done | Parent home summary (fees/today/attendance in one call), per-child notices |
+| fee-reminders | done | Daily Bull job: fee-due pushes 3 days before and on the due date |
 
 ## Tech decisions (do not revisit without discussion)
 

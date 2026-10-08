@@ -6,6 +6,7 @@ import '../../shared/models/report.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
 import '../auth/session_controller.dart';
 import 'reports_providers.dart';
+import '../../core/strings.dart';
 
 class ReportsListPage extends ConsumerWidget {
   const ReportsListPage({super.key});
@@ -32,7 +33,7 @@ class ReportsListPage extends ConsumerWidget {
 
     return AuthenticatedScaffold(
       appBar: AppBar(
-        title: const Text('Reports'),
+        title: Text(isTeacher ? 'Reports' : AppStrings.menuReports),
         actions: [
           if (isTeacher)
             IconButton(
@@ -45,9 +46,11 @@ class ReportsListPage extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(reportsProvider),
         child: reportsAsync.when(
-          data: (reports) {
+          data: (all) {
+            // Parents see homework on its own Homework screen, so it isn't repeated here.
+            final reports = isTeacher ? all : all.where((r) => r.type != ReportType.homework).toList();
             if (reports.isEmpty) {
-              return const Center(child: Text('No reports yet.'));
+              return Center(child: Text(isTeacher ? 'No reports yet.' : AppStrings.noReports));
             }
             return ListView.builder(
               itemCount: reports.length,

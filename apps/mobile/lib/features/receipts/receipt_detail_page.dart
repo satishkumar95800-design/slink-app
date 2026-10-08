@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../shared/models/receipt.dart';
 import 'receipts_repository.dart';
 import '../../core/format/money.dart';
+import '../../core/strings.dart';
+import '../home/parent_home_models.dart';
 
 const _methodLabels = {
   'cash': 'Cash',
@@ -35,14 +36,7 @@ class _ReceiptDetailPageState extends ConsumerState<ReceiptDetailPage> {
   Future<void> _download() async {
     setState(() => _downloading = true);
     try {
-      final url = await ref.read(receiptsRepositoryProvider).getDownloadLink(widget.receiptId);
-      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open the receipt. Please try again.')),
-        );
-      }
+      await openReceiptPdf(ref, context, widget.receiptId);
     } finally {
       if (mounted) setState(() => _downloading = false);
     }
@@ -108,7 +102,7 @@ class _ReceiptDetailPageState extends ConsumerState<ReceiptDetailPage> {
                 ],
                 const SizedBox(height: 16),
                 Text('Method: ${_methodLabels[receipt.method] ?? receipt.method}'),
-                Text('Paid on: ${receipt.paidOn.toLocal().toString().split(' ').first}'),
+                Text('Paid on: ${displayDate(receipt.paidOn)}'),
                 if (receipt.reference != null) Text('Reference: ${receipt.reference}'),
                 if (receipt.notes != null) ...[
                   const SizedBox(height: 16),
@@ -119,7 +113,7 @@ class _ReceiptDetailPageState extends ConsumerState<ReceiptDetailPage> {
                 FilledButton.icon(
                   onPressed: _downloading ? null : _download,
                   icon: const Icon(Icons.download),
-                  label: Text(_downloading ? 'Opening…' : 'Download'),
+                  label: Text(_downloading ? AppStrings.openingReceipt : AppStrings.downloadReceipt),
                 ),
               ],
             ),

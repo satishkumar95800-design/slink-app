@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../shared/models/student.dart';
 import '../../shared/services/api_client.dart';
 
@@ -34,6 +35,27 @@ final myChildrenProvider = FutureProvider<List<Student>>((ref) {
   return ref.watch(studentsRepositoryProvider).getMyChildren();
 });
 
-/// Currently selected child in the dashboard's child switcher. Null means "all
-/// children" for screens that support an aggregate view (e.g. fees list).
+/// Child picked in the home screen's switcher. Every parent screen follows it.
+/// Null only until the children list first loads (see [resolveSelectedChild]).
 final selectedChildIdProvider = StateProvider<String?>((ref) => null);
+
+const _lastChildKey = 'parent_last_selected_child';
+
+/// Makes sure a valid child is selected: keeps the current one if still linked,
+/// else the one remembered from last time, else the first child.
+Future<void> resolveSelectedChild(WidgetRef ref, List<Student> children) async {
+  if (children.isEmpty) return;
+  final current = ref.read(selectedChildIdProvider);
+  if (current != null && children.any((c) => c.id == current)) return;
+  final prefs = await SharedPreferences.getInstance();
+  final remembered = prefs.getString(_lastChildKey);
+  ref.read(selectedChildIdProvider.notifier).state =
+      children.any((c) => c.id == remembered) ? remembered : children.first.id;
+}
+
+/// Selects [studentId] and remembers it for the next app launch.
+Future<void> selectChild(WidgetRef ref, String studentId) async {
+  ref.read(selectedChildIdProvider.notifier).state = studentId;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(_lastChildKey, studentId);
+}

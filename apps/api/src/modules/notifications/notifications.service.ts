@@ -119,6 +119,7 @@ export class NotificationsService {
         dto.targetId,
         actor.id,
         dto.body,
+        dto.fileKey,
         data?.attachmentUrl,
       );
     }
@@ -134,6 +135,7 @@ export class NotificationsService {
     classId: string,
     teacherId: string,
     caption: string,
+    fileKey: string,
     attachmentUrl: string | undefined,
   ): Promise<void> {
     const cls = await this.prisma.class.findUnique({
@@ -153,7 +155,9 @@ export class NotificationsService {
         type: ReportType.homework,
         term,
         academicYear: cls.academicYear,
-        content: { caption, attachmentUrl: attachmentUrl ?? null },
+        // attachmentUrl is a 24h signed link (kept for older app builds); readers
+        // re-sign from fileKey so the photo keeps loading after it expires.
+        content: { caption, fileKey, attachmentUrl: attachmentUrl ?? null },
         status: ReportStatus.published,
         publishedAt: new Date(),
       })),
@@ -280,14 +284,17 @@ export class NotificationsService {
     tenantId: string,
     dto: BroadcastNotificationDto,
   ): Promise<Record<string, string> | undefined> {
-    if (!dto.fileKey) return dto.data;
+    // Class broadcasts carry their class so a parent's Notices list can be filtered per child.
+    const base =
+      dto.targetType === BroadcastTarget.CLASS && dto.targetId ? { ...dto.data, classId: dto.targetId } : dto.data;
+    if (!dto.fileKey) return base;
 
     const attachmentUrl = await this.files.getSignedUrl(
       dto.fileKey,
       tenantId,
       ATTACHMENT_SIGNED_URL_TTL_SECONDS,
     );
-    return { ...dto.data, attachmentUrl };
+    return { ...base, attachmentUrl };
   }
 
   private async resolveTargetUsers(

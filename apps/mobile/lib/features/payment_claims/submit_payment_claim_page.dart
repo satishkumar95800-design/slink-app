@@ -7,6 +7,8 @@ import '../../shared/models/api_exception.dart';
 import '../../shared/services/files_repository.dart';
 import '../../shared/widgets/error_banner.dart';
 import '../../shared/widgets/primary_button.dart';
+import '../home/parent_home_repository.dart';
+import 'my_payment_claims_page.dart';
 import 'payment_claims_repository.dart';
 
 const _paymentModes = ['cash', 'cheque', 'bank_transfer', 'upi'];
@@ -107,6 +109,9 @@ class _SubmitPaymentClaimPageState extends ConsumerState<SubmitPaymentClaimPage>
             claimedMode: _claimedMode,
             note: _noteController.text.trim(),
           );
+      // Refresh the Fees screen's claim list and the home Fee card ("claim under review").
+      ref.invalidate(myPaymentClaimsProvider);
+      ref.invalidate(parentHomeProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Submitted — your school will review it shortly')),

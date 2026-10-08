@@ -11,11 +11,12 @@ class ReportsRepository {
 
   /// GET /reports — server scopes parents to published reports for their
   /// linked children only (ReportsService.findAll).
-  Future<PaginatedResponse<Report>> getReports({String? studentId, int page = 1}) async {
+  Future<PaginatedResponse<Report>> getReports({String? studentId, String? type, int page = 1}) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/reports',
       queryParameters: {
         if (studentId != null) 'studentId': studentId,
+        if (type != null) 'type': type,
         'page': page,
         'limit': 50,
       },

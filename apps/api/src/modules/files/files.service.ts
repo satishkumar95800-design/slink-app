@@ -99,7 +99,16 @@ export class FilesService {
     };
   }
 
-  async getSignedUrl(key: string, tenantId: string, expiresIn = 900): Promise<string> {
+  /**
+   * [verifyExists] does a HEAD request first so a missing file is a clean 404;
+   * list endpoints signing many known keys at once pass false to skip that round trip.
+   */
+  async getSignedUrl(
+    key: string,
+    tenantId: string,
+    expiresIn = 900,
+    { verifyExists = true }: { verifyExists?: boolean } = {},
+  ): Promise<string> {
     this.assertTenantOwnsKey(key, tenantId);
 
     if (key.startsWith('public/')) {
@@ -108,10 +117,12 @@ export class FilesService {
     }
 
     // Verify the object exists before issuing a URL
-    try {
-      await this.s3.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }));
-    } catch {
-      throw new NotFoundException(`File not found: ${key}`);
+    if (verifyExists) {
+      try {
+        await this.s3.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }));
+      } catch {
+        throw new NotFoundException(`File not found: ${key}`);
+      }
     }
 
     return getSignedUrl(
@@ -119,6 +130,21 @@ export class FilesService {
       new GetObjectCommand({ Bucket: this.bucket, Key: key }),
       { expiresIn },
     );
+  }
+
+  /**
+   * Recovers the S3 key from a URL this service issued earlier (signed or
+   * public, virtual-hosted or path-style). Used for older rows that stored a
+   * time-limited URL instead of the key. Null if it doesn't look like ours.
+   */
+  keyFromUrl(url: string): string | null {
+    try {
+      let path = decodeURIComponent(new URL(url).pathname).replace(/^\/+/, '');
+      if (path.startsWith(`${this.bucket}/`)) path = path.slice(this.bucket.length + 1);
+      return path.length > 0 ? path : null;
+    } catch {
+      return null;
+    }
   }
 
   async delete(key: string, tenantId: string): Promise<void> {
