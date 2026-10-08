@@ -92,13 +92,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/receipts/:id',
         builder: (_, state) => ReceiptDetailPage(receiptId: state.pathParameters['id']!),
       ),
+      // Must stay above '/reports/:id', otherwise "upload" is matched as a report id.
+      GoRoute(path: '/reports/upload', builder: (_, __) => const UploadReportCardPage()),
       GoRoute(
         path: '/reports/:id',
         builder: (_, state) => ReportDetailPage(reportId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/notices/send', builder: (_, __) => const SendNoticePage()),
       GoRoute(path: '/homework/send', builder: (_, __) => const SendHomeworkPage()),
-      GoRoute(path: '/reports/upload', builder: (_, __) => const UploadReportCardPage()),
       GoRoute(
         path: '/notices/detail',
         builder: (_, state) {

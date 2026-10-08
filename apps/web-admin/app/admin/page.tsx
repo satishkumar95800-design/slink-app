@@ -76,11 +76,7 @@ function StatCard({ label, value, icon, color }: { label: string; value: string 
   );
 }
 
-function formatCurrency(paise: number) {
-  return `₹${(paise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-}
-
-/** Insights' collection-forecast returns rupees directly (SUM over the Decimal receipts.amount column) — no paise division, unlike formatCurrency above. */
+/** Amounts from the API are rupees (Decimal NUMERIC(12,2) columns), not paise. */
 function formatRupees(amount: number) {
   return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
 }
@@ -122,7 +118,7 @@ export default function DashboardPage() {
           api.get<{ data: unknown[]; meta: { total: number } }>('/users?limit=1'),
           api.get<{ data: unknown[]; meta: { total: number } }>('/students?limit=1'),
           api.get<{ id: string; studentName: string; amount: number; method: string; paidOn: string }[]>('/receipts/recent?limit=5'),
-          api.get<{ data: { amountDue: number; amountPaid: number; status: string }[] }>('/student-fees?limit=1000'),
+          api.get<{ collected: number; outstanding: number }>('/insights/fee-totals'),
         ]);
 
         const partialStats: Partial<Stats> = {};
@@ -133,9 +129,8 @@ export default function DashboardPage() {
           partialStats.recentPayments = paymentsRes.value;
         }
         if (feesRes.status === 'fulfilled') {
-          const fees = feesRes.value.data;
-          partialStats.feesCollected = fees.reduce((s, f) => s + (f.amountPaid ?? 0), 0);
-          partialStats.feesOutstanding = fees.reduce((s, f) => s + Math.max(0, (f.amountDue ?? 0) - (f.amountPaid ?? 0)), 0);
+          partialStats.feesCollected = feesRes.value.collected;
+          partialStats.feesOutstanding = feesRes.value.outstanding;
         }
 
         setStats(partialStats);
@@ -213,8 +208,8 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard label="Total Users" value={stats.userCount ?? '—'} icon="👤" color="bg-teal/5" />
             <StatCard label="Total Students" value={stats.studentCount ?? '—'} icon="🎓" color="bg-purple-50" />
-            <StatCard label="Fees Collected" value={stats.feesCollected != null ? formatCurrency(stats.feesCollected) : '—'} icon="✅" color="bg-green-50" />
-            <StatCard label="Outstanding Fees" value={stats.feesOutstanding != null ? formatCurrency(stats.feesOutstanding) : '—'} icon="⏳" color="bg-orange-50" />
+            <StatCard label="Fees Collected" value={stats.feesCollected != null ? formatRupees(stats.feesCollected) : '—'} icon="✅" color="bg-green-50" />
+            <StatCard label="Outstanding Fees" value={stats.feesOutstanding != null ? formatRupees(stats.feesOutstanding) : '—'} icon="⏳" color="bg-orange-50" />
           </div>
 
           <div className="rounded-2xl bg-white shadow-sm border border-gray-100">

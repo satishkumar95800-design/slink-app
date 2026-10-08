@@ -63,6 +63,12 @@ export class InsightsController {
     return this.insightsService.getClassCollectionSummary(tenantId, user, query);
   }
 
+  @Get('fee-totals')
+  @Roles(Role.admin, Role.accounts, Role.super_admin)
+  feeTotals(@TenantId() tenantId: string) {
+    return this.insightsService.getFeeTotals(tenantId);
+  }
+
   @Get('student-fee-summary')
   @Roles(Role.admin, Role.accounts, Role.super_admin)
   async studentFeeSummary(

@@ -219,6 +219,26 @@ export class InsightsService {
    * cached/nightly: a school's receipt volume is small enough that this
    * three-month aggregate is cheap on every dashboard load.
    */
+  /**
+   * Whole-tenant fee totals for the admin dashboard cards, in rupees.
+   * Outstanding is summed per assignment (so an overpaid row can't offset
+   * another student's balance) and excludes waived fees, matching
+   * StudentFeesService.getOutstanding.
+   */
+  async getFeeTotals(tenantId: string) {
+    const [row] = await this.prisma.$queryRaw<{ collected: Prisma.Decimal | null; outstanding: Prisma.Decimal | null }[]>`
+      SELECT
+        SUM(amount_paid) AS collected,
+        SUM(GREATEST(amount_due - amount_paid, 0)) FILTER (WHERE status <> 'waived') AS outstanding
+      FROM student_fees
+      WHERE tenant_id = ${tenantId}::uuid
+    `;
+    return {
+      collected: Number(row?.collected ?? 0),
+      outstanding: Number(row?.outstanding ?? 0),
+    };
+  }
+
   async getCollectionForecast(tenantId: string) {
     const now = new Date();
     const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);

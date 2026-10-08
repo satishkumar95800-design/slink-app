@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/models/active_user.dart';
+import '../../shared/services/branding_repository.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
 import '../auth/session_controller.dart';
 
@@ -10,6 +11,7 @@ class ProfilePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(sessionControllerProvider).user;
+    final schoolName = ref.watch(brandingProvider).valueOrNull?.name;
 
     if (user == null) {
       return const Scaffold(
@@ -50,7 +52,7 @@ class ProfilePage extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              _InfoRow(label: 'Tenant', value: user.tenantId),
+              if (schoolName != null) _InfoRow(label: 'School', value: schoolName),
               const Divider(height: 32),
               ListTile(
                 leading: const Icon(Icons.logout),
