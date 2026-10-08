@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/models/payment_claim.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
 import 'payment_claims_repository.dart';
+import '../../core/format/money.dart';
+import '../../core/strings.dart';
 
 final myPaymentClaimsProvider = FutureProvider.autoDispose<List<PaymentClaim>>((ref) {
   return ref.watch(paymentClaimsRepositoryProvider).getMyClaims();
@@ -92,7 +94,7 @@ class _ClaimCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text('Submitted ${claim.createdAt.toLocal().toString().split(' ').first}'),
-            if (claim.claimedAmount != null) Text('Claimed amount: ₹${claim.claimedAmount!.toStringAsFixed(2)}'),
+            if (claim.claimedAmount != null) Text(AppStrings.claimedAmount(formatRupees(claim.claimedAmount))),
             if (claim.claimedMode != null) Text('Mode: ${claim.claimedMode}'),
             if (claim.note != null && claim.note!.isNotEmpty) ...[
               const SizedBox(height: 4),

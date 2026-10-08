@@ -150,7 +150,12 @@ export class PaymentClaimsService {
 
     const updated = await this.prisma.paymentClaim.update({
       where: { id },
-      data: { status: PaymentClaimStatus.approved, reviewedBy: actorId, reviewedAt: new Date() },
+      data: {
+        status: PaymentClaimStatus.approved,
+        reviewedBy: actorId,
+        reviewedAt: new Date(),
+        receiptId: receipt.id,
+      },
       include: claimInclude,
     });
 

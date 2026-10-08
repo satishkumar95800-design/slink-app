@@ -12,6 +12,7 @@ import { Modal } from '../../../components/ui/modal';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
+import { formatRupees } from '../../../lib/format';
 
 interface FeeStructure {
   id: string;
@@ -46,10 +47,6 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
-
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-}
 
 export default function FeesPage() {
   const { toast } = useToast();
@@ -186,12 +183,12 @@ export default function FeesPage() {
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{s.name}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{s.class?.name ?? '—'}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{s.academicYear}</td>
-                  <td className="px-6 py-4 text-sm font-semibold text-gray-900">{formatCurrency(s.totalAmount)}</td>
+                  <td className="px-6 py-4 text-sm font-semibold text-gray-900">{formatRupees(s.totalAmount)}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">
                     {new Date(s.dueDate).toLocaleDateString('en-IN')}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {s.lateFeePerDay ? formatCurrency(s.lateFeePerDay) : '—'}
+                    {s.lateFeePerDay ? formatRupees(s.lateFeePerDay) : '—'}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button onClick={() => openEdit(s)} className="text-xs text-teal hover:underline">

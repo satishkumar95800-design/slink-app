@@ -16,6 +16,7 @@ import { FeeStructureQueryDto } from './dto/fee-structure-query.dto';
 import { RolloverArrearsDto } from './dto/rollover-arrears.dto';
 import { buildStudentFeeComponents } from './fee-assignment.util';
 import type { ApplicableStudentDiscount } from '../discounts/discount-application.util';
+import { formatDateOnly, formatRupees } from '../../common/format';
 
 const feeStructureInclude = {
   classes: {
@@ -260,7 +261,7 @@ export class FeeStructuresService {
         {
           channel: NotificationChannel.fcm,
           title: `Fee due: ${structure.name}`,
-          body: `A fee of ₹${amountDue.toFixed(2)} is due by ${dueDate.toISOString().slice(0, 10)}. Please pay via the School Connect app.`,
+          body: `A fee of ${formatRupees(amountDue)} is due by ${formatDateOnly(dueDate)}. Please pay via the Schoolinkd app.`,
           targetType: BroadcastTarget.CLASS,
           targetId: dto.classId,
         },

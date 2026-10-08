@@ -8,6 +8,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { Role } from '@prisma/client';
+import { CleanName } from '../../../common/decorators/clean-name.decorator';
 
 // super_admin may bootstrap a "developer" support account on a tenant in addition to
 // the normal staff roles — deliberately excludes super_admin itself, which stays a
@@ -16,6 +17,7 @@ const PLATFORM_CREATABLE_ROLES = [Role.admin, Role.accounts, Role.teacher, Role.
 type PlatformCreatableRole = (typeof PLATFORM_CREATABLE_ROLES)[number];
 
 export class CreateTenantUserDto {
+  @CleanName()
   @IsString()
   @IsNotEmpty()
   name: string;

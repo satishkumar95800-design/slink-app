@@ -1,5 +1,5 @@
 import { ParsedTab, TabValidation, ValidClassRow, ValidTeacherRow } from '../types';
-import { EMAIL_REGEX, PHONE_REGEX, issue, resolveClass } from './shared';
+import { EMAIL_REGEX, PHONE_REGEX, cleanName, issue, pushLowercaseNameWarning, resolveClass } from './shared';
 
 const TAB = 'Teachers' as const;
 
@@ -17,7 +17,8 @@ export function validateTeachersTab(
   const seenAssignments = new Set<string>();
 
   for (const row of tab.rows) {
-    const name = row.cells['Teacher Name'];
+    const name = cleanName(row.cells['Teacher Name']);
+    pushLowercaseNameWarning(warnings, TAB, row.rowNumber, 'Teacher Name', name);
     const phone = row.cells['Phone Number'];
     const email = row.cells['Email'];
     const className = row.cells['Class Name'];

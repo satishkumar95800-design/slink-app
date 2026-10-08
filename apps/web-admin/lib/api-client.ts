@@ -102,6 +102,8 @@ export const api = {
     apiRequest<T>(path, { method: 'POST', body: JSON.stringify(data), ...opts }),
   patch: <T>(path: string, data: unknown, opts?: { tenantOverride?: string }) =>
     apiRequest<T>(path, { method: 'PATCH', body: JSON.stringify(data), ...opts }),
+  put: <T>(path: string, data: unknown, opts?: { tenantOverride?: string }) =>
+    apiRequest<T>(path, { method: 'PUT', body: JSON.stringify(data), ...opts }),
   delete: <T>(path: string, data?: unknown, opts?: { tenantOverride?: string }) =>
     apiRequest<T>(path, {
       method: 'DELETE',

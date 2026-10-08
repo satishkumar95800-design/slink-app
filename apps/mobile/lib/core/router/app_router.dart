@@ -23,6 +23,8 @@ import '../../features/reports/reports_list_page.dart';
 import '../../features/reports/upload_report_card_page.dart';
 import '../../features/timetable/weekly_routine_page.dart';
 import '../../shared/services/secure_storage_service.dart';
+import '../../features/attendance/attendance_calendar_page.dart';
+import '../../features/attendance/mark_attendance_page.dart';
 
 const _authRoutes = ['/onboarding/tenant', '/login/phone', '/login/otp'];
 
@@ -97,6 +99,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/reports/:id',
         builder: (_, state) => ReportDetailPage(reportId: state.pathParameters['id']!),
+      ),
+      GoRoute(path: '/attendance/mark', builder: (_, __) => const MarkAttendanceEntryPage()),
+      GoRoute(
+        path: '/attendance/mark/:classId',
+        builder: (_, state) => MarkAttendancePage(classId: state.pathParameters['classId']!),
+      ),
+      GoRoute(
+        path: '/attendance/student/:studentId',
+        builder: (_, state) => AttendanceCalendarPage(
+          studentId: state.pathParameters['studentId']!,
+          initialMonth: state.uri.queryParameters['month'],
+        ),
       ),
       GoRoute(path: '/notices/send', builder: (_, __) => const SendNoticePage()),
       GoRoute(path: '/homework/send', builder: (_, __) => const SendHomeworkPage()),

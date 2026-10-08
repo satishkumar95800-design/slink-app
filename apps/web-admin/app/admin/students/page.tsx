@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { api, ApiError } from '../../../lib/api-client';
@@ -14,6 +14,8 @@ import { Modal } from '../../../components/ui/modal';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
+import { nameCaseWarning } from '../../../lib/names';
+import { strings } from '../../../lib/strings';
 
 const BLOOD_GROUP_VALUES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const;
 const CASTE_VALUES = ['General', 'OBC', 'SC', 'ST', 'EWS', 'Other'] as const;
@@ -35,6 +37,7 @@ interface Student {
   id: string;
   name: string;
   admissionNo: string;
+  rollNo?: string | null;
   dob: string | null;
   bloodGroup: string | null;
   caste: string | null;
@@ -54,6 +57,7 @@ interface Class {
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
   admissionNo: z.string().min(1, 'Admission number is required'),
+  rollNo: z.string().max(20).optional(),
   dob: z.string().optional(),
   bloodGroup: z.enum(BLOOD_GROUP_VALUES).optional(),
   caste: z.enum(CASTE_VALUES).optional(),
@@ -66,6 +70,7 @@ type FormData = z.infer<typeof schema>;
 
 const editSchema = z.object({
   name: z.string().min(1, 'Name is required'),
+  rollNo: z.string().max(20).optional(),
   classId: z.string().min(1, 'Class is required'),
   dob: z.string().optional(),
   bloodGroup: z.enum(BLOOD_GROUP_VALUES).optional(),
@@ -92,6 +97,7 @@ export default function StudentsPage() {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
@@ -99,8 +105,11 @@ export default function StudentsPage() {
     register: registerEdit,
     handleSubmit: handleEditSubmit,
     reset: resetEdit,
+    control: editControl,
     formState: { errors: editErrors, isSubmitting: isEditSubmitting },
   } = useForm<EditFormData>({ resolver: zodResolver(editSchema) });
+  const nameValue = useWatch({ control, name: 'name' });
+  const editNameValue = useWatch({ control: editControl, name: 'name' });
 
   async function fetchStudents(q?: string) {
     try {
@@ -134,6 +143,7 @@ export default function StudentsPage() {
     try {
       await api.post('/students', {
         ...data,
+        rollNo: data.rollNo?.trim() || undefined,
         dob: data.dob || undefined,
         bloodGroup: data.bloodGroup || undefined,
         caste: data.caste || undefined,
@@ -186,6 +196,7 @@ export default function StudentsPage() {
     const primaryParent = student.parents?.[0]?.parent;
     resetEdit({
       name: student.name,
+      rollNo: student.rollNo ?? '',
       classId: student.classId,
       dob: student.dob ? student.dob.slice(0, 10) : '',
       bloodGroup: student.bloodGroup
@@ -201,6 +212,8 @@ export default function StudentsPage() {
     try {
       await api.patch(`/students/${editingStudent.id}`, {
         name: data.name,
+        // "" clears the roll number
+        rollNo: data.rollNo?.trim() ?? '',
         classId: data.classId,
         dob: data.dob || undefined,
         bloodGroup: data.bloodGroup || undefined,
@@ -336,8 +349,9 @@ export default function StudentsPage() {
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Input label="Full Name" required error={errors.name?.message} {...register('name')} />
+            <Input label="Full Name" required error={errors.name?.message} warning={nameCaseWarning(nameValue)} {...register('name')} />
             <Input label="Admission No" required error={errors.admissionNo?.message} {...register('admissionNo')} />
+            <Input label={strings.attendance.rollNo} placeholder="e.g. 12" error={errors.rollNo?.message} {...register('rollNo')} />
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input label="Date of Birth" type="date" error={errors.dob?.message} {...register('dob')} />
@@ -399,7 +413,8 @@ export default function StudentsPage() {
       >
         <form onSubmit={handleEditSubmit(onEditSubmit)} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Input label="Full Name" required error={editErrors.name?.message} {...registerEdit('name')} />
+            <Input label="Full Name" required error={editErrors.name?.message} warning={nameCaseWarning(editNameValue)} {...registerEdit('name')} />
+            <Input label={strings.attendance.rollNo} placeholder="e.g. 12" error={editErrors.rollNo?.message} {...registerEdit('rollNo')} />
             <Select
               label="Class" required
               options={classOptions}

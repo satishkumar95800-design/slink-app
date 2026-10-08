@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../shared/models/api_exception.dart';
 import '../../shared/services/files_repository.dart';
 import '../../shared/widgets/error_banner.dart';
 import '../../shared/widgets/primary_button.dart';
@@ -63,7 +65,7 @@ class _SubmitPaymentClaimPageState extends ConsumerState<SubmitPaymentClaimPage>
   }
 
   Future<void> _pickPhoto(ImageSource source) async {
-    final picked = await ImagePicker().pickImage(source: source, imageQuality: 85);
+    final picked = await ImagePicker().pickImage(source: source, imageQuality: 80, maxWidth: 1920, maxHeight: 1920);
     if (picked != null) {
       setState(() {
         _photo = File(picked.path);
@@ -112,7 +114,7 @@ class _SubmitPaymentClaimPageState extends ConsumerState<SubmitPaymentClaimPage>
         Navigator.of(context).pop();
       }
     } catch (e) {
-      setState(() => _error = 'Could not submit your claim. $e');
+      setState(() => _error = 'Could not submit your claim. ${_describeError(e)}');
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -203,3 +205,9 @@ class _SubmitPaymentClaimPageState extends ConsumerState<SubmitPaymentClaimPage>
     );
   }
 }
+
+String _describeError(Object e) => switch (e) {
+      ApiException() => e.message,
+      DioException() => ApiException.fromDioError(e).message,
+      _ => 'Please try again.',
+    };

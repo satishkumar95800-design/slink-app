@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { setSession } from '../../lib/auth';
 import type { Role } from '@slink/types';
+import { strings } from '../../lib/strings';
 
 const schema = z.object({
   tenantId: z.string().optional(),
@@ -80,7 +81,7 @@ export default function LoginPage() {
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-teal text-xl font-extrabold text-white">
             S
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">School Connect</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">{strings.product.name}</h1>
           <span className="mt-2 inline-flex rounded-full bg-coral/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-coral-dark">
             Admin Console
           </span>

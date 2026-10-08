@@ -8,6 +8,7 @@ import { Input } from '../../../components/ui/input';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
+import { formatRupees } from '../../../lib/format';
 
 type ReportType =
   | 'fee-pending'
@@ -33,14 +34,6 @@ const REPORT_OPTIONS: { value: ReportType; label: string }[] = [
   { value: 'collection-register', label: 'Daily Collection Register' },
   { value: 'student-fee-summary', label: 'Student Fee Summary (Whole Year)' },
 ];
-
-function formatCurrency(amount: number | string | null | undefined) {
-  const n = typeof amount === 'string' ? parseFloat(amount) : amount;
-  if (n == null || Number.isNaN(n)) {
-    return '₹0.00';
-  }
-  return `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-}
 
 export default function FeeReportsPage() {
   const { toast } = useToast();
@@ -186,9 +179,9 @@ function ReportTable({ reportType, rows }: { reportType: ReportType; rows: Recor
           f.student?.name ?? '—',
           f.student?.class?.name ?? '—',
           f.feeStructure?.name ?? '—',
-          formatCurrency(f.amountDue),
-          formatCurrency(f.amountPaid),
-          formatCurrency(Math.max(0, parseFloat(f.amountDue) - parseFloat(f.amountPaid))),
+          formatRupees(f.amountDue),
+          formatRupees(f.amountPaid),
+          formatRupees(Math.max(0, parseFloat(f.amountDue) - parseFloat(f.amountPaid))),
           f.status,
           new Date(f.dueDate).toLocaleDateString('en-IN'),
         ]}
@@ -206,7 +199,7 @@ function ReportTable({ reportType, rows }: { reportType: ReportType; rows: Recor
           r.student?.name ?? '—',
           r.class?.name ?? '—',
           r.studentFee?.feeStructure?.name ?? '—',
-          formatCurrency(r.amount),
+          formatRupees(r.amount),
           r.method,
           new Date(r.paidOn).toLocaleDateString('en-IN'),
         ]}
@@ -236,9 +229,9 @@ function ReportTable({ reportType, rows }: { reportType: ReportType; rows: Recor
         render={(s: any) => [
           `${s.studentName}${s.admissionNo ? ` (${s.admissionNo})` : ''}`,
           s.class ? `${s.class.name}${s.class.section ? ` (${s.class.section})` : ''}` : '—',
-          formatCurrency(s.totalDue),
-          formatCurrency(s.totalCollected),
-          formatCurrency(s.outstanding),
+          formatRupees(s.totalDue),
+          formatRupees(s.totalCollected),
+          formatRupees(s.outstanding),
         ]}
       />
     );
@@ -252,9 +245,9 @@ function ReportTable({ reportType, rows }: { reportType: ReportType; rows: Recor
         render={(c: any) => [
           `${c.className}${c.section ? ` (${c.section})` : ''}`,
           c.academicYear,
-          formatCurrency(c.expected),
-          formatCurrency(c.collected),
-          formatCurrency(c.outstanding),
+          formatRupees(c.expected),
+          formatRupees(c.collected),
+          formatRupees(c.outstanding),
         ]}
       />
     );
@@ -268,7 +261,7 @@ function ReportTable({ reportType, rows }: { reportType: ReportType; rows: Recor
       render={(g: any) => [
         new Date(g.date).toLocaleDateString('en-IN'),
         g.method,
-        formatCurrency(g.totalAmount),
+        formatRupees(g.totalAmount),
         g.count,
       ]}
     />

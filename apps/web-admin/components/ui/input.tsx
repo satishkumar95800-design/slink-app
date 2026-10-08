@@ -4,12 +4,14 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   helpText?: string;
+  /** Non-blocking amber hint (e.g. suspicious capitalisation); hidden while there's an error. */
+  warning?: string;
   /** Shows a red asterisk on the label. Visual only — validation stays with the form schema. */
   required?: boolean;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, helpText, required, className = '', id, ...props }, ref) => {
+  ({ label, error, helpText, warning, required, className = '', id, ...props }, ref) => {
     const inputId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
     return (
       <div className="flex flex-col gap-1">
@@ -29,6 +31,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           {...props}
         />
         {error && <p className="text-xs text-red-600">{error}</p>}
+        {warning && !error && <p className="text-xs text-amber-700">{warning}</p>}
         {helpText && !error && <p className="text-xs text-gray-500">{helpText}</p>}
       </div>
     );

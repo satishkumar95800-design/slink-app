@@ -43,6 +43,26 @@ describe('WorkbookParserService', () => {
     expect(result.classes.rows).toHaveLength(2);
   });
 
+  it('reads the optional Roll Number column without flagging it as an extra column', async () => {
+    const buffer = await buildFixtureWorkbook({
+      StudentsExtraHeaders: ['Roll Number'],
+      Students: [{ 'Student Name': 'Aarav Iyer', 'Roll Number': 12 }],
+    });
+
+    const result = await service.parse(buffer);
+
+    expect(result.students.extraColumns).toEqual([]);
+    expect(result.students.rows[0].cells['Roll Number']).toBe('12');
+  });
+
+  it('still accepts older templates that have no Roll Number column', async () => {
+    const buffer = await buildFixtureWorkbook({ Students: [{ 'Student Name': 'Aarav Iyer' }] });
+
+    const result = await service.parse(buffer);
+
+    expect(result.students.rows[0].cells['Roll Number']).toBeUndefined();
+  });
+
   it('captures unrecognized extra columns without failing', async () => {
     const workbook = new ExcelJS.Workbook();
     workbook.addWorksheet('Instructions').addRow(['Read me']);

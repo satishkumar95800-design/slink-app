@@ -53,6 +53,13 @@ enum ReportType {
   report_card
 }
 
+enum AttendanceStatus {
+  present
+  absent
+  late
+  leave
+}
+
 enum StudentNoteType {
   note
   mom
@@ -199,6 +206,8 @@ model Tenant {
   timetableSlots           TimetableSlot[]
   paymentClaims            PaymentClaim[]
   studentNotes             StudentNote[]
+  attendanceRecords        AttendanceRecord[]
+  schoolHolidays           SchoolHoliday[]
 
   @@map("tenants")
 }
@@ -230,6 +239,7 @@ model User {
   timetableSlots   TimetableSlot[]
   submittedClaims  PaymentClaim[]  @relation("PaymentClaimSubmitter")
   reviewedClaims   PaymentClaim[]  @relation("PaymentClaimReviewer")
+  markedAttendance AttendanceRecord[] @relation("AttendanceMarkedBy")
   authoredStudentNotes StudentNote[]
 
   @@unique([tenantId, phone])
@@ -262,6 +272,8 @@ model Student {
   tenantId        String      @map("tenant_id") @db.Uuid
   name            String
   admissionNo     String      @map("admission_no")
+  // Optional class roll number; attendance lists sort by it, then name.
+  rollNo          String?     @map("roll_no")
   dob             DateTime?   @db.Date
   gender          Gender?
   bloodGroup      BloodGroup? @map("blood_group")
@@ -283,6 +295,7 @@ model Student {
   customFieldValues StudentCustomFieldValue[]
   paymentClaims     PaymentClaim[]
   notes             StudentNote[]
+  attendance        AttendanceRecord[]
 
   @@unique([tenantId, admissionNo])
   @@index([tenantId])
@@ -323,6 +336,7 @@ model Class {
   reports            Report[]
   receipts           Receipt[]
   timetableSlots     TimetableSlot[]
+  attendanceRecords  AttendanceRecord[]
 
   @@unique([tenantId, name, section, academicYear])
   @@index([tenantId])
@@ -609,6 +623,7 @@ model Receipt {
   recordedByUser User?               @relation("ReceiptRecordedBy", fields: [recordedBy], references: [id])
   discountType   DiscountType?       @relation(fields: [discountTypeId], references: [id])
   allocations    ReceiptAllocation[]
+  paymentClaim   PaymentClaim?
 
   @@unique([tenantId, receiptNumber])
   @@index([tenantId, paidOn])
@@ -656,6 +671,9 @@ model PaymentClaim {
   reviewedBy    String?            @map("reviewed_by") @db.Uuid
   reviewedAt    DateTime?          @map("reviewed_at")
   reviewNote    String?            @map("review_note")
+  // Receipt recorded when the claim was approved. Null for pending/rejected claims
+  // and for claims approved before this column existed.
+  receiptId     String?            @unique @map("receipt_id") @db.Uuid
   createdAt     DateTime           @default(now()) @map("created_at")
 
   tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -663,6 +681,7 @@ model PaymentClaim {
   studentFee StudentFee @relation(fields: [studentFeeId], references: [id], onDelete: Cascade)
   submitter  User       @relation("PaymentClaimSubmitter", fields: [submittedBy], references: [id], onDelete: Cascade)
   reviewer   User?      @relation("PaymentClaimReviewer", fields: [reviewedBy], references: [id])
+  receipt    Receipt?   @relation(fields: [receiptId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([studentFeeId])
@@ -938,4 +957,44 @@ model AccountantDocument {
   @@index([tenantId])
   @@index([categoryId])
   @@map("accountant_documents")
+}
+
+/// Daily attendance: one row per student per school day (docs/SPEC-improvements.md §2.1).
+model AttendanceRecord {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String           @map("tenant_id") @db.Uuid
+  classId          String           @map("class_id") @db.Uuid
+  studentId        String           @map("student_id") @db.Uuid
+  date             DateTime         @db.Date
+  status           AttendanceStatus
+  markedBy         String           @map("marked_by") @db.Uuid
+  markedAt         DateTime         @default(now()) @map("marked_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  note             String?
+  // Whether parents currently hold an "absent" push for this day; drives
+  // once-per-day alerts and the correction push when changed back.
+  absenceAlertSent Boolean          @default(false) @map("absence_alert_sent")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  marker  User    @relation("AttendanceMarkedBy", fields: [markedBy], references: [id])
+
+  @@unique([tenantId, studentId, date])
+  @@index([tenantId, classId, date])
+  @@map("attendance_records")
+}
+
+/// Days excluded from attendance (no marking expected, not counted as unmarked).
+model SchoolHoliday {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  date      DateTime @db.Date
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, date])
+  @@map("school_holidays")
 }

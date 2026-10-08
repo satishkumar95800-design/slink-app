@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Section } from '../../../components/marketing/section';
 
-export const metadata: Metadata = { title: 'Data Deletion — Slink' };
+export const metadata: Metadata = { title: 'Data Deletion — Schoolinkd' };
 
 export default function DataDeletionPage() {
   return (
@@ -10,7 +10,7 @@ export default function DataDeletionPage() {
         <h1 className="text-3xl font-bold text-gray-900">Account &amp; Data Deletion</h1>
 
         <p className="mt-8 text-gray-700">
-          You can request deletion of your Slink account and the personal data associated with it at any time.
+          You can request deletion of your Schoolinkd account and the personal data associated with it at any time.
           This currently requires a request to our support team (there is no self-service delete option in the
           app yet).
         </p>

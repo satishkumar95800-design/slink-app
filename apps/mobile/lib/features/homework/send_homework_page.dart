@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../shared/models/api_exception.dart';
 import '../../shared/services/broadcast_repository.dart';
 import '../../shared/services/files_repository.dart';
 import '../../shared/widgets/error_banner.dart';
@@ -32,7 +34,7 @@ class _SendHomeworkPageState extends ConsumerState<SendHomeworkPage> {
   }
 
   Future<void> _pickPhoto() async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 85);
+    final picked = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 80, maxWidth: 1920, maxHeight: 1920);
     if (picked != null) {
       setState(() {
         _photo = File(picked.path);
@@ -65,7 +67,7 @@ class _SendHomeworkPageState extends ConsumerState<SendHomeworkPage> {
         Navigator.of(context).pop();
       }
     } catch (e) {
-      setState(() => _error = 'Could not send the homework. $e');
+      setState(() => _error = 'Could not send the homework. ${_describeError(e)}');
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
@@ -139,3 +141,9 @@ class _SendHomeworkPageState extends ConsumerState<SendHomeworkPage> {
     );
   }
 }
+
+String _describeError(Object e) => switch (e) {
+      ApiException() => e.message,
+      DioException() => ApiException.fromDioError(e).message,
+      _ => 'Please try again.',
+    };

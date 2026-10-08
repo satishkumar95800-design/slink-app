@@ -1,3 +1,5 @@
+import { formatRupees } from '../../lib/format';
+
 export interface ReceiptDetail {
   id: string;
   receiptNumber: string;
@@ -21,10 +23,6 @@ const METHOD_LABELS: Record<string, string> = {
   demand_draft: 'Demand Draft',
   gateway: 'Online Payment',
 };
-
-function formatCurrency(amount: string) {
-  return `₹${parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-}
 
 /** Printable receipt layout, shared by the authenticated (/receipts/[id]/print)
  * and public token-gated (/receipts/public/[token]) views — same document,
@@ -83,7 +81,7 @@ export function ReceiptCard({ receipt }: { receipt: ReceiptDetail }) {
 
       <div className="mt-6 rounded-lg bg-gray-50 p-4">
         <p className="text-sm text-gray-500">Amount Received</p>
-        <p className="text-2xl font-bold text-gray-900">{formatCurrency(receipt.amount)}</p>
+        <p className="text-2xl font-bold text-gray-900">{formatRupees(receipt.amount)}</p>
       </div>
 
       {receipt.notes && (

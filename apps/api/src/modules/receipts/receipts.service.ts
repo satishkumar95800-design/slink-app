@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import type { ActiveUser } from '../../common/types/active-user.type';
+import { formatRupees } from '../../common/format';
 
 /** Marks a signed JWT as a receipt-link token, not a session access token. */
 const RECEIPT_LINK_PURPOSE = 'receipt-link';
@@ -239,7 +240,7 @@ export class ReceiptsService {
     if (parents.length === 0) return;
 
     const url = await this.signPublicLink(params.tenantId, params.receiptId);
-    const amountLabel = `₹${params.amount.toFixed(2)}`;
+    const amountLabel = formatRupees(params.amount);
     const smsBody = `Your payment receipt for ${params.studentName} (${amountLabel}) is ready. View/download: ${url}`;
 
     await Promise.all(
@@ -277,11 +278,19 @@ export class ReceiptsService {
    */
   async getRecent(tenantId: string, user: ActiveUser, limit: number) {
     const { data } = await this.findAll(tenantId, user, { limit });
+    // Approved payment claims are recorded as ordinary offline receipts; the
+    // dashboard badges those "Claim" instead of their underlying method.
+    const fromClaims = await this.prisma.paymentClaim.findMany({
+      where: { tenantId, receiptId: { in: data.map((r) => r.id) } },
+      select: { receiptId: true },
+    });
+    const claimReceiptIds = new Set(fromClaims.map((c) => c.receiptId));
     return data.map((r) => ({
       id: r.id,
       studentName: r.student.name,
       amount: r.amount,
       method: r.method,
+      source: claimReceiptIds.has(r.id) ? ('claim' as const) : ('direct' as const),
       paidOn: r.paidOn,
     }));
   }

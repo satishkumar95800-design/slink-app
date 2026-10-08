@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { getSession } from '../../lib/auth';
+import { strings } from '../../lib/strings';
 
 interface NavItem {
   label: string;
@@ -23,6 +24,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Payments', href: '/admin/payments', icon: '💳', hiddenForRoles: ['teacher'] },
   { label: 'Fee Reports', href: '/admin/fee-reports', icon: '📈', hiddenForRoles: ['teacher'] },
   { label: 'Reports', href: '/admin/reports', icon: '📊' },
+  { label: strings.attendance.navLabel, href: '/admin/attendance', icon: '✅', hiddenForRoles: ['teacher', 'accounts'] },
   { label: 'Documents', href: '/admin/documents', icon: '🗂️', hiddenForRoles: ['teacher'] },
   { label: 'Timetable', href: '/admin/timetable', icon: '🗓️', hiddenForRoles: ['teacher'] },
   { label: 'Payment Claims', href: '/admin/payment-claims', icon: '🧾', hiddenForRoles: ['teacher'] },
@@ -60,7 +62,7 @@ export function Sidebar({ tenant, open = false, onClose }: SidebarProps) {
             S
           </div>
         )}
-        <span className="truncate text-sm font-bold text-white tracking-tight">{tenant?.name ?? 'School Connect'}</span>
+        <span className="truncate text-sm font-bold text-white tracking-tight">{tenant?.name ?? strings.product.name}</span>
       </div>
       <nav className="flex-1 overflow-y-auto py-4 px-3">
         <ul className="space-y-0.5">

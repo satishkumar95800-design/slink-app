@@ -3,9 +3,9 @@ import Link from 'next/link';
 import { Container } from '../../components/marketing/container';
 
 export const metadata: Metadata = {
-  title: 'Slink — School Management, Simplified',
+  title: 'Schoolinkd — School Management, Simplified',
   description:
-    'Slink helps schools automate fees, reports, notices, and homework — a mobile app for parents and teachers, and a web console for administrators.',
+    'Schoolinkd helps schools automate fees, reports, notices, and homework — a mobile app for parents and teachers, and a web console for administrators.',
 };
 
 const NAV_LINKS = [
@@ -37,7 +37,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal text-sm font-extrabold text-white">
               S
             </div>
-            <span className="text-sm font-extrabold tracking-tight text-gray-900">Slink</span>
+            <span className="text-sm font-extrabold tracking-tight text-gray-900">Schoolinkd</span>
           </Link>
           <nav className="hidden items-center gap-6 sm:flex">
             {NAV_LINKS.map((link) => (
@@ -71,10 +71,10 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal text-sm font-extrabold text-white">
                 S
               </div>
-              <span className="text-sm font-extrabold tracking-tight text-gray-900">Slink</span>
+              <span className="text-sm font-extrabold tracking-tight text-gray-900">Schoolinkd</span>
             </div>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-gray-600">
-              Slink pairs a parent &amp; teacher mobile app with an admin web console — fees, progress reports,
+              Schoolinkd pairs a parent &amp; teacher mobile app with an admin web console — fees, progress reports,
               report cards, notices, homework, and bulk onboarding, all in one connected system built for schools.
             </p>
           </div>

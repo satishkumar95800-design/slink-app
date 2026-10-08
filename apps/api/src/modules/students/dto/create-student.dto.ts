@@ -12,8 +12,10 @@ import {
 import { Transform } from 'class-transformer';
 import { GuardianRelation, BloodGroup, Caste, Gender } from '@prisma/client';
 import { BLOOD_GROUP_DISPLAY_TO_ENUM, BLOOD_GROUP_OPTIONS } from '../../../common/blood-group';
+import { CleanName } from '../../../common/decorators/clean-name.decorator';
 
 export class CreateStudentDto {
+  @CleanName()
   @IsString()
   @MinLength(2)
   @MaxLength(150)
@@ -23,6 +25,12 @@ export class CreateStudentDto {
   @MinLength(1)
   @MaxLength(50)
   admissionNo: string;
+
+  /** Optional class roll number, e.g. "12". Attendance lists sort by it. */
+  @IsString()
+  @MaxLength(20)
+  @IsOptional()
+  rollNo?: string;
 
   /** ISO 8601 date, e.g. "2010-03-15" */
   @IsDateString()

@@ -71,6 +71,7 @@ pnpm db:generate   # regenerates the Prisma client
 | reports | done | Teacher → student → parent progress reports, read receipts |
 | notifications | done | FCM push (multicast), Twilio SMS, broadcast, audit log, FCM token management |
 | files | done | S3 upload/download, presigned URLs, tenant-isolated key paths |
+| attendance | done | Daily class attendance (bulk upsert), absent/correction pushes, school holidays, summaries + CSV report |
 
 ## Tech decisions (do not revisit without discussion)
 

@@ -5,13 +5,7 @@ import {
   ValidClassRow,
   ValidStudentRow,
 } from '../types';
-import {
-  EMAIL_REGEX,
-  PHONE_REGEX,
-  isValidCalendarDate,
-  issue,
-  resolveClass,
-} from './shared';
+import { cleanName, EMAIL_REGEX, issue, isValidCalendarDate, PHONE_REGEX, pushLowercaseNameWarning, resolveClass } from './shared';
 import {
   BLOOD_GROUP_TEMPLATE_OPTIONS,
   CASTE_TEMPLATE_OPTIONS,
@@ -39,23 +33,27 @@ export function validateStudentsTab(
   const parentPhoneRows = new Map<string, number[]>();
 
   for (const row of tab.rows) {
-    const name = row.cells['Student Name'];
+    const name = cleanName(row.cells['Student Name']);
     const admissionNo = row.cells['Admission Number'];
     const className = row.cells['Class Name'];
     const section = row.cells['Section'];
     const dob = row.cells['Date of Birth'];
-    const parentName = row.cells['Parent Name'];
+    const parentName = cleanName(row.cells['Parent Name']);
     const parentRelationRaw = row.cells['Guardian 1 Relation'];
     const parentPhone = row.cells['Parent Mobile Number'];
     const parentEmail = row.cells['Parent Email'];
     const parentProfession = row.cells['Parent Profession'];
-    const guardian2Name = row.cells['Guardian 2 Name'];
+    const guardian2Name = cleanName(row.cells['Guardian 2 Name']);
     const guardian2RelationRaw = row.cells['Guardian 2 Relation'];
     const guardian2Phone = row.cells['Guardian 2 Mobile Number'];
     const guardian2Email = row.cells['Guardian 2 Email'];
     const guardian2Profession = row.cells['Guardian 2 Profession'];
     const bloodGroupRaw = row.cells['Blood Group'];
     const casteRaw = row.cells['Caste'];
+    const rollNo = row.cells['Roll Number'] ?? '';
+    pushLowercaseNameWarning(warnings, TAB, row.rowNumber, 'Student Name', name);
+    pushLowercaseNameWarning(warnings, TAB, row.rowNumber, 'Parent Name', parentName);
+    pushLowercaseNameWarning(warnings, TAB, row.rowNumber, 'Guardian 2 Name', guardian2Name);
 
     let hasError = false;
 
@@ -254,6 +252,7 @@ export function validateStudentsTab(
       row: row.rowNumber,
       name,
       admissionNo,
+      rollNo: rollNo || undefined,
       classKey,
       dob: dob || undefined,
       bloodGroup: bloodGroupRaw ? BLOOD_GROUP_DISPLAY_TO_ENUM[bloodGroupRaw] : undefined,

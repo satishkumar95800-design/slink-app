@@ -1,4 +1,4 @@
-type BadgeVariant = 'green' | 'red' | 'yellow' | 'blue' | 'gray' | 'orange';
+type BadgeVariant = 'green' | 'red' | 'yellow' | 'blue' | 'gray' | 'orange' | 'purple';
 
 const variantClasses: Record<BadgeVariant, string> = {
   green: 'bg-green-100 text-green-800',
@@ -7,6 +7,7 @@ const variantClasses: Record<BadgeVariant, string> = {
   blue: 'bg-teal/10 text-teal',
   gray: 'bg-gray-100 text-gray-700',
   orange: 'bg-orange-100 text-orange-800',
+  purple: 'bg-purple-100 text-purple-800',
 };
 
 interface BadgeProps {

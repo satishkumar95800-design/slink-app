@@ -7,6 +7,8 @@ import '../../shared/widgets/primary_button.dart';
 import '../fees/fees_providers.dart';
 import '../fees/fees_repository.dart';
 import 'payment_controller.dart';
+import '../../core/format/money.dart';
+import '../../core/strings.dart';
 
 class CheckoutPage extends ConsumerStatefulWidget {
   final String feeId;
@@ -93,7 +95,7 @@ class _CheckoutBody extends ConsumerWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(item.label),
-                          Text('₹${item.amount.toStringAsFixed(2)}'),
+                          Text(formatRupees(item.amount)),
                         ],
                       ),
                     ),
@@ -103,7 +105,7 @@ class _CheckoutBody extends ConsumerWidget {
                     children: [
                       const Text('Amount due', style: TextStyle(fontWeight: FontWeight.bold)),
                       Text(
-                        '₹${fee.outstanding.toStringAsFixed(2)}',
+                        formatRupees(fee.outstanding),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -134,7 +136,7 @@ class _CheckoutBody extends ConsumerWidget {
             )
           else
             PrimaryButton(
-              label: 'Pay ₹${fee.outstanding.toStringAsFixed(2)}',
+              label: AppStrings.payAmount(formatRupees(fee.outstanding)),
               isLoading: paymentState.status == PaymentStatus.creatingOrder ||
                   paymentState.status == PaymentStatus.awaitingCheckout,
               onPressed: () => ref.read(paymentControllerProvider.notifier).payFor(fee.id),

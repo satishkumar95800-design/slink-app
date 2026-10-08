@@ -10,6 +10,7 @@ import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { Badge } from '../../../components/ui/badge';
 import { useToast } from '../../../components/ui/toast';
+import { formatRupees } from '../../../lib/format';
 
 type ClaimStatus = 'pending' | 'approved' | 'rejected';
 type ClaimMode = 'cash' | 'cheque' | 'bank_transfer' | 'upi';
@@ -49,10 +50,6 @@ const STATUS_OPTIONS = [
   { value: 'rejected', label: 'Rejected' },
   { value: 'all', label: 'All' },
 ];
-
-function formatCurrency(amount: string) {
-  return `₹${parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-}
 
 export default function PaymentClaimsPage() {
   const { toast } = useToast();
@@ -207,7 +204,7 @@ export default function PaymentClaimsPage() {
                   <div className="text-sm text-gray-600">
                     Claimed amount:{' '}
                     <span className="font-medium text-gray-900">
-                      {claim.claimedAmount ? formatCurrency(claim.claimedAmount) : 'not specified'}
+                      {claim.claimedAmount ? formatRupees(claim.claimedAmount) : 'not specified'}
                     </span>
                     {claim.claimedDate && (
                       <span className="text-gray-400">
@@ -226,7 +223,7 @@ export default function PaymentClaimsPage() {
                     {new Date(claim.createdAt).toLocaleDateString('en-IN')}
                   </p>
                   <p className="text-xs text-gray-400">
-                    Outstanding on fee: {formatCurrency(
+                    Outstanding on fee: {formatRupees(
                       (parseFloat(claim.studentFee.amountDue) - parseFloat(claim.studentFee.amountPaid)).toFixed(2),
                     )}
                   </p>

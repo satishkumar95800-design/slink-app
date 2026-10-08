@@ -112,6 +112,7 @@ export class StudentsService {
         tenantId,
         name: dto.name,
         admissionNo: dto.admissionNo,
+        rollNo: dto.rollNo?.trim() || null,
         dob: dto.dob ? new Date(dto.dob) : null,
         gender: dto.gender ?? null,
         bloodGroup: dto.bloodGroup ?? null,
@@ -172,6 +173,8 @@ export class StudentsService {
       data: {
         name: dto.name,
         classId: dto.classId,
+        // "" clears the roll number; omitted leaves it unchanged.
+        rollNo: dto.rollNo === undefined ? undefined : dto.rollNo.trim() || null,
         dob: dto.dob ? new Date(dto.dob) : undefined,
         gender: dto.gender,
         bloodGroup: dto.bloodGroup,

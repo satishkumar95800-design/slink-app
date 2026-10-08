@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../shared/models/receipt.dart';
 import 'receipts_repository.dart';
+import '../../core/format/money.dart';
 
 const _methodLabels = {
   'cash': 'Cash',
@@ -73,7 +74,7 @@ class _ReceiptDetailPageState extends ConsumerState<ReceiptDetailPage> {
                 const Divider(height: 32),
                 Text('Amount Received', style: Theme.of(context).textTheme.bodySmall),
                 Text(
-                  '₹${receipt.amount.toStringAsFixed(2)}',
+                  formatRupees(receipt.amount),
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 if (receipt.discountAmount != null) ...[
@@ -93,7 +94,7 @@ class _ReceiptDetailPageState extends ConsumerState<ReceiptDetailPage> {
                               : 'Discount applied',
                           style: Theme.of(context).textTheme.titleSmall,
                         ),
-                        Text('−₹${receipt.discountAmount!.toStringAsFixed(2)}'),
+                        Text('−${formatRupees(receipt.discountAmount)}'),
                         if (receipt.discountNote != null) ...[
                           const SizedBox(height: 4),
                           Text(

@@ -33,6 +33,30 @@ export function classKey(
   return `${name.trim().toLowerCase()}|${section.trim().toLowerCase()}|${academicYear.trim()}`;
 }
 
+/** Trims and collapses runs of whitespace inside a person's name ("  aarav   iyer " -> "aarav iyer"). */
+export function cleanName(raw: string | undefined): string {
+  return (raw ?? '').replace(/\s+/g, ' ').trim();
+}
+
+export const LOWERCASE_NAME_WARNING =
+  'is all lowercase — check the capitalisation (e.g. "Aarav Iyer"); it will be saved exactly as written';
+
+/** True for names with letters and no capitals, e.g. "aarav iyer". Names in scripts without case never match. */
+export function isAllLowercaseName(name: string): boolean {
+  return name !== name.toUpperCase() && name === name.toLowerCase();
+}
+
+/** Non-blocking warning for an all-lowercase name; stored names are never re-cased. */
+export function pushLowercaseNameWarning(
+  warnings: ImportIssue[],
+  tab: ImportTabName,
+  row: number,
+  column: string,
+  name: string,
+): void {
+  if (name && isAllLowercaseName(name)) warnings.push(issue(tab, row, column, LOWERCASE_NAME_WARNING));
+}
+
 export function normalizedName(name: string): string {
   return name.trim().toLowerCase();
 }

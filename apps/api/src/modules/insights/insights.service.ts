@@ -220,20 +220,34 @@ export class InsightsService {
    * three-month aggregate is cheap on every dashboard load.
    */
   /**
-   * Whole-tenant fee totals for the admin dashboard cards, in rupees.
-   * Outstanding is summed per assignment (so an overpaid row can't offset
-   * another student's balance) and excludes waived fees, matching
-   * StudentFeesService.getOutstanding.
+   * Admin dashboard fee cards, in rupees, for the school's current academic
+   * year. There is no explicit "current year" setting, so it's the newest
+   * academicYear label ("YYYY-YY", sorts lexically) among the school's fee
+   * structures. Collected/outstanding come from the same student_fees rows the
+   * Student Fees and Fee Reports screens sum, so the numbers match exactly.
+   * Outstanding is summed per assignment (an overpaid row can't offset another
+   * student's balance) and excludes waived fees, like StudentFeesService.getOutstanding.
    */
   async getFeeTotals(tenantId: string) {
+    const latest = await this.prisma.feeStructure.findFirst({
+      where: { tenantId },
+      orderBy: { academicYear: 'desc' },
+      select: { academicYear: true },
+    });
+    if (!latest) return { academicYear: null, collected: 0, outstanding: 0 };
+
     const [row] = await this.prisma.$queryRaw<{ collected: Prisma.Decimal | null; outstanding: Prisma.Decimal | null }[]>`
       SELECT
-        SUM(amount_paid) AS collected,
-        SUM(GREATEST(amount_due - amount_paid, 0)) FILTER (WHERE status <> 'waived') AS outstanding
-      FROM student_fees
-      WHERE tenant_id = ${tenantId}::uuid
+        SUM(sf.amount_paid) AS collected,
+        SUM(GREATEST(sf.amount_due - sf.amount_paid, 0)) FILTER (WHERE sf.status <> 'waived') AS outstanding
+      FROM student_fees sf
+      JOIN fee_structures fs ON fs.id = sf.fee_structure_id
+      WHERE sf.tenant_id = ${tenantId}::uuid
+        AND fs.tenant_id = ${tenantId}::uuid
+        AND fs.academic_year = ${latest.academicYear}
     `;
     return {
+      academicYear: latest.academicYear,
       collected: Number(row?.collected ?? 0),
       outstanding: Number(row?.outstanding ?? 0),
     };

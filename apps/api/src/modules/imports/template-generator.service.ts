@@ -7,6 +7,7 @@ import {
   COMMON_FEE_COMPONENTS,
   DISPLAY_HEADERS,
   GUARDIAN_RELATION_TEMPLATE_OPTIONS,
+  OPTIONAL_TAB_HEADERS,
   TAB_HEADERS,
   YES_NO_TEMPLATE_OPTIONS,
 } from './tab-schema';
@@ -23,7 +24,7 @@ const VALIDATION_ROW_COUNT = 500;
 export class TemplateGeneratorService {
   async generate(): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'School Connect';
+    workbook.creator = 'Schoolinkd';
 
     this.buildInstructionsTab(workbook);
     this.buildClassesTab(workbook);
@@ -41,7 +42,7 @@ export class TemplateGeneratorService {
     sheet.columns = [{ width: 100 }];
 
     const lines = [
-      'School Connect — Bulk Onboarding Template',
+      'Schoolinkd — Bulk Onboarding Template',
       '',
       'Fill order (Students, Teachers, and Fee Structures reference Classes; Users reference Classes for Assigned Class):',
       '  1. Classes',
@@ -120,7 +121,7 @@ export class TemplateGeneratorService {
     const sheet = this.addDataSheet(
       workbook,
       'Students',
-      DISPLAY_HEADERS.Students,
+      [...DISPLAY_HEADERS.Students, ...(OPTIONAL_TAB_HEADERS.Students ?? [])],
     );
     this.addExampleRow(sheet, [
       'Amit Kumar',
@@ -140,6 +141,7 @@ export class TemplateGeneratorService {
       'Business',
       'A+',
       'General',
+      '12',
     ]);
 
     const guardian1RelationColumn = TAB_HEADERS.Students.indexOf('Guardian 1 Relation') + 1;

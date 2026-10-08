@@ -2,8 +2,10 @@ import { IsString, IsUUID, IsOptional, IsEnum, MinLength, MaxLength, IsDateStrin
 import { Transform } from 'class-transformer';
 import { BloodGroup, Caste, Gender } from '@prisma/client';
 import { BLOOD_GROUP_DISPLAY_TO_ENUM, BLOOD_GROUP_OPTIONS } from '../../../common/blood-group';
+import { CleanName } from '../../../common/decorators/clean-name.decorator';
 
 export class UpdateStudentDto {
+  @CleanName()
   @IsString()
   @MinLength(2)
   @MaxLength(150)
@@ -13,6 +15,12 @@ export class UpdateStudentDto {
   @IsUUID()
   @IsOptional()
   classId?: string;
+
+  /** Optional class roll number, e.g. "12". Attendance lists sort by it. */
+  @IsString()
+  @MaxLength(20)
+  @IsOptional()
+  rollNo?: string;
 
   @IsDateString()
   @IsOptional()

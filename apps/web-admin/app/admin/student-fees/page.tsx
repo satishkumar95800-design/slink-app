@@ -14,6 +14,7 @@ import { Modal } from '../../../components/ui/modal';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
+import { formatRupees } from '../../../lib/format';
 
 type FeeStatus = 'pending' | 'partial' | 'paid' | 'overdue' | 'waived';
 
@@ -92,10 +93,6 @@ const statusVariant = (s: FeeStatus): 'green' | 'red' | 'yellow' | 'blue' | 'gra
   };
   return m[s];
 };
-
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-}
 
 export default function StudentFeesPage() {
   const { toast } = useToast();
@@ -208,7 +205,7 @@ export default function StudentFeesPage() {
 
   const structureOptions = structures.map((s) => ({
     value: s.id,
-    label: `${s.name} — ${formatCurrency(s.totalAmount)}`,
+    label: `${s.name} — ${formatRupees(s.totalAmount)}`,
   }));
 
   const statusOptions = [
@@ -275,10 +272,10 @@ export default function StudentFeesPage() {
                     <p className="text-xs text-gray-500">{f.student?.admissionNo ?? ''}</p>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{f.feeStructure?.name ?? '—'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{formatCurrency(f.amountDue)}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{formatCurrency(f.amountPaid)}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{formatRupees(f.amountDue)}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{formatRupees(f.amountPaid)}</td>
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                    {formatCurrency(Math.max(0, f.amountDue - f.amountPaid))}
+                    {formatRupees(Math.max(0, f.amountDue - f.amountPaid))}
                   </td>
                   <td className="px-6 py-4">
                     <Badge variant={statusVariant(f.status)}>{f.status}</Badge>
@@ -347,7 +344,7 @@ export default function StudentFeesPage() {
               <p className="font-medium text-gray-900">{selectedFee.student?.name}</p>
               <p className="text-gray-600">{selectedFee.feeStructure?.name}</p>
               <p className="mt-1 text-gray-500">
-                Balance: <span className="font-semibold text-gray-900">{formatCurrency(Math.max(0, selectedFee.amountDue - selectedFee.amountPaid))}</span>
+                Balance: <span className="font-semibold text-gray-900">{formatRupees(Math.max(0, selectedFee.amountDue - selectedFee.amountPaid))}</span>
               </p>
             </div>
             <div className="space-y-3">
@@ -355,7 +352,7 @@ export default function StudentFeesPage() {
               {allocationFields.fields.map((field, index) => (
                 <div key={field.id} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                   <label htmlFor={`allocation-${index}`} className="text-sm text-gray-600">
-                    {field.label} <span className="text-gray-400">(balance {formatCurrency(field.balance)})</span>
+                    {field.label} <span className="text-gray-400">(balance {formatRupees(field.balance)})</span>
                   </label>
                   <Input
                     id={`allocation-${index}`}

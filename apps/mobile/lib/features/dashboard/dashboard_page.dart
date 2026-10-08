@@ -7,6 +7,10 @@ import '../../shared/widgets/authenticated_scaffold.dart';
 import '../auth/session_controller.dart';
 import '../classes/classes_repository.dart';
 import 'students_repository.dart';
+import '../../core/strings.dart';
+import '../attendance/attendance_outbox.dart';
+import '../attendance/attendance_repository.dart';
+import '../attendance/attendance_status_colors.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -94,6 +98,7 @@ class _TeacherDashboardBody extends ConsumerWidget {
           const SizedBox(height: 8),
           Text('Signed in as ${user.name}', style: Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height: 24),
+          const _MarkAttendanceCard(),
           if (isClassTeacherOfAny) ...[
             _NavCard(
               icon: Icons.campaign_outlined,
@@ -184,6 +189,16 @@ class _DashboardBody extends ConsumerWidget {
             Text(children.first.studentClass?.name ?? ''),
             const SizedBox(height: 24),
           ],
+          // With "All" selected, one attendance card per child; otherwise just the selected child.
+          for (final child in children.where((c) => selectedChildId == null || c.id == selectedChildId)) ...[
+            _NavCard(
+              icon: Icons.event_available_outlined,
+              title: children.length > 1 ? '${AppStrings.attendance} · ${child.name}' : AppStrings.attendance,
+              subtitle: AppStrings.attendanceSubtitle,
+              onTap: () => context.push('/attendance/student/${child.id}'),
+            ),
+            const SizedBox(height: 12),
+          ],
           _NavCard(
             icon: Icons.receipt_long,
             title: 'Fees',
@@ -239,6 +254,57 @@ class _NavCard extends StatelessWidget {
         subtitle: Text(subtitle),
         trailing: const Icon(Icons.chevron_right),
         onTap: onTap,
+      ),
+    );
+  }
+}
+
+/// First teacher card: today's attendance, ticked once every class is submitted.
+/// Hidden when the teacher has no class to mark. Watching the outbox also
+/// starts its retry loop for anything queued offline.
+class _MarkAttendanceCard extends ConsumerWidget {
+  const _MarkAttendanceCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final classesAsync = ref.watch(myAttendanceClassesProvider);
+    final waiting = ref.watch(attendanceOutboxProvider).any((p) => p.rejectedReason == null);
+    final data = classesAsync.valueOrNull;
+    if (data == null && !classesAsync.isLoading) return const SizedBox.shrink();
+    if (data != null && data.classes.isEmpty) return const SizedBox.shrink();
+
+    final done = data?.allDone ?? false;
+    final String subtitle;
+    if (waiting) {
+      subtitle = AppStrings.pendingSend;
+    } else if (data?.holidayName != null) {
+      subtitle = AppStrings.holidayToday(data!.holidayName!);
+    } else if (done) {
+      subtitle = AppStrings.doneForToday;
+    } else if (data != null && data.classes.length > 1 && data.doneCount > 0) {
+      subtitle = AppStrings.doneForClasses(data.doneCount, data.classes.length);
+    } else {
+      subtitle = AppStrings.markAttendanceSubtitle;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Card(
+        child: ListTile(
+          minVerticalPadding: 16,
+          leading: Icon(
+            done ? Icons.check_circle : Icons.fact_check_outlined,
+            size: 32,
+            color: done ? AttendanceColors.present : null,
+          ),
+          title: Text(AppStrings.markAttendance, style: Theme.of(context).textTheme.titleMedium),
+          subtitle: Text(subtitle),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () async {
+            await context.push('/attendance/mark');
+            ref.invalidate(myAttendanceClassesProvider);
+          },
+        ),
       ),
     );
   }

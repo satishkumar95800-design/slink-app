@@ -11,6 +11,8 @@ const TENANT_ID = 'tenant-uuid';
 const mockPrisma = {
   studentFee: { groupBy: jest.fn() },
   student: { findMany: jest.fn() },
+  feeStructure: { findFirst: jest.fn() },
+  $queryRaw: jest.fn(),
 };
 
 describe('InsightsService', () => {
@@ -104,6 +106,40 @@ describe('InsightsService', () => {
           }),
         }),
       );
+    });
+  });
+
+  describe('getFeeTotals', () => {
+    it('totals the newest academic year that has fee structures, scoped to the tenant', async () => {
+      mockPrisma.feeStructure.findFirst.mockResolvedValue({ academicYear: '2025-26' });
+      mockPrisma.$queryRaw.mockResolvedValue([
+        { collected: new Prisma.Decimal('105200.00'), outstanding: new Prisma.Decimal('82200.00') },
+      ]);
+
+      const result = await service.getFeeTotals(TENANT_ID);
+
+      expect(mockPrisma.feeStructure.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { tenantId: TENANT_ID }, orderBy: { academicYear: 'desc' } }),
+      );
+      const [, ...params] = mockPrisma.$queryRaw.mock.calls[0];
+      expect(params).toEqual([TENANT_ID, TENANT_ID, '2025-26']);
+      expect(result).toEqual({ academicYear: '2025-26', collected: 105200, outstanding: 82200 });
+    });
+
+    it('returns zeros (not nulls) when the school has no fee structures yet', async () => {
+      mockPrisma.feeStructure.findFirst.mockResolvedValue(null);
+
+      const result = await service.getFeeTotals(TENANT_ID);
+
+      expect(result).toEqual({ academicYear: null, collected: 0, outstanding: 0 });
+      expect(mockPrisma.$queryRaw).not.toHaveBeenCalled();
+    });
+
+    it('returns zeros when the year has no assignments (SUM over no rows is NULL)', async () => {
+      mockPrisma.feeStructure.findFirst.mockResolvedValue({ academicYear: '2026-27' });
+      mockPrisma.$queryRaw.mockResolvedValue([{ collected: null, outstanding: null }]);
+
+      expect(await service.getFeeTotals(TENANT_ID)).toEqual({ academicYear: '2026-27', collected: 0, outstanding: 0 });
     });
   });
 });

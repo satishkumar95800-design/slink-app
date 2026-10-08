@@ -3,6 +3,7 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../shared/models/api_exception.dart';
 import '../../shared/models/payment_order.dart';
 import 'payments_repository.dart';
+import '../../core/strings.dart';
 
 enum PaymentStatus { idle, creatingOrder, awaitingCheckout, confirming, success, failed, timedOut }
 
@@ -71,7 +72,7 @@ class PaymentController extends StateNotifier<PaymentState> {
       'amount': order.amountInPaise,
       'currency': order.currency,
       'order_id': order.gatewayOrderId,
-      'name': 'slink',
+      'name': AppStrings.appName,
       'description': 'Fee payment — ${order.studentFee.studentName}',
       if (parentPhone != null) 'prefill': {'contact': parentPhone},
     });

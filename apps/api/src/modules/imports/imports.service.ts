@@ -638,6 +638,7 @@ export class ImportsService {
             dob: row.dob ? new Date(row.dob) : existing.dob,
             bloodGroup: row.bloodGroup ?? existing.bloodGroup,
             caste: row.caste ?? existing.caste,
+            rollNo: row.rollNo ?? existing.rollNo,
           },
         });
         studentId = existing.id;
@@ -652,6 +653,7 @@ export class ImportsService {
             dob: row.dob ? new Date(row.dob) : null,
             bloodGroup: row.bloodGroup ?? null,
             caste: row.caste ?? null,
+            rollNo: row.rollNo ?? null,
           },
         });
         studentId = created.id;

@@ -154,4 +154,21 @@ describe('validateUsersTab', () => {
       result.errors.some((e) => e.reason.includes('duplicate email')),
     ).toBe(true);
   });
+
+  it('collapses extra spaces in names and warns (without blocking) when a name is all lowercase', () => {
+    const result = validateUsersTab(
+      makeTab([
+        { 'Full Name': 'jane   doe', Email: 'jane@school.edu', 'Phone Number': '', Role: 'accounts', 'Assigned Class (Teachers only)': '' },
+        { 'Full Name': 'Ravi Kumar', Email: 'ravi@school.edu', 'Phone Number': '', Role: 'accounts', 'Assigned Class (Teachers only)': '' },
+      ]),
+      new Set(),
+    );
+
+    expect(result.errors).toEqual([]);
+    expect(result.validRows.map((r) => r.name)).toEqual(['jane doe', 'Ravi Kumar']);
+    expect(result.warnings).toEqual([
+      expect.objectContaining({ row: 2, column: 'Full Name', reason: expect.stringContaining('all lowercase') }),
+    ]);
+  });
 });
+

@@ -1,5 +1,5 @@
 import { ParsedTab, TabValidation, ValidUserRow } from '../types';
-import { EMAIL_REGEX, PHONE_REGEX, issue, normalizedName } from './shared';
+import { EMAIL_REGEX, PHONE_REGEX, cleanName, issue, normalizedName, pushLowercaseNameWarning } from './shared';
 import { ALLOWED_ROLES } from '../tab-schema';
 
 const TAB = 'Users' as const;
@@ -15,7 +15,8 @@ export function validateUsersTab(
   const seenEmails = new Set<string>();
 
   for (const row of tab.rows) {
-    const name = row.cells['Full Name'];
+    const name = cleanName(row.cells['Full Name']);
+    pushLowercaseNameWarning(warnings, TAB, row.rowNumber, 'Full Name', name);
     const email = row.cells['Email'];
     const phone = row.cells['Phone Number'];
     const roleRaw = row.cells['Role'];

@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import ExcelJS from 'exceljs';
 import { ParsedTab, ParsedWorkbook } from './types';
-import { REQUIRED_TABS, TAB_HEADERS } from './tab-schema';
+import { OPTIONAL_TAB_HEADERS, REQUIRED_TABS, TAB_HEADERS } from './tab-schema';
 
 @Injectable()
 export class WorkbookParserService {
@@ -31,7 +31,7 @@ export class WorkbookParserService {
     return {
       classes: this.parseTab(workbook, 'Classes', TAB_HEADERS.Classes),
       users: this.parseTab(workbook, 'Users', TAB_HEADERS.Users),
-      students: this.parseTab(workbook, 'Students', TAB_HEADERS.Students),
+      students: this.parseTab(workbook, 'Students', TAB_HEADERS.Students, OPTIONAL_TAB_HEADERS.Students),
       feeStructures: this.parseTab(
         workbook,
         'Fee Structures',
@@ -45,6 +45,7 @@ export class WorkbookParserService {
     workbook: ExcelJS.Workbook,
     sheetName: string,
     expectedHeaders: string[],
+    optionalHeaders: string[] = [],
   ): ParsedTab {
     const sheet = workbook.getWorksheet(sheetName);
     if (!sheet) {
@@ -65,7 +66,7 @@ export class WorkbookParserService {
       );
     }
     const extraColumns = headers.filter(
-      (header) => !expectedHeaders.includes(header),
+      (header) => !expectedHeaders.includes(header) && !optionalHeaders.includes(header),
     );
 
     const rows: ParsedTab['rows'] = [];

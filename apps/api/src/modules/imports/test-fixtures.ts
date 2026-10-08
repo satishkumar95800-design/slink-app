@@ -7,6 +7,8 @@ export interface FixtureTabs {
   Students?: Array<Record<string, string | number>>;
   'Fee Structures'?: Array<Record<string, string | number>>;
   Instructions?: string;
+  /** Extra headers appended to the Students tab (e.g. optional columns newer templates add). */
+  StudentsExtraHeaders?: string[];
 }
 
 const DEFAULT_HEADERS: Record<string, string[]> = {
@@ -67,7 +69,10 @@ export async function buildFixtureWorkbook(
     'Students',
     'Fee Structures',
   ] as const) {
-    const headers = DEFAULT_HEADERS[tabName];
+    const headers =
+      tabName === 'Students'
+        ? [...DEFAULT_HEADERS[tabName], ...(overrides.StudentsExtraHeaders ?? [])]
+        : DEFAULT_HEADERS[tabName];
     const sheet = workbook.addWorksheet(tabName);
     sheet.addRow(headers);
     const rows = overrides[tabName] ?? [];

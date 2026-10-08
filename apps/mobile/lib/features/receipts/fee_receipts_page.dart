@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../shared/models/receipt.dart';
 import 'receipts_repository.dart';
+import '../../core/format/money.dart';
 
 /// A partially-paid fee can have more than one receipt (one per payment
 /// instalment), so "View Receipt" from the Fees list lands here first rather
@@ -51,7 +52,7 @@ class _FeeReceiptsPageState extends ConsumerState<FeeReceiptsPage> {
               final paidOnLabel = receipt.paidOn.toLocal().toString().split(' ').first;
               return Card(
                 child: ListTile(
-                  title: Text('₹${receipt.amount.toStringAsFixed(2)} · ${receipt.receiptNumber}'),
+                  title: Text('${formatRupees(receipt.amount)} · ${receipt.receiptNumber}'),
                   subtitle: Text(
                     receipt.discountAmount != null
                         ? '$paidOnLabel · Discount applied'

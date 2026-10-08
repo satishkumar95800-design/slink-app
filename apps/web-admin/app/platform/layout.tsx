@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { getSession, isLoggedIn, clearSession } from '../../lib/auth';
 import { ToastProvider } from '../../components/ui/toast';
 import { ChangePasswordModal } from '../../components/layout/change-password-modal';
+import { strings } from '../../lib/strings';
 
 export default function PlatformLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -55,7 +56,7 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-coral/20 text-sm font-bold text-white/80">
                 S
               </div>
-              <span className="hidden text-sm font-bold tracking-tight text-white sm:inline">School Connect — Platform</span>
+              <span className="hidden text-sm font-bold tracking-tight text-white sm:inline">{strings.product.platformTitle}</span>
             </Link>
             <nav className="flex items-center gap-1">
               <Link

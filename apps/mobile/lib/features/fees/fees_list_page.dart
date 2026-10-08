@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../shared/models/student_fee.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
 import 'fees_providers.dart';
+import '../../core/format/money.dart';
+import '../../core/strings.dart';
 
 class FeesListPage extends ConsumerWidget {
   const FeesListPage({super.key});
@@ -98,7 +100,7 @@ class _FeeCard extends StatelessWidget {
             Text('${fee.student.name} • Due ${fee.dueDate.toLocal().toString().split(' ').first}'),
             const SizedBox(height: 12),
             Text(
-              canPay ? '₹${fee.outstanding.toStringAsFixed(2)} due' : 'Paid in full',
+              canPay ? AppStrings.amountDue(formatRupees(fee.outstanding)) : 'Paid in full',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             if (hasReceipt || canPay) ...[

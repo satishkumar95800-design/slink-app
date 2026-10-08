@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { api, ApiError } from '../../../lib/api-client';
@@ -15,6 +15,7 @@ import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
 import { getSession } from '../../../lib/auth';
 import type { Role } from '@slink/types';
+import { nameCaseWarning } from '../../../lib/names';
 
 interface User {
   id: string;
@@ -91,6 +92,7 @@ export default function UsersPage() {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
@@ -98,8 +100,11 @@ export default function UsersPage() {
     register: registerEdit,
     handleSubmit: handleEditSubmit,
     reset: resetEdit,
+    control: editControl,
     formState: { errors: editErrors, isSubmitting: isEditSubmitting },
   } = useForm<EditFormData>({ resolver: zodResolver(editSchema) });
+  const nameValue = useWatch({ control, name: 'name' });
+  const editNameValue = useWatch({ control: editControl, name: 'name' });
 
   const {
     register: registerResetPassword,
@@ -280,7 +285,7 @@ export default function UsersPage() {
         title="Add User"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <Input label="Full Name" required error={errors.name?.message} {...register('name')} />
+          <Input label="Full Name" required error={errors.name?.message} warning={nameCaseWarning(nameValue)} {...register('name')} />
           <Input label="Email" required type="email" error={errors.email?.message} {...register('email')} />
           <Input label="Phone" placeholder="+91..." error={errors.phone?.message} {...register('phone')} />
           <Input
@@ -313,7 +318,7 @@ export default function UsersPage() {
         title="Edit User"
       >
         <form onSubmit={handleEditSubmit(onEditSubmit)} className="space-y-4">
-          <Input label="Full Name" required error={editErrors.name?.message} {...registerEdit('name')} />
+          <Input label="Full Name" required error={editErrors.name?.message} warning={nameCaseWarning(editNameValue)} {...registerEdit('name')} />
           <Input label="Email" type="email" error={editErrors.email?.message} {...registerEdit('email')} />
           <Input label="Phone" placeholder="+91..." error={editErrors.phone?.message} {...registerEdit('phone')} />
           {editingUser && isStaffRole(editingUser.role) ? (

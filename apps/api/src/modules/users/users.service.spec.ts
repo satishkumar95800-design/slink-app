@@ -45,6 +45,9 @@ const mockPrisma = {
   report: {
     count: jest.fn(),
   },
+  attendanceRecord: {
+    count: jest.fn().mockResolvedValue(0),
+  },
   $transaction: jest.fn(),
 };
 
@@ -218,6 +221,17 @@ describe('UsersService', () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
       await expect(service.remove('tenant-uuid', 'bad-uuid')).rejects.toThrow(NotFoundException);
+    });
+
+    it('blocks deleting any user who has marked attendance', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-uuid', role: Role.admin });
+      mockPrisma.attendanceRecord.count.mockResolvedValueOnce(12);
+
+      await expect(service.remove('tenant-uuid', 'user-uuid')).rejects.toThrow(ConflictException);
+      expect(mockPrisma.attendanceRecord.count).toHaveBeenCalledWith({
+        where: { tenantId: 'tenant-uuid', markedBy: 'user-uuid' },
+      });
+      expect(mockPrisma.user.delete).not.toHaveBeenCalled();
     });
   });
 

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Mail, MapPin, Phone } from 'lucide-react';
 import { Section } from '../../../components/marketing/section';
 
-export const metadata: Metadata = { title: 'Contact — Slink' };
+export const metadata: Metadata = { title: 'Contact — Schoolinkd' };
 
 export default function ContactPage() {
   return (

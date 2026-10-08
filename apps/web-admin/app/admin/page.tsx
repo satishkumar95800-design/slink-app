@@ -1,23 +1,40 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { api } from '../../lib/api-client';
 import { Spinner } from '../../components/ui/spinner';
 import { Badge } from '../../components/ui/badge';
 import { getSession } from '../../lib/auth';
+import { formatDateOnly, formatRupees } from '../../lib/format';
+import { strings } from '../../lib/strings';
 
 interface Stats {
   userCount: number;
   studentCount: number;
   feesCollected: number;
   feesOutstanding: number;
-  recentPayments: {
-    id: string;
-    studentName: string;
-    amount: number;
-    method: string;
-    paidOn: string;
-  }[];
+  feesAcademicYear: string | null;
+  recentPayments: RecentPayment[];
+}
+
+interface RecentPayment {
+  id: string;
+  studentName: string;
+  amount: number | string;
+  method: string;
+  source?: 'claim' | 'direct';
+  paidOn: string;
+}
+
+interface SchoolAttendanceSummary {
+  date: string;
+  holiday: { name: string } | null;
+  totalStudents: number;
+  daysMarked: number;
+  daysPresent: number;
+  percentage: number | null;
+  notMarked: { classId: string; name: string; section: string | null }[];
 }
 
 interface TeacherWorkload {
@@ -62,13 +79,14 @@ const DAY_LABELS: Record<number, string> = {
   1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday',
 };
 
-function StatCard({ label, value, icon, color }: { label: string; value: string | number; icon: string; color: string }) {
+function StatCard({ label, value, icon, color, subtitle }: { label: string; value: string | number; icon: string; color: string; subtitle?: string }) {
   return (
     <div className="rounded-2xl bg-white p-6 shadow-sm border border-gray-100">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-gray-500">{label}</p>
           <p className="mt-1 text-2xl font-extrabold text-gray-900">{value}</p>
+          {subtitle && <p className="mt-0.5 text-xs text-gray-400">{subtitle}</p>}
         </div>
         <div className={`rounded-xl p-3 text-2xl ${color}`}>{icon}</div>
       </div>
@@ -76,22 +94,29 @@ function StatCard({ label, value, icon, color }: { label: string; value: string 
   );
 }
 
-/** Amounts from the API are rupees (Decimal NUMERIC(12,2) columns), not paise. */
-function formatRupees(amount: number) {
-  return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-}
-
 const MONTH_LABEL_FORMATTER = new Intl.DateTimeFormat('en-IN', { month: 'short', year: 'numeric' });
 function formatMonthLabel(month: string) {
   return MONTH_LABEL_FORMATTER.format(new Date(`${month}-01`));
 }
 
-const methodVariant = (method: string): 'green' | 'blue' | 'gray' => {
-  const map: Record<string, 'green' | 'blue' | 'gray'> = {
-    cash: 'green', gateway: 'blue',
-  };
-  return map[method] ?? 'gray';
-};
+type BadgeVariant = 'green' | 'blue' | 'orange' | 'purple' | 'gray';
+
+/** Recent Payments badge: approved claims first (they're stored under their underlying method), then by method. */
+function paymentBadge(p: RecentPayment): { label: string; variant: BadgeVariant } {
+  if (p.source === 'claim') return { label: strings.paymentMethod.claim, variant: 'purple' };
+  switch (p.method) {
+    case 'cash':
+      return { label: strings.paymentMethod.cash, variant: 'green' };
+    case 'cheque':
+    case 'demand_draft':
+      return { label: strings.paymentMethod.chequeOrDd, variant: 'orange' };
+    case 'gateway':
+    case 'bank_transfer':
+      return { label: strings.paymentMethod.online, variant: 'blue' };
+    default:
+      return { label: p.method, variant: 'gray' };
+  }
+}
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<Partial<Stats>>({});
@@ -99,6 +124,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [workload, setWorkload] = useState<TeacherWorkload[]>([]);
   const [forecast, setForecast] = useState<CollectionForecast | null>(null);
+  const [attendance, setAttendance] = useState<SchoolAttendanceSummary | null>(null);
   const [mySlots, setMySlots] = useState<TimetableSlot[]>([]);
   const [myClasses, setMyClasses] = useState<MyClass[]>([]);
   const isTeacher = getSession()?.role === 'teacher';
@@ -117,8 +143,8 @@ export default function DashboardPage() {
         const [usersRes, studentsRes, paymentsRes, feesRes] = await Promise.allSettled([
           api.get<{ data: unknown[]; meta: { total: number } }>('/users?limit=1'),
           api.get<{ data: unknown[]; meta: { total: number } }>('/students?limit=1'),
-          api.get<{ id: string; studentName: string; amount: number; method: string; paidOn: string }[]>('/receipts/recent?limit=5'),
-          api.get<{ collected: number; outstanding: number }>('/insights/fee-totals'),
+          api.get<RecentPayment[]>('/receipts/recent?limit=5'),
+          api.get<{ academicYear: string | null; collected: number; outstanding: number }>('/insights/fee-totals'),
         ]);
 
         const partialStats: Partial<Stats> = {};
@@ -131,6 +157,7 @@ export default function DashboardPage() {
         if (feesRes.status === 'fulfilled') {
           partialStats.feesCollected = feesRes.value.collected;
           partialStats.feesOutstanding = feesRes.value.outstanding;
+          partialStats.feesAcademicYear = feesRes.value.academicYear;
         }
 
         setStats(partialStats);
@@ -177,6 +204,17 @@ export default function DashboardPage() {
   }, [isAdmin]);
 
   useEffect(() => {
+    // Attendance isn't fee data: admin only, not accounts.
+    if (!isAdmin) return;
+    api
+      .get<SchoolAttendanceSummary>('/attendance/school-summary')
+      .then(setAttendance)
+      .catch(() => {
+        // Non-critical widget — fail silently, keep the rest of the dashboard usable.
+      });
+  }, [isAdmin]);
+
+  useEffect(() => {
     if (isTeacher) return;
     async function fetchForecast() {
       try {
@@ -208,8 +246,20 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard label="Total Users" value={stats.userCount ?? '—'} icon="👤" color="bg-teal/5" />
             <StatCard label="Total Students" value={stats.studentCount ?? '—'} icon="🎓" color="bg-purple-50" />
-            <StatCard label="Fees Collected" value={stats.feesCollected != null ? formatRupees(stats.feesCollected) : '—'} icon="✅" color="bg-green-50" />
-            <StatCard label="Outstanding Fees" value={stats.feesOutstanding != null ? formatRupees(stats.feesOutstanding) : '—'} icon="⏳" color="bg-orange-50" />
+            <StatCard
+              label={strings.dashboard.feesCollected}
+              value={stats.feesCollected != null ? formatRupees(stats.feesCollected) : '—'}
+              subtitle={strings.dashboard.thisAcademicYear(stats.feesAcademicYear ?? null)}
+              icon="✅"
+              color="bg-green-50"
+            />
+            <StatCard
+              label={strings.dashboard.outstandingFees}
+              value={stats.feesOutstanding != null ? formatRupees(stats.feesOutstanding) : '—'}
+              subtitle={strings.dashboard.thisAcademicYear(stats.feesAcademicYear ?? null)}
+              icon="⏳"
+              color="bg-orange-50"
+            />
           </div>
 
           <div className="rounded-2xl bg-white shadow-sm border border-gray-100">
@@ -224,11 +274,11 @@ export default function DashboardPage() {
                   <div key={p.id} className="flex items-center justify-between px-6 py-3">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{p.studentName}</p>
-                      <p className="text-xs text-gray-500">{new Date(p.paidOn).toLocaleDateString('en-IN')}</p>
+                      <p className="text-xs text-gray-500">{formatDateOnly(p.paidOn)}</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-semibold text-gray-900">{formatRupees(p.amount)}</span>
-                      <Badge variant={methodVariant(p.method)}>{p.method}</Badge>
+                      <Badge variant={paymentBadge(p).variant}>{paymentBadge(p).label}</Badge>
                     </div>
                   </div>
                 ))
@@ -311,6 +361,44 @@ export default function DashboardPage() {
             )}
           </div>
         </>
+      )}
+
+      {isAdmin && attendance && (
+        <div className="rounded-2xl bg-white shadow-sm border border-gray-100">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b px-6 py-4">
+            <h2 className="text-sm font-semibold text-gray-900">{strings.attendance.todayCardTitle}</h2>
+            <Link href="/admin/attendance" className="text-xs font-semibold text-teal hover:underline">
+              {strings.attendance.pageTitle} →
+            </Link>
+          </div>
+          <div className="px-6 py-4">
+            {attendance.holiday ? (
+              <p className="text-sm text-gray-600">{strings.attendance.holidayToday(attendance.holiday.name)}</p>
+            ) : attendance.daysMarked === 0 ? (
+              <p className="text-sm text-gray-600">{strings.attendance.noneMarkedYet}</p>
+            ) : (
+              <p className="text-2xl font-extrabold text-gray-900">
+                {strings.attendance.todaySummary(attendance.daysPresent, attendance.daysMarked, attendance.percentage)}
+              </p>
+            )}
+            {!attendance.holiday && (
+              <p className="mt-2 text-xs font-medium text-gray-500">
+                {attendance.notMarked.length === 0
+                  ? strings.attendance.allMarked
+                  : strings.attendance.classesNotMarked(attendance.notMarked.length)}
+              </p>
+            )}
+            {!attendance.holiday && attendance.notMarked.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {attendance.notMarked.map((c) => (
+                  <Badge key={c.classId} variant="orange">
+                    {[c.name, c.section].filter(Boolean).join(' ')}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {isAdmin && workload.length > 0 && (

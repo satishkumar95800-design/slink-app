@@ -5,6 +5,7 @@ import { api } from '../../../lib/api-client';
 import { Badge } from '../../../components/ui/badge';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
+import { formatRupees } from '../../../lib/format';
 
 type PaymentStatus = 'created' | 'attempted' | 'paid' | 'failed' | 'refunded';
 
@@ -33,11 +34,6 @@ const statusVariant = (s: PaymentStatus): 'green' | 'red' | 'yellow' | 'blue' | 
   };
   return m[s];
 };
-
-function formatCurrency(paise: number, currency = 'INR') {
-  const sym = currency === 'INR' ? '₹' : currency + ' ';
-  return `${sym}${(paise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-}
 
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -133,7 +129,7 @@ export default function PaymentsPage() {
                   </td>
                   <td className="px-6 py-4 text-xs font-mono text-gray-500">{p.gatewayOrderId}</td>
                   <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                    {formatCurrency(p.amount, p.currency)}
+                    {formatRupees(p.amount)}
                   </td>
                   <td className="px-6 py-4">
                     <Badge variant="gray">{p.gateway}</Badge>

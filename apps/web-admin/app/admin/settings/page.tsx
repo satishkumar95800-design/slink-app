@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, apiUpload, ApiError } from '../../../lib/api-client';
 import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
 import { useToast } from '../../../components/ui/toast';
+import { getSession } from '../../../lib/auth';
+import { strings } from '../../../lib/strings';
 
 interface TenantSelf {
   id: string;
@@ -86,6 +89,90 @@ export default function SettingsPage() {
         </div>
         <p className="mt-2 text-xs text-gray-400">JPEG, PNG, or WebP — up to 8 MB.</p>
       </div>
+
+      {getSession()?.role === 'admin' && <HolidaysSection />}
+    </div>
+  );
+}
+
+interface Holiday {
+  id: string;
+  date: string;
+  name: string;
+}
+
+function HolidaysSection() {
+  const h = strings.holidays;
+  const { toast } = useToast();
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [date, setDate] = useState('');
+  const [name, setName] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    api.get<Holiday[]>('/attendance/holidays').then(setHolidays).catch(() => {});
+  }, []);
+
+  async function add(e: React.FormEvent) {
+    e.preventDefault();
+    if (!date || !name.trim()) return;
+    setSaving(true);
+    try {
+      const created = await api.post<Holiday>('/attendance/holidays', { date, name: name.trim() });
+      setHolidays((prev) => [...prev, created].sort((a, b) => a.date.localeCompare(b.date)));
+      setDate('');
+      setName('');
+      toast(h.added, 'success');
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : 'Failed', 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function remove(holiday: Holiday) {
+    if (!confirm(h.confirmRemove(holiday.name))) return;
+    try {
+      await api.delete(`/attendance/holidays/${holiday.id}`);
+      setHolidays((prev) => prev.filter((x) => x.id !== holiday.id));
+      toast(h.removed, 'success');
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : 'Failed', 'error');
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
+      <h2 className="text-base font-semibold text-gray-900">{h.sectionTitle}</h2>
+      <p className="mt-1 text-sm text-gray-500">{h.sectionHelp}</p>
+
+      <form onSubmit={add} className="mt-4 flex flex-wrap items-end gap-3">
+        <Input label={h.date} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
+        <div className="min-w-48 flex-1">
+          <Input label={h.name} required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <Button type="submit" loading={saving} disabled={!date || !name.trim()}>
+          {h.add}
+        </Button>
+      </form>
+
+      {holidays.length === 0 ? (
+        <p className="mt-4 text-sm text-gray-500">{h.empty}</p>
+      ) : (
+        <ul className="mt-4 divide-y divide-gray-100">
+          {holidays.map((holiday) => (
+            <li key={holiday.id} className="flex items-center justify-between py-2">
+              <span className="text-sm text-gray-900">
+                <span className="mr-3 font-mono text-gray-500">{holiday.date.split('-').reverse().join('/')}</span>
+                {holiday.name}
+              </span>
+              <Button variant="ghost" size="sm" onClick={() => remove(holiday)}>
+                {h.remove}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

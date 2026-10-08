@@ -7,6 +7,15 @@ export const REQUIRED_TABS = [
   'Teachers',
 ] as const;
 
+/**
+ * Columns a tab may include but older templates lack. Never required on read,
+ * never reported as unexpected extras, and appended after TAB_HEADERS in new
+ * templates so existing column positions don't move.
+ */
+export const OPTIONAL_TAB_HEADERS: Partial<Record<'Classes' | 'Users' | 'Students' | 'Fee Structures' | 'Teachers', string[]>> = {
+  Students: ['Roll Number'],
+};
+
 export const TAB_HEADERS: Record<
   'Classes' | 'Users' | 'Students' | 'Fee Structures' | 'Teachers',
   string[]

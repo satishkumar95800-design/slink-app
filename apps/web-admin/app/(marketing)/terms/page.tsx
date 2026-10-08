@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Section } from '../../../components/marketing/section';
 
-export const metadata: Metadata = { title: 'Terms of Service — Slink' };
+export const metadata: Metadata = { title: 'Terms of Service — Schoolinkd' };
 
 export default function TermsPage() {
   return (
@@ -11,7 +11,7 @@ export default function TermsPage() {
         <p className="mt-2 text-sm text-gray-500">Last updated: September 18, 2026</p>
 
         <p className="mt-8 text-gray-700">
-          These terms govern use of the Slink mobile app and admin web console (the &quot;Service&quot;),
+          These terms govern use of the Schoolinkd mobile app and admin web console (the &quot;Service&quot;),
           provided by Arins Studios (&quot;we&quot;, &quot;us&quot;). By creating an account or
           using the Service, you agree to these terms.
         </p>

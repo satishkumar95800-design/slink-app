@@ -3,6 +3,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'api_client.dart';
 
+const _uploadTimeout = Duration(seconds: 90);
+
 class FilesRepository {
   final Dio _dio;
 
@@ -19,7 +21,13 @@ class FilesRepository {
       if (entityId != null) 'entityId': entityId,
       'file': await MultipartFile.fromFile(file.path, filename: file.path.split('/').last),
     });
-    final response = await _dio.post<Map<String, dynamic>>('/files/upload', data: formData);
+    // The API streams the file on to S3 before replying, so a photo on a slow
+    // mobile connection easily exceeds the client-wide 10s default.
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/files/upload',
+      data: formData,
+      options: Options(sendTimeout: _uploadTimeout, receiveTimeout: _uploadTimeout),
+    );
     return response.data!['key'] as String;
   }
 }

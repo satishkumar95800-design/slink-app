@@ -148,7 +148,7 @@ export default function LandingPage() {
               , not a dozen registers.
             </h1>
             <p className="mt-6 max-w-lg text-lg text-gray-600">
-              Slink pairs a parent &amp; teacher mobile app with an admin web console — bulk onboarding, discount-aware
+              Schoolinkd pairs a parent &amp; teacher mobile app with an admin web console — bulk onboarding, discount-aware
               fee collection, payment-claim proofs, teacher-authored report cards, and a running notes log for every
               student.
             </p>
@@ -167,7 +167,7 @@ export default function LandingPage() {
               </Link>
             </div>
             <p className="mt-4 text-xs text-gray-500">
-              For school administrators and accounts staff. Parents and teachers use the Slink mobile app.
+              For school administrators and accounts staff. Parents and teachers use the Schoolinkd mobile app.
             </p>
 
             <div className="mt-10 grid grid-cols-3 gap-4 border-t border-gray-200 pt-6 sm:max-w-md">

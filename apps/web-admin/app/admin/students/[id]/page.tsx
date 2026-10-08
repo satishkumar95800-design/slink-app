@@ -9,6 +9,7 @@ import { Button } from '../../../../components/ui/button';
 import { Select } from '../../../../components/ui/select';
 import { Spinner } from '../../../../components/ui/spinner';
 import { useToast } from '../../../../components/ui/toast';
+import { formatRupees } from '../../../../lib/format';
 
 interface Student {
   id: string;
@@ -56,10 +57,6 @@ const NOTE_TYPE_LABELS: Record<StudentNoteType, string> = {
   complaint: 'Complaint',
   parent_discussion: 'Discussion with Parent',
 };
-
-function formatRupees(amount: number) {
-  return `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
-}
 
 const feeStatusVariant = (s: string): 'green' | 'red' | 'yellow' | 'blue' | 'gray' => {
   const map: Record<string, 'green' | 'red' | 'yellow' | 'blue' | 'gray'> = {

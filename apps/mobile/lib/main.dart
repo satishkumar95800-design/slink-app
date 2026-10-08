@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/strings.dart';
 
 /// Must be a top-level function — the OS invokes this in a separate isolate
 /// when a push notification arrives while the app is backgrounded/terminated.
@@ -86,6 +87,14 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
             'attachmentUrl': data['attachmentUrl'],
           },
         );
+      case 'attendance':
+        final studentId = data['studentId'];
+        final date = data['date']?.toString();
+        if (studentId != null) {
+          final month = date != null && date.length >= 7 ? '?month=${date.substring(0, 7)}' : '';
+          return (route: '/attendance/student/$studentId$month', extra: null);
+        }
+        break;
       case 'dashboard':
         return (route: '/dashboard', extra: null);
     }
@@ -107,7 +116,7 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
     final theme = ref.watch(appThemeProvider);
 
     return MaterialApp.router(
-      title: 'slink',
+      title: AppStrings.appName,
       theme: theme.lightTheme,
       darkTheme: theme.darkTheme,
       routerConfig: router,

@@ -143,6 +143,14 @@ export class UsersService {
       }
     }
 
+    // Attendance records keep who marked them (FK RESTRICT), so a marker can't be hard-deleted.
+    const attendanceCount = await this.prisma.attendanceRecord.count({ where: { tenantId, markedBy: id } });
+    if (attendanceCount > 0) {
+      throw new ConflictException(
+        'Cannot delete this user — they have marked attendance, which must be kept for the school record.',
+      );
+    }
+
     await this.prisma.user.delete({ where: { id } });
   }
 

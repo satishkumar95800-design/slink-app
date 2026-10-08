@@ -56,6 +56,7 @@ export interface ValidStudentRow {
   row: number;
   name: string;
   admissionNo: string;
+  rollNo?: string;
   classKey: string;
   dob?: string;
   bloodGroup?: BloodGroup;

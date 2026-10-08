@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Section } from '../../../components/marketing/section';
 
-export const metadata: Metadata = { title: 'Refund & Cancellation Policy — Slink' };
+export const metadata: Metadata = { title: 'Refund & Cancellation Policy — Schoolinkd' };
 
 export default function RefundPolicyPage() {
   return (
@@ -11,7 +11,7 @@ export default function RefundPolicyPage() {
         <p className="mt-2 text-sm text-gray-500">Last updated: September 18, 2026</p>
 
         <p className="mt-8 text-gray-700">
-          Fee payments made through Slink are collected by Arins Studios on behalf of your
+          Fee payments made through Schoolinkd are collected by Arins Studios on behalf of your
           school and processed via Razorpay. This policy covers refunds for those payments.
         </p>
 

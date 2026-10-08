@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Section } from '../../../components/marketing/section';
 
-export const metadata: Metadata = { title: 'Privacy Policy — Slink' };
+export const metadata: Metadata = { title: 'Privacy Policy — Schoolinkd' };
 
 export default function PrivacyPolicyPage() {
   return (
@@ -11,7 +11,7 @@ export default function PrivacyPolicyPage() {
         <p className="mt-2 text-sm text-gray-500">Last updated: September 18, 2026</p>
 
         <p className="mt-8 text-gray-700">
-          Arins Studios (&quot;we&quot;, &quot;us&quot;) operates the Slink mobile app and admin
+          Arins Studios (&quot;we&quot;, &quot;us&quot;) operates the Schoolinkd mobile app and admin
           web console (together, the &quot;Service&quot;), used by schools, teachers, and parents. This policy
           explains what information we collect, why, and how it is handled.
         </p>
