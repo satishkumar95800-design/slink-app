@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { NotificationChannel, NotificationStatus, Role } from '@prisma/client';
 import { NotificationsService } from './notifications.service';
@@ -7,6 +8,7 @@ import { SmsService } from './sms.service';
 import { FilesService } from '../files/files.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BroadcastTarget } from './dto/broadcast-notification.dto';
+import { planBroadcast } from './notifications.service';
 import type { ActiveUser } from '../../common/types/active-user.type';
 
 const makeUser = (overrides: Record<string, unknown> = {}) => ({
@@ -42,6 +44,8 @@ const mockPrisma = {
   class: { findUnique: jest.fn() },
   studentParent: { findMany: jest.fn() },
   report: { createMany: jest.fn() },
+  subject: { findFirst: jest.fn() },
+  broadcast: { create: jest.fn().mockResolvedValue({ id: 'broadcast-uuid' }) },
   notification: {
     create: jest.fn(),
     update: jest.fn(),
@@ -84,6 +88,7 @@ describe('NotificationsService', () => {
 
     service = module.get<NotificationsService>(NotificationsService);
     jest.clearAllMocks();
+    mockPrisma.broadcast.create.mockResolvedValue({ id: 'broadcast-uuid' });
     mockFcm.sendMulticast.mockResolvedValue({
       successCount: 1,
       failureCount: 0,
@@ -400,7 +405,13 @@ describe('NotificationsService', () => {
         ['token-abc'],
         'Homework',
         'See attached worksheet',
-        { attachmentUrl: 'https://signed.example.com/attachment.pdf' },
+        expect.objectContaining({
+          attachmentUrl: 'https://signed.example.com/attachment.pdf',
+          broadcastId: 'broadcast-uuid',
+          // A lone PDF from an older client is treated as a notice.
+          type: 'notice',
+          attachmentCount: '1',
+        }),
       );
     });
 
@@ -552,6 +563,72 @@ describe('NotificationsService', () => {
         status: NotificationStatus.failed,
       });
       expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('broadcast — Phase 4 attachments, kinds and seen tracking', () => {
+    const classBroadcast = (extra: Record<string, unknown>) => ({
+      channel: NotificationChannel.fcm,
+      title: 'Homework',
+      body: 'Chapter 4',
+      targetType: BroadcastTarget.CLASS,
+      targetId: 'class-uuid',
+      ...extra,
+    });
+
+    it('allows up to 3 photos, or 1 PDF on a notice only', () => {
+      expect(planBroadcast(classBroadcast({ fileKeys: ['a.jpg', 'b.png', 'c.jpg'] }) as never)).toMatchObject({ kind: 'homework' });
+      expect(planBroadcast(classBroadcast({ kind: 'notice', fileKeys: ['circular.pdf'] }) as never).attachments).toEqual([
+        { key: 'circular.pdf', contentType: 'application/pdf' },
+      ]);
+      expect(() => planBroadcast(classBroadcast({ kind: 'notice', fileKeys: ['a.pdf', 'b.jpg'] }) as never)).toThrow(BadRequestException);
+      expect(() => planBroadcast(classBroadcast({ kind: 'homework', fileKeys: ['a.pdf'] }) as never)).toThrow(BadRequestException);
+    });
+
+    it('records one broadcast, links every parent notification to it, and stores photos + subject on the homework', async () => {
+      mockPrisma.class.findUnique
+        .mockResolvedValueOnce({ teachers: [{ teacherId: teacherActor.id, isClassTeacher: false }] })
+        .mockResolvedValueOnce({ academicYear: '2026-27', students: [{ id: 'student-1' }] });
+      mockPrisma.subject.findFirst.mockResolvedValue({ id: 'subject-uuid', name: 'Maths' });
+      const parent = makeUser({ id: 'p1', fcmTokens: ['tok1'] });
+      mockPrisma.studentParent.findMany.mockResolvedValue([{ parent }]);
+      mockPrisma.$transaction.mockImplementation((ops: unknown[]) => Promise.all(ops));
+      mockPrisma.notification.create.mockResolvedValue({ id: 'n1', userId: 'p1' });
+      mockPrisma.notification.update.mockResolvedValue({});
+
+      const result = await service.broadcast(
+        'tenant-uuid',
+        classBroadcast({ kind: 'homework', subjectId: 'subject-uuid', fileKeys: ['t/a.jpg', 't/b.jpg'] }) as never,
+        teacherActor,
+      );
+
+      expect(result).toEqual({ queued: 1, broadcastId: 'broadcast-uuid' });
+      expect(mockPrisma.broadcast.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          tenantId: 'tenant-uuid',
+          senderId: teacherActor.id,
+          classId: 'class-uuid',
+          subjectId: 'subject-uuid',
+          kind: 'homework',
+          attachments: [
+            { key: 't/a.jpg', contentType: 'image/jpeg' },
+            { key: 't/b.jpg', contentType: 'image/jpeg' },
+          ],
+        }),
+      });
+      expect(mockPrisma.notification.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ userId: 'p1', broadcastId: 'broadcast-uuid' }),
+      });
+      const reports = mockPrisma.report.createMany.mock.calls[0][0].data;
+      expect(reports[0].content).toMatchObject({ fileKeys: ['t/a.jpg', 't/b.jpg'], broadcastId: 'broadcast-uuid', subject: 'Maths' });
+    });
+
+    it('still blocks a subject teacher from sending a notice, even with photos', async () => {
+      mockPrisma.class.findUnique.mockResolvedValue({ teachers: [{ teacherId: teacherActor.id, isClassTeacher: false }] });
+      await expect(
+        service.broadcast('tenant-uuid', classBroadcast({ kind: 'notice', fileKeys: ['t/a.jpg'] }) as never, teacherActor),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockPrisma.broadcast.create).not.toHaveBeenCalled();
     });
   });
 });

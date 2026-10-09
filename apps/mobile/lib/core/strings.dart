@@ -104,4 +104,54 @@ abstract final class AppStrings {
   // ── Profile (3.6) ──
   static const logout = 'Log out';
   static const logoutConfirm = 'Log out of Schoolinkd on this phone?';
+
+  // ── Teacher app (Phase 4) ──
+  static String nowPeriod(String cls, String subject, String? time) => 'Now: $cls · $subject${time == null ? '' : ' ($time)'}';
+  static String nextPeriod(String cls, String subject, String? start) => 'Next: $cls · $subject${start == null ? '' : ' ($start)'}';
+  static const noMorePeriods = 'No more periods today';
+  static const noPeriodsToday = 'No periods today';
+  static String periodLabel(int n, String cls, String subject) => 'P$n · $cls · $subject';
+  static const sendHomework = 'Send Homework';
+  static const sendHomeworkSubtitle = 'Photos and a note for a class';
+  static const sendNotice = 'Send Notice';
+  static const sendNoticeSubtitle = 'Message all parents in your class';
+  static const reportsCard = 'Reports';
+  static const reportsCardSubtitle = 'Progress reports and report cards';
+  static const addStudentNote = 'Add Student Note';
+  static const addStudentNoteSubtitle = 'Internal note, MOM, complaint or parent discussion';
+  static const weeklyRoutine = 'Weekly Routine';
+  static const weeklyRoutineSubtitle = 'Your own class timetable for the week';
+  static const aboutMyClasses = 'About My Class(es)';
+  static const aboutMyClassesSubtitle = 'Strength, subjects, and recent reports for your classes';
+
+  // Attachments
+  static const addPhoto = 'Add photo';
+  static const takePhoto = 'Camera';
+  static const fromGallery = 'Gallery';
+  static const attachPdf = 'Attach PDF';
+  static String attachmentsHint(bool allowPdf) => allowPdf ? 'Up to 3 photos, or 1 PDF' : 'Up to 3 photos';
+  static const remove = 'Remove';
+  static const subjectOptional = 'Subject (optional)';
+  static const noSubject = 'No subject';
+  static const openPdf = 'Open PDF';
+
+  // Sent items + seen tracking
+  static const sentItems = 'Sent';
+  static String seenBy(int seen, int total) => 'Seen by $seen/$total parents';
+  static const notSeenYet = "Haven't opened it yet";
+  static const everyoneSeen = 'Every parent has opened it';
+  static const noSentItems = 'Nothing sent yet';
+  static const homeworkKind = 'Homework';
+  static const noticeKind = 'Notice';
+
+  // Student notes
+  static const pickStudent = 'Student';
+  static const noteType = 'Type';
+  static const noteText = 'Note';
+  static const noteTypes = {'note': 'Note', 'mom': 'MOM', 'complaint': 'Complaint', 'parent_discussion': 'Parent Discussion'};
+  static const noteInternalHint = 'Only school staff can see this. Parents never see student notes.';
+  static const saveNote = 'Save note';
+  static const noteSaved = 'Note saved';
+  static const enterNote = 'Type the note first.';
+  static const recentNotes = 'Recent notes';
 }

@@ -361,7 +361,21 @@ describe('ReportsService', () => {
       const report = await service.findOne('tenant-uuid', 'report-uuid', adminUser);
 
       expect(mockFiles.getSignedUrl).toHaveBeenCalledWith('tenant-uuid/attachment/a.jpg', 'tenant-uuid', 3600, { verifyExists: false });
-      expect(report.content).toEqual({ caption: 'Ch 3', fileKey: 'tenant-uuid/attachment/a.jpg', attachmentUrl: 'https://signed.example/fresh' });
+      expect(report.content).toEqual({
+        caption: 'Ch 3',
+        fileKey: 'tenant-uuid/attachment/a.jpg',
+        attachmentUrl: 'https://signed.example/fresh',
+        attachmentUrls: ['https://signed.example/fresh'],
+      });
+    });
+
+    it('re-signs every photo of multi-photo homework', async () => {
+      mockPrisma.report.findUnique.mockResolvedValue(homework({ caption: 'Ch 4', fileKeys: ['t/a.jpg', 't/b.jpg'] }));
+
+      const report = await service.findOne('tenant-uuid', 'report-uuid', adminUser);
+
+      expect(mockFiles.getSignedUrl).toHaveBeenCalledTimes(2);
+      expect((report.content as { attachmentUrls: string[] }).attachmentUrls).toHaveLength(2);
     });
 
     it('recovers the key from an older expired signed URL', async () => {

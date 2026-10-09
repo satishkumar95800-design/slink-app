@@ -74,6 +74,7 @@ pnpm db:generate   # regenerates the Prisma client
 | attendance | done | Daily class attendance (bulk upsert), absent/correction pushes, school holidays, summaries + CSV report |
 | parent | done | Parent home summary (fees/today/attendance in one call), per-child notices |
 | fee-reminders | done | Daily Bull job: fee-due pushes 3 days before and on the due date |
+| broadcasts | done | Notice/homework sent items, per-parent "seen" tracking, unseen-parent lists |
 
 ## Tech decisions (do not revisit without discussion)
 

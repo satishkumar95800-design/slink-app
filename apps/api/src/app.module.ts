@@ -38,6 +38,7 @@ import { StudentNotesModule } from './modules/student-notes/student-notes.module
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { ParentModule } from './modules/parent/parent.module';
 import { FeeRemindersModule } from './modules/fee-reminders/fee-reminders.module';
+import { BroadcastsModule } from './modules/broadcasts/broadcasts.module';
 
 @Module({
   imports: [
@@ -80,6 +81,7 @@ import { FeeRemindersModule } from './modules/fee-reminders/fee-reminders.module
     AttendanceModule,
     ParentModule,
     FeeRemindersModule,
+    BroadcastsModule,
   ],
 })
 export class AppModule implements NestModule {

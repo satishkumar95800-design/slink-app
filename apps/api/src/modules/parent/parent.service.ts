@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import { FeeStatus, PaymentClaimStatus, Prisma, ReportStatus, ReportType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ReportsService } from '../reports/reports.service';
+import { BroadcastsService } from '../broadcasts/broadcasts.service';
 import { summarise } from '../attendance/attendance.service';
 import { fromDbDate, monthRange, toDbDate, todayIn } from '../attendance/attendance-dates';
 import type { ActiveUser } from '../../common/types/active-user.type';
@@ -18,6 +19,7 @@ export class ParentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly reports: ReportsService,
+    private readonly broadcasts: BroadcastsService,
   ) {}
 
   /** Everything the home screen's Fee, Today and Attendance cards need, in one round trip. */
@@ -105,13 +107,15 @@ export class ParentService {
     return Promise.all(
       todays.map(async (r) => {
         const content = (r.content ?? {}) as Prisma.JsonObject;
+        const photoUrls = await this.reports.homeworkAttachmentUrls(tenantId, r.content);
         return {
           id: r.id,
+          broadcastId: typeof content.broadcastId === 'string' ? content.broadcastId : null,
           caption: typeof content.caption === 'string' ? content.caption : '',
           teacherName: r.teacher.name,
-          // Not captured yet — the teacher app adds a subject picker in Phase 4.
           subject: typeof content.subject === 'string' ? content.subject : null,
-          photoUrl: await this.reports.homeworkAttachmentUrl(tenantId, r.content),
+          photoUrl: photoUrls[0] ?? null,
+          photoUrls,
           publishedAt: r.publishedAt,
         };
       }),
@@ -148,13 +152,21 @@ export class ParentService {
   private async notices(tenantId: string, parentId: string, classId: string, limit: number) {
     const rows = await this.prisma.notification.findMany({
       where: { tenantId, userId: parentId, data: { path: ['type'], equals: 'notice' } },
-      select: { id: true, title: true, body: true, data: true, createdAt: true },
+      select: {
+        id: true,
+        title: true,
+        body: true,
+        data: true,
+        createdAt: true,
+        broadcastId: true,
+        broadcast: { select: { attachments: true } },
+      },
       orderBy: { createdAt: 'desc' },
       take: NOTICE_SCAN_LIMIT,
     });
     // One broadcast can create duplicate rows if a parent has two children in the class — keep one per message.
     const seen = new Set<string>();
-    return rows
+    const kept = rows
       .filter((n) => {
         const data = (n.data ?? {}) as Prisma.JsonObject;
         return typeof data.classId !== 'string' || data.classId === classId;
@@ -165,8 +177,17 @@ export class ParentService {
         seen.add(key);
         return true;
       })
-      .slice(0, limit)
-      .map((n) => ({ id: n.id, title: n.title, body: n.body, createdAt: n.createdAt }));
+      .slice(0, limit);
+    return Promise.all(
+      kept.map(async (n) => ({
+        id: n.id,
+        broadcastId: n.broadcastId,
+        title: n.title,
+        body: n.body,
+        createdAt: n.createdAt,
+        attachments: n.broadcast ? await this.broadcasts.signAttachments(tenantId, n.broadcast.attachments) : [],
+      })),
+    );
   }
 
   private async requireOwnChild(tenantId: string, studentId: string, user: ActiveUser) {

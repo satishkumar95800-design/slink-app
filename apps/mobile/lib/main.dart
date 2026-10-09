@@ -91,6 +91,7 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
             'title': message.notification?.title ?? data['title'] ?? (type == 'homework' ? 'Homework' : 'Notice'),
             'body': message.notification?.body ?? data['body'] ?? '',
             'attachmentUrl': data['attachmentUrl'],
+            'broadcastId': data['broadcastId'],
           },
         );
       case 'attendance':

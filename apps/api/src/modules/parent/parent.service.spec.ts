@@ -35,14 +35,16 @@ function makePrisma() {
 
 describe('ParentService', () => {
   let prisma: ReturnType<typeof makePrisma>;
-  let reports: { homeworkAttachmentUrl: jest.Mock };
+  let reports: { homeworkAttachmentUrls: jest.Mock };
+  let broadcasts: { signAttachments: jest.Mock };
   let service: ParentService;
 
   beforeEach(() => {
     jest.useFakeTimers().setSystemTime(new Date('2026-10-08T06:30:00.000Z')); // 12:00 IST, 08/10/2026
     prisma = makePrisma();
-    reports = { homeworkAttachmentUrl: jest.fn().mockResolvedValue('https://signed.example/photo.jpg') };
-    service = new ParentService(prisma as never, reports as never);
+    reports = { homeworkAttachmentUrls: jest.fn().mockResolvedValue(['https://signed.example/photo.jpg']) };
+    broadcasts = { signAttachments: jest.fn().mockResolvedValue([]) };
+    service = new ParentService(prisma as never, reports as never, broadcasts as never);
   });
 
   afterEach(() => jest.useRealTimers());
@@ -93,7 +95,7 @@ describe('ParentService', () => {
   it("lists only today's homework (school timezone) with teacher name and a fresh photo link", async () => {
     prisma.report.findMany.mockResolvedValue([
       // 08/10 09:00 IST — today
-      { id: 'h1', content: { caption: 'Maths p.12', fileKey: 'k1' }, publishedAt: new Date('2026-10-08T03:30:00Z'), teacher: { name: 'Neha' } },
+      { id: 'h1', content: { caption: 'Maths p.12', fileKey: 'k1', broadcastId: 'b1', subject: 'Maths' }, publishedAt: new Date('2026-10-08T03:30:00Z'), teacher: { name: 'Neha' } },
       // 07/10 23:00 IST (17:30Z) — yesterday in the school's timezone, so excluded
       { id: 'h0', content: { caption: 'Old' }, publishedAt: new Date('2026-10-07T17:30:00Z'), teacher: { name: 'Neha' } },
     ]);
@@ -101,7 +103,15 @@ describe('ParentService', () => {
     const { homework } = await service.getHome(TENANT, 's1', PARENT);
 
     expect(homework).toEqual([
-      expect.objectContaining({ id: 'h1', caption: 'Maths p.12', teacherName: 'Neha', subject: null, photoUrl: 'https://signed.example/photo.jpg' }),
+      expect.objectContaining({
+        id: 'h1',
+        broadcastId: 'b1',
+        caption: 'Maths p.12',
+        teacherName: 'Neha',
+        subject: 'Maths',
+        photoUrl: 'https://signed.example/photo.jpg',
+        photoUrls: ['https://signed.example/photo.jpg'],
+      }),
     ]);
   });
 
@@ -109,7 +119,15 @@ describe('ParentService', () => {
     const at = (iso: string) => new Date(iso);
     prisma.notification.findMany.mockResolvedValue([
       { id: 'n3', title: 'Other class', body: 'x', data: { type: 'notice', classId: 'class-9' }, createdAt: at('2026-10-08T05:00:00Z') },
-      { id: 'n2', title: 'PTM', body: 'Sat 10am', data: { type: 'notice', classId: 'class-1' }, createdAt: at('2026-10-07T05:00:00Z') },
+      {
+        id: 'n2',
+        title: 'PTM',
+        body: 'Sat 10am',
+        data: { type: 'notice', classId: 'class-1' },
+        createdAt: at('2026-10-07T05:00:00Z'),
+        broadcastId: 'b2',
+        broadcast: { attachments: [{ key: 'tenant-a/attachments/ptm.pdf', contentType: 'application/pdf' }] },
+      },
       { id: 'n1', title: 'Holiday', body: 'Closed Fri', data: { type: 'notice' }, createdAt: at('2026-10-06T05:00:00Z') },
     ]);
 
@@ -117,6 +135,8 @@ describe('ParentService', () => {
     const home = await service.getHome(TENANT, 's1', PARENT);
 
     expect(notices.map((n) => n.id)).toEqual(['n2', 'n1']);
+    expect(notices[0].broadcastId).toBe('b2');
+    expect(broadcasts.signAttachments).toHaveBeenCalledWith(TENANT, [{ key: 'tenant-a/attachments/ptm.pdf', contentType: 'application/pdf' }]);
     expect(home.latestNotice?.id).toBe('n2');
     expect(prisma.notification.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { tenantId: TENANT, userId: PARENT.id, data: { path: ['type'], equals: 'notice' } } }),

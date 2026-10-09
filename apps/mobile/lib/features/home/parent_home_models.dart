@@ -104,6 +104,8 @@ class NextFee {
 
 class HomeworkItem {
   final String id;
+  final String? broadcastId;
+  final List<String> photoUrls;
   final String caption;
   final String teacherName;
   final String? subject;
@@ -112,6 +114,8 @@ class HomeworkItem {
 
   const HomeworkItem({
     required this.id,
+    this.broadcastId,
+    this.photoUrls = const [],
     required this.caption,
     required this.teacherName,
     this.subject,
@@ -121,6 +125,8 @@ class HomeworkItem {
 
   factory HomeworkItem.fromJson(Map<String, dynamic> json) => HomeworkItem(
         id: json['id'] as String,
+        broadcastId: json['broadcastId'] as String?,
+        photoUrls: (json['photoUrls'] as List<dynamic>? ?? []).cast<String>(),
         caption: json['caption'] as String? ?? '',
         teacherName: json['teacherName'] as String? ?? '',
         subject: json['subject'] as String?,
@@ -131,17 +137,30 @@ class HomeworkItem {
 
 class NoticeItem {
   final String id;
+  final String? broadcastId;
   final String? title;
   final String body;
   final DateTime createdAt;
 
-  const NoticeItem({required this.id, this.title, required this.body, required this.createdAt});
+  /// [{url, contentType}] — passed straight to the notice detail route.
+  final List<Map<String, dynamic>> attachments;
+
+  const NoticeItem({
+    required this.id,
+    this.broadcastId,
+    this.title,
+    required this.body,
+    required this.createdAt,
+    this.attachments = const [],
+  });
 
   factory NoticeItem.fromJson(Map<String, dynamic> json) => NoticeItem(
         id: json['id'] as String,
+        broadcastId: json['broadcastId'] as String?,
         title: json['title'] as String?,
         body: json['body'] as String,
         createdAt: DateTime.parse(json['createdAt'] as String),
+        attachments: (json['attachments'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>(),
       );
 }
 

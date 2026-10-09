@@ -33,7 +33,9 @@ class HomeworkListPage extends ConsumerWidget {
               itemBuilder: (context, i) {
                 final r = items[i];
                 final caption = r.content['caption'] as String? ?? '';
-                final photo = r.content['attachmentUrl'] as String?;
+                final photos = (r.content['attachmentUrls'] as List<dynamic>?)?.cast<String>() ??
+                    [if (r.content['attachmentUrl'] is String) r.content['attachmentUrl'] as String];
+                final photo = photos.isEmpty ? null : photos.first;
                 final subject = r.content['subject'] as String?;
                 return Card(
                   clipBehavior: Clip.antiAlias,
@@ -41,7 +43,8 @@ class HomeworkListPage extends ConsumerWidget {
                     onTap: () => context.push('/notices/detail', extra: {
                       'title': AppStrings.menuHomework,
                       'body': caption,
-                      'attachmentUrl': photo,
+                      'attachments': photos,
+                      'broadcastId': r.content['broadcastId'],
                     }),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,

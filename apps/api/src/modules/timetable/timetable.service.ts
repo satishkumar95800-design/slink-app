@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpsertTimetableSlotDto } from './dto/upsert-timetable-slot.dto';
+import { PeriodTimingDto } from './dto/period-timings.dto';
 
 const slotInclude = {
   teacher: { select: { id: true, name: true } },
@@ -93,5 +94,38 @@ export class TimetableService {
   async remove(tenantId: string, id: string): Promise<void> {
     const result = await this.prisma.timetableSlot.deleteMany({ where: { id, tenantId } });
     if (result.count === 0) throw new NotFoundException('Timetable slot not found');
+  }
+
+  // ── Period timings (bell schedule) ─────────────────────────────────────────
+
+  listPeriodTimings(tenantId: string) {
+    return this.prisma.periodTiming.findMany({
+      where: { tenantId },
+      select: { periodNumber: true, startTime: true, endTime: true },
+      orderBy: { periodNumber: 'asc' },
+    });
+  }
+
+  /** Replaces the school's whole bell schedule. "HH:MM" strings compare correctly as text. */
+  async replacePeriodTimings(tenantId: string, periods: PeriodTimingDto[]) {
+    const sorted = [...periods].sort((a, b) => a.periodNumber - b.periodNumber);
+    for (let i = 0; i < sorted.length; i++) {
+      const p = sorted[i];
+      if (p.startTime >= p.endTime) {
+        throw new BadRequestException(`Period ${p.periodNumber} must end after it starts`);
+      }
+      if (i > 0 && sorted[i - 1].periodNumber === p.periodNumber) {
+        throw new BadRequestException(`Period ${p.periodNumber} is listed twice`);
+      }
+      if (i > 0 && sorted[i - 1].endTime > p.startTime) {
+        throw new BadRequestException(`Period ${p.periodNumber} starts before period ${sorted[i - 1].periodNumber} ends`);
+      }
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.periodTiming.deleteMany({ where: { tenantId } }),
+      this.prisma.periodTiming.createMany({ data: sorted.map((p) => ({ tenantId, ...p })) }),
+    ]);
+    return this.listPeriodTimings(tenantId);
   }
 }

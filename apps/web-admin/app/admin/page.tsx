@@ -405,6 +405,7 @@ export default function DashboardPage() {
         <div className="rounded-2xl bg-white shadow-sm border border-gray-100">
           <div className="border-b px-6 py-4">
             <h2 className="text-sm font-semibold text-gray-900">Teacher Workload</h2>
+            <p className="mt-0.5 text-xs text-gray-500">{strings.workload.note}</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

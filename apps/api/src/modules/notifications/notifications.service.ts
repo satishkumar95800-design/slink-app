@@ -1,10 +1,12 @@
 import {
+  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
 import {
+  BroadcastKind,
   NotificationChannel,
   NotificationStatus,
   Prisma,
@@ -25,6 +27,37 @@ import type { ActiveUser } from '../../common/types/active-user.type';
 
 /** Push notifications may sit unread in a device's tray a while — longer-lived than the files module's 15-min default */
 const ATTACHMENT_SIGNED_URL_TTL_SECONDS = 24 * 60 * 60;
+
+export interface BroadcastAttachment {
+  key: string;
+  contentType: string;
+}
+
+/** Content type from the uploaded key's extension (uploads keep the original extension). */
+export function contentTypeForKey(key: string): string {
+  const ext = key.toLowerCase().split('.').pop();
+  if (ext === 'pdf') return 'application/pdf';
+  if (ext === 'png') return 'image/png';
+  return 'image/jpeg';
+}
+
+/**
+ * Normalises old (single fileKey, no kind) and new (fileKeys + kind) requests,
+ * and enforces "up to 3 photos, or 1 PDF on a notice".
+ */
+export function planBroadcast(dto: BroadcastNotificationDto): { kind: BroadcastKind; attachments: BroadcastAttachment[] } {
+  const keys = dto.fileKeys ?? (dto.fileKey ? [dto.fileKey] : []);
+  const attachments = keys.map((key) => ({ key, contentType: contentTypeForKey(key) }));
+  // Older clients don't send kind: photos meant homework; a lone PDF can only be a notice.
+  const kind =
+    dto.kind ?? (attachments.some((a) => a.contentType !== 'application/pdf') ? BroadcastKind.homework : BroadcastKind.notice);
+  const pdfs = attachments.filter((a) => a.contentType === 'application/pdf').length;
+  if (attachments.length > 3) throw new BadRequestException('Attach at most 3 photos');
+  if (pdfs > 0 && (attachments.length > 1 || kind !== BroadcastKind.notice)) {
+    throw new BadRequestException('Attach up to 3 photos, or a single PDF on a notice');
+  }
+  return { kind, attachments };
+}
 
 export interface SendOptions {
   tenantId: string;
@@ -86,10 +119,16 @@ export class NotificationsService {
     tenantId: string,
     dto: BroadcastNotificationDto,
     actor: ActiveUser,
-  ): Promise<{ queued: number }> {
+  ): Promise<{ queued: number; broadcastId?: string }> {
+    const plan = planBroadcast(dto);
     if (actor.role === Role.teacher) {
-      await this.assertTeacherCanBroadcast(tenantId, dto, actor);
+      await this.assertTeacherCanBroadcast(tenantId, dto, plan.kind, actor);
     }
+    const subject =
+      plan.kind === BroadcastKind.homework && dto.subjectId
+        ? await this.prisma.subject.findFirst({ where: { id: dto.subjectId, tenantId }, select: { id: true, name: true } })
+        : null;
+    if (dto.subjectId && plan.kind === BroadcastKind.homework && !subject) throw new NotFoundException('Subject not found');
 
     const users = await this.resolveTargetUsers(tenantId, dto);
 
@@ -97,34 +136,51 @@ export class NotificationsService {
       return { queued: 0 };
     }
 
-    const data = await this.resolveDataPayload(tenantId, dto);
+    // Signing every key up front also proves each file exists and belongs to this school.
+    const signedUrls = await Promise.all(
+      plan.attachments.map((a) => this.files.getSignedUrl(a.key, tenantId, ATTACHMENT_SIGNED_URL_TTL_SECONDS)),
+    );
+
+    const broadcast = await this.prisma.broadcast.create({
+      data: {
+        tenantId,
+        senderId: actor.id,
+        classId: dto.targetType === BroadcastTarget.CLASS ? dto.targetId : null,
+        subjectId: subject?.id ?? null,
+        kind: plan.kind,
+        title: dto.title ?? null,
+        body: dto.body,
+        attachments: plan.attachments as unknown as Prisma.InputJsonValue,
+      },
+    });
+
+    const data = this.resolveDataPayload(dto, plan, broadcast.id, signedUrls);
 
     if (dto.channel === NotificationChannel.fcm) {
-      await this.broadcastFcm(tenantId, users, dto, data);
+      await this.broadcastFcm(tenantId, users, dto, data, broadcast.id);
     } else {
-      await this.broadcastSms(tenantId, users, dto);
+      await this.broadcastSms(tenantId, users, dto, broadcast.id);
     }
 
-    // Homework broadcast (class target + attached photo) also persists a
-    // published Report per student, so it shows up under Reports later —
-    // not just as a push notification a parent might dismiss and lose.
+    // Homework to a class also persists a published Report per student, so it
+    // shows up under the child's Homework later — not just as a push a parent
+    // might dismiss and lose.
     if (
       actor.role === Role.teacher &&
+      plan.kind === BroadcastKind.homework &&
       dto.targetType === BroadcastTarget.CLASS &&
-      dto.fileKey &&
       dto.targetId
     ) {
-      await this.createHomeworkReports(
-        tenantId,
-        dto.targetId,
-        actor.id,
-        dto.body,
-        dto.fileKey,
-        data?.attachmentUrl,
-      );
+      await this.createHomeworkReports(tenantId, dto.targetId, actor.id, {
+        caption: dto.body,
+        fileKeys: plan.attachments.map((a) => a.key),
+        attachmentUrl: signedUrls[0],
+        broadcastId: broadcast.id,
+        subject: subject?.name ?? null,
+      });
     }
 
-    return { queued: users.length };
+    return { queued: users.length, broadcastId: broadcast.id };
   }
 
   /** One published Report(type=homework) per student in the class — mirrors
@@ -134,9 +190,7 @@ export class NotificationsService {
     tenantId: string,
     classId: string,
     teacherId: string,
-    caption: string,
-    fileKey: string,
-    attachmentUrl: string | undefined,
+    item: { caption: string; fileKeys: string[]; attachmentUrl: string | undefined; broadcastId: string; subject: string | null },
   ): Promise<void> {
     const cls = await this.prisma.class.findUnique({
       where: { id: classId, tenantId },
@@ -156,8 +210,15 @@ export class NotificationsService {
         term,
         academicYear: cls.academicYear,
         // attachmentUrl is a 24h signed link (kept for older app builds); readers
-        // re-sign from fileKey so the photo keeps loading after it expires.
-        content: { caption, fileKey, attachmentUrl: attachmentUrl ?? null },
+        // re-sign from fileKey(s) so photos keep loading after it expires.
+        content: {
+          caption: item.caption,
+          fileKey: item.fileKeys[0] ?? null,
+          fileKeys: item.fileKeys,
+          attachmentUrl: item.attachmentUrl ?? null,
+          broadcastId: item.broadcastId,
+          subject: item.subject,
+        },
         status: ReportStatus.published,
         publishedAt: new Date(),
       })),
@@ -243,14 +304,14 @@ export class NotificationsService {
 
   /**
    * Teachers may only broadcast to a class they're linked to (mirrors the check in
-   * ReportsService). A plain text notice (no fileKey) additionally requires the
-   * teacher to be the class's designated class teacher — a co-/subject-teacher who
-   * only has class access via a TeacherSubject assignment may send homework
-   * (fileKey present) but not whole-class notices.
+   * ReportsService). A notice additionally requires the teacher to be the
+   * class's designated class teacher — a co-/subject-teacher who only has class
+   * access via a TeacherSubject assignment may send homework but not notices.
    */
   private async assertTeacherCanBroadcast(
     tenantId: string,
     dto: BroadcastNotificationDto,
+    kind: BroadcastKind,
     actor: ActiveUser,
   ): Promise<void> {
     if (dto.targetType !== BroadcastTarget.CLASS) {
@@ -272,7 +333,7 @@ export class NotificationsService {
       );
     }
 
-    if (!dto.fileKey && !link.isClassTeacher) {
+    if (kind === BroadcastKind.notice && !link.isClassTeacher) {
       throw new ForbiddenException(
         'Only the class teacher can send a text notice to the whole class',
       );
@@ -280,21 +341,22 @@ export class NotificationsService {
   }
 
   /** Resolves dto.fileKey (from POST /files/upload) into a long-lived signed URL for the FCM data payload */
-  private async resolveDataPayload(
-    tenantId: string,
+  /** FCM data payload (string values only). attachmentUrl = first photo, for older app builds. */
+  private resolveDataPayload(
     dto: BroadcastNotificationDto,
-  ): Promise<Record<string, string> | undefined> {
-    // Class broadcasts carry their class so a parent's Notices list can be filtered per child.
-    const base =
-      dto.targetType === BroadcastTarget.CLASS && dto.targetId ? { ...dto.data, classId: dto.targetId } : dto.data;
-    if (!dto.fileKey) return base;
-
-    const attachmentUrl = await this.files.getSignedUrl(
-      dto.fileKey,
-      tenantId,
-      ATTACHMENT_SIGNED_URL_TTL_SECONDS,
-    );
-    return { ...base, attachmentUrl };
+    plan: { kind: BroadcastKind; attachments: BroadcastAttachment[] },
+    broadcastId: string,
+    signedUrls: string[],
+  ): Record<string, string> {
+    return {
+      ...dto.data,
+      type: plan.kind,
+      broadcastId,
+      // Class broadcasts carry their class so a parent's Notices list can be filtered per child.
+      ...(dto.targetType === BroadcastTarget.CLASS && dto.targetId ? { classId: dto.targetId } : {}),
+      ...(signedUrls[0] ? { attachmentUrl: signedUrls[0] } : {}),
+      attachmentCount: String(plan.attachments.length),
+    };
   }
 
   private async resolveTargetUsers(
@@ -336,6 +398,7 @@ export class NotificationsService {
     users: Array<{ id: string; fcmTokens: string[] }>,
     dto: BroadcastNotificationDto,
     data: Record<string, string> | undefined,
+    broadcastId: string,
   ) {
     const allTokens = users.flatMap((u) => u.fcmTokens);
 
@@ -350,6 +413,7 @@ export class NotificationsService {
             title: dto.title,
             body: dto.body,
             data: data ?? Prisma.JsonNull,
+            broadcastId,
           },
         }),
       ),
@@ -399,6 +463,7 @@ export class NotificationsService {
     tenantId: string,
     users: Array<{ id: string; phone: string | null }>,
     dto: BroadcastNotificationDto,
+    broadcastId: string,
   ) {
     for (const user of users) {
       const record = await this.prisma.notification.create({
@@ -408,6 +473,7 @@ export class NotificationsService {
           channel: NotificationChannel.sms,
           body: dto.body,
           data: dto.data ?? Prisma.JsonNull,
+          broadcastId,
         },
       });
 

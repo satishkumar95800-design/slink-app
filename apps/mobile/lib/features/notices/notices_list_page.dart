@@ -41,7 +41,12 @@ class NoticesListPage extends ConsumerWidget {
                   title: Text(n.title ?? AppStrings.menuNotices),
                   subtitle: Text(n.body, maxLines: 2, overflow: TextOverflow.ellipsis),
                   trailing: Text(displayDate(n.createdAt), style: Theme.of(context).textTheme.bodySmall),
-                  onTap: () => context.push('/notices/detail', extra: {'title': n.title ?? AppStrings.menuNotices, 'body': n.body}),
+                  onTap: () => context.push('/notices/detail', extra: {
+                    'title': n.title ?? AppStrings.menuNotices,
+                    'body': n.body,
+                    'attachments': n.attachments,
+                    'broadcastId': n.broadcastId,
+                  }),
                 );
               },
             );

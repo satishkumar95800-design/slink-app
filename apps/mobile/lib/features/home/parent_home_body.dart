@@ -236,7 +236,8 @@ class _TodayCard extends StatelessWidget {
                   onTap: () => context.push('/notices/detail', extra: {
                     'title': AppStrings.menuHomework,
                     'body': hw.caption,
-                    'attachmentUrl': hw.photoUrl,
+                    'attachments': hw.photoUrls.isNotEmpty ? hw.photoUrls : [if (hw.photoUrl != null) hw.photoUrl],
+                    'broadcastId': hw.broadcastId,
                   }),
                 ),
             const Divider(height: 1),
@@ -247,7 +248,12 @@ class _TodayCard extends StatelessWidget {
                 leading: const Icon(Icons.campaign_outlined),
                 title: Text(notice.title ?? AppStrings.latestNotice, maxLines: 1, overflow: TextOverflow.ellipsis),
                 subtitle: Text('${displayDate(notice.createdAt)} · ${notice.body}', maxLines: 2, overflow: TextOverflow.ellipsis),
-                onTap: () => context.push('/notices/detail', extra: {'title': notice.title ?? AppStrings.latestNotice, 'body': notice.body}),
+                onTap: () => context.push('/notices/detail', extra: {
+                  'title': notice.title ?? AppStrings.latestNotice,
+                  'body': notice.body,
+                  'attachments': notice.attachments,
+                  'broadcastId': notice.broadcastId,
+                }),
               ),
           ],
         ),

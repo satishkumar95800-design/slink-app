@@ -1,4 +1,6 @@
 import {
+  ArrayMaxSize,
+  IsArray,
   IsEnum,
   IsString,
   IsOptional,
@@ -8,7 +10,7 @@ import {
   MinLength,
   ValidateIf,
 } from 'class-validator';
-import { NotificationChannel } from '@prisma/client';
+import { BroadcastKind, NotificationChannel } from '@prisma/client';
 
 export enum BroadcastTarget {
   CLASS = 'class',
@@ -48,9 +50,28 @@ export class BroadcastNotificationDto {
   @IsOptional()
   data?: Record<string, string>;
 
-  /** S3 key of a file already uploaded via POST /files/upload (category: attachment) */
+  /** S3 key of a file already uploaded via POST /files/upload (category: attachment).
+   * Single-photo form kept for older app builds; newer ones send [fileKeys]. */
   @IsString()
   @MaxLength(512)
   @IsOptional()
   fileKey?: string;
+
+  /** Up to 3 photos, or 1 PDF (notices only). Takes precedence over [fileKey]. */
+  @IsArray()
+  @ArrayMaxSize(3)
+  @IsString({ each: true })
+  @MaxLength(512, { each: true })
+  @IsOptional()
+  fileKeys?: string[];
+
+  /** notice or homework. Older builds omit it: an attachment meant homework, none meant a notice. */
+  @IsEnum(BroadcastKind)
+  @IsOptional()
+  kind?: BroadcastKind;
+
+  /** Homework only: the subject it's for (shown to parents). */
+  @IsUUID()
+  @IsOptional()
+  subjectId?: string;
 }

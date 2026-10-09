@@ -53,6 +53,11 @@ enum ReportType {
   report_card
 }
 
+enum BroadcastKind {
+  notice
+  homework
+}
+
 enum AttendanceStatus {
   present
   absent
@@ -208,6 +213,8 @@ model Tenant {
   studentNotes             StudentNote[]
   attendanceRecords        AttendanceRecord[]
   schoolHolidays           SchoolHoliday[]
+  broadcasts               Broadcast[]
+  periodTimings            PeriodTiming[]
 
   @@map("tenants")
 }
@@ -240,6 +247,7 @@ model User {
   submittedClaims  PaymentClaim[]  @relation("PaymentClaimSubmitter")
   reviewedClaims   PaymentClaim[]  @relation("PaymentClaimReviewer")
   markedAttendance AttendanceRecord[] @relation("AttendanceMarkedBy")
+  sentBroadcasts   Broadcast[]        @relation("BroadcastSender")
   authoredStudentNotes StudentNote[]
 
   @@unique([tenantId, phone])
@@ -337,6 +345,7 @@ model Class {
   receipts           Receipt[]
   timetableSlots     TimetableSlot[]
   attendanceRecords  AttendanceRecord[]
+  broadcasts         Broadcast[]
 
   @@unique([tenantId, name, section, academicYear])
   @@index([tenantId])
@@ -371,6 +380,7 @@ model Subject {
   tenant             Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   teacherAssignments TeacherSubject[]
   timetableSlots     TimetableSlot[]
+  broadcasts         Broadcast[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -767,13 +777,18 @@ model Notification {
   error     String?
   sentAt    DateTime?           @map("sent_at")
   createdAt DateTime            @default(now()) @map("created_at")
+  // Set for notice/homework fan-out rows; seenAt is when this parent opened the item.
+  broadcastId String?   @map("broadcast_id") @db.Uuid
+  seenAt      DateTime? @map("seen_at")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  broadcast Broadcast? @relation(fields: [broadcastId], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([userId])
   @@index([status])
+  @@index([broadcastId])
   @@map("notifications")
 }
 
@@ -997,4 +1012,46 @@ model SchoolHoliday {
 
   @@unique([tenantId, date])
   @@map("school_holidays")
+}
+
+/// One notice or homework message as sent (docs/SPEC-improvements.md §4.3);
+/// each recipient's Notification row links back here for "seen by" counts.
+model Broadcast {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String        @map("tenant_id") @db.Uuid
+  senderId    String        @map("sender_id") @db.Uuid
+  classId     String?       @map("class_id") @db.Uuid
+  subjectId   String?       @map("subject_id") @db.Uuid
+  kind        BroadcastKind
+  title       String?
+  body        String
+  /// [{ key, contentType }] — up to 3 images, or 1 PDF (notices only).
+  attachments Json          @default("[]")
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sender        User           @relation("BroadcastSender", fields: [senderId], references: [id], onDelete: Cascade)
+  class         Class?         @relation(fields: [classId], references: [id], onDelete: SetNull)
+  subject       Subject?       @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  notifications Notification[]
+
+  @@index([tenantId, senderId])
+  @@index([tenantId, classId])
+  @@map("broadcasts")
+}
+
+/// The school's bell schedule: start/end of each period number, for the teacher "Now / Next" strip.
+model PeriodTiming {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  periodNumber Int      @map("period_number")
+  /// "HH:MM", 24-hour, in the school's timezone.
+  startTime    String   @map("start_time")
+  endTime      String   @map("end_time")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, periodNumber])
+  @@map("period_timings")
 }

@@ -60,11 +60,26 @@ export class ReportsService {
     }
   }
 
+  /** Every homework photo (newer homework can have up to 3), freshly signed. */
+  async homeworkAttachmentUrls(tenantId: string, content: Prisma.JsonValue): Promise<string[]> {
+    if (!content || typeof content !== 'object' || Array.isArray(content)) return [];
+    const keys = Array.isArray(content.fileKeys) ? content.fileKeys.filter((k): k is string => typeof k === 'string') : [];
+    if (keys.length === 0) {
+      const single = await this.homeworkAttachmentUrl(tenantId, content);
+      return single ? [single] : [];
+    }
+    return Promise.all(
+      keys.map((key) =>
+        this.files.getSignedUrl(key, tenantId, HOMEWORK_PHOTO_URL_TTL_SECONDS, { verifyExists: false }).catch(() => null),
+      ),
+    ).then((urls) => urls.filter((u): u is string => !!u));
+  }
+
   private async withFreshAttachment<T extends { type: ReportType; content: Prisma.JsonValue }>(tenantId: string, report: T): Promise<T> {
     if (report.type !== ReportType.homework) return report;
-    const attachmentUrl = await this.homeworkAttachmentUrl(tenantId, report.content);
+    const attachmentUrls = await this.homeworkAttachmentUrls(tenantId, report.content);
     const content = report.content && typeof report.content === 'object' && !Array.isArray(report.content) ? report.content : {};
-    return { ...report, content: { ...content, attachmentUrl } };
+    return { ...report, content: { ...content, attachmentUrl: attachmentUrls[0] ?? null, attachmentUrls } };
   }
 
   async create(tenantId: string, dto: CreateReportDto, user: ActiveUser) {

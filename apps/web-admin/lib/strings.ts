@@ -65,6 +65,19 @@ export const strings = {
     holidayNoMarking: (name: string) => `${name} is a school holiday — attendance isn't taken.`,
     confirmSave: (present: number, absent: number) => `Save attendance: ${present} present, ${absent} absent?`,
   },
+  periodTimings: {
+    title: 'Period timings',
+    help: 'Start and end time of each period. Teachers see "Now" and "Next" on the app from these. Leave a period blank if it isn\'t used.',
+    period: (n: number) => `Period ${n}`,
+    start: 'Starts',
+    end: 'Ends',
+    save: 'Save timings',
+    saved: 'Period timings saved',
+    incomplete: (n: number) => `Period ${n} needs both a start and an end time`,
+  },
+  workload: {
+    note: 'Reports Sent counts progress reports, notices and homework (each homework once). Unread = no parent has opened it yet.',
+  },
   holidays: {
     sectionTitle: 'School holidays',
     sectionHelp: 'Holidays are skipped when listing classes that still need attendance. Teachers cannot mark attendance on them.',

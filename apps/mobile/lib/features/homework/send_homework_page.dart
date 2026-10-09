@@ -2,17 +2,20 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
 import '../../shared/models/api_exception.dart';
 import '../../shared/services/broadcast_repository.dart';
 import '../../shared/services/files_repository.dart';
 import '../../shared/widgets/error_banner.dart';
+import '../../shared/widgets/attachment_picker.dart';
 import '../../shared/widgets/primary_button.dart';
+import '../../core/strings.dart';
 import '../classes/classes_repository.dart';
+import '../dashboard/teacher_classes_repository.dart';
 
 /// Lets any teacher linked to a class (class teacher or subject teacher) pick
-/// that class, attach a photo, and send it as homework — POST /files/upload
-/// followed by POST /notifications/broadcast with the resulting fileKey.
+/// that class, attach up to 3 photos and an optional subject, and send it as
+/// homework — POST /files/upload per photo, then POST /notifications/broadcast.
 class SendHomeworkPage extends ConsumerStatefulWidget {
   const SendHomeworkPage({super.key});
 
@@ -23,7 +26,8 @@ class SendHomeworkPage extends ConsumerStatefulWidget {
 class _SendHomeworkPageState extends ConsumerState<SendHomeworkPage> {
   final _captionController = TextEditingController();
   String? _selectedClassId;
-  File? _photo;
+  String? _subjectId;
+  List<File> _photos = [];
   bool _isSending = false;
   String? _error;
 
@@ -33,19 +37,9 @@ class _SendHomeworkPageState extends ConsumerState<SendHomeworkPage> {
     super.dispose();
   }
 
-  Future<void> _pickPhoto() async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 80, maxWidth: 1920, maxHeight: 1920);
-    if (picked != null) {
-      setState(() {
-        _photo = File(picked.path);
-        _error = null;
-      });
-    }
-  }
-
   Future<void> _send(String classId) async {
-    if (_photo == null) {
-      setState(() => _error = 'Take a photo first.');
+    if (_photos.isEmpty) {
+      setState(() => _error = 'Add at least one photo.');
       return;
     }
     setState(() {
@@ -53,13 +47,17 @@ class _SendHomeworkPageState extends ConsumerState<SendHomeworkPage> {
       _error = null;
     });
     try {
-      final fileKey = await ref.read(filesRepositoryProvider).upload(_photo!, category: 'attachment');
+      final files = ref.read(filesRepositoryProvider);
+      final fileKeys = [for (final photo in _photos) await files.upload(photo, category: 'attachment')];
       await ref.read(broadcastRepositoryProvider).sendToClass(
             classId: classId,
+            kind: BroadcastKind.homework,
             title: 'Homework',
             body: _captionController.text.trim().isEmpty ? 'New homework has been posted.' : _captionController.text.trim(),
-            fileKey: fileKey,
+            fileKeys: fileKeys,
+            subjectId: _subjectId,
           );
+      ref.invalidate(sentItemsProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Homework sent')),
@@ -78,7 +76,16 @@ class _SendHomeworkPageState extends ConsumerState<SendHomeworkPage> {
     final classesAsync = ref.watch(myClassesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Send Homework')),
+      appBar: AppBar(
+        title: const Text(AppStrings.sendHomework),
+        actions: [
+          TextButton.icon(
+            onPressed: () => context.push('/broadcasts/sent'),
+            icon: const Icon(Icons.done_all),
+            label: const Text(AppStrings.sentItems),
+          ),
+        ],
+      ),
       body: classesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('Could not load your classes.\n$error')),
@@ -93,8 +100,15 @@ class _SendHomeworkPageState extends ConsumerState<SendHomeworkPage> {
           }
 
           _selectedClassId ??= classes.first.id;
+          final subjects = ref
+                  .watch(myClassOverviewsProvider)
+                  .valueOrNull
+                  ?.where((o) => o.studentClass.id == _selectedClassId)
+                  .expand((o) => o.subjects)
+                  .toList() ??
+              const [];
 
-          return Padding(
+          return SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,19 +120,32 @@ class _SendHomeworkPageState extends ConsumerState<SendHomeworkPage> {
                   items: [
                     for (final cls in classes) DropdownMenuItem(value: cls.id, child: Text(cls.displayName)),
                   ],
-                  onChanged: (value) => setState(() => _selectedClassId = value),
+                  onChanged: (value) => setState(() {
+                    _selectedClassId = value;
+                    _subjectId = null;
+                  }),
                 ),
-                const SizedBox(height: 16),
-                if (_photo != null)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.file(_photo!, height: 220, width: double.infinity, fit: BoxFit.cover),
+                if (subjects.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String?>(
+                    key: ValueKey(_selectedClassId),
+                    initialValue: _subjectId,
+                    decoration: const InputDecoration(labelText: AppStrings.subjectOptional, border: OutlineInputBorder()),
+                    items: [
+                      const DropdownMenuItem<String?>(value: null, child: Text(AppStrings.noSubject)),
+                      for (final subject in subjects) DropdownMenuItem<String?>(value: subject.id, child: Text(subject.name)),
+                    ],
+                    onChanged: (value) => setState(() => _subjectId = value),
                   ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: _pickPhoto,
-                  icon: const Icon(Icons.camera_alt_outlined),
-                  label: Text(_photo == null ? 'Take photo' : 'Retake photo'),
+                ],
+                const SizedBox(height: 16),
+                AttachmentPicker(
+                  files: _photos,
+                  allowPdf: false,
+                  onChanged: (files) => setState(() {
+                    _photos = files;
+                    _error = null;
+                  }),
                 ),
                 const SizedBox(height: 16),
                 TextField(

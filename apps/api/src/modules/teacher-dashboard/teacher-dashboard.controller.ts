@@ -17,6 +17,13 @@ export class TeacherDashboardController {
     return this.service.getMyClasses(tenantId, user.id);
   }
 
+  /** Teacher app "Today" strip: today's periods with times, empty on Sundays/holidays. */
+  @Get('today')
+  @Roles(Role.teacher)
+  getToday(@TenantId() tenantId: string, @CurrentUser() user: ActiveUser) {
+    return this.service.getToday(tenantId, user.id);
+  }
+
   /** Addendum 4 / A14 — Admin Dashboard "Teacher Workload" widget. Admin-only per the spec — not accounts/super_admin. */
   @Get('workload')
   @Roles(Role.admin)

@@ -27,6 +27,8 @@ import '../../features/attendance/attendance_calendar_page.dart';
 import '../../features/attendance/mark_attendance_page.dart';
 import '../../features/homework/homework_list_page.dart';
 import '../../features/notices/notices_list_page.dart';
+import '../../features/broadcasts/sent_items_page.dart';
+import '../../features/student_notes/add_student_note_page.dart';
 
 const _authRoutes = ['/onboarding/tenant', '/login/phone', '/login/otp'];
 
@@ -103,6 +105,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => ReportDetailPage(reportId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/homework', builder: (_, __) => const HomeworkListPage()),
+      GoRoute(path: '/broadcasts/sent', builder: (_, __) => const SentItemsPage()),
+      GoRoute(path: '/student-notes/add', builder: (_, __) => const AddStudentNotePage()),
       GoRoute(path: '/notices', builder: (_, __) => const NoticesListPage()),
       GoRoute(path: '/attendance/mark', builder: (_, __) => const MarkAttendanceEntryPage()),
       GoRoute(
@@ -122,10 +126,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/notices/detail',
         builder: (_, state) {
           final data = (state.extra as Map<String, dynamic>?) ?? const {};
+          // Lists pass `attachments` ([{url, contentType}] or URLs); push taps only have `attachmentUrl`.
+          final raw = data['attachments'] as List<dynamic>? ??
+              [if (data['attachmentUrl'] != null && data['attachmentUrl'].toString().isNotEmpty) data['attachmentUrl']];
           return NoticeDetailPage(
             title: data['title']?.toString() ?? 'Notice',
             body: data['body']?.toString() ?? '',
-            attachmentUrl: data['attachmentUrl']?.toString(),
+            attachments: [for (final a in raw) NoticeAttachment.fromAny(a as Object)],
+            broadcastId: data['broadcastId']?.toString(),
           );
         },
       ),

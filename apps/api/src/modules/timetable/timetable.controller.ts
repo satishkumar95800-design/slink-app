@@ -8,6 +8,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
@@ -18,6 +19,7 @@ import type { ActiveUser } from '../../common/types/active-user.type';
 import { TimetableService } from './timetable.service';
 import { TimetableQueryDto } from './dto/timetable-query.dto';
 import { UpsertTimetableSlotDto } from './dto/upsert-timetable-slot.dto';
+import { ReplacePeriodTimingsDto } from './dto/period-timings.dto';
 
 /** Addendum 4 / A10 — admin-managed weekly timetable, read by the teacher dashboard. */
 @Controller('timetable')
@@ -25,6 +27,19 @@ export class TimetableController {
   constructor(private readonly timetableService: TimetableService) {}
 
   /** Teacher's own weekly routine — must come before ':classId'-shaped routes below. */
+  /** The school's bell schedule (start/end per period number). */
+  @Get('period-timings')
+  @Roles(Role.admin, Role.accounts, Role.teacher, Role.super_admin)
+  periodTimings(@TenantId() tenantId: string) {
+    return this.timetableService.listPeriodTimings(tenantId);
+  }
+
+  @Put('period-timings')
+  @Roles(Role.admin, Role.super_admin)
+  replacePeriodTimings(@TenantId() tenantId: string, @Body() dto: ReplacePeriodTimingsDto) {
+    return this.timetableService.replacePeriodTimings(tenantId, dto.periods);
+  }
+
   @Get('mine')
   @Roles(Role.teacher)
   findMine(@TenantId() tenantId: string, @CurrentUser() user: ActiveUser) {

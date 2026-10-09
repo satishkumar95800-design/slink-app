@@ -6,6 +6,7 @@ import '../../shared/widgets/authenticated_scaffold.dart';
 import '../auth/session_controller.dart';
 import '../classes/classes_repository.dart';
 import 'students_repository.dart';
+import 'today_strip.dart';
 import '../home/parent_home_body.dart';
 import '../../core/strings.dart';
 import '../attendance/attendance_outbox.dart';
@@ -33,7 +34,9 @@ class DashboardPage extends ConsumerWidget {
             ),
         ],
       ),
-      body: isTeacher ? _TeacherDashboardBody(user: user!) : _ParentDashboardBody(user: user),
+      body: isTeacher
+          ? _TeacherDashboardBody(user: user!)
+          : _ParentDashboardBody(user: user),
     );
   }
 }
@@ -66,7 +69,8 @@ class _ParentDashboardBody extends ConsumerWidget {
       error: (error, _) => Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text('Could not load your children.\n$error', textAlign: TextAlign.center),
+          child: Text('Could not load your children.\n$error',
+              textAlign: TextAlign.center),
         ),
       ),
     );
@@ -81,65 +85,80 @@ class _TeacherDashboardBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final classesAsync = ref.watch(myClassesProvider);
-    final isClassTeacherOfAny = classesAsync.valueOrNull?.any((c) => c.isClassTeacherFor(user.id)) ?? false;
+    final isClassTeacherOfAny =
+        classesAsync.valueOrNull?.any((c) => c.isClassTeacherFor(user.id)) ??
+            false;
     final hasAnyClass = classesAsync.valueOrNull?.isNotEmpty ?? false;
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Teacher dashboard', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 8),
-          Text('Signed in as ${user.name}', style: Theme.of(context).textTheme.bodyMedium),
-          const SizedBox(height: 24),
-          const _MarkAttendanceCard(),
-          if (isClassTeacherOfAny) ...[
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(teacherTodayProvider);
+        ref.invalidate(myAttendanceClassesProvider);
+        ref.invalidate(myClassesProvider);
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Teacher dashboard',
+                style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 8),
+            Text('Signed in as ${user.name}',
+                style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(height: 24),
+            const TodayStrip(),
+            const _MarkAttendanceCard(),
+            if (hasAnyClass) ...[
+              _NavCard(
+                icon: Icons.camera_alt_outlined,
+                title: AppStrings.sendHomework,
+                subtitle: AppStrings.sendHomeworkSubtitle,
+                onTap: () => context.push('/homework/send'),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (isClassTeacherOfAny) ...[
+              _NavCard(
+                icon: Icons.campaign_outlined,
+                title: AppStrings.sendNotice,
+                subtitle: AppStrings.sendNoticeSubtitle,
+                onTap: () => context.push('/notices/send'),
+              ),
+              const SizedBox(height: 12),
+            ],
             _NavCard(
-              icon: Icons.campaign_outlined,
-              title: 'Send Notice',
-              subtitle: 'Message all parents in your class',
-              onTap: () => context.push('/notices/send'),
+              icon: Icons.assignment,
+              title: AppStrings.reportsCard,
+              subtitle: AppStrings.reportsCardSubtitle,
+              onTap: () => context.push('/dashboard/reports'),
             ),
             const SizedBox(height: 12),
-          ],
-          if (hasAnyClass) ...[
+            if (hasAnyClass) ...[
+              _NavCard(
+                icon: Icons.sticky_note_2_outlined,
+                title: AppStrings.addStudentNote,
+                subtitle: AppStrings.addStudentNoteSubtitle,
+                onTap: () => context.push('/student-notes/add'),
+              ),
+              const SizedBox(height: 12),
+            ],
             _NavCard(
-              icon: Icons.camera_alt_outlined,
-              title: 'Send Homework',
-              subtitle: 'Take a photo and send it to a class',
-              onTap: () => context.push('/homework/send'),
+              icon: Icons.calendar_view_week,
+              title: AppStrings.weeklyRoutine,
+              subtitle: AppStrings.weeklyRoutineSubtitle,
+              onTap: () => context.push('/dashboard/routine'),
             ),
             const SizedBox(height: 12),
+            _NavCard(
+              icon: Icons.groups_outlined,
+              title: AppStrings.aboutMyClasses,
+              subtitle: AppStrings.aboutMyClassesSubtitle,
+              onTap: () => context.push('/dashboard/my-classes'),
+            ),
           ],
-          _NavCard(
-            icon: Icons.assignment,
-            title: 'Reports',
-            subtitle: 'Review recent student performance and homework updates',
-            onTap: () => context.push('/dashboard/reports'),
-          ),
-          const SizedBox(height: 12),
-          _NavCard(
-            icon: Icons.calendar_view_week,
-            title: 'Weekly Routine',
-            subtitle: 'Your own class timetable for the week',
-            onTap: () => context.push('/dashboard/routine'),
-          ),
-          const SizedBox(height: 12),
-          _NavCard(
-            icon: Icons.groups_outlined,
-            title: 'About My Class(es)',
-            subtitle: 'Strength, subjects, and recent reports for your classes',
-            onTap: () => context.push('/dashboard/my-classes'),
-          ),
-          const SizedBox(height: 12),
-          _NavCard(
-            icon: Icons.person_outline,
-            title: 'Profile',
-            subtitle: 'View account details and sign out',
-            onTap: () => context.push('/profile'),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -181,7 +200,9 @@ class _MarkAttendanceCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final classesAsync = ref.watch(myAttendanceClassesProvider);
-    final waiting = ref.watch(attendanceOutboxProvider).any((p) => p.rejectedReason == null);
+    final waiting = ref
+        .watch(attendanceOutboxProvider)
+        .any((p) => p.rejectedReason == null);
     final data = classesAsync.valueOrNull;
     if (data == null && !classesAsync.isLoading) return const SizedBox.shrink();
     if (data != null && data.classes.isEmpty) return const SizedBox.shrink();
@@ -210,7 +231,8 @@ class _MarkAttendanceCard extends ConsumerWidget {
             size: 32,
             color: done ? AttendanceColors.present : null,
           ),
-          title: Text(AppStrings.markAttendance, style: Theme.of(context).textTheme.titleMedium),
+          title: Text(AppStrings.markAttendance,
+              style: Theme.of(context).textTheme.titleMedium),
           subtitle: Text(subtitle),
           trailing: const Icon(Icons.chevron_right),
           onTap: () async {

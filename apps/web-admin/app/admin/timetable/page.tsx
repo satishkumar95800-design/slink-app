@@ -8,6 +8,8 @@ import { Modal } from '../../../components/ui/modal';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
+import { getSession } from '../../../lib/auth';
+import { strings } from '../../../lib/strings';
 
 interface SchoolClass {
   id: string;
@@ -297,6 +299,8 @@ export default function TimetablePage() {
         </div>
       )}
 
+      {getSession()?.role === 'admin' && <PeriodTimingsSection />}
+
       <Modal
         open={!!activeCell}
         onClose={closeCell}
@@ -343,6 +347,89 @@ export default function TimetablePage() {
           </div>
         </div>
       </Modal>
+    </div>
+  );
+}
+
+interface PeriodTiming {
+  periodNumber: number;
+  startTime: string;
+  endTime: string;
+}
+
+/** Bell schedule editor — drives the teacher app's "Now / Next" strip. */
+function PeriodTimingsSection() {
+  const t = strings.periodTimings;
+  const { toast } = useToast();
+  const [rows, setRows] = useState<Record<number, { start: string; end: string }>>({});
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    api
+      .get<PeriodTiming[]>('/timetable/period-timings')
+      .then((list) => setRows(Object.fromEntries(list.map((p) => [p.periodNumber, { start: p.startTime, end: p.endTime }]))))
+      .catch(() => {});
+  }, []);
+
+  function update(period: number, field: 'start' | 'end', value: string) {
+    setRows((prev) => ({ ...prev, [period]: { start: prev[period]?.start ?? '', end: prev[period]?.end ?? '', [field]: value } }));
+  }
+
+  async function save() {
+    const periods: PeriodTiming[] = [];
+    for (const p of PERIODS) {
+      const r = rows[p];
+      if (!r || (!r.start && !r.end)) continue;
+      if (!r.start || !r.end) {
+        toast(t.incomplete(p), 'error');
+        return;
+      }
+      periods.push({ periodNumber: p, startTime: r.start, endTime: r.end });
+    }
+    setSaving(true);
+    try {
+      await api.put('/timetable/period-timings', { periods });
+      toast(t.saved, 'success');
+    } catch (e) {
+      toast((e as ApiError).message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <h2 className="text-base font-semibold text-gray-900">{t.title}</h2>
+      <p className="mt-1 text-sm text-gray-500">{t.help}</p>
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {PERIODS.map((p) => (
+          <div key={p} className="rounded-xl border border-gray-100 p-3">
+            <p className="text-xs font-semibold text-gray-500">{t.period(p)}</p>
+            <div className="mt-2 flex items-center gap-2">
+              <input
+                type="time"
+                aria-label={`${t.period(p)} ${t.start}`}
+                value={rows[p]?.start ?? ''}
+                onChange={(e) => update(p, 'start', e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+              />
+              <span className="text-gray-400">–</span>
+              <input
+                type="time"
+                aria-label={`${t.period(p)} ${t.end}`}
+                value={rows[p]?.end ?? ''}
+                onChange={(e) => update(p, 'end', e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 flex justify-end">
+        <Button onClick={save} loading={saving}>
+          {t.save}
+        </Button>
+      </div>
     </div>
   );
 }
