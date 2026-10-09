@@ -6,7 +6,12 @@
 /** "YYYY-MM-DD" for the current calendar day in [timeZone]. */
 export function todayIn(timeZone: string, now: Date = new Date()): string {
   // en-CA formats as YYYY-MM-DD.
-  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
 }
 
 /** "YYYY-MM-DD" -> Date at UTC midnight, the shape Prisma uses for @db.Date. */
@@ -30,24 +35,32 @@ export function isValidYmd(ymd: string): boolean {
 export function monthRange(month: string): { from: string; to: string } {
   const [y, m] = month.split('-').map(Number);
   const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  return { from: `${month}-01`, to: `${month}-${String(last).padStart(2, '0')}` };
+  return {
+    from: `${month}-01`,
+    to: `${month}-${String(last).padStart(2, '0')}`,
+  };
 }
 
 /**
- * Date range for an academic-year label like "2025-26". Indian schools run
- * April–March; attendance only exists from when marking starts, so a school
- * that opens in June simply has no rows for April–May.
+ * Date range for an academic-year label like "2025-26": June to May, the same
+ * convention the fees module uses (fee-component-explosion.util.ts).
  */
-export function academicYearRange(label: string): { from: string; to: string } | null {
+export function academicYearRange(
+  label: string,
+): { from: string; to: string } | null {
   const match = /^(\d{4})-\d{2}$/.exec(label);
   if (!match) return null;
   const start = Number(match[1]);
-  return { from: `${start}-04-01`, to: `${start + 1}-03-31` };
+  return { from: `${start}-06-01`, to: `${start + 1}-05-31` };
 }
 
 /** Inclusive day count between two YYYY-MM-DD dates. */
 export function daysBetween(from: string, to: string): number {
-  return Math.round((toDbDate(to).getTime() - toDbDate(from).getTime()) / 86_400_000) + 1;
+  return (
+    Math.round(
+      (toDbDate(to).getTime() - toDbDate(from).getTime()) / 86_400_000,
+    ) + 1
+  );
 }
 
 /** DD/MM/YYYY for user-facing text. */

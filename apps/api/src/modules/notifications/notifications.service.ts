@@ -45,16 +45,30 @@ export function contentTypeForKey(key: string): string {
  * Normalises old (single fileKey, no kind) and new (fileKeys + kind) requests,
  * and enforces "up to 3 photos, or 1 PDF on a notice".
  */
-export function planBroadcast(dto: BroadcastNotificationDto): { kind: BroadcastKind; attachments: BroadcastAttachment[] } {
+export function planBroadcast(dto: BroadcastNotificationDto): {
+  kind: BroadcastKind;
+  attachments: BroadcastAttachment[];
+} {
   const keys = dto.fileKeys ?? (dto.fileKey ? [dto.fileKey] : []);
-  const attachments = keys.map((key) => ({ key, contentType: contentTypeForKey(key) }));
+  const attachments = keys.map((key) => ({
+    key,
+    contentType: contentTypeForKey(key),
+  }));
   // Older clients don't send kind: photos meant homework; a lone PDF can only be a notice.
   const kind =
-    dto.kind ?? (attachments.some((a) => a.contentType !== 'application/pdf') ? BroadcastKind.homework : BroadcastKind.notice);
-  const pdfs = attachments.filter((a) => a.contentType === 'application/pdf').length;
-  if (attachments.length > 3) throw new BadRequestException('Attach at most 3 photos');
+    dto.kind ??
+    (attachments.some((a) => a.contentType !== 'application/pdf')
+      ? BroadcastKind.homework
+      : BroadcastKind.notice);
+  const pdfs = attachments.filter(
+    (a) => a.contentType === 'application/pdf',
+  ).length;
+  if (attachments.length > 3)
+    throw new BadRequestException('Attach at most 3 photos');
   if (pdfs > 0 && (attachments.length > 1 || kind !== BroadcastKind.notice)) {
-    throw new BadRequestException('Attach up to 3 photos, or a single PDF on a notice');
+    throw new BadRequestException(
+      'Attach up to 3 photos, or a single PDF on a notice',
+    );
   }
   return { kind, attachments };
 }
@@ -126,9 +140,13 @@ export class NotificationsService {
     }
     const subject =
       plan.kind === BroadcastKind.homework && dto.subjectId
-        ? await this.prisma.subject.findFirst({ where: { id: dto.subjectId, tenantId }, select: { id: true, name: true } })
+        ? await this.prisma.subject.findFirst({
+            where: { id: dto.subjectId, tenantId },
+            select: { id: true, name: true },
+          })
         : null;
-    if (dto.subjectId && plan.kind === BroadcastKind.homework && !subject) throw new NotFoundException('Subject not found');
+    if (dto.subjectId && plan.kind === BroadcastKind.homework && !subject)
+      throw new NotFoundException('Subject not found');
 
     const users = await this.resolveTargetUsers(tenantId, dto);
 
@@ -138,7 +156,13 @@ export class NotificationsService {
 
     // Signing every key up front also proves each file exists and belongs to this school.
     const signedUrls = await Promise.all(
-      plan.attachments.map((a) => this.files.getSignedUrl(a.key, tenantId, ATTACHMENT_SIGNED_URL_TTL_SECONDS)),
+      plan.attachments.map((a) =>
+        this.files.getSignedUrl(
+          a.key,
+          tenantId,
+          ATTACHMENT_SIGNED_URL_TTL_SECONDS,
+        ),
+      ),
     );
 
     const broadcast = await this.prisma.broadcast.create({
@@ -190,7 +214,13 @@ export class NotificationsService {
     tenantId: string,
     classId: string,
     teacherId: string,
-    item: { caption: string; fileKeys: string[]; attachmentUrl: string | undefined; broadcastId: string; subject: string | null },
+    item: {
+      caption: string;
+      fileKeys: string[];
+      attachmentUrl: string | undefined;
+      broadcastId: string;
+      subject: string | null;
+    },
   ): Promise<void> {
     const cls = await this.prisma.class.findUnique({
       where: { id: classId, tenantId },
@@ -274,7 +304,11 @@ export class NotificationsService {
    * A user's own notification history (parent/teacher "view later" list) —
    * always scoped to the caller's own id, never a client-supplied userId.
    */
-  async findMine(tenantId: string, userId: string, query: NotificationQueryDto) {
+  async findMine(
+    tenantId: string,
+    userId: string,
+    query: NotificationQueryDto,
+  ) {
     const where: Prisma.NotificationWhereInput = { tenantId, userId };
     if (query.channel) where.channel = query.channel;
 
@@ -322,7 +356,9 @@ export class NotificationsService {
 
     const cls = await this.prisma.class.findUnique({
       where: { id: dto.targetId, tenantId },
-      select: { teachers: { select: { teacherId: true, isClassTeacher: true } } },
+      select: {
+        teachers: { select: { teacherId: true, isClassTeacher: true } },
+      },
     });
     if (!cls) throw new NotFoundException('Class not found');
 
@@ -353,7 +389,9 @@ export class NotificationsService {
       type: plan.kind,
       broadcastId,
       // Class broadcasts carry their class so a parent's Notices list can be filtered per child.
-      ...(dto.targetType === BroadcastTarget.CLASS && dto.targetId ? { classId: dto.targetId } : {}),
+      ...(dto.targetType === BroadcastTarget.CLASS && dto.targetId
+        ? { classId: dto.targetId }
+        : {}),
       ...(signedUrls[0] ? { attachmentUrl: signedUrls[0] } : {}),
       attachmentCount: String(plan.attachments.length),
     };

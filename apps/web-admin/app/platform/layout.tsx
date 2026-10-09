@@ -69,6 +69,16 @@ export default function PlatformLayout({ children }: { children: ReactNode }) {
               >
                 Tenants
               </Link>
+              <Link
+                href="/platform/leads"
+                className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                  pathname.startsWith('/platform/leads')
+                    ? 'bg-coral text-white'
+                    : 'text-white/80 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                Leads
+              </Link>
             </nav>
           </div>
           <div className="flex flex-shrink-0 items-center gap-2 sm:gap-4">

@@ -4,7 +4,15 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { BroadcastsService } from '../broadcasts/broadcasts.service';
 import { toDbDate, todayIn } from '../attendance/attendance-dates';
 
-const WEEKDAY_NUMBER: Record<string, number> = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 };
+const WEEKDAY_NUMBER: Record<string, number> = {
+  Mon: 1,
+  Tue: 2,
+  Wed: 3,
+  Thu: 4,
+  Fri: 5,
+  Sat: 6,
+  Sun: 7,
+};
 
 @Injectable()
 export class TeacherDashboardService {
@@ -19,19 +27,40 @@ export class TeacherDashboardService {
    * Sundays and school holidays return no periods.
    */
   async getToday(tenantId: string, teacherId: string) {
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { timezone: true } });
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { timezone: true },
+    });
     const timeZone = tenant?.timezone || 'Asia/Kolkata';
     const now = new Date();
     const date = todayIn(timeZone, now);
-    const weekday = WEEKDAY_NUMBER[new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short' }).format(now)];
-    const nowTime = new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
+    const weekday =
+      WEEKDAY_NUMBER[
+        new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short' }).format(
+          now,
+        )
+      ];
+    const nowTime = new Intl.DateTimeFormat('en-GB', {
+      timeZone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(now);
 
     const holiday = await this.prisma.schoolHoliday.findUnique({
       where: { tenantId_date: { tenantId, date: toDbDate(date) } },
       select: { name: true },
     });
     if (weekday === 7 || holiday) {
-      return { date, weekday, nowTime, offDay: true, holiday: holiday?.name ?? null, timingsConfigured: false, periods: [] };
+      return {
+        date,
+        weekday,
+        nowTime,
+        offDay: true,
+        holiday: holiday?.name ?? null,
+        timingsConfigured: false,
+        periods: [],
+      };
     }
 
     const [slots, timings] = await Promise.all([
@@ -44,7 +73,10 @@ export class TeacherDashboardService {
         },
         orderBy: { periodNumber: 'asc' },
       }),
-      this.prisma.periodTiming.findMany({ where: { tenantId }, select: { periodNumber: true, startTime: true, endTime: true } }),
+      this.prisma.periodTiming.findMany({
+        where: { tenantId },
+        select: { periodNumber: true, startTime: true, endTime: true },
+      }),
     ]);
     const timingByPeriod = new Map(timings.map((t) => [t.periodNumber, t]));
 
@@ -82,7 +114,9 @@ export class TeacherDashboardService {
     const classLinks = await this.prisma.classTeacher.findMany({
       where: { teacherId, class: { tenantId } },
       select: {
-        class: { select: { id: true, name: true, section: true, academicYear: true } },
+        class: {
+          select: { id: true, name: true, section: true, academicYear: true },
+        },
       },
     });
 
@@ -122,7 +156,13 @@ export class TeacherDashboardService {
 
         return {
           class: cls,
-          strength: { male, female, other, unspecified, total: male + female + other + unspecified },
+          strength: {
+            male,
+            female,
+            other,
+            unspecified,
+            total: male + female + other + unspecified,
+          },
           subjects: subjects.map((s) => s.subject),
           recentReports: recentReports.map((r) => ({
             id: r.id,
@@ -152,26 +192,40 @@ export class TeacherDashboardService {
 
     return Promise.all(
       teachers.map(async (teacher) => {
-        const [classCount, distinctSubjects, weeklyPeriods, reports] = await Promise.all([
-          this.prisma.classTeacher.count({ where: { teacherId: teacher.id } }),
-          this.prisma.teacherSubject.findMany({
-            where: { tenantId, teacherId: teacher.id },
-            select: { subjectId: true },
-            distinct: ['subjectId'],
-          }),
-          this.prisma.timetableSlot.count({ where: { tenantId, teacherId: teacher.id } }),
-          // Homework is counted once per message via its broadcast below, not once per student report.
-          this.prisma.report.findMany({
-            where: { tenantId, teacherId: teacher.id, type: { not: ReportType.homework } },
-            select: { _count: { select: { readReceipts: true } } },
-          }),
-        ]);
+        const [classCount, distinctSubjects, weeklyPeriods, reports] =
+          await Promise.all([
+            this.prisma.classTeacher.count({
+              where: { teacherId: teacher.id },
+            }),
+            this.prisma.teacherSubject.findMany({
+              where: { tenantId, teacherId: teacher.id },
+              select: { subjectId: true },
+              distinct: ['subjectId'],
+            }),
+            this.prisma.timetableSlot.count({
+              where: { tenantId, teacherId: teacher.id },
+            }),
+            // Homework is counted once per message via its broadcast below, not once per student report.
+            this.prisma.report.findMany({
+              where: {
+                tenantId,
+                teacherId: teacher.id,
+                type: { not: ReportType.homework },
+              },
+              select: { _count: { select: { readReceipts: true } } },
+            }),
+          ]);
         const sent = await this.prisma.broadcast.findMany({
           where: { tenantId, senderId: teacher.id },
           select: { id: true },
         });
-        const seen = await this.broadcasts.seenCounts(tenantId, sent.map((b) => b.id));
-        const unseenItems = sent.filter((b) => (seen.get(b.id)?.seen ?? 0) === 0).length;
+        const seen = await this.broadcasts.seenCounts(
+          tenantId,
+          sent.map((b) => b.id),
+        );
+        const unseenItems = sent.filter(
+          (b) => (seen.get(b.id)?.seen ?? 0) === 0,
+        ).length;
 
         return {
           teacherId: teacher.id,
@@ -181,7 +235,9 @@ export class TeacherDashboardService {
           weeklyPeriods,
           // Progress reports + notices + homework; unread = no parent has opened it yet.
           reportsSent: reports.length + sent.length,
-          reportsUnread: reports.filter((r) => r._count.readReceipts === 0).length + unseenItems,
+          reportsUnread:
+            reports.filter((r) => r._count.readReceipts === 0).length +
+            unseenItems,
         };
       }),
     );

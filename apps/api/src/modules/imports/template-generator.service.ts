@@ -100,7 +100,11 @@ export class TemplateGeneratorService {
   }
 
   private buildTeachersTab(workbook: ExcelJS.Workbook) {
-    const sheet = this.addDataSheet(workbook, 'Teachers', DISPLAY_HEADERS.Teachers);
+    const sheet = this.addDataSheet(
+      workbook,
+      'Teachers',
+      DISPLAY_HEADERS.Teachers,
+    );
     this.addExampleRow(sheet, [
       'Jane Doe',
       '+919876543210',
@@ -111,18 +115,18 @@ export class TemplateGeneratorService {
       'Yes',
     ]);
 
-    const isClassTeacherColumn = TAB_HEADERS.Teachers.indexOf('Is Class Teacher') + 1;
+    const isClassTeacherColumn =
+      TAB_HEADERS.Teachers.indexOf('Is Class Teacher') + 1;
     this.applyDropdown(sheet, isClassTeacherColumn, YES_NO_TEMPLATE_OPTIONS, {
       blocking: true,
     });
   }
 
   private buildStudentsTab(workbook: ExcelJS.Workbook) {
-    const sheet = this.addDataSheet(
-      workbook,
-      'Students',
-      [...DISPLAY_HEADERS.Students, ...(OPTIONAL_TAB_HEADERS.Students ?? [])],
-    );
+    const sheet = this.addDataSheet(workbook, 'Students', [
+      ...DISPLAY_HEADERS.Students,
+      ...(OPTIONAL_TAB_HEADERS.Students ?? []),
+    ]);
     this.addExampleRow(sheet, [
       'Amit Kumar',
       'A-2025-001',
@@ -144,15 +148,27 @@ export class TemplateGeneratorService {
       '12',
     ]);
 
-    const guardian1RelationColumn = TAB_HEADERS.Students.indexOf('Guardian 1 Relation') + 1;
-    this.applyDropdown(sheet, guardian1RelationColumn, GUARDIAN_RELATION_TEMPLATE_OPTIONS, {
-      blocking: true,
-    });
+    const guardian1RelationColumn =
+      TAB_HEADERS.Students.indexOf('Guardian 1 Relation') + 1;
+    this.applyDropdown(
+      sheet,
+      guardian1RelationColumn,
+      GUARDIAN_RELATION_TEMPLATE_OPTIONS,
+      {
+        blocking: true,
+      },
+    );
 
-    const guardian2RelationColumn = TAB_HEADERS.Students.indexOf('Guardian 2 Relation') + 1;
-    this.applyDropdown(sheet, guardian2RelationColumn, GUARDIAN_RELATION_TEMPLATE_OPTIONS, {
-      blocking: true,
-    });
+    const guardian2RelationColumn =
+      TAB_HEADERS.Students.indexOf('Guardian 2 Relation') + 1;
+    this.applyDropdown(
+      sheet,
+      guardian2RelationColumn,
+      GUARDIAN_RELATION_TEMPLATE_OPTIONS,
+      {
+        blocking: true,
+      },
+    );
 
     const bloodGroupColumn = TAB_HEADERS.Students.indexOf('Blood Group') + 1;
     this.applyDropdown(sheet, bloodGroupColumn, BLOOD_GROUP_TEMPLATE_OPTIONS, {

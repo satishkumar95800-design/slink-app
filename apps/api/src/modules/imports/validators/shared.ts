@@ -54,7 +54,8 @@ export function pushLowercaseNameWarning(
   column: string,
   name: string,
 ): void {
-  if (name && isAllLowercaseName(name)) warnings.push(issue(tab, row, column, LOWERCASE_NAME_WARNING));
+  if (name && isAllLowercaseName(name))
+    warnings.push(issue(tab, row, column, LOWERCASE_NAME_WARNING));
 }
 
 export function normalizedName(name: string): string {

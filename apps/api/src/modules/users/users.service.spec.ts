@@ -98,7 +98,9 @@ describe('UsersService', () => {
     it('throws ConflictException when email is already in use', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(makeUser());
 
-      await expect(service.create('tenant-uuid', dto)).rejects.toThrow(ConflictException);
+      await expect(service.create('tenant-uuid', dto)).rejects.toThrow(
+        ConflictException,
+      );
       expect(mockPrisma.user.create).not.toHaveBeenCalled();
     });
   });
@@ -145,7 +147,9 @@ describe('UsersService', () => {
     it('throws NotFoundException when user does not exist', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.findById('tenant-uuid', 'bad-uuid')).rejects.toThrow(NotFoundException);
+      await expect(service.findById('tenant-uuid', 'bad-uuid')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -158,11 +162,17 @@ describe('UsersService', () => {
         .mockResolvedValueOnce(null); // email uniqueness check
       mockPrisma.user.update.mockResolvedValue(makeUser({ name: 'Bob' }));
 
-      await service.update('tenant-uuid', 'user-uuid', { name: 'Bob', email: 'new@school.com' });
+      await service.update('tenant-uuid', 'user-uuid', {
+        name: 'Bob',
+        email: 'new@school.com',
+      });
 
       expect(mockPrisma.user.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ name: 'Bob', email: 'new@school.com' }),
+          data: expect.objectContaining({
+            name: 'Bob',
+            email: 'new@school.com',
+          }),
         }),
       );
     });
@@ -181,7 +191,9 @@ describe('UsersService', () => {
         .mockResolvedValueOnce(makeUser({ id: 'other-uuid' })); // email taken
 
       await expect(
-        service.update('tenant-uuid', 'user-uuid', { email: 'taken@school.com' }),
+        service.update('tenant-uuid', 'user-uuid', {
+          email: 'taken@school.com',
+        }),
       ).rejects.toThrow(ConflictException);
     });
   });
@@ -190,25 +202,38 @@ describe('UsersService', () => {
 
   describe('remove', () => {
     it('deletes a user with no reports', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-uuid', role: Role.accounts });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'user-uuid',
+        role: Role.accounts,
+      });
       mockPrisma.user.delete.mockResolvedValue({});
 
       await service.remove('tenant-uuid', 'user-uuid');
 
-      expect(mockPrisma.user.delete).toHaveBeenCalledWith({ where: { id: 'user-uuid' } });
+      expect(mockPrisma.user.delete).toHaveBeenCalledWith({
+        where: { id: 'user-uuid' },
+      });
       expect(mockPrisma.report.count).not.toHaveBeenCalled();
     });
 
     it('blocks teacher deletion when they have reports', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-uuid', role: Role.teacher });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'user-uuid',
+        role: Role.teacher,
+      });
       mockPrisma.report.count.mockResolvedValue(5);
 
-      await expect(service.remove('tenant-uuid', 'user-uuid')).rejects.toThrow(ConflictException);
+      await expect(service.remove('tenant-uuid', 'user-uuid')).rejects.toThrow(
+        ConflictException,
+      );
       expect(mockPrisma.user.delete).not.toHaveBeenCalled();
     });
 
     it('deletes teacher who has no reports', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-uuid', role: Role.teacher });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'user-uuid',
+        role: Role.teacher,
+      });
       mockPrisma.report.count.mockResolvedValue(0);
       mockPrisma.user.delete.mockResolvedValue({});
 
@@ -220,14 +245,21 @@ describe('UsersService', () => {
     it('throws NotFoundException for unknown user', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.remove('tenant-uuid', 'bad-uuid')).rejects.toThrow(NotFoundException);
+      await expect(service.remove('tenant-uuid', 'bad-uuid')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('blocks deleting any user who has marked attendance', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-uuid', role: Role.admin });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'user-uuid',
+        role: Role.admin,
+      });
       mockPrisma.attendanceRecord.count.mockResolvedValueOnce(12);
 
-      await expect(service.remove('tenant-uuid', 'user-uuid')).rejects.toThrow(ConflictException);
+      await expect(service.remove('tenant-uuid', 'user-uuid')).rejects.toThrow(
+        ConflictException,
+      );
       expect(mockPrisma.attendanceRecord.count).toHaveBeenCalledWith({
         where: { tenantId: 'tenant-uuid', markedBy: 'user-uuid' },
       });
@@ -239,15 +271,22 @@ describe('UsersService', () => {
 
   describe('resetPassword', () => {
     it('hashes new password, updates user, revokes all refresh tokens', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-uuid', role: Role.teacher });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'user-uuid',
+        role: Role.teacher,
+      });
       mockPrisma.user.update.mockResolvedValue({});
       mockPrisma.refreshToken.updateMany.mockResolvedValue({ count: 2 });
 
-      await service.resetPassword('tenant-uuid', 'user-uuid', { newPassword: 'newPass123' });
+      await service.resetPassword('tenant-uuid', 'user-uuid', {
+        newPassword: 'newPass123',
+      });
 
       expect(bcrypt.hash).toHaveBeenCalledWith('newPass123', 12);
       expect(mockPrisma.user.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: { passwordHash: '$2b$12$hashed_password' } }),
+        expect.objectContaining({
+          data: { passwordHash: '$2b$12$hashed_password' },
+        }),
       );
       expect(mockPrisma.refreshToken.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({ data: { revokedAt: expect.any(Date) } }),
@@ -255,10 +294,15 @@ describe('UsersService', () => {
     });
 
     it('throws BadRequestException for parent users', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-uuid', role: Role.parent });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'user-uuid',
+        role: Role.parent,
+      });
 
       await expect(
-        service.resetPassword('tenant-uuid', 'user-uuid', { newPassword: 'newPass123' }),
+        service.resetPassword('tenant-uuid', 'user-uuid', {
+          newPassword: 'newPass123',
+        }),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -279,19 +323,27 @@ describe('UsersService', () => {
   describe('updateMe', () => {
     it('updates own name', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null); // no email uniqueness conflict
-      mockPrisma.user.update.mockResolvedValue(makeUser({ name: 'Alice Updated' }));
+      mockPrisma.user.update.mockResolvedValue(
+        makeUser({ name: 'Alice Updated' }),
+      );
 
-      await service.updateMe('user-uuid', 'tenant-uuid', { name: 'Alice Updated' });
+      await service.updateMe('user-uuid', 'tenant-uuid', {
+        name: 'Alice Updated',
+      });
 
       const call = mockPrisma.user.update.mock.calls[0][0];
       expect(call.data.name).toBe('Alice Updated');
     });
 
     it('throws ConflictException when new email is taken', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(makeUser({ id: 'other-uuid' }));
+      mockPrisma.user.findUnique.mockResolvedValue(
+        makeUser({ id: 'other-uuid' }),
+      );
 
       await expect(
-        service.updateMe('user-uuid', 'tenant-uuid', { email: 'taken@school.com' }),
+        service.updateMe('user-uuid', 'tenant-uuid', {
+          email: 'taken@school.com',
+        }),
       ).rejects.toThrow(ConflictException);
     });
   });
@@ -312,7 +364,10 @@ describe('UsersService', () => {
 
       await service.changePassword('user-uuid', dto);
 
-      expect(bcrypt.compare).toHaveBeenCalledWith('oldPass123', '$2b$12$existing_hash');
+      expect(bcrypt.compare).toHaveBeenCalledWith(
+        'oldPass123',
+        '$2b$12$existing_hash',
+      );
       expect(bcrypt.hash).toHaveBeenCalledWith('newPass456', 12);
     });
 
@@ -336,7 +391,9 @@ describe('UsersService', () => {
         passwordHash: null,
       });
 
-      await expect(service.changePassword('user-uuid', dto)).rejects.toThrow(BadRequestException);
+      await expect(service.changePassword('user-uuid', dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('throws BadRequestException when no password is set', async () => {
@@ -346,7 +403,9 @@ describe('UsersService', () => {
         passwordHash: null,
       });
 
-      await expect(service.changePassword('user-uuid', dto)).rejects.toThrow(BadRequestException);
+      await expect(service.changePassword('user-uuid', dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

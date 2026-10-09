@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FilesService } from '../files/files.service';
@@ -53,7 +57,10 @@ export class BroadcastsService {
       orderBy: { createdAt: 'desc' },
       take: SENT_LIST_LIMIT,
     });
-    const counts = await this.seenCounts(tenantId, broadcasts.map((b) => b.id));
+    const counts = await this.seenCounts(
+      tenantId,
+      broadcasts.map((b) => b.id),
+    );
 
     return broadcasts.map((b) => ({
       id: b.id,
@@ -78,7 +85,9 @@ export class BroadcastsService {
     });
     if (!broadcast) throw new NotFoundException('Notice or homework not found');
     if (!this.isAdmin(user) && broadcast.senderId !== user.id) {
-      throw new ForbiddenException('You can only see who opened items you sent');
+      throw new ForbiddenException(
+        'You can only see who opened items you sent',
+      );
     }
 
     const rows = await this.prisma.notification.findMany({
@@ -90,7 +99,9 @@ export class BroadcastsService {
             name: true,
             phone: true,
             linkedStudents: {
-              where: broadcast.classId ? { student: { classId: broadcast.classId } } : undefined,
+              where: broadcast.classId
+                ? { student: { classId: broadcast.classId } }
+                : undefined,
               select: { student: { select: { name: true } } },
             },
           },
@@ -99,7 +110,12 @@ export class BroadcastsService {
     });
     const byParent = new Map(rows.map((r) => [r.user.id, r.user]));
     return [...byParent.values()]
-      .map((p) => ({ parentId: p.id, name: p.name, phone: p.phone, children: p.linkedStudents.map((l) => l.student.name) }))
+      .map((p) => ({
+        parentId: p.id,
+        name: p.name,
+        phone: p.phone,
+        children: p.linkedStudents.map((l) => l.student.name),
+      }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
@@ -118,15 +134,24 @@ export class BroadcastsService {
       if (r.seenAt) s.seen.add(r.userId);
       sets.set(r.broadcastId!, s);
     }
-    for (const [id, s] of sets) result.set(id, { recipients: s.all.size, seen: s.seen.size });
+    for (const [id, s] of sets)
+      result.set(id, { recipients: s.all.size, seen: s.seen.size });
     return result;
   }
 
   /** Fresh links for a broadcast's stored attachments. */
-  async signAttachments(tenantId: string, raw: Prisma.JsonValue): Promise<SignedAttachment[]> {
+  async signAttachments(
+    tenantId: string,
+    raw: Prisma.JsonValue,
+  ): Promise<SignedAttachment[]> {
     return Promise.all(
       this.attachments(raw).map(async (a) => ({
-        url: await this.files.getSignedUrl(a.key, tenantId, ATTACHMENT_URL_TTL_SECONDS, { verifyExists: false }),
+        url: await this.files.getSignedUrl(
+          a.key,
+          tenantId,
+          ATTACHMENT_URL_TTL_SECONDS,
+          { verifyExists: false },
+        ),
         contentType: a.contentType,
       })),
     );
@@ -136,7 +161,11 @@ export class BroadcastsService {
     if (!Array.isArray(raw)) return [];
     return raw.filter(
       (a): a is { key: string; contentType: string } =>
-        !!a && typeof a === 'object' && !Array.isArray(a) && typeof a.key === 'string' && typeof a.contentType === 'string',
+        !!a &&
+        typeof a === 'object' &&
+        !Array.isArray(a) &&
+        typeof a.key === 'string' &&
+        typeof a.contentType === 'string',
     );
   }
 

@@ -48,9 +48,16 @@ export interface ReceiptPdfInput {
 }
 
 /** Renders one receipt as an A5 PDF and resolves with the bytes. */
-export function buildReceiptPdf(receipt: ReceiptPdfInput, now: Date = new Date()): Promise<Buffer> {
+export function buildReceiptPdf(
+  receipt: ReceiptPdfInput,
+  now: Date = new Date(),
+): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: 'A5', margin: 36, info: { Title: `${t.title} ${receipt.receiptNumber}` } });
+    const doc = new PDFDocument({
+      size: 'A5',
+      margin: 36,
+      info: { Title: `${t.title} ${receipt.receiptNumber}` },
+    });
     const chunks: Buffer[] = [];
     doc.on('data', (c: Buffer) => chunks.push(c));
     doc.on('end', () => resolve(Buffer.concat(chunks)));
@@ -59,22 +66,53 @@ export function buildReceiptPdf(receipt: ReceiptPdfInput, now: Date = new Date()
     doc.registerFont('regular', REGULAR);
     doc.registerFont('bold', BOLD);
 
-    const branding = (receipt.tenant.branding ?? {}) as { address?: string; contactPhone?: string; contactEmail?: string };
+    const branding = (receipt.tenant.branding ?? {}) as {
+      address?: string;
+      contactPhone?: string;
+      contactEmail?: string;
+    };
     const width = doc.page.width - 72;
 
     // School header
-    doc.font('bold').fontSize(16).fillColor('#123E3B').text(receipt.tenant.name, { align: 'center' });
-    const contact = [branding.address, branding.contactPhone, branding.contactEmail].filter(Boolean).join(' · ');
-    if (contact) doc.font('regular').fontSize(8).fillColor('#555555').text(contact, { align: 'center' });
+    doc
+      .font('bold')
+      .fontSize(16)
+      .fillColor('#123E3B')
+      .text(receipt.tenant.name, { align: 'center' });
+    const contact = [
+      branding.address,
+      branding.contactPhone,
+      branding.contactEmail,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+    if (contact)
+      doc
+        .font('regular')
+        .fontSize(8)
+        .fillColor('#555555')
+        .text(contact, { align: 'center' });
     doc.moveDown(0.6);
-    doc.font('bold').fontSize(12).fillColor('#E8623D').text(t.title.toUpperCase(), { align: 'center', characterSpacing: 1 });
+    doc
+      .font('bold')
+      .fontSize(12)
+      .fillColor('#E8623D')
+      .text(t.title.toUpperCase(), { align: 'center', characterSpacing: 1 });
     doc.moveDown(0.4);
     rule(doc, width);
 
     const row = (label: string, value: string, bold = false) => {
       const y = doc.y;
-      doc.font('regular').fontSize(9).fillColor('#666666').text(label, 36, y, { width: width * 0.38 });
-      doc.font(bold ? 'bold' : 'regular').fontSize(bold ? 11 : 10).fillColor('#111111').text(value, 36 + width * 0.4, y, { width: width * 0.6 });
+      doc
+        .font('regular')
+        .fontSize(9)
+        .fillColor('#666666')
+        .text(label, 36, y, { width: width * 0.38 });
+      doc
+        .font(bold ? 'bold' : 'regular')
+        .fontSize(bold ? 11 : 10)
+        .fillColor('#111111')
+        .text(value, 36 + width * 0.4, y, { width: width * 0.6 });
       doc.moveDown(0.35);
     };
 
@@ -83,12 +121,24 @@ export function buildReceiptPdf(receipt: ReceiptPdfInput, now: Date = new Date()
     rule(doc, width);
     row(t.student, receipt.student.name, true);
     row(t.admissionNo, receipt.student.admissionNo);
-    row(t.className, `${[receipt.class.name, receipt.class.section].filter(Boolean).join(' ')} (${receipt.class.academicYear})`);
-    row(t.fee, `${receipt.studentFee.feeStructure.name} (${receipt.studentFee.feeStructure.academicYear})`);
+    row(
+      t.className,
+      `${[receipt.class.name, receipt.class.section].filter(Boolean).join(' ')} (${receipt.class.academicYear})`,
+    );
+    row(
+      t.fee,
+      `${receipt.studentFee.feeStructure.name} (${receipt.studentFee.feeStructure.academicYear})`,
+    );
     rule(doc, width);
     row(t.amount, formatRupees(receipt.amount), true);
-    if (receipt.discountAmount && Number(receipt.discountAmount.toString()) > 0) {
-      row(t.discount(receipt.discountType?.name ?? null), `−${formatRupees(receipt.discountAmount)}${receipt.discountNote ? ` · ${receipt.discountNote}` : ''}`);
+    if (
+      receipt.discountAmount &&
+      Number(receipt.discountAmount.toString()) > 0
+    ) {
+      row(
+        t.discount(receipt.discountType?.name ?? null),
+        `−${formatRupees(receipt.discountAmount)}${receipt.discountNote ? ` · ${receipt.discountNote}` : ''}`,
+      );
     }
     row(t.method, METHOD_LABELS[receipt.method] ?? receipt.method);
     if (receipt.reference) row(t.reference, receipt.reference);
@@ -98,10 +148,25 @@ export function buildReceiptPdf(receipt: ReceiptPdfInput, now: Date = new Date()
       .font('regular')
       .fontSize(7)
       .fillColor('#888888')
-      .text(t.footer(formatDateOnly(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())))), 36, doc.page.height - 50, {
-        width,
-        align: 'center',
-      });
+      .text(
+        t.footer(
+          formatDateOnly(
+            new Date(
+              Date.UTC(
+                now.getUTCFullYear(),
+                now.getUTCMonth(),
+                now.getUTCDate(),
+              ),
+            ),
+          ),
+        ),
+        36,
+        doc.page.height - 50,
+        {
+          width,
+          align: 'center',
+        },
+      );
 
     doc.end();
   });
@@ -109,6 +174,11 @@ export function buildReceiptPdf(receipt: ReceiptPdfInput, now: Date = new Date()
 
 function rule(doc: PDFKit.PDFDocument, width: number) {
   doc.moveDown(0.2);
-  doc.moveTo(36, doc.y).lineTo(36 + width, doc.y).lineWidth(0.5).strokeColor('#DDDDDD').stroke();
+  doc
+    .moveTo(36, doc.y)
+    .lineTo(36 + width, doc.y)
+    .lineWidth(0.5)
+    .strokeColor('#DDDDDD')
+    .stroke();
   doc.moveDown(0.5);
 }

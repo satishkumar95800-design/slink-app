@@ -1,5 +1,17 @@
-import { ParsedTab, TabValidation, ValidClassRow, ValidTeacherRow } from '../types';
-import { EMAIL_REGEX, PHONE_REGEX, cleanName, issue, pushLowercaseNameWarning, resolveClass } from './shared';
+import {
+  ParsedTab,
+  TabValidation,
+  ValidClassRow,
+  ValidTeacherRow,
+} from '../types';
+import {
+  EMAIL_REGEX,
+  PHONE_REGEX,
+  cleanName,
+  issue,
+  pushLowercaseNameWarning,
+  resolveClass,
+} from './shared';
 
 const TAB = 'Teachers' as const;
 
@@ -18,7 +30,13 @@ export function validateTeachersTab(
 
   for (const row of tab.rows) {
     const name = cleanName(row.cells['Teacher Name']);
-    pushLowercaseNameWarning(warnings, TAB, row.rowNumber, 'Teacher Name', name);
+    pushLowercaseNameWarning(
+      warnings,
+      TAB,
+      row.rowNumber,
+      'Teacher Name',
+      name,
+    );
     const phone = row.cells['Phone Number'];
     const email = row.cells['Email'];
     const className = row.cells['Class Name'];
@@ -37,12 +55,19 @@ export function validateTeachersTab(
       hasError = true;
     } else if (!PHONE_REGEX.test(phone)) {
       errors.push(
-        issue(TAB, row.rowNumber, 'Phone Number', 'must be in E.164 format, e.g. +919876543210'),
+        issue(
+          TAB,
+          row.rowNumber,
+          'Phone Number',
+          'must be in E.164 format, e.g. +919876543210',
+        ),
       );
       hasError = true;
     }
     if (email && !EMAIL_REGEX.test(email)) {
-      errors.push(issue(TAB, row.rowNumber, 'Email', 'is not a valid email address'));
+      errors.push(
+        issue(TAB, row.rowNumber, 'Email', 'is not a valid email address'),
+      );
       hasError = true;
     }
     if (!subjectName) {

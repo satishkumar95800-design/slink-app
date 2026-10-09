@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Query, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  Query,
+  Res,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { Role } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -33,14 +45,27 @@ export class AttendanceController {
 
   @Get('roster')
   @Roles(Role.teacher, Role.admin, Role.super_admin)
-  roster(@TenantId() tenantId: string, @CurrentUser() user: ActiveUser, @Query() query: RosterQueryDto) {
-    return this.attendanceService.getRoster(tenantId, query.classId, query.date, user);
+  roster(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @Query() query: RosterQueryDto,
+  ) {
+    return this.attendanceService.getRoster(
+      tenantId,
+      query.classId,
+      query.date,
+      user,
+    );
   }
 
   /** Bulk upsert of a whole class for one date. */
   @Put('class')
   @Roles(Role.teacher, Role.admin, Role.super_admin)
-  submit(@TenantId() tenantId: string, @CurrentUser() user: ActiveUser, @Body() dto: SubmitAttendanceDto) {
+  submit(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @Body() dto: SubmitAttendanceDto,
+  ) {
     return this.attendanceService.submit(tenantId, dto, user);
   }
 
@@ -52,12 +77,20 @@ export class AttendanceController {
     @Param('studentId', ParseUUIDPipe) studentId: string,
     @Query() query: StudentSummaryQueryDto,
   ) {
-    return this.attendanceService.getStudentSummary(tenantId, studentId, query.month, user);
+    return this.attendanceService.getStudentSummary(
+      tenantId,
+      studentId,
+      query.month,
+      user,
+    );
   }
 
   @Get('school-summary')
   @Roles(Role.admin, Role.super_admin)
-  schoolSummary(@TenantId() tenantId: string, @Query() query: SchoolSummaryQueryDto) {
+  schoolSummary(
+    @TenantId() tenantId: string,
+    @Query() query: SchoolSummaryQueryDto,
+  ) {
     return this.attendanceService.getSchoolSummary(tenantId, query.date);
   }
 
@@ -87,7 +120,11 @@ export class AttendanceController {
 
   @Post('holidays')
   @Roles(Role.admin, Role.super_admin)
-  createHoliday(@TenantId() tenantId: string, @CurrentUser() user: ActiveUser, @Body() dto: CreateHolidayDto) {
+  createHoliday(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @Body() dto: CreateHolidayDto,
+  ) {
     return this.attendanceService.createHoliday(tenantId, dto, user);
   }
 
@@ -120,10 +157,20 @@ const CSV_HEADERS: Record<string, string> = {
 export function toCsv(rows: Record<string, unknown>[]): string {
   const keys = Object.keys(CSV_HEADERS);
   const escape = (value: unknown) => {
-    const str = value === null || value === undefined ? '' : String(value);
+    const str =
+      typeof value === 'string'
+        ? value
+        : typeof value === 'number' || typeof value === 'boolean'
+          ? `${value}`
+          : value === null || value === undefined
+            ? ''
+            : JSON.stringify(value);
     // Neutralise spreadsheet formulas, then quote anything with separators.
     const safe = /^[=+\-@]/.test(str) ? `'${str}` : str;
     return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
   };
-  return [keys.map((k) => CSV_HEADERS[k]).join(','), ...rows.map((r) => keys.map((k) => escape(r[k])).join(','))].join('\n');
+  return [
+    keys.map((k) => CSV_HEADERS[k]).join(','),
+    ...rows.map((r) => keys.map((k) => escape(r[k])).join(',')),
+  ].join('\n');
 }

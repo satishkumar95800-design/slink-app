@@ -1055,3 +1055,33 @@ model PeriodTiming {
   @@unique([tenantId, periodNumber])
   @@map("period_timings")
 }
+
+/// Demo requests from the marketing site's contact form (docs/SPEC-improvements.md §5.9).
+/// Not tenant-scoped: these are prospective schools, before they're customers.
+model ContactRequest {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String
+  schoolName    String    @map("school_name")
+  city          String
+  studentCount  Int       @map("student_count")
+  /// E.164, e.g. +919876543210
+  phone         String
+  preferredTime String?   @map("preferred_time")
+  emailedAt     DateTime? @map("emailed_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("contact_requests")
+}
+
+/// Cookie-free marketing-site analytics (§5.10): daily totals only — no IPs,
+/// user agents or visitor ids are ever stored.
+model SiteEventCount {
+  day   DateTime @db.Date
+  event String
+  path  String
+  count Int      @default(0)
+
+  @@id([day, event, path])
+  @@map("site_event_counts")
+}

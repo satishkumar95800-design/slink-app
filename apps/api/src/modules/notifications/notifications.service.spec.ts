@@ -280,8 +280,13 @@ describe('NotificationsService', () => {
       // creation this triggers (createHomeworkReports, selects academicYear +
       // students) — each needs its own mocked shape.
       mockPrisma.class.findUnique
-        .mockResolvedValueOnce({ teachers: [{ teacherId: teacherActor.id, isClassTeacher: false }] })
-        .mockResolvedValueOnce({ academicYear: '2025-26', students: [{ id: 'student-1' }] });
+        .mockResolvedValueOnce({
+          teachers: [{ teacherId: teacherActor.id, isClassTeacher: false }],
+        })
+        .mockResolvedValueOnce({
+          academicYear: '2025-26',
+          students: [{ id: 'student-1' }],
+        });
       const parent = makeUser({ id: 'p1', fcmTokens: ['tok1'] });
       mockPrisma.studentParent.findMany.mockResolvedValue([{ parent }]);
       mockPrisma.$transaction.mockResolvedValue([{ id: 'n1', userId: 'p1' }]);
@@ -577,28 +582,65 @@ describe('NotificationsService', () => {
     });
 
     it('allows up to 3 photos, or 1 PDF on a notice only', () => {
-      expect(planBroadcast(classBroadcast({ fileKeys: ['a.jpg', 'b.png', 'c.jpg'] }) as never)).toMatchObject({ kind: 'homework' });
-      expect(planBroadcast(classBroadcast({ kind: 'notice', fileKeys: ['circular.pdf'] }) as never).attachments).toEqual([
-        { key: 'circular.pdf', contentType: 'application/pdf' },
-      ]);
-      expect(() => planBroadcast(classBroadcast({ kind: 'notice', fileKeys: ['a.pdf', 'b.jpg'] }) as never)).toThrow(BadRequestException);
-      expect(() => planBroadcast(classBroadcast({ kind: 'homework', fileKeys: ['a.pdf'] }) as never)).toThrow(BadRequestException);
+      expect(
+        planBroadcast(
+          classBroadcast({ fileKeys: ['a.jpg', 'b.png', 'c.jpg'] }) as never,
+        ),
+      ).toMatchObject({ kind: 'homework' });
+      expect(
+        planBroadcast(
+          classBroadcast({
+            kind: 'notice',
+            fileKeys: ['circular.pdf'],
+          }) as never,
+        ).attachments,
+      ).toEqual([{ key: 'circular.pdf', contentType: 'application/pdf' }]);
+      expect(() =>
+        planBroadcast(
+          classBroadcast({
+            kind: 'notice',
+            fileKeys: ['a.pdf', 'b.jpg'],
+          }) as never,
+        ),
+      ).toThrow(BadRequestException);
+      expect(() =>
+        planBroadcast(
+          classBroadcast({ kind: 'homework', fileKeys: ['a.pdf'] }) as never,
+        ),
+      ).toThrow(BadRequestException);
     });
 
     it('records one broadcast, links every parent notification to it, and stores photos + subject on the homework', async () => {
       mockPrisma.class.findUnique
-        .mockResolvedValueOnce({ teachers: [{ teacherId: teacherActor.id, isClassTeacher: false }] })
-        .mockResolvedValueOnce({ academicYear: '2026-27', students: [{ id: 'student-1' }] });
-      mockPrisma.subject.findFirst.mockResolvedValue({ id: 'subject-uuid', name: 'Maths' });
+        .mockResolvedValueOnce({
+          teachers: [{ teacherId: teacherActor.id, isClassTeacher: false }],
+        })
+        .mockResolvedValueOnce({
+          academicYear: '2026-27',
+          students: [{ id: 'student-1' }],
+        });
+      mockPrisma.subject.findFirst.mockResolvedValue({
+        id: 'subject-uuid',
+        name: 'Maths',
+      });
       const parent = makeUser({ id: 'p1', fcmTokens: ['tok1'] });
       mockPrisma.studentParent.findMany.mockResolvedValue([{ parent }]);
-      mockPrisma.$transaction.mockImplementation((ops: unknown[]) => Promise.all(ops));
-      mockPrisma.notification.create.mockResolvedValue({ id: 'n1', userId: 'p1' });
+      mockPrisma.$transaction.mockImplementation((ops: unknown[]) =>
+        Promise.all(ops),
+      );
+      mockPrisma.notification.create.mockResolvedValue({
+        id: 'n1',
+        userId: 'p1',
+      });
       mockPrisma.notification.update.mockResolvedValue({});
 
       const result = await service.broadcast(
         'tenant-uuid',
-        classBroadcast({ kind: 'homework', subjectId: 'subject-uuid', fileKeys: ['t/a.jpg', 't/b.jpg'] }) as never,
+        classBroadcast({
+          kind: 'homework',
+          subjectId: 'subject-uuid',
+          fileKeys: ['t/a.jpg', 't/b.jpg'],
+        }) as never,
         teacherActor,
       );
 
@@ -617,16 +659,29 @@ describe('NotificationsService', () => {
         }),
       });
       expect(mockPrisma.notification.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ userId: 'p1', broadcastId: 'broadcast-uuid' }),
+        data: expect.objectContaining({
+          userId: 'p1',
+          broadcastId: 'broadcast-uuid',
+        }),
       });
       const reports = mockPrisma.report.createMany.mock.calls[0][0].data;
-      expect(reports[0].content).toMatchObject({ fileKeys: ['t/a.jpg', 't/b.jpg'], broadcastId: 'broadcast-uuid', subject: 'Maths' });
+      expect(reports[0].content).toMatchObject({
+        fileKeys: ['t/a.jpg', 't/b.jpg'],
+        broadcastId: 'broadcast-uuid',
+        subject: 'Maths',
+      });
     });
 
     it('still blocks a subject teacher from sending a notice, even with photos', async () => {
-      mockPrisma.class.findUnique.mockResolvedValue({ teachers: [{ teacherId: teacherActor.id, isClassTeacher: false }] });
+      mockPrisma.class.findUnique.mockResolvedValue({
+        teachers: [{ teacherId: teacherActor.id, isClassTeacher: false }],
+      });
       await expect(
-        service.broadcast('tenant-uuid', classBroadcast({ kind: 'notice', fileKeys: ['t/a.jpg'] }) as never, teacherActor),
+        service.broadcast(
+          'tenant-uuid',
+          classBroadcast({ kind: 'notice', fileKeys: ['t/a.jpg'] }) as never,
+          teacherActor,
+        ),
       ).rejects.toThrow(ForbiddenException);
       expect(mockPrisma.broadcast.create).not.toHaveBeenCalled();
     });

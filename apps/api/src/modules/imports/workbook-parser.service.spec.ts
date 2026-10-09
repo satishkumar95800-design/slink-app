@@ -56,7 +56,9 @@ describe('WorkbookParserService', () => {
   });
 
   it('still accepts older templates that have no Roll Number column', async () => {
-    const buffer = await buildFixtureWorkbook({ Students: [{ 'Student Name': 'Aarav Iyer' }] });
+    const buffer = await buildFixtureWorkbook({
+      Students: [{ 'Student Name': 'Aarav Iyer' }],
+    });
 
     const result = await service.parse(buffer);
 
@@ -77,7 +79,13 @@ describe('WorkbookParserService', () => {
     classesSheet.addRow(['Grade 5', 'A', '2025-26', '', 'some note']);
     workbook
       .addWorksheet('Users')
-      .addRow(['Full Name', 'Email', 'Phone Number', 'Role', 'Assigned Class (Teachers only)']);
+      .addRow([
+        'Full Name',
+        'Email',
+        'Phone Number',
+        'Role',
+        'Assigned Class (Teachers only)',
+      ]);
     workbook
       .addWorksheet('Teachers')
       .addRow([
@@ -141,7 +149,13 @@ describe('WorkbookParserService', () => {
       ]);
     workbook
       .addWorksheet('Users')
-      .addRow(['Full Name', 'Email', 'Phone Number', 'Role', 'Assigned Class (Teachers only)']);
+      .addRow([
+        'Full Name',
+        'Email',
+        'Phone Number',
+        'Role',
+        'Assigned Class (Teachers only)',
+      ]);
     // Students and Fee Structures tabs intentionally omitted
     const buffer = (await workbook.xlsx.writeBuffer()) as unknown as Buffer;
 
@@ -154,7 +168,13 @@ describe('WorkbookParserService', () => {
     workbook.addWorksheet('Classes').addRow(['Class Name', 'Academic Year']); // missing Section, Class Teacher Email
     workbook
       .addWorksheet('Users')
-      .addRow(['Full Name', 'Email', 'Phone Number', 'Role', 'Assigned Class (Teachers only)']);
+      .addRow([
+        'Full Name',
+        'Email',
+        'Phone Number',
+        'Role',
+        'Assigned Class (Teachers only)',
+      ]);
     workbook
       .addWorksheet('Students')
       .addRow([
@@ -210,7 +230,13 @@ describe('WorkbookParserService', () => {
     classesSheet.addRow(['Grade 5', 'A', '2025-26', '']);
     workbook
       .addWorksheet('Users')
-      .addRow(['Full Name', 'Email', 'Phone Number', 'Role', 'Assigned Class (Teachers only)']);
+      .addRow([
+        'Full Name',
+        'Email',
+        'Phone Number',
+        'Role',
+        'Assigned Class (Teachers only)',
+      ]);
     workbook
       .addWorksheet('Teachers')
       .addRow([
@@ -274,7 +300,13 @@ describe('WorkbookParserService', () => {
       ]);
     workbook
       .addWorksheet('Users')
-      .addRow(['Full Name', 'Email', 'Phone Number', 'Role', 'Assigned Class (Teachers only)']);
+      .addRow([
+        'Full Name',
+        'Email',
+        'Phone Number',
+        'Role',
+        'Assigned Class (Teachers only)',
+      ]);
     workbook
       .addWorksheet('Teachers')
       .addRow([

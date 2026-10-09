@@ -8,7 +8,12 @@ import { NotificationsService } from '../notifications/notifications.service';
 import type { ActiveUser } from '../../common/types/active-user.type';
 
 const TENANT_ID = 'tenant-uuid';
-const ADMIN: ActiveUser = { id: 'admin-1', name: 'Admin', role: Role.admin, tenantId: TENANT_ID } as ActiveUser;
+const ADMIN: ActiveUser = {
+  id: 'admin-1',
+  name: 'Admin',
+  role: Role.admin,
+  tenantId: TENANT_ID,
+} as ActiveUser;
 
 const mockPrisma = {
   receipt: { findMany: jest.fn(), count: jest.fn() },

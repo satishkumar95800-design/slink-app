@@ -11,7 +11,10 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { GuardianRelation, BloodGroup, Caste, Gender } from '@prisma/client';
-import { BLOOD_GROUP_DISPLAY_TO_ENUM, BLOOD_GROUP_OPTIONS } from '../../../common/blood-group';
+import {
+  BLOOD_GROUP_DISPLAY_TO_ENUM,
+  BLOOD_GROUP_OPTIONS,
+} from '../../../common/blood-group';
 import { CleanName } from '../../../common/decorators/clean-name.decorator';
 
 export class CreateStudentDto {
@@ -62,7 +65,9 @@ export class CreateStudentDto {
   classId: string;
 
   /** Parent phone in E.164 format, e.g. "+919876543210" */
-  @Matches(/^\+[1-9]\d{1,14}$/, { message: 'parentPhone must be a valid E.164 phone number' })
+  @Matches(/^\+[1-9]\d{1,14}$/, {
+    message: 'parentPhone must be a valid E.164 phone number',
+  })
   @IsOptional()
   parentPhone?: string;
 

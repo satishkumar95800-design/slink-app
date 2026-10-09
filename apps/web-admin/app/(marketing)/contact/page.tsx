@@ -1,20 +1,30 @@
 import type { Metadata } from 'next';
 import { Mail, MapPin, Phone } from 'lucide-react';
 import { Section } from '../../../components/marketing/section';
+import { ContactForm } from '../../../components/marketing/contact-form';
+import { strings } from '../../../lib/strings';
 
-export const metadata: Metadata = { title: 'Contact — Schoolinkd' };
+const t = strings.marketing.contact;
+
+export const metadata: Metadata = {
+  title: 'Book a free demo — Schoolinkd',
+  description: 'Tell us about your school and we’ll call you back, or message us on WhatsApp.',
+};
 
 export default function ContactPage() {
   return (
     <Section tone="light">
       <div className="mx-auto max-w-2xl text-center">
-        <h1 className="text-3xl font-bold text-gray-900">Contact Us</h1>
-        <p className="mt-3 text-gray-600">
-          For sales, support, or payment queries, reach us through any of the channels below.
-        </p>
+        <h1 className="text-3xl font-bold text-gray-900">{t.title}</h1>
+        <p className="mt-3 text-gray-600">{t.subtitle}</p>
       </div>
 
-      <div className="mx-auto mt-12 grid max-w-2xl gap-6 sm:grid-cols-3">
+      <div className="mx-auto mt-10 max-w-3xl">
+        <ContactForm />
+      </div>
+
+      <h2 className="mt-14 text-center text-sm font-bold uppercase tracking-wider text-gray-400">{t.otherWays}</h2>
+      <div className="mx-auto mt-6 grid max-w-2xl gap-6 sm:grid-cols-3">
         <div className="flex flex-col items-center rounded-xl border border-gray-200 bg-white p-6 text-center shadow-sm">
           <Mail className="h-6 w-6 text-blue-600" />
           <p className="mt-3 text-sm font-medium text-gray-900">Email</p>

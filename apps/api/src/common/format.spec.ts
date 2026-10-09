@@ -15,6 +15,8 @@ describe('formatRupees', () => {
 
 describe('formatDateOnly', () => {
   it('formats a date-only value as DD/MM/YYYY', () => {
-    expect(formatDateOnly(new Date('2026-10-08T00:00:00.000Z'))).toBe('08/10/2026');
+    expect(formatDateOnly(new Date('2026-10-08T00:00:00.000Z'))).toBe(
+      '08/10/2026',
+    );
   });
 });

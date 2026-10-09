@@ -3,7 +3,13 @@ import { validateUsersTab } from './users.validator';
 
 function makeTab(rows: Array<Record<string, string>>): ParsedTab {
   return {
-    headers: ['Full Name', 'Email', 'Phone Number', 'Role', 'Assigned Class (Teachers only)'],
+    headers: [
+      'Full Name',
+      'Email',
+      'Phone Number',
+      'Role',
+      'Assigned Class (Teachers only)',
+    ],
     extraColumns: [],
     rows: rows.map((cells, idx) => ({ rowNumber: idx + 2, cells })),
   };
@@ -110,7 +116,9 @@ describe('validateUsersTab', () => {
       ]),
       new Set(['grade 5']),
     );
-    expect(result.errors.some((e) => e.column === 'Assigned Class (Teachers only)')).toBe(true);
+    expect(
+      result.errors.some((e) => e.column === 'Assigned Class (Teachers only)'),
+    ).toBe(true);
   });
 
   it('accepts an Assigned Class present in the Classes tab (case-insensitive)', () => {
@@ -158,17 +166,35 @@ describe('validateUsersTab', () => {
   it('collapses extra spaces in names and warns (without blocking) when a name is all lowercase', () => {
     const result = validateUsersTab(
       makeTab([
-        { 'Full Name': 'jane   doe', Email: 'jane@school.edu', 'Phone Number': '', Role: 'accounts', 'Assigned Class (Teachers only)': '' },
-        { 'Full Name': 'Ravi Kumar', Email: 'ravi@school.edu', 'Phone Number': '', Role: 'accounts', 'Assigned Class (Teachers only)': '' },
+        {
+          'Full Name': 'jane   doe',
+          Email: 'jane@school.edu',
+          'Phone Number': '',
+          Role: 'accounts',
+          'Assigned Class (Teachers only)': '',
+        },
+        {
+          'Full Name': 'Ravi Kumar',
+          Email: 'ravi@school.edu',
+          'Phone Number': '',
+          Role: 'accounts',
+          'Assigned Class (Teachers only)': '',
+        },
       ]),
       new Set(),
     );
 
     expect(result.errors).toEqual([]);
-    expect(result.validRows.map((r) => r.name)).toEqual(['jane doe', 'Ravi Kumar']);
+    expect(result.validRows.map((r) => r.name)).toEqual([
+      'jane doe',
+      'Ravi Kumar',
+    ]);
     expect(result.warnings).toEqual([
-      expect.objectContaining({ row: 2, column: 'Full Name', reason: expect.stringContaining('all lowercase') }),
+      expect.objectContaining({
+        row: 2,
+        column: 'Full Name',
+        reason: expect.stringContaining('all lowercase'),
+      }),
     ]);
   });
 });
-

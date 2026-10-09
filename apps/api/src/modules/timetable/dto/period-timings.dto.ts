@@ -1,4 +1,12 @@
-import { ArrayMaxSize, IsArray, IsInt, Matches, Max, Min, ValidateNested } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsInt,
+  Matches,
+  Max,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 const HH_MM = /^([01]\d|2[0-3]):[0-5]\d$/;

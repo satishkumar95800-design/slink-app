@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpsertTimetableSlotDto } from './dto/upsert-timetable-slot.dto';
@@ -7,7 +11,9 @@ import { PeriodTimingDto } from './dto/period-timings.dto';
 const slotInclude = {
   teacher: { select: { id: true, name: true } },
   subject: { select: { id: true, name: true } },
-  class: { select: { id: true, name: true, section: true, academicYear: true } },
+  class: {
+    select: { id: true, name: true, section: true, academicYear: true },
+  },
 } as const;
 
 @Injectable()
@@ -41,7 +47,9 @@ export class TimetableService {
     const [cls, teacher, subject] = await Promise.all([
       this.prisma.class.findUnique({ where: { id: dto.classId, tenantId } }),
       this.prisma.user.findUnique({ where: { id: dto.teacherId, tenantId } }),
-      this.prisma.subject.findUnique({ where: { id: dto.subjectId, tenantId } }),
+      this.prisma.subject.findUnique({
+        where: { id: dto.subjectId, tenantId },
+      }),
     ]);
     if (!cls) throw new NotFoundException('Class not found');
     if (!teacher || teacher.role !== Role.teacher) {
@@ -92,8 +100,11 @@ export class TimetableService {
   }
 
   async remove(tenantId: string, id: string): Promise<void> {
-    const result = await this.prisma.timetableSlot.deleteMany({ where: { id, tenantId } });
-    if (result.count === 0) throw new NotFoundException('Timetable slot not found');
+    const result = await this.prisma.timetableSlot.deleteMany({
+      where: { id, tenantId },
+    });
+    if (result.count === 0)
+      throw new NotFoundException('Timetable slot not found');
   }
 
   // ── Period timings (bell schedule) ─────────────────────────────────────────
@@ -112,19 +123,27 @@ export class TimetableService {
     for (let i = 0; i < sorted.length; i++) {
       const p = sorted[i];
       if (p.startTime >= p.endTime) {
-        throw new BadRequestException(`Period ${p.periodNumber} must end after it starts`);
+        throw new BadRequestException(
+          `Period ${p.periodNumber} must end after it starts`,
+        );
       }
       if (i > 0 && sorted[i - 1].periodNumber === p.periodNumber) {
-        throw new BadRequestException(`Period ${p.periodNumber} is listed twice`);
+        throw new BadRequestException(
+          `Period ${p.periodNumber} is listed twice`,
+        );
       }
       if (i > 0 && sorted[i - 1].endTime > p.startTime) {
-        throw new BadRequestException(`Period ${p.periodNumber} starts before period ${sorted[i - 1].periodNumber} ends`);
+        throw new BadRequestException(
+          `Period ${p.periodNumber} starts before period ${sorted[i - 1].periodNumber} ends`,
+        );
       }
     }
 
     await this.prisma.$transaction([
       this.prisma.periodTiming.deleteMany({ where: { tenantId } }),
-      this.prisma.periodTiming.createMany({ data: sorted.map((p) => ({ tenantId, ...p })) }),
+      this.prisma.periodTiming.createMany({
+        data: sorted.map((p) => ({ tenantId, ...p })),
+      }),
     ]);
     return this.listPeriodTimings(tenantId);
   }

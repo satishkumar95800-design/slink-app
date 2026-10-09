@@ -39,6 +39,7 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
 import { ParentModule } from './modules/parent/parent.module';
 import { FeeRemindersModule } from './modules/fee-reminders/fee-reminders.module';
 import { BroadcastsModule } from './modules/broadcasts/broadcasts.module';
+import { PublicSiteModule } from './modules/public-site/public-site.module';
 
 @Module({
   imports: [
@@ -82,6 +83,7 @@ import { BroadcastsModule } from './modules/broadcasts/broadcasts.module';
     ParentModule,
     FeeRemindersModule,
     BroadcastsModule,
+    PublicSiteModule,
   ],
 })
 export class AppModule implements NestModule {
@@ -105,6 +107,11 @@ export class AppModule implements NestModule {
         // signed token itself carries the tenantId instead.
         { path: 'receipts/public/:token', method: RequestMethod.GET },
         { path: 'receipts/public/:token/pdf', method: RequestMethod.GET },
+        // Marketing site (no tenant) and the super-admin views of its data.
+        { path: 'public/contact', method: RequestMethod.POST },
+        { path: 'public/events', method: RequestMethod.POST },
+        { path: 'platform/contact-requests', method: RequestMethod.GET },
+        { path: 'platform/site-stats', method: RequestMethod.GET },
       )
       .forRoutes('*');
   }

@@ -20,7 +20,8 @@ export interface ParsedWorkbook {
   teachers: ParsedTab;
 }
 
-export type ImportTabName = 'Classes' | 'Users' | 'Students' | 'Fee Structures' | 'Teachers';
+export type ImportTabName =
+  'Classes' | 'Users' | 'Students' | 'Fee Structures' | 'Teachers';
 
 export interface ImportIssue {
   tab: ImportTabName;

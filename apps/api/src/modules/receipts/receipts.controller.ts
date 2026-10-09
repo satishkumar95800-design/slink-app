@@ -1,4 +1,12 @@
-import { Controller, Get, Param, ParseUUIDPipe, Query, Res, StreamableFile } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Query,
+  Res,
+  StreamableFile,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { Role } from '@prisma/client';
 import { Public } from '../../common/decorators/public.decorator';
@@ -29,10 +37,16 @@ export class ReceiptsController {
   /** Same signed token as the public receipt page, but returns the PDF — opened from the app in the phone's browser. */
   @Public()
   @Get('public/:token/pdf')
-  async findPdfByToken(@Param('token') token: string, @Res({ passthrough: true }) res: Response) {
+  async findPdfByToken(
+    @Param('token') token: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const receipt = await this.receiptsService.findByToken(token);
     const { filename, pdf } = await this.receiptsService.renderPdf(receipt);
-    res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${filename}"` });
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${filename}"`,
+    });
     return new StreamableFile(pdf);
   }
 
@@ -45,8 +59,15 @@ export class ReceiptsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { filename, pdf } = await this.receiptsService.getPdf(tenantId, id, user);
-    res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${filename}"` });
+    const { filename, pdf } = await this.receiptsService.getPdf(
+      tenantId,
+      id,
+      user,
+    );
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    });
     return new StreamableFile(pdf);
   }
 

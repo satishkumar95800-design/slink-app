@@ -14,12 +14,21 @@ export const sampleReceipt: ReceiptPdfInput = {
   studentFee: { feeStructure: { name: 'Term 1', academicYear: '2025-26' } },
   recordedByUser: { name: 'Gayathri' },
   discountType: { name: 'Sibling' },
-  tenant: { name: 'Green Valley Public School', branding: { address: 'MG Road, Bengaluru', contactPhone: '+91 80 1234 5678' } },
+  tenant: {
+    name: 'Green Valley Public School',
+    branding: {
+      address: 'MG Road, Bengaluru',
+      contactPhone: '+91 80 1234 5678',
+    },
+  },
 };
 
 describe('buildReceiptPdf', () => {
   it('renders a non-empty PDF with the bundled ₹-capable font', async () => {
-    const pdf = await buildReceiptPdf(sampleReceipt, new Date('2026-10-08T06:00:00Z'));
+    const pdf = await buildReceiptPdf(
+      sampleReceipt,
+      new Date('2026-10-08T06:00:00Z'),
+    );
 
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
     expect(pdf.length).toBeGreaterThan(5_000);

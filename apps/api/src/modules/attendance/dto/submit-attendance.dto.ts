@@ -1,4 +1,15 @@
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsEnum, IsOptional, IsString, IsUUID, Matches, MaxLength, ValidateNested } from 'class-validator';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { AttendanceStatus } from '@prisma/client';
 import { DATE_PATTERN } from './attendance-query.dto';

@@ -12,7 +12,12 @@ export const REQUIRED_TABS = [
  * never reported as unexpected extras, and appended after TAB_HEADERS in new
  * templates so existing column positions don't move.
  */
-export const OPTIONAL_TAB_HEADERS: Partial<Record<'Classes' | 'Users' | 'Students' | 'Fee Structures' | 'Teachers', string[]>> = {
+export const OPTIONAL_TAB_HEADERS: Partial<
+  Record<
+    'Classes' | 'Users' | 'Students' | 'Fee Structures' | 'Teachers',
+    string[]
+  >
+> = {
   Students: ['Roll Number'],
 };
 
@@ -21,7 +26,13 @@ export const TAB_HEADERS: Record<
   string[]
 > = {
   Classes: ['Class Name', 'Section', 'Academic Year', 'Class Teacher Email'],
-  Users: ['Full Name', 'Email', 'Phone Number', 'Role', 'Assigned Class (Teachers only)'],
+  Users: [
+    'Full Name',
+    'Email',
+    'Phone Number',
+    'Role',
+    'Assigned Class (Teachers only)',
+  ],
   Teachers: [
     'Teacher Name',
     'Phone Number',
@@ -72,7 +83,13 @@ export const DISPLAY_HEADERS: Record<
   string[]
 > = {
   Classes: ['Class Name*', 'Section*', 'Academic Year*', 'Class Teacher Email'],
-  Users: ['Full Name*', 'Email*', 'Phone Number', 'Role*', 'Assigned Class (Teachers only)'],
+  Users: [
+    'Full Name*',
+    'Email*',
+    'Phone Number',
+    'Role*',
+    'Assigned Class (Teachers only)',
+  ],
   Teachers: [
     'Teacher Name*',
     'Phone Number*',
@@ -123,8 +140,28 @@ export const COMMON_FEE_COMPONENTS = [
   'Miscellaneous',
 ];
 
-export const BLOOD_GROUP_TEMPLATE_OPTIONS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-export const CASTE_TEMPLATE_OPTIONS = ['General', 'OBC', 'SC', 'ST', 'EWS', 'Other'];
+export const BLOOD_GROUP_TEMPLATE_OPTIONS = [
+  'A+',
+  'A-',
+  'B+',
+  'B-',
+  'AB+',
+  'AB-',
+  'O+',
+  'O-',
+];
+export const CASTE_TEMPLATE_OPTIONS = [
+  'General',
+  'OBC',
+  'SC',
+  'ST',
+  'EWS',
+  'Other',
+];
 /** Display casing shown in the template dropdown; stored lowercase to match the Prisma enum directly. */
-export const GUARDIAN_RELATION_TEMPLATE_OPTIONS = ['Father', 'Mother', 'Guardian'];
+export const GUARDIAN_RELATION_TEMPLATE_OPTIONS = [
+  'Father',
+  'Mother',
+  'Guardian',
+];
 export const YES_NO_TEMPLATE_OPTIONS = ['Yes', 'No'];

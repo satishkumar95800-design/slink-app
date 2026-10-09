@@ -31,7 +31,12 @@ export class WorkbookParserService {
     return {
       classes: this.parseTab(workbook, 'Classes', TAB_HEADERS.Classes),
       users: this.parseTab(workbook, 'Users', TAB_HEADERS.Users),
-      students: this.parseTab(workbook, 'Students', TAB_HEADERS.Students, OPTIONAL_TAB_HEADERS.Students),
+      students: this.parseTab(
+        workbook,
+        'Students',
+        TAB_HEADERS.Students,
+        OPTIONAL_TAB_HEADERS.Students,
+      ),
       feeStructures: this.parseTab(
         workbook,
         'Fee Structures',
@@ -66,7 +71,8 @@ export class WorkbookParserService {
       );
     }
     const extraColumns = headers.filter(
-      (header) => !expectedHeaders.includes(header) && !optionalHeaders.includes(header),
+      (header) =>
+        !expectedHeaders.includes(header) && !optionalHeaders.includes(header),
     );
 
     const rows: ParsedTab['rows'] = [];

@@ -1,7 +1,19 @@
-import { IsString, IsUUID, IsOptional, IsEnum, MinLength, MaxLength, IsDateString, IsUrl } from 'class-validator';
+import {
+  IsString,
+  IsUUID,
+  IsOptional,
+  IsEnum,
+  MinLength,
+  MaxLength,
+  IsDateString,
+  IsUrl,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 import { BloodGroup, Caste, Gender } from '@prisma/client';
-import { BLOOD_GROUP_DISPLAY_TO_ENUM, BLOOD_GROUP_OPTIONS } from '../../../common/blood-group';
+import {
+  BLOOD_GROUP_DISPLAY_TO_ENUM,
+  BLOOD_GROUP_OPTIONS,
+} from '../../../common/blood-group';
 import { CleanName } from '../../../common/decorators/clean-name.decorator';
 
 export class UpdateStudentDto {

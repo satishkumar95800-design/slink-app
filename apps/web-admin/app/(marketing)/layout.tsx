@@ -1,22 +1,36 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Container } from '../../components/marketing/container';
+import { FloatingWhatsApp, PageViewTracker, WhatsAppDemoButton } from '../../components/marketing/cta';
+import { marketingConfig } from '../../lib/marketing-config';
+import { strings } from '../../lib/strings';
 
 export const metadata: Metadata = {
-  title: 'Schoolinkd — School Management, Simplified',
-  description:
-    'Schoolinkd helps schools automate fees, reports, notices, and homework — a mobile app for parents and teachers, and a web console for administrators.',
+  metadataBase: new URL(marketingConfig.siteUrl),
+  title: strings.marketing.metaTitle,
+  description: strings.marketing.metaDescription,
+  openGraph: {
+    type: 'website',
+    siteName: 'Schoolinkd',
+    url: marketingConfig.siteUrl,
+    title: strings.marketing.metaTitle,
+    description: strings.marketing.metaDescription,
+    locale: 'en_IN',
+  },
+  twitter: { card: 'summary_large_image', title: strings.marketing.metaTitle, description: strings.marketing.metaDescription },
 };
 
 const NAV_LINKS = [
+  { label: 'Why us', href: '/#why' },
   { label: 'Features', href: '/#features' },
-  { label: 'How it works', href: '/#how-it-works' },
-  { label: 'Privacy Policy', href: '/privacy-policy' },
+  { label: 'Pricing', href: '/#pricing' },
   { label: 'Contact', href: '/contact' },
 ];
 
 const EXPLORE_LINKS = [
+  { label: 'Why schools switch', href: '/#why' },
   { label: 'Features', href: '/#features' },
+  { label: 'Pricing', href: '/#pricing' },
   { label: 'How it works', href: '/#how-it-works' },
   { label: 'Contact', href: '/contact' },
 ];
@@ -63,6 +77,8 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
       </header>
 
       <main className="flex-1">{children}</main>
+      <PageViewTracker />
+      <FloatingWhatsApp />
 
       <footer className="border-t border-black/5 bg-gray-50">
         <Container className="grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
@@ -74,9 +90,10 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
               <span className="text-sm font-extrabold tracking-tight text-gray-900">Schoolinkd</span>
             </div>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-gray-600">
-              Schoolinkd pairs a parent &amp; teacher mobile app with an admin web console — fees, progress reports,
-              report cards, notices, homework, and bulk onboarding, all in one connected system built for schools.
+              Schoolinkd brings cash, cheque and online fee collection into one dashboard, with a parent &amp; teacher
+              app for attendance, homework, notices and report cards.
             </p>
+            <WhatsAppDemoButton className="mt-6" />
           </div>
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">Explore</h4>

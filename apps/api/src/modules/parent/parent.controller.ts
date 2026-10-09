@@ -14,13 +14,21 @@ export class ParentController {
 
   @Get('home')
   @Roles(Role.parent)
-  home(@TenantId() tenantId: string, @CurrentUser() user: ActiveUser, @Query() query: ParentStudentQueryDto) {
+  home(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @Query() query: ParentStudentQueryDto,
+  ) {
     return this.parentService.getHome(tenantId, query.studentId, user);
   }
 
   @Get('notices')
   @Roles(Role.parent)
-  notices(@TenantId() tenantId: string, @CurrentUser() user: ActiveUser, @Query() query: ParentStudentQueryDto) {
+  notices(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @Query() query: ParentStudentQueryDto,
+  ) {
     return this.parentService.getNotices(tenantId, query.studentId, user);
   }
 }

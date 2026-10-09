@@ -38,7 +38,13 @@ export class UsersService {
 
   async create(
     tenantId: string,
-    dto: { name: string; email: string; password: string; role: Role; phone?: string },
+    dto: {
+      name: string;
+      email: string;
+      password: string;
+      role: Role;
+      phone?: string;
+    },
   ) {
     await this.assertEmailUnique(tenantId, dto.email);
 
@@ -135,7 +141,9 @@ export class UsersService {
     const user = await this.requireUser(tenantId, id);
 
     if (user.role === Role.teacher) {
-      const reportCount = await this.prisma.report.count({ where: { teacherId: id } });
+      const reportCount = await this.prisma.report.count({
+        where: { teacherId: id },
+      });
       if (reportCount > 0) {
         throw new ConflictException(
           `Cannot delete teacher — they have ${reportCount} report(s). Reassign the reports first.`,
@@ -144,7 +152,9 @@ export class UsersService {
     }
 
     // Attendance records keep who marked them (FK RESTRICT), so a marker can't be hard-deleted.
-    const attendanceCount = await this.prisma.attendanceRecord.count({ where: { tenantId, markedBy: id } });
+    const attendanceCount = await this.prisma.attendanceRecord.count({
+      where: { tenantId, markedBy: id },
+    });
     if (attendanceCount > 0) {
       throw new ConflictException(
         'Cannot delete this user — they have marked attendance, which must be kept for the school record.',
@@ -160,7 +170,9 @@ export class UsersService {
     const user = await this.requireUser(tenantId, id);
 
     if (user.role === Role.parent) {
-      throw new BadRequestException('Parents authenticate via phone OTP — no password to reset');
+      throw new BadRequestException(
+        'Parents authenticate via phone OTP — no password to reset',
+      );
     }
 
     const passwordHash = await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS);
@@ -206,20 +218,28 @@ export class UsersService {
     });
 
     if (user.role === Role.parent) {
-      throw new BadRequestException('Parents authenticate via phone OTP — no password to change');
+      throw new BadRequestException(
+        'Parents authenticate via phone OTP — no password to change',
+      );
     }
 
     if (!user.passwordHash) {
       throw new BadRequestException('No password is set on this account');
     }
 
-    const matches = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    const matches = await bcrypt.compare(
+      dto.currentPassword,
+      user.passwordHash,
+    );
     if (!matches) {
       throw new UnauthorizedException('Current password is incorrect');
     }
 
     const passwordHash = await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS);
-    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
   }
 
   // ─── Private helpers ──────────────────────────────────────────────────────────
@@ -233,7 +253,11 @@ export class UsersService {
     return user;
   }
 
-  private async assertEmailUnique(tenantId: string, email: string, excludeId?: string) {
+  private async assertEmailUnique(
+    tenantId: string,
+    email: string,
+    excludeId?: string,
+  ) {
     const existing = await this.prisma.user.findUnique({
       where: { tenantId_email: { tenantId, email } },
       select: { id: true },

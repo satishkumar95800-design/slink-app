@@ -17,19 +17,30 @@ import { SetCustomFieldValuesDto } from '../custom-fields/dto/set-custom-field-v
 // Reusable include shape for student queries
 const studentInclude = {
   class: { select: { id: true, name: true, academicYear: true } },
-  transportSlab: { select: { id: true, minDistanceKm: true, maxDistanceKm: true, monthlyAmount: true } },
+  transportSlab: {
+    select: {
+      id: true,
+      minDistanceKm: true,
+      maxDistanceKm: true,
+      monthlyAmount: true,
+    },
+  },
   parents: {
     select: {
       relation: true,
       isPrimary: true,
-      parent: { select: { id: true, name: true, phone: true, profession: true } },
+      parent: {
+        select: { id: true, name: true, phone: true, profession: true },
+      },
     },
   },
   customFieldValues: {
     select: {
       id: true,
       value: true,
-      fieldDefinition: { select: { id: true, label: true, fieldType: true, isSensitive: true } },
+      fieldDefinition: {
+        select: { id: true, label: true, fieldType: true, isSensitive: true },
+      },
     },
   },
 } satisfies Prisma.StudentInclude;
@@ -103,9 +114,14 @@ export class StudentsService {
     await this.requireClass(tenantId, dto.classId);
 
     const existing = await this.prisma.student.findUnique({
-      where: { tenantId_admissionNo: { tenantId, admissionNo: dto.admissionNo } },
+      where: {
+        tenantId_admissionNo: { tenantId, admissionNo: dto.admissionNo },
+      },
     });
-    if (existing) throw new ConflictException(`Admission number "${dto.admissionNo}" is already in use`);
+    if (existing)
+      throw new ConflictException(
+        `Admission number "${dto.admissionNo}" is already in use`,
+      );
 
     const student = await this.prisma.student.create({
       data: {
@@ -141,7 +157,8 @@ export class StudentsService {
   // ─── Bulk create ─────────────────────────────────────────────────────────────
 
   async bulkCreate(tenantId: string, dto: BulkCreateStudentsDto) {
-    const results: Array<{ index: number; student?: unknown; error?: string }> = [];
+    const results: Array<{ index: number; student?: unknown; error?: string }> =
+      [];
 
     for (let i = 0; i < dto.students.length; i++) {
       try {
@@ -166,7 +183,8 @@ export class StudentsService {
     await this.requireStudent(tenantId, studentId);
 
     if (dto.classId) await this.requireClass(tenantId, dto.classId);
-    if (dto.transportSlabId) await this.requireTransportSlab(tenantId, dto.transportSlabId);
+    if (dto.transportSlabId)
+      await this.requireTransportSlab(tenantId, dto.transportSlabId);
 
     return this.prisma.student.update({
       where: { id: studentId },
@@ -174,7 +192,8 @@ export class StudentsService {
         name: dto.name,
         classId: dto.classId,
         // "" clears the roll number; omitted leaves it unchanged.
-        rollNo: dto.rollNo === undefined ? undefined : dto.rollNo.trim() || null,
+        rollNo:
+          dto.rollNo === undefined ? undefined : dto.rollNo.trim() || null,
         dob: dto.dob ? new Date(dto.dob) : undefined,
         gender: dto.gender,
         bloodGroup: dto.bloodGroup,
@@ -215,7 +234,11 @@ export class StudentsService {
 
   // ─── Custom fields ───────────────────────────────────────────────────────────
 
-  async setCustomFieldValues(tenantId: string, studentId: string, dto: SetCustomFieldValuesDto) {
+  async setCustomFieldValues(
+    tenantId: string,
+    studentId: string,
+    dto: SetCustomFieldValuesDto,
+  ) {
     await this.requireStudent(tenantId, studentId);
 
     const definitionIds = dto.values.map((v) => v.fieldDefinitionId);
@@ -224,16 +247,26 @@ export class StudentsService {
       select: { id: true },
     });
     if (definitions.length !== new Set(definitionIds).size) {
-      throw new NotFoundException('One or more custom field definitions not found');
+      throw new NotFoundException(
+        'One or more custom field definitions not found',
+      );
     }
 
     await this.prisma.$transaction(
       dto.values.map((v) =>
         this.prisma.studentCustomFieldValue.upsert({
           where: {
-            studentId_fieldDefinitionId: { studentId, fieldDefinitionId: v.fieldDefinitionId },
+            studentId_fieldDefinitionId: {
+              studentId,
+              fieldDefinitionId: v.fieldDefinitionId,
+            },
           },
-          create: { tenantId, studentId, fieldDefinitionId: v.fieldDefinitionId, value: v.value },
+          create: {
+            tenantId,
+            studentId,
+            fieldDefinitionId: v.fieldDefinitionId,
+            value: v.value,
+          },
           update: { value: v.value },
         }),
       ),
@@ -241,7 +274,11 @@ export class StudentsService {
 
     return this.prisma.studentCustomFieldValue.findMany({
       where: { tenantId, studentId },
-      include: { fieldDefinition: { select: { id: true, label: true, fieldType: true, isSensitive: true } } },
+      include: {
+        fieldDefinition: {
+          select: { id: true, label: true, fieldType: true, isSensitive: true },
+        },
+      },
     });
   }
 
@@ -255,7 +292,11 @@ export class StudentsService {
   private async linkParentByPhone(
     tenantId: string,
     studentId: string,
-    dto: { parentPhone: string; relation?: GuardianRelation; isPrimary?: boolean },
+    dto: {
+      parentPhone: string;
+      relation?: GuardianRelation;
+      isPrimary?: boolean;
+    },
   ) {
     let parent = await this.prisma.user.findUnique({
       where: { tenantId_phone: { tenantId, phone: dto.parentPhone } },
@@ -276,7 +317,10 @@ export class StudentsService {
     const existing = await this.prisma.studentParent.findUnique({
       where: { studentId_parentId: { studentId, parentId: parent.id } },
     });
-    if (existing) throw new ConflictException('This parent is already linked to the student');
+    if (existing)
+      throw new ConflictException(
+        'This parent is already linked to the student',
+      );
 
     return this.prisma.studentParent.create({
       data: {
@@ -332,13 +376,18 @@ export class StudentsService {
     student: { classId: string; parents: Array<{ parent: { id: string } }> },
     user: ActiveUser,
   ) {
-    if (user.role === Role.admin || user.role === Role.accounts || user.role === Role.super_admin) {
+    if (
+      user.role === Role.admin ||
+      user.role === Role.accounts ||
+      user.role === Role.super_admin
+    ) {
       return;
     }
 
     if (user.role === Role.parent) {
       const isLinked = student.parents.some((p) => p.parent.id === user.id);
-      if (!isLinked) throw new ForbiddenException('You do not have access to this student');
+      if (!isLinked)
+        throw new ForbiddenException('You do not have access to this student');
       return;
     }
 
@@ -364,7 +413,9 @@ export class StudentsService {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private sanitiseForRole(student: any, user: ActiveUser) {
     const isFinanceOrAdmin =
-      user.role === Role.admin || user.role === Role.accounts || user.role === Role.super_admin;
+      user.role === Role.admin ||
+      user.role === Role.accounts ||
+      user.role === Role.super_admin;
 
     let result = student;
     if (!isFinanceOrAdmin) {
@@ -390,19 +441,28 @@ export class StudentsService {
   }
 
   private async requireStudent(tenantId: string, studentId: string) {
-    const s = await this.prisma.student.findUnique({ where: { id: studentId, tenantId } });
+    const s = await this.prisma.student.findUnique({
+      where: { id: studentId, tenantId },
+    });
     if (!s) throw new NotFoundException('Student not found');
     return s;
   }
 
   private async requireClass(tenantId: string, classId: string) {
-    const c = await this.prisma.class.findUnique({ where: { id: classId, tenantId } });
+    const c = await this.prisma.class.findUnique({
+      where: { id: classId, tenantId },
+    });
     if (!c) throw new NotFoundException('Class not found');
     return c;
   }
 
-  private async requireTransportSlab(tenantId: string, transportSlabId: string) {
-    const s = await this.prisma.transportSlab.findUnique({ where: { id: transportSlabId, tenantId } });
+  private async requireTransportSlab(
+    tenantId: string,
+    transportSlabId: string,
+  ) {
+    const s = await this.prisma.transportSlab.findUnique({
+      where: { id: transportSlabId, tenantId },
+    });
     if (!s) throw new NotFoundException('Transport slab not found');
     return s;
   }

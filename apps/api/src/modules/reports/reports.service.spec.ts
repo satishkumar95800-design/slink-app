@@ -75,7 +75,10 @@ const mockPrisma = {
   },
   student: { findUnique: jest.fn() },
   class: { findUnique: jest.fn(), findMany: jest.fn() },
-  studentParent: { findUnique: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
+  studentParent: {
+    findUnique: jest.fn(),
+    findMany: jest.fn().mockResolvedValue([]),
+  },
   reportReadReceipt: { upsert: jest.fn(), findMany: jest.fn() },
   $transaction: jest.fn(),
 };
@@ -117,8 +120,14 @@ describe('ReportsService', () => {
     };
 
     it('creates a draft report when teacher owns the class', async () => {
-      mockPrisma.student.findUnique.mockResolvedValue({ id: 'student-uuid', classId: 'class-uuid' });
-      mockPrisma.class.findUnique.mockResolvedValue({ id: 'class-uuid', teachers: [{ teacherId: 'teacher-uuid' }] });
+      mockPrisma.student.findUnique.mockResolvedValue({
+        id: 'student-uuid',
+        classId: 'class-uuid',
+      });
+      mockPrisma.class.findUnique.mockResolvedValue({
+        id: 'class-uuid',
+        teachers: [{ teacherId: 'teacher-uuid' }],
+      });
       mockPrisma.report.create.mockResolvedValue(makeDraftReport());
 
       const result = await service.create('tenant-uuid', dto, teacherUser);
@@ -128,13 +137,23 @@ describe('ReportsService', () => {
 
     it('throws NotFoundException when student not found', async () => {
       mockPrisma.student.findUnique.mockResolvedValue(null);
-      await expect(service.create('tenant-uuid', dto, teacherUser)).rejects.toThrow(NotFoundException);
+      await expect(
+        service.create('tenant-uuid', dto, teacherUser),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('throws ForbiddenException when teacher does not own the class', async () => {
-      mockPrisma.student.findUnique.mockResolvedValue({ id: 'student-uuid', classId: 'class-uuid' });
-      mockPrisma.class.findUnique.mockResolvedValue({ id: 'class-uuid', teachers: [{ teacherId: 'other-teacher-uuid' }] });
-      await expect(service.create('tenant-uuid', dto, teacherUser)).rejects.toThrow(ForbiddenException);
+      mockPrisma.student.findUnique.mockResolvedValue({
+        id: 'student-uuid',
+        classId: 'class-uuid',
+      });
+      mockPrisma.class.findUnique.mockResolvedValue({
+        id: 'class-uuid',
+        teachers: [{ teacherId: 'other-teacher-uuid' }],
+      });
+      await expect(
+        service.create('tenant-uuid', dto, teacherUser),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -167,37 +186,66 @@ describe('ReportsService', () => {
   describe('findOne', () => {
     it('returns report for admin', async () => {
       mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport());
-      const result = await service.findOne('tenant-uuid', 'report-uuid', adminUser);
+      const result = await service.findOne(
+        'tenant-uuid',
+        'report-uuid',
+        adminUser,
+      );
       expect(result.id).toBe('report-uuid');
     });
 
     it('throws NotFoundException when report not found', async () => {
       mockPrisma.report.findUnique.mockResolvedValue(null);
-      await expect(service.findOne('tenant-uuid', 'bad-id', adminUser)).rejects.toThrow(NotFoundException);
+      await expect(
+        service.findOne('tenant-uuid', 'bad-id', adminUser),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('throws NotFoundException for parent reading a draft report', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ status: ReportStatus.draft }));
-      await expect(service.findOne('tenant-uuid', 'report-uuid', parentUser)).rejects.toThrow(NotFoundException);
+      mockPrisma.report.findUnique.mockResolvedValue(
+        makeDraftReport({ status: ReportStatus.draft }),
+      );
+      await expect(
+        service.findOne('tenant-uuid', 'report-uuid', parentUser),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('returns published report for parent with linked child', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ status: ReportStatus.published }));
-      mockPrisma.studentParent.findUnique.mockResolvedValue({ studentId: 'student-uuid', parentId: 'parent-uuid' });
-      const result = await service.findOne('tenant-uuid', 'report-uuid', parentUser);
+      mockPrisma.report.findUnique.mockResolvedValue(
+        makeDraftReport({ status: ReportStatus.published }),
+      );
+      mockPrisma.studentParent.findUnique.mockResolvedValue({
+        studentId: 'student-uuid',
+        parentId: 'parent-uuid',
+      });
+      const result = await service.findOne(
+        'tenant-uuid',
+        'report-uuid',
+        parentUser,
+      );
       expect(result).toBeDefined();
     });
 
     it('throws NotFoundException for parent with no link to student', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ status: ReportStatus.published }));
+      mockPrisma.report.findUnique.mockResolvedValue(
+        makeDraftReport({ status: ReportStatus.published }),
+      );
       mockPrisma.studentParent.findUnique.mockResolvedValue(null);
-      await expect(service.findOne('tenant-uuid', 'report-uuid', parentUser)).rejects.toThrow(NotFoundException);
+      await expect(
+        service.findOne('tenant-uuid', 'report-uuid', parentUser),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('throws NotFoundException for teacher accessing another class report', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ classId: 'other-class' }));
-      mockPrisma.class.findUnique.mockResolvedValue({ teachers: [{ teacherId: 'other-teacher-uuid' }] });
-      await expect(service.findOne('tenant-uuid', 'report-uuid', teacherUser)).rejects.toThrow(NotFoundException);
+      mockPrisma.report.findUnique.mockResolvedValue(
+        makeDraftReport({ classId: 'other-class' }),
+      );
+      mockPrisma.class.findUnique.mockResolvedValue({
+        teachers: [{ teacherId: 'other-teacher-uuid' }],
+      });
+      await expect(
+        service.findOne('tenant-uuid', 'report-uuid', teacherUser),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -206,22 +254,43 @@ describe('ReportsService', () => {
   describe('update', () => {
     it('updates a draft report owned by the teacher', async () => {
       mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport());
-      mockPrisma.report.update.mockResolvedValue(makeDraftReport({ term: 'Term 2' }));
-      const result = await service.update('tenant-uuid', 'report-uuid', { term: 'Term 2' }, teacherUser);
+      mockPrisma.report.update.mockResolvedValue(
+        makeDraftReport({ term: 'Term 2' }),
+      );
+      const result = await service.update(
+        'tenant-uuid',
+        'report-uuid',
+        { term: 'Term 2' },
+        teacherUser,
+      );
       expect(mockPrisma.report.update).toHaveBeenCalledTimes(1);
     });
 
     it('throws ForbiddenException when teacher does not own report', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ teacherId: 'other-teacher-uuid' }));
+      mockPrisma.report.findUnique.mockResolvedValue(
+        makeDraftReport({ teacherId: 'other-teacher-uuid' }),
+      );
       await expect(
-        service.update('tenant-uuid', 'report-uuid', { term: 'Term 2' }, teacherUser),
+        service.update(
+          'tenant-uuid',
+          'report-uuid',
+          { term: 'Term 2' },
+          teacherUser,
+        ),
       ).rejects.toThrow(ForbiddenException);
     });
 
     it('throws BadRequestException when editing a published report', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ status: ReportStatus.published }));
+      mockPrisma.report.findUnique.mockResolvedValue(
+        makeDraftReport({ status: ReportStatus.published }),
+      );
       await expect(
-        service.update('tenant-uuid', 'report-uuid', { term: 'Term 2' }, teacherUser),
+        service.update(
+          'tenant-uuid',
+          'report-uuid',
+          { term: 'Term 2' },
+          teacherUser,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -232,7 +301,10 @@ describe('ReportsService', () => {
     it('publishes a draft report and sets publishedAt', async () => {
       mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport());
       mockPrisma.report.update.mockResolvedValue(
-        makeDraftReport({ status: ReportStatus.published, publishedAt: new Date() }),
+        makeDraftReport({
+          status: ReportStatus.published,
+          publishedAt: new Date(),
+        }),
       );
       await service.publish('tenant-uuid', 'report-uuid', teacherUser);
       const call = mockPrisma.report.update.mock.calls[0][0];
@@ -241,11 +313,19 @@ describe('ReportsService', () => {
     });
 
     it("pushes the student's parents when a report card is published", async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ type: ReportType.report_card }));
-      mockPrisma.report.update.mockResolvedValue(
-        makeDraftReport({ type: ReportType.report_card, status: ReportStatus.published, publishedAt: new Date() }),
+      mockPrisma.report.findUnique.mockResolvedValue(
+        makeDraftReport({ type: ReportType.report_card }),
       );
-      mockPrisma.studentParent.findMany.mockResolvedValue([{ parentId: 'parent-uuid' }]);
+      mockPrisma.report.update.mockResolvedValue(
+        makeDraftReport({
+          type: ReportType.report_card,
+          status: ReportStatus.published,
+          publishedAt: new Date(),
+        }),
+      );
+      mockPrisma.studentParent.findMany.mockResolvedValue([
+        { parentId: 'parent-uuid' },
+      ]);
 
       await service.publish('tenant-uuid', 'report-uuid', teacherUser);
 
@@ -255,19 +335,31 @@ describe('ReportsService', () => {
           userId: 'parent-uuid',
           title: 'Report card published',
           body: "John's report card is ready to view.",
-          data: { type: 'report_published', reportId: 'report-uuid', studentId: 'student-uuid' },
+          data: {
+            type: 'report_published',
+            reportId: 'report-uuid',
+            studentId: 'student-uuid',
+          },
         }),
       );
     });
 
     it('throws ConflictException when already published', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ status: ReportStatus.published }));
-      await expect(service.publish('tenant-uuid', 'report-uuid', teacherUser)).rejects.toThrow(ConflictException);
+      mockPrisma.report.findUnique.mockResolvedValue(
+        makeDraftReport({ status: ReportStatus.published }),
+      );
+      await expect(
+        service.publish('tenant-uuid', 'report-uuid', teacherUser),
+      ).rejects.toThrow(ConflictException);
     });
 
     it('throws ForbiddenException when teacher does not own report', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ teacherId: 'other-uuid' }));
-      await expect(service.publish('tenant-uuid', 'report-uuid', teacherUser)).rejects.toThrow(ForbiddenException);
+      mockPrisma.report.findUnique.mockResolvedValue(
+        makeDraftReport({ teacherId: 'other-uuid' }),
+      );
+      await expect(
+        service.publish('tenant-uuid', 'report-uuid', teacherUser),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -282,45 +374,76 @@ describe('ReportsService', () => {
     });
 
     it('allows admin to delete any draft', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ teacherId: 'other-teacher-uuid' }));
+      mockPrisma.report.findUnique.mockResolvedValue(
+        makeDraftReport({ teacherId: 'other-teacher-uuid' }),
+      );
       mockPrisma.report.delete.mockResolvedValue({});
       await service.remove('tenant-uuid', 'report-uuid', adminUser);
       expect(mockPrisma.report.delete).toHaveBeenCalledTimes(1);
     });
 
-    it('throws ForbiddenException when teacher tries to delete another teacher\'s report', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ teacherId: 'other-teacher-uuid' }));
-      await expect(service.remove('tenant-uuid', 'report-uuid', teacherUser)).rejects.toThrow(ForbiddenException);
+    it("throws ForbiddenException when teacher tries to delete another teacher's report", async () => {
+      mockPrisma.report.findUnique.mockResolvedValue(
+        makeDraftReport({ teacherId: 'other-teacher-uuid' }),
+      );
+      await expect(
+        service.remove('tenant-uuid', 'report-uuid', teacherUser),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('throws BadRequestException when deleting a published report', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ status: ReportStatus.published }));
-      await expect(service.remove('tenant-uuid', 'report-uuid', teacherUser)).rejects.toThrow(BadRequestException);
+      mockPrisma.report.findUnique.mockResolvedValue(
+        makeDraftReport({ status: ReportStatus.published }),
+      );
+      await expect(
+        service.remove('tenant-uuid', 'report-uuid', teacherUser),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
   // ── markRead ─────────────────────────────────────────────────────────────────
 
   describe('markRead', () => {
-    it('creates a read receipt for a parent viewing their child\'s published report', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ status: ReportStatus.published }));
-      mockPrisma.studentParent.findUnique.mockResolvedValue({ studentId: 'student-uuid', parentId: 'parent-uuid' });
-      mockPrisma.reportReadReceipt.upsert.mockResolvedValue({ reportId: 'report-uuid', userId: 'parent-uuid', readAt: new Date() });
+    it("creates a read receipt for a parent viewing their child's published report", async () => {
+      mockPrisma.report.findUnique.mockResolvedValue(
+        makeDraftReport({ status: ReportStatus.published }),
+      );
+      mockPrisma.studentParent.findUnique.mockResolvedValue({
+        studentId: 'student-uuid',
+        parentId: 'parent-uuid',
+      });
+      mockPrisma.reportReadReceipt.upsert.mockResolvedValue({
+        reportId: 'report-uuid',
+        userId: 'parent-uuid',
+        readAt: new Date(),
+      });
 
-      const result = await service.markRead('tenant-uuid', 'report-uuid', parentUser);
+      const result = await service.markRead(
+        'tenant-uuid',
+        'report-uuid',
+        parentUser,
+      );
       expect(result.reportId).toBe('report-uuid');
       expect(mockPrisma.reportReadReceipt.upsert).toHaveBeenCalledTimes(1);
     });
 
     it('throws BadRequestException when report is not published', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ status: ReportStatus.draft }));
-      await expect(service.markRead('tenant-uuid', 'report-uuid', parentUser)).rejects.toThrow(BadRequestException);
+      mockPrisma.report.findUnique.mockResolvedValue(
+        makeDraftReport({ status: ReportStatus.draft }),
+      );
+      await expect(
+        service.markRead('tenant-uuid', 'report-uuid', parentUser),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('throws NotFoundException when parent has no link to student', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ status: ReportStatus.published }));
+      mockPrisma.report.findUnique.mockResolvedValue(
+        makeDraftReport({ status: ReportStatus.published }),
+      );
       mockPrisma.studentParent.findUnique.mockResolvedValue(null);
-      await expect(service.markRead('tenant-uuid', 'report-uuid', parentUser)).rejects.toThrow(NotFoundException);
+      await expect(
+        service.markRead('tenant-uuid', 'report-uuid', parentUser),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -328,23 +451,33 @@ describe('ReportsService', () => {
 
   describe('getReadReceipts', () => {
     it('returns read receipts for admin', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ status: ReportStatus.published }));
+      mockPrisma.report.findUnique.mockResolvedValue(
+        makeDraftReport({ status: ReportStatus.published }),
+      );
       mockPrisma.reportReadReceipt.findMany.mockResolvedValue([
         { reportId: 'report-uuid', userId: 'parent-uuid', readAt: new Date() },
       ]);
-      const result = await service.getReadReceipts('tenant-uuid', 'report-uuid', adminUser);
+      const result = await service.getReadReceipts(
+        'tenant-uuid',
+        'report-uuid',
+        adminUser,
+      );
       expect(result).toHaveLength(1);
     });
 
     it('returns read receipts for teacher who owns the report', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ status: ReportStatus.published }));
+      mockPrisma.report.findUnique.mockResolvedValue(
+        makeDraftReport({ status: ReportStatus.published }),
+      );
       mockPrisma.reportReadReceipt.findMany.mockResolvedValue([]);
       await service.getReadReceipts('tenant-uuid', 'report-uuid', teacherUser);
       expect(mockPrisma.reportReadReceipt.findMany).toHaveBeenCalledTimes(1);
     });
 
-    it('throws NotFoundException for teacher accessing another teacher\'s report receipts', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ teacherId: 'other-teacher-uuid' }));
+    it("throws NotFoundException for teacher accessing another teacher's report receipts", async () => {
+      mockPrisma.report.findUnique.mockResolvedValue(
+        makeDraftReport({ teacherId: 'other-teacher-uuid' }),
+      );
       await expect(
         service.getReadReceipts('tenant-uuid', 'report-uuid', teacherUser),
       ).rejects.toThrow(NotFoundException);
@@ -353,14 +486,33 @@ describe('ReportsService', () => {
 
   describe('homework photo links', () => {
     const homework = (content: Record<string, unknown>) =>
-      makeDraftReport({ type: ReportType.homework, status: ReportStatus.published, content });
+      makeDraftReport({
+        type: ReportType.homework,
+        status: ReportStatus.published,
+        content,
+      });
 
     it('re-signs from the stored fileKey', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(homework({ caption: 'Ch 3', fileKey: 'tenant-uuid/attachment/a.jpg', attachmentUrl: 'https://old.example/x' }));
+      mockPrisma.report.findUnique.mockResolvedValue(
+        homework({
+          caption: 'Ch 3',
+          fileKey: 'tenant-uuid/attachment/a.jpg',
+          attachmentUrl: 'https://old.example/x',
+        }),
+      );
 
-      const report = await service.findOne('tenant-uuid', 'report-uuid', adminUser);
+      const report = await service.findOne(
+        'tenant-uuid',
+        'report-uuid',
+        adminUser,
+      );
 
-      expect(mockFiles.getSignedUrl).toHaveBeenCalledWith('tenant-uuid/attachment/a.jpg', 'tenant-uuid', 3600, { verifyExists: false });
+      expect(mockFiles.getSignedUrl).toHaveBeenCalledWith(
+        'tenant-uuid/attachment/a.jpg',
+        'tenant-uuid',
+        3600,
+        { verifyExists: false },
+      );
       expect(report.content).toEqual({
         caption: 'Ch 3',
         fileKey: 'tenant-uuid/attachment/a.jpg',
@@ -370,26 +522,45 @@ describe('ReportsService', () => {
     });
 
     it('re-signs every photo of multi-photo homework', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(homework({ caption: 'Ch 4', fileKeys: ['t/a.jpg', 't/b.jpg'] }));
+      mockPrisma.report.findUnique.mockResolvedValue(
+        homework({ caption: 'Ch 4', fileKeys: ['t/a.jpg', 't/b.jpg'] }),
+      );
 
-      const report = await service.findOne('tenant-uuid', 'report-uuid', adminUser);
+      const report = await service.findOne(
+        'tenant-uuid',
+        'report-uuid',
+        adminUser,
+      );
 
       expect(mockFiles.getSignedUrl).toHaveBeenCalledTimes(2);
-      expect((report.content as { attachmentUrls: string[] }).attachmentUrls).toHaveLength(2);
+      expect(
+        (report.content as { attachmentUrls: string[] }).attachmentUrls,
+      ).toHaveLength(2);
     });
 
     it('recovers the key from an older expired signed URL', async () => {
       mockPrisma.report.findUnique.mockResolvedValue(
-        homework({ caption: 'Ch 3', attachmentUrl: 'https://bucket.s3.amazonaws.com/tenant-uuid/attachment/b.jpg?X-Amz-Expires=86400' }),
+        homework({
+          caption: 'Ch 3',
+          attachmentUrl:
+            'https://bucket.s3.amazonaws.com/tenant-uuid/attachment/b.jpg?X-Amz-Expires=86400',
+        }),
       );
 
       await service.findOne('tenant-uuid', 'report-uuid', adminUser);
 
-      expect(mockFiles.getSignedUrl).toHaveBeenCalledWith('tenant-uuid/attachment/b.jpg', 'tenant-uuid', 3600, { verifyExists: false });
+      expect(mockFiles.getSignedUrl).toHaveBeenCalledWith(
+        'tenant-uuid/attachment/b.jpg',
+        'tenant-uuid',
+        3600,
+        { verifyExists: false },
+      );
     });
 
     it('leaves non-homework reports untouched', async () => {
-      mockPrisma.report.findUnique.mockResolvedValue(makeDraftReport({ status: ReportStatus.published }));
+      mockPrisma.report.findUnique.mockResolvedValue(
+        makeDraftReport({ status: ReportStatus.published }),
+      );
       await service.findOne('tenant-uuid', 'report-uuid', adminUser);
       expect(mockFiles.getSignedUrl).not.toHaveBeenCalled();
     });

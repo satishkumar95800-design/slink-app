@@ -1,4 +1,11 @@
-import { Controller, Get, HttpCode, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -19,7 +26,11 @@ export class BroadcastsController {
 
   @Get(':id/unseen')
   @Roles(Role.teacher, Role.admin, Role.super_admin)
-  unseen(@TenantId() tenantId: string, @CurrentUser() user: ActiveUser, @Param('id', ParseUUIDPipe) id: string) {
+  unseen(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.broadcastsService.listUnseen(tenantId, id, user);
   }
 
@@ -27,7 +38,11 @@ export class BroadcastsController {
   @Post(':id/seen')
   @HttpCode(200)
   @Roles(Role.parent)
-  seen(@TenantId() tenantId: string, @CurrentUser() user: ActiveUser, @Param('id', ParseUUIDPipe) id: string) {
+  seen(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.broadcastsService.markSeen(tenantId, id, user);
   }
 }

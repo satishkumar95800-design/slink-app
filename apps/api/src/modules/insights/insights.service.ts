@@ -17,20 +17,32 @@ export class InsightsService {
   ) {}
 
   /** "Students with fee pending" — reuses StudentFeesService.getOutstanding's role-scoped query. */
-  async getFeePending(tenantId: string, user: ActiveUser, query: InsightsQueryDto) {
+  async getFeePending(
+    tenantId: string,
+    user: ActiveUser,
+    query: InsightsQueryDto,
+  ) {
     const isCsv = query.format === 'csv';
-    const result = await this.studentFeesService.getOutstanding(tenantId, user, {
-      studentId: query.studentId,
-      classId: query.classId,
-      academicYear: query.academicYear,
-      page: isCsv ? 1 : query.page,
-      limit: isCsv ? CSV_EXPORT_ROW_CAP : query.limit,
-    });
+    const result = await this.studentFeesService.getOutstanding(
+      tenantId,
+      user,
+      {
+        studentId: query.studentId,
+        classId: query.classId,
+        academicYear: query.academicYear,
+        page: isCsv ? 1 : query.page,
+        limit: isCsv ? CSV_EXPORT_ROW_CAP : query.limit,
+      },
+    );
     return result;
   }
 
   /** "Paid fee history" — reuses ReceiptsService.findAll's role-scoped query. */
-  async getPaidHistory(tenantId: string, user: ActiveUser, query: InsightsQueryDto) {
+  async getPaidHistory(
+    tenantId: string,
+    user: ActiveUser,
+    query: InsightsQueryDto,
+  ) {
     const isCsv = query.format === 'csv';
     return this.receiptsService.findAll(tenantId, user, {
       studentId: query.studentId,
@@ -45,7 +57,11 @@ export class InsightsService {
   }
 
   /** Overdue fees, sorted by due date — a variant of "fee pending" filtered further. */
-  async getDefaulters(tenantId: string, user: ActiveUser, query: InsightsQueryDto) {
+  async getDefaulters(
+    tenantId: string,
+    user: ActiveUser,
+    query: InsightsQueryDto,
+  ) {
     const isCsv = query.format === 'csv';
     return this.studentFeesService.findAll(tenantId, user, {
       studentId: query.studentId,
@@ -58,13 +74,20 @@ export class InsightsService {
   }
 
   /** Collected (Receipt) vs expected (StudentFee.amountDue) totals per class. Admin/accounts/super_admin only — enforced by the controller's @Roles. */
-  async getClassCollectionSummary(tenantId: string, user: ActiveUser, query: InsightsQueryDto) {
+  async getClassCollectionSummary(
+    tenantId: string,
+    user: ActiveUser,
+    query: InsightsQueryDto,
+  ) {
     let classIds: string[];
     if (query.classId) {
       classIds = [query.classId];
     } else {
       const classes = await this.prisma.class.findMany({
-        where: { tenantId, ...(query.academicYear ? { academicYear: query.academicYear } : {}) },
+        where: {
+          tenantId,
+          ...(query.academicYear ? { academicYear: query.academicYear } : {}),
+        },
         select: { id: true },
       });
       classIds = classes.map((c) => c.id);
@@ -83,7 +106,10 @@ export class InsightsService {
       return { data: [] };
     }
 
-    const receiptWhere: Prisma.ReceiptWhereInput = { tenantId, classId: { in: classIds } };
+    const receiptWhere: Prisma.ReceiptWhereInput = {
+      tenantId,
+      classId: { in: classIds },
+    };
     if (query.dateFrom || query.dateTo) {
       receiptWhere.paidOn = {
         ...(query.dateFrom ? { gte: new Date(query.dateFrom) } : {}),
@@ -92,14 +118,23 @@ export class InsightsService {
     }
 
     const [collectedGroups, classInfo] = await Promise.all([
-      this.prisma.receipt.groupBy({ by: ['classId'], where: receiptWhere, _sum: { amount: true } }),
+      this.prisma.receipt.groupBy({
+        by: ['classId'],
+        where: receiptWhere,
+        _sum: { amount: true },
+      }),
       this.prisma.class.findMany({
         where: { id: { in: classIds } },
         select: { id: true, name: true, section: true, academicYear: true },
       }),
     ]);
 
-    const collectedByClass = new Map(collectedGroups.map((g) => [g.classId, g._sum.amount ?? new Prisma.Decimal(0)]));
+    const collectedByClass = new Map(
+      collectedGroups.map((g) => [
+        g.classId,
+        g._sum.amount ?? new Prisma.Decimal(0),
+      ]),
+    );
 
     const data = await Promise.all(
       classInfo.map(async (cls) => {
@@ -107,7 +142,9 @@ export class InsightsService {
           where: {
             tenantId,
             student: { classId: cls.id },
-            ...(query.academicYear ? { feeStructure: { academicYear: query.academicYear } } : {}),
+            ...(query.academicYear
+              ? { feeStructure: { academicYear: query.academicYear } }
+              : {}),
           },
           _sum: { amountDue: true },
         });
@@ -141,7 +178,9 @@ export class InsightsService {
       where: {
         tenantId,
         ...(query.classId ? { student: { classId: query.classId } } : {}),
-        ...(query.academicYear ? { feeStructure: { academicYear: query.academicYear } } : {}),
+        ...(query.academicYear
+          ? { feeStructure: { academicYear: query.academicYear } }
+          : {}),
       },
       _sum: { amountDue: true, amountPaid: true },
     });
@@ -236,7 +275,9 @@ export class InsightsService {
     });
     if (!latest) return { academicYear: null, collected: 0, outstanding: 0 };
 
-    const [row] = await this.prisma.$queryRaw<{ collected: Prisma.Decimal | null; outstanding: Prisma.Decimal | null }[]>`
+    const [row] = await this.prisma.$queryRaw<
+      { collected: Prisma.Decimal | null; outstanding: Prisma.Decimal | null }[]
+    >`
       SELECT
         SUM(sf.amount_paid) AS collected,
         SUM(GREATEST(sf.amount_due - sf.amount_paid, 0)) FILTER (WHERE sf.status <> 'waived') AS outstanding
@@ -261,7 +302,9 @@ export class InsightsService {
     );
     const startOfWindow = monthStarts[0];
 
-    const rows = await this.prisma.$queryRaw<{ month: Date; total: Prisma.Decimal }[]>`
+    const rows = await this.prisma.$queryRaw<
+      { month: Date; total: Prisma.Decimal }[]
+    >`
       SELECT date_trunc('month', paid_on) AS month, SUM(amount) AS total
       FROM receipts
       WHERE tenant_id = ${tenantId}::uuid
@@ -277,7 +320,8 @@ export class InsightsService {
       const key = d.toISOString().slice(0, 7);
       return { month: key, actual: actualByMonth.get(key) ?? 0 };
     });
-    const projectedNextMonth = months.reduce((sum, m) => sum + m.actual, 0) / months.length;
+    const projectedNextMonth =
+      months.reduce((sum, m) => sum + m.actual, 0) / months.length;
 
     return {
       months,
@@ -294,7 +338,10 @@ export class InsightsService {
       let str: string;
       if (value === null || value === undefined) {
         str = '';
-      } else if (typeof value === 'object' && typeof (value as { toFixed?: unknown }).toFixed === 'function') {
+      } else if (
+        typeof value === 'object' &&
+        typeof (value as { toFixed?: unknown }).toFixed === 'function'
+      ) {
         str = String(value); // Prisma Decimal — stringify directly rather than JSON.stringify (which double-quotes)
       } else if (typeof value === 'object') {
         str = JSON.stringify(value);

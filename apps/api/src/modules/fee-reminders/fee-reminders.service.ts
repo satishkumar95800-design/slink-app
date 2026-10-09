@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { FeeStatus, NotificationChannel, PaymentClaimStatus } from '@prisma/client';
+import {
+  FeeStatus,
+  NotificationChannel,
+  PaymentClaimStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { formatDateOnly, formatRupees } from '../../common/format';
@@ -8,7 +12,8 @@ import { toDbDate, todayIn } from '../attendance/attendance-dates';
 type ReminderKind = 'in3days' | 'today';
 
 const text = {
-  title: (kind: ReminderKind) => (kind === 'today' ? 'Fee due today' : 'Fee due in 3 days'),
+  title: (kind: ReminderKind) =>
+    kind === 'today' ? 'Fee due today' : 'Fee due in 3 days',
   body: (amount: string, firstName: string, feeName: string, dueDate: string) =>
     `${amount} for ${firstName} (${feeName}) is due on ${dueDate}.`,
 };
@@ -35,21 +40,37 @@ export class FeeRemindersService {
   ) {}
 
   async sendDueReminders(now: Date = new Date()): Promise<{ sent: number }> {
-    const tenants = await this.prisma.tenant.findMany({ where: { isActive: true }, select: { id: true, timezone: true } });
+    const tenants = await this.prisma.tenant.findMany({
+      where: { isActive: true },
+      select: { id: true, timezone: true },
+    });
     let sent = 0;
     for (const tenant of tenants) {
       try {
-        sent += await this.remindTenant(tenant.id, tenant.timezone || 'Asia/Kolkata', now);
+        sent += await this.remindTenant(
+          tenant.id,
+          tenant.timezone || 'Asia/Kolkata',
+          now,
+        );
       } catch (err) {
-        this.logger.error(`Fee reminders failed for tenant ${tenant.id}: ${(err as Error).message}`);
+        this.logger.error(
+          `Fee reminders failed for tenant ${tenant.id}: ${(err as Error).message}`,
+        );
       }
     }
     return { sent };
   }
 
-  private async remindTenant(tenantId: string, timeZone: string, now: Date): Promise<number> {
+  private async remindTenant(
+    tenantId: string,
+    timeZone: string,
+    now: Date,
+  ): Promise<number> {
     const today = todayIn(timeZone, now);
-    const targets: Record<string, ReminderKind> = { [today]: 'today', [addDays(today, 3)]: 'in3days' };
+    const targets: Record<string, ReminderKind> = {
+      [today]: 'today',
+      [addDays(today, 3)]: 'in3days',
+    };
 
     const fees = await this.prisma.studentFee.findMany({
       where: {
@@ -64,7 +85,13 @@ export class FeeRemindersService {
         amountPaid: true,
         dueDate: true,
         feeStructure: { select: { name: true } },
-        student: { select: { id: true, name: true, parents: { select: { parentId: true } } } },
+        student: {
+          select: {
+            id: true,
+            name: true,
+            parents: { select: { parentId: true } },
+          },
+        },
       },
     });
 
@@ -79,7 +106,11 @@ export class FeeRemindersService {
 
       for (const { parentId } of fee.student.parents) {
         const already = await this.prisma.notification.findFirst({
-          where: { tenantId, userId: parentId, data: { path: ['reminderKey'], equals: reminderKey } },
+          where: {
+            tenantId,
+            userId: parentId,
+            data: { path: ['reminderKey'], equals: reminderKey },
+          },
           select: { id: true },
         });
         if (already) continue;
@@ -90,11 +121,25 @@ export class FeeRemindersService {
             userId: parentId,
             channel: NotificationChannel.fcm,
             title: text.title(kind),
-            body: text.body(formatRupees(outstanding), firstName, fee.feeStructure.name, formatDateOnly(fee.dueDate)),
-            data: { type: 'fee_due', studentFeeId: fee.id, studentId: fee.student.id, reminderKey },
+            body: text.body(
+              formatRupees(outstanding),
+              firstName,
+              fee.feeStructure.name,
+              formatDateOnly(fee.dueDate),
+            ),
+            data: {
+              type: 'fee_due',
+              studentFeeId: fee.id,
+              studentId: fee.student.id,
+              reminderKey,
+            },
           })
           .then(() => sent++)
-          .catch((err) => this.logger.warn(`Fee reminder to ${parentId} failed: ${(err as Error).message}`));
+          .catch((err) =>
+            this.logger.warn(
+              `Fee reminder to ${parentId} failed: ${(err as Error).message}`,
+            ),
+          );
       }
     }
     return sent;

@@ -515,7 +515,10 @@ export class ImportsService {
     tx: Prisma.TransactionClient,
     tenantId: string,
     rows: ValidFeeStructureRow[],
-    classKeyToId: Map<string, { id: string; academicYear: string; name: string; section: string }>,
+    classKeyToId: Map<
+      string,
+      { id: string; academicYear: string; name: string; section: string }
+    >,
   ) {
     const summary: EntitySummary = { created: 0, updated: 0 };
     const groups = new Map<string, ValidFeeStructureRow[]>();
@@ -577,7 +580,10 @@ export class ImportsService {
           where: { feeStructureId: existing.id },
           select: { amount: true },
         });
-        const mergedTotal = allItems.reduce((sum, i) => sum.plus(i.amount), new Prisma.Decimal(0));
+        const mergedTotal = allItems.reduce(
+          (sum, i) => sum.plus(i.amount),
+          new Prisma.Decimal(0),
+        );
 
         await tx.feeStructure.update({
           where: { id: existing.id },
@@ -614,7 +620,10 @@ export class ImportsService {
     tx: Prisma.TransactionClient,
     tenantId: string,
     rows: ValidStudentRow[],
-    classKeyToId: Map<string, { id: string; academicYear: string; name: string; section: string }>,
+    classKeyToId: Map<
+      string,
+      { id: string; academicYear: string; name: string; section: string }
+    >,
   ) {
     const summary: EntitySummary = { created: 0, updated: 0 };
 
@@ -737,7 +746,10 @@ export class ImportsService {
     tx: Prisma.TransactionClient,
     tenantId: string,
     rows: ValidTeacherRow[],
-    classKeyToId: Map<string, { id: string; academicYear: string; name: string; section: string }>,
+    classKeyToId: Map<
+      string,
+      { id: string; academicYear: string; name: string; section: string }
+    >,
   ) {
     const summary: EntitySummary = { created: 0, updated: 0 };
 
@@ -771,7 +783,9 @@ export class ImportsService {
         where: { tenantId_name: { tenantId, name: subjectName } },
       });
       if (!subject) {
-        subject = await tx.subject.create({ data: { tenantId, name: subjectName } });
+        subject = await tx.subject.create({
+          data: { tenantId, name: subjectName },
+        });
       }
 
       const existingAssignment = await tx.teacherSubject.findUnique({
@@ -788,7 +802,12 @@ export class ImportsService {
         summary.updated++;
       } else {
         await tx.teacherSubject.create({
-          data: { tenantId, teacherId: teacher.id, subjectId: subject.id, classId: classInfo.id },
+          data: {
+            tenantId,
+            teacherId: teacher.id,
+            subjectId: subject.id,
+            classId: classInfo.id,
+          },
         });
         summary.created++;
       }
@@ -796,8 +815,14 @@ export class ImportsService {
       // A "No" never demotes an existing class-teacher designation — only an
       // explicit "Yes" promotes, mirroring the Classes tab's Class Teacher Email.
       await tx.classTeacher.upsert({
-        where: { classId_teacherId: { classId: classInfo.id, teacherId: teacher.id } },
-        create: { classId: classInfo.id, teacherId: teacher.id, isClassTeacher: row.isClassTeacher },
+        where: {
+          classId_teacherId: { classId: classInfo.id, teacherId: teacher.id },
+        },
+        create: {
+          classId: classInfo.id,
+          teacherId: teacher.id,
+          isClassTeacher: row.isClassTeacher,
+        },
         update: row.isClassTeacher ? { isClassTeacher: true } : {},
       });
     }

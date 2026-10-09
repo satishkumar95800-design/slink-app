@@ -1,7 +1,9 @@
-import Link from 'next/link';
 import {
   Bell,
+  CalendarCheck,
   Camera,
+  Clock,
+  Eye,
   CreditCard,
   FileText,
   LayoutDashboard,
@@ -13,8 +15,14 @@ import {
   Users,
   Wallet,
 } from 'lucide-react';
+import { WhatsAppDemoButton, TrackedLink } from '../../components/marketing/cta';
+import { DemoVideo } from '../../components/marketing/demo-video';
+import { Testimonials } from '../../components/marketing/testimonials';
+import { Pricing } from '../../components/marketing/pricing';
+import { AppBadges } from '../../components/marketing/app-badges';
+import { marketingConfig } from '../../lib/marketing-config';
+import { strings } from '../../lib/strings';
 import { Section } from '../../components/marketing/section';
-import { Container } from '../../components/marketing/container';
 import { FeatureCard } from '../../components/marketing/feature-card';
 import { Eyebrow } from '../../components/marketing/eyebrow';
 import { Marquee } from '../../components/marketing/marquee';
@@ -22,7 +30,12 @@ import { Checklist } from '../../components/marketing/checklist';
 import { FloatingStat } from '../../components/marketing/floating-stat';
 import { DashboardMockup } from '../../components/marketing/dashboard-mockup';
 
+const m = strings.marketing;
+const WHY_ICONS = [Wallet, Upload, Bell];
+
 const TICKER_ITEMS = [
+  'DAILY ATTENDANCE & ABSENCE ALERTS',
+  'FEE-DUE REMINDERS',
   'STUDENT NOTES, MOM & COMPLAINT LOG',
   'REPORT CARD PDF UPLOADS',
   'DISCOUNT-AWARE RECEIPTS',
@@ -67,24 +80,24 @@ const HOW_IT_WORKS = [
 const MOBILE_FEATURES = [
   {
     icon: CreditCard,
-    title: 'Fee payments & claims',
+    title: 'Fees, receipts & reminders',
     description:
-      'Parents pay online, or attach a photo of an offline payment as a claim — with discount labels shown on every receipt.',
+      'Parents pay online or upload proof of a cash/cheque payment, download PDF receipts, and get reminders before fees fall due.',
   },
   {
-    icon: FileText,
-    title: 'Progress reports & report cards',
-    description: 'Teachers publish academic, attendance, and behaviour reports, plus upload signed report-card PDFs.',
-  },
-  {
-    icon: Bell,
-    title: 'Class notices',
-    description: 'A class teacher can broadcast a message to every parent in their class in seconds.',
+    icon: CalendarCheck,
+    title: 'Attendance & absence alerts',
+    description: 'Teachers mark a class in under 30 seconds; parents get an alert the same day if their child is absent.',
   },
   {
     icon: Camera,
-    title: 'Homework, with a photo',
-    description: 'Teachers snap a photo of the board and send it straight to a class’s parents.',
+    title: 'Homework & notices',
+    description: 'Up to three photos or a PDF per post — and teachers see how many parents have opened it.',
+  },
+  {
+    icon: FileText,
+    title: 'Report cards & progress reports',
+    description: 'Report-card PDFs and teacher progress reports, published straight to the parent’s phone.',
   },
 ];
 
@@ -116,6 +129,21 @@ const WEB_FEATURES = [
     description: 'Accountants open any student to see the full-year due/paid/pending breakdown, term by term.',
   },
   {
+    icon: CalendarCheck,
+    title: 'School-wide attendance',
+    description: 'Today’s attendance at a glance, classes not yet marked, per-student percentages and Excel export.',
+  },
+  {
+    icon: Eye,
+    title: 'Who has seen what',
+    description: 'Every notice and homework shows how many parents opened it — and who hasn’t yet.',
+  },
+  {
+    icon: Clock,
+    title: 'Teacher’s day at a glance',
+    description: 'Teachers see their current and next period, and mark attendance first thing.',
+  },
+  {
     icon: ShieldCheck,
     title: 'Fewer scheduling mistakes',
     description: 'The timetable warns an admin when a teacher is assigned a subject they aren’t actually teaching.',
@@ -138,51 +166,30 @@ export default function LandingPage() {
       <Section tone="cream" className="pt-14 pb-0 sm:pt-20">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <div>
-            <Eyebrow>For school admins, teachers &amp; parents</Eyebrow>
-            <h1 className="mt-5 text-4xl font-extrabold leading-[1.05] tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
-              Run fees, reports and notices from{' '}
+            <Eyebrow>{m.eyebrow}</Eyebrow>
+            <h1 className="mt-5 text-3xl font-extrabold leading-[1.1] tracking-tight text-gray-900 sm:text-5xl lg:text-[3.4rem]">
+              {m.headline}{' '}
               <span className="relative inline-block">
-                <span className="relative z-10">one place</span>
+                <span className="relative z-10">{m.headlineHighlight}</span>
                 <span className="absolute inset-x-0 bottom-1 z-0 h-4 bg-coral/30" />
               </span>
-              , not a dozen registers.
             </h1>
-            <p className="mt-6 max-w-lg text-lg text-gray-600">
-              Schoolinkd pairs a parent &amp; teacher mobile app with an admin web console — bulk onboarding, discount-aware
-              fee collection, payment-claim proofs, teacher-authored report cards, and a running notes log for every
-              student.
-            </p>
-            <div className="mt-9 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center rounded-full bg-coral px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-coral/20 transition-colors hover:bg-coral-dark"
-              >
-                School Login
-              </Link>
-              <Link
-                href="/contact"
-                className="inline-flex items-center justify-center rounded-full border-2 border-teal px-7 py-3.5 text-sm font-bold text-teal transition-colors hover:bg-teal hover:text-white"
-              >
-                Talk to us
-              </Link>
+            <p className="mt-6 max-w-lg text-lg text-gray-600">{m.subline}</p>
+            <div className="mt-9 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+              <WhatsAppDemoButton />
+              <TrackedLink href="/login" event="login_click">
+                {m.schoolLogin}
+              </TrackedLink>
             </div>
-            <p className="mt-4 text-xs text-gray-500">
-              For school administrators and accounts staff. Parents and teachers use the Schoolinkd mobile app.
-            </p>
+            <p className="mt-4 text-xs text-gray-500">{m.heroNote}</p>
 
             <div className="mt-10 grid grid-cols-3 gap-4 border-t border-gray-200 pt-6 sm:max-w-md">
-              <div>
-                <p className="text-2xl font-extrabold text-gray-900">4</p>
-                <p className="text-xs text-gray-500">Roles supported</p>
-              </div>
-              <div>
-                <p className="text-2xl font-extrabold text-gray-900">4</p>
-                <p className="text-xs text-gray-500">Payment methods</p>
-              </div>
-              <div>
-                <p className="text-2xl font-extrabold text-gray-900">1</p>
-                <p className="text-xs text-gray-500">Import to set up</p>
-              </div>
+              {m.stats.map((stat) => (
+                <div key={stat.label}>
+                  <p className="text-2xl font-extrabold text-gray-900">{stat.value}</p>
+                  <p className="text-xs text-gray-500">{stat.label}</p>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -203,6 +210,42 @@ export default function LandingPage() {
               className="absolute -left-4 bottom-8 hidden sm:block"
             />
           </div>
+        </div>
+      </Section>
+
+      <Section tone="cream" id="demo-video">
+        <div className="mx-auto max-w-3xl text-center">
+          <Eyebrow tone="teal">{m.videoEyebrow}</Eyebrow>
+          <h2 className="mt-5 text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl">{m.videoTitle}</h2>
+        </div>
+        <div className="mx-auto mt-8 max-w-4xl">
+          <DemoVideo />
+        </div>
+      </Section>
+
+      <Section tone="light" id="why">
+        <div className="mx-auto max-w-2xl text-center">
+          <Eyebrow>{m.whyEyebrow}</Eyebrow>
+          <h2 className="mt-5 text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl">{m.whyTitle}</h2>
+        </div>
+        <div className="mt-12 grid gap-6 md:grid-cols-3">
+          {m.why.map((item, i) => {
+            const Icon = WHY_ICONS[i];
+            return (
+              <div key={item.title} className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-coral/10 text-coral">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <h3 className="mt-5 text-lg font-bold text-gray-900">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-gray-600">{item.body}</p>
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-12 flex flex-col items-center gap-3 rounded-3xl bg-teal px-6 py-10 text-center text-white sm:px-12">
+          <h3 className="text-xl font-extrabold sm:text-2xl">{m.midCtaTitle}</h3>
+          <p className="max-w-md text-sm text-white/80">{m.midCtaBody}</p>
+          <WhatsAppDemoButton className="mt-3" />
         </div>
       </Section>
 
@@ -361,25 +404,32 @@ export default function LandingPage() {
         </div>
       </Section>
 
+      <Testimonials />
+
+      <Pricing />
+
+      {(marketingConfig.playStoreUrl || marketingConfig.appStoreUrl) && (
+        <Section tone="light" id="app">
+          <div className="mx-auto flex max-w-3xl flex-col items-center gap-5 text-center">
+            <Eyebrow tone="teal">{m.appEyebrow}</Eyebrow>
+            <h2 className="text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl">{m.appTitle}</h2>
+            <p className="text-gray-600">{m.appBody}</p>
+            <AppBadges />
+          </div>
+        </Section>
+      )}
+
       <Section tone="cream">
-        <div className="rounded-3xl border border-black/5 bg-white p-10 shadow-sm sm:p-14">
+        <div className="rounded-3xl border border-black/5 bg-white p-6 shadow-sm sm:p-14">
           <div className="grid items-center gap-8 lg:grid-cols-2">
             <div>
-              <h2 className="text-3xl font-extrabold leading-tight tracking-tight text-gray-900 sm:text-4xl">
-                Your next term is one import away.
-              </h2>
-              <p className="mt-4 text-gray-600">Sign in to your admin console, or talk to us about onboarding your school.</p>
-              <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-                <Link
-                  href="/login"
-                  className="inline-flex items-center justify-center rounded-full bg-coral px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-coral/20 transition-colors hover:bg-coral-dark"
-                >
-                  School Login
-                </Link>
-                <Link href="/contact" className="inline-flex items-center gap-1 text-sm font-bold text-teal hover:underline">
-                  Talk to our team first
-                  <span aria-hidden>→</span>
-                </Link>
+              <h2 className="text-3xl font-extrabold leading-tight tracking-tight text-gray-900 sm:text-4xl">{m.finalTitle}</h2>
+              <p className="mt-4 text-gray-600">{m.finalBody}</p>
+              <div className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+                <WhatsAppDemoButton />
+                <TrackedLink href="/login" event="login_click">
+                  {m.schoolLogin}
+                </TrackedLink>
               </div>
             </div>
             <div className="relative hidden lg:block">

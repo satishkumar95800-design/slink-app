@@ -47,6 +47,10 @@ Health check: GET http://localhost:3000/v1/health
 
 pnpm only — never use npm or yarn in this repo.
 
+## Demo school
+
+`pnpm --filter api seed:demo` builds/resets the fictional "Green Valley Public School" (school code `gvps-demo`). It refuses to touch any school not flagged `features.isDemo`. Logins: `apps/api/prisma/DEMO_SEED.md`.
+
 ## Database
 
 PostgreSQL 16. Schema managed by Prisma 5 (pinned — do not upgrade to v6+ until Node 22 compat is confirmed).
@@ -75,6 +79,7 @@ pnpm db:generate   # regenerates the Prisma client
 | parent | done | Parent home summary (fees/today/attendance in one call), per-child notices |
 | fee-reminders | done | Daily Bull job: fee-due pushes 3 days before and on the due date |
 | broadcasts | done | Notice/homework sent items, per-parent "seen" tracking, unseen-parent lists |
+| public-site | done | Marketing-site contact form (stored + SMTP email) and cookie-free daily event counts; Platform "Leads" views |
 
 ## Tech decisions (do not revisit without discussion)
 

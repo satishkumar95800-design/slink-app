@@ -1,4 +1,11 @@
-import { IsEmail, IsEnum, IsOptional, IsPhoneNumber, IsString, MaxLength } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsPhoneNumber,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { Role } from '@prisma/client';
 import { CleanName } from '../../../common/decorators/clean-name.decorator';
 

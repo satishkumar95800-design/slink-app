@@ -17,11 +17,7 @@ import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import { extname } from 'path';
 import type { Express } from 'express';
-import {
-  FileCategory,
-  ALLOWED_MIME,
-  MAX_BYTES,
-} from './dto/upload-file.dto';
+import { FileCategory, ALLOWED_MIME, MAX_BYTES } from './dto/upload-file.dto';
 
 export interface UploadResult {
   key: string;
@@ -46,7 +42,9 @@ export class FilesService {
 
     this.s3 = new S3Client({
       region: this.region,
-      ...(this.endpoint ? { endpoint: this.endpoint, forcePathStyle: true } : {}),
+      ...(this.endpoint
+        ? { endpoint: this.endpoint, forcePathStyle: true }
+        : {}),
     });
   }
 
@@ -119,7 +117,9 @@ export class FilesService {
     // Verify the object exists before issuing a URL
     if (verifyExists) {
       try {
-        await this.s3.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }));
+        await this.s3.send(
+          new HeadObjectCommand({ Bucket: this.bucket, Key: key }),
+        );
       } catch {
         throw new NotFoundException(`File not found: ${key}`);
       }
@@ -140,7 +140,8 @@ export class FilesService {
   keyFromUrl(url: string): string | null {
     try {
       let path = decodeURIComponent(new URL(url).pathname).replace(/^\/+/, '');
-      if (path.startsWith(`${this.bucket}/`)) path = path.slice(this.bucket.length + 1);
+      if (path.startsWith(`${this.bucket}/`))
+        path = path.slice(this.bucket.length + 1);
       return path.length > 0 ? path : null;
     } catch {
       return null;
@@ -150,13 +151,18 @@ export class FilesService {
   async delete(key: string, tenantId: string): Promise<void> {
     this.assertTenantOwnsKey(key, tenantId);
 
-    await this.s3.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+    await this.s3.send(
+      new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
+    );
     this.logger.log(`Deleted ${key}`);
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────────
 
-  private validateFile(file: Express.Multer.File, category: FileCategory): void {
+  private validateFile(
+    file: Express.Multer.File,
+    category: FileCategory,
+  ): void {
     const allowed = ALLOWED_MIME[category];
     if (!allowed.includes(file.mimetype)) {
       throw new BadRequestException(
@@ -180,7 +186,8 @@ export class FilesService {
     entityId?: string,
   ): string {
     const uuid = randomUUID();
-    const ext = extname(file.originalname).toLowerCase() || this.inferExt(file.mimetype);
+    const ext =
+      extname(file.originalname).toLowerCase() || this.inferExt(file.mimetype);
 
     switch (category) {
       case FileCategory.LOGO:
@@ -227,7 +234,8 @@ export class FilesService {
       'application/pdf': '.pdf',
       'text/plain': '.txt',
       'application/vnd.ms-excel': '.xls',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+        '.xlsx',
     };
     return map[mimeType] ?? '';
   }

@@ -1,5 +1,16 @@
-import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
-import { NotificationChannel, PaymentClaimStatus, PaymentMethod, Prisma, Role } from '@prisma/client';
+import {
+  Injectable,
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  NotificationChannel,
+  PaymentClaimStatus,
+  PaymentMethod,
+  Prisma,
+  Role,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StudentFeesService } from '../fees/student-fees.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -14,7 +25,9 @@ type OfflinePaymentMethod = (typeof OFFLINE_PAYMENT_METHODS)[number];
 
 const claimInclude = {
   student: { select: { id: true, name: true, admissionNo: true } },
-  studentFee: { select: { id: true, amountDue: true, amountPaid: true, status: true } },
+  studentFee: {
+    select: { id: true, amountDue: true, amountPaid: true, status: true },
+  },
   submitter: { select: { id: true, name: true, phone: true } },
   reviewer: { select: { id: true, name: true } },
 } satisfies Prisma.PaymentClaimInclude;
@@ -52,7 +65,8 @@ export class PaymentClaimsService {
     const link = await this.prisma.studentParent.findUnique({
       where: { studentId_parentId: { studentId: fee.studentId, parentId } },
     });
-    if (!link) throw new ForbiddenException('You do not have access to this fee');
+    if (!link)
+      throw new ForbiddenException('You do not have access to this fee');
 
     return this.prisma.paymentClaim.create({
       data: {
@@ -87,8 +101,14 @@ export class PaymentClaimsService {
     });
   }
 
-  async getProofUrl(tenantId: string, id: string, user: ActiveUser): Promise<{ url: string }> {
-    const claim = await this.prisma.paymentClaim.findUnique({ where: { id, tenantId } });
+  async getProofUrl(
+    tenantId: string,
+    id: string,
+    user: ActiveUser,
+  ): Promise<{ url: string }> {
+    const claim = await this.prisma.paymentClaim.findUnique({
+      where: { id, tenantId },
+    });
     if (!claim) throw new NotFoundException('Payment claim not found');
     if (user.role === Role.parent && claim.submittedBy !== user.id) {
       throw new ForbiddenException('You do not have access to this claim');
@@ -103,7 +123,12 @@ export class PaymentClaimsService {
    * paid. The claimed amount is a hint, not a guarantee — the approver
    * confirms/corrects it here against the uploaded proof before it's recorded.
    */
-  async approve(tenantId: string, id: string, dto: ApprovePaymentClaimDto, actorId: string) {
+  async approve(
+    tenantId: string,
+    id: string,
+    dto: ApprovePaymentClaimDto,
+    actorId: string,
+  ) {
     const claim = await this.prisma.paymentClaim.findUnique({
       where: { id, tenantId },
       include: {
@@ -123,7 +148,9 @@ export class PaymentClaimsService {
       throw new BadRequestException('This claim has already been reviewed');
     }
 
-    const amountValue = dto.amount ?? (claim.claimedAmount ? Number(claim.claimedAmount) : undefined);
+    const amountValue =
+      dto.amount ??
+      (claim.claimedAmount ? Number(claim.claimedAmount) : undefined);
     if (!amountValue || amountValue <= 0) {
       throw new BadRequestException(
         'An amount is required to approve this claim — confirm it against the uploaded proof',
@@ -177,7 +204,12 @@ export class PaymentClaimsService {
     return { claim: updated, receipt };
   }
 
-  async reject(tenantId: string, id: string, dto: RejectPaymentClaimDto, actorId: string) {
+  async reject(
+    tenantId: string,
+    id: string,
+    dto: RejectPaymentClaimDto,
+    actorId: string,
+  ) {
     const claim = await this.prisma.paymentClaim.findUnique({
       where: { id, tenantId },
       include: { student: { select: { name: true } } },
@@ -220,10 +252,17 @@ export class PaymentClaimsService {
 
   /** Fills each outstanding component in period order until the confirmed amount is exhausted. */
   private autoAllocate(
-    components: Array<{ id: string; amountDue: Prisma.Decimal; amountPaid: Prisma.Decimal }>,
+    components: Array<{
+      id: string;
+      amountDue: Prisma.Decimal;
+      amountPaid: Prisma.Decimal;
+    }>,
     amount: Prisma.Decimal,
   ): Array<{ studentFeeComponentId: string; amount: number }> {
-    const allocations: Array<{ studentFeeComponentId: string; amount: number }> = [];
+    const allocations: Array<{
+      studentFeeComponentId: string;
+      amount: number;
+    }> = [];
     let remaining = amount;
 
     for (const component of components) {
@@ -231,7 +270,10 @@ export class PaymentClaimsService {
       const outstanding = component.amountDue.sub(component.amountPaid);
       if (outstanding.lessThanOrEqualTo(0)) continue;
       const alloc = Prisma.Decimal.min(outstanding, remaining);
-      allocations.push({ studentFeeComponentId: component.id, amount: Number(alloc.toFixed(2)) });
+      allocations.push({
+        studentFeeComponentId: component.id,
+        amount: Number(alloc.toFixed(2)),
+      });
       remaining = remaining.sub(alloc);
     }
 

@@ -13,7 +13,13 @@ export interface FixtureTabs {
 
 const DEFAULT_HEADERS: Record<string, string[]> = {
   Classes: ['Class Name', 'Section', 'Academic Year', 'Class Teacher Email'],
-  Users: ['Full Name', 'Email', 'Phone Number', 'Role', 'Assigned Class (Teachers only)'],
+  Users: [
+    'Full Name',
+    'Email',
+    'Phone Number',
+    'Role',
+    'Assigned Class (Teachers only)',
+  ],
   Teachers: [
     'Teacher Name',
     'Phone Number',
@@ -71,7 +77,10 @@ export async function buildFixtureWorkbook(
   ] as const) {
     const headers =
       tabName === 'Students'
-        ? [...DEFAULT_HEADERS[tabName], ...(overrides.StudentsExtraHeaders ?? [])]
+        ? [
+            ...DEFAULT_HEADERS[tabName],
+            ...(overrides.StudentsExtraHeaders ?? []),
+          ]
         : DEFAULT_HEADERS[tabName];
     const sheet = workbook.addWorksheet(tabName);
     sheet.addRow(headers);

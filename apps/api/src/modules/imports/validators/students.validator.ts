@@ -5,7 +5,15 @@ import {
   ValidClassRow,
   ValidStudentRow,
 } from '../types';
-import { cleanName, EMAIL_REGEX, issue, isValidCalendarDate, PHONE_REGEX, pushLowercaseNameWarning, resolveClass } from './shared';
+import {
+  cleanName,
+  EMAIL_REGEX,
+  issue,
+  isValidCalendarDate,
+  PHONE_REGEX,
+  pushLowercaseNameWarning,
+  resolveClass,
+} from './shared';
 import {
   BLOOD_GROUP_TEMPLATE_OPTIONS,
   CASTE_TEMPLATE_OPTIONS,
@@ -15,7 +23,9 @@ import { BLOOD_GROUP_DISPLAY_TO_ENUM } from '../../../common/blood-group';
 
 const TAB = 'Students' as const;
 const CASTE_SET = new Set<string>(CASTE_TEMPLATE_OPTIONS);
-const GUARDIAN_RELATION_SET = new Set<string>(GUARDIAN_RELATION_TEMPLATE_OPTIONS);
+const GUARDIAN_RELATION_SET = new Set<string>(
+  GUARDIAN_RELATION_TEMPLATE_OPTIONS,
+);
 
 /** "Father" -> GuardianRelation.father; falls back to "guardian" when the cell is blank. */
 function parseGuardianRelation(raw: string): GuardianRelation {
@@ -51,9 +61,27 @@ export function validateStudentsTab(
     const bloodGroupRaw = row.cells['Blood Group'];
     const casteRaw = row.cells['Caste'];
     const rollNo = row.cells['Roll Number'] ?? '';
-    pushLowercaseNameWarning(warnings, TAB, row.rowNumber, 'Student Name', name);
-    pushLowercaseNameWarning(warnings, TAB, row.rowNumber, 'Parent Name', parentName);
-    pushLowercaseNameWarning(warnings, TAB, row.rowNumber, 'Guardian 2 Name', guardian2Name);
+    pushLowercaseNameWarning(
+      warnings,
+      TAB,
+      row.rowNumber,
+      'Student Name',
+      name,
+    );
+    pushLowercaseNameWarning(
+      warnings,
+      TAB,
+      row.rowNumber,
+      'Parent Name',
+      parentName,
+    );
+    pushLowercaseNameWarning(
+      warnings,
+      TAB,
+      row.rowNumber,
+      'Guardian 2 Name',
+      guardian2Name,
+    );
 
     let hasError = false;
 
@@ -160,11 +188,19 @@ export function validateStudentsTab(
       }
       if (guardian2Email && !EMAIL_REGEX.test(guardian2Email)) {
         errors.push(
-          issue(TAB, row.rowNumber, 'Guardian 2 Email', 'is not a valid email address'),
+          issue(
+            TAB,
+            row.rowNumber,
+            'Guardian 2 Email',
+            'is not a valid email address',
+          ),
         );
         hasError = true;
       }
-      if (guardian2RelationRaw && !GUARDIAN_RELATION_SET.has(guardian2RelationRaw)) {
+      if (
+        guardian2RelationRaw &&
+        !GUARDIAN_RELATION_SET.has(guardian2RelationRaw)
+      ) {
         errors.push(
           issue(
             TAB,
@@ -255,7 +291,9 @@ export function validateStudentsTab(
       rollNo: rollNo || undefined,
       classKey,
       dob: dob || undefined,
-      bloodGroup: bloodGroupRaw ? BLOOD_GROUP_DISPLAY_TO_ENUM[bloodGroupRaw] : undefined,
+      bloodGroup: bloodGroupRaw
+        ? BLOOD_GROUP_DISPLAY_TO_ENUM[bloodGroupRaw]
+        : undefined,
       caste: casteRaw ? (casteRaw as Caste) : undefined,
       parentName,
       parentRelation: parseGuardianRelation(parentRelationRaw),
@@ -263,10 +301,14 @@ export function validateStudentsTab(
       parentEmail: parentEmail || undefined,
       parentProfession: parentProfession || undefined,
       guardian2Name: guardian2Name || undefined,
-      guardian2Relation: guardian2Name ? parseGuardianRelation(guardian2RelationRaw) : undefined,
+      guardian2Relation: guardian2Name
+        ? parseGuardianRelation(guardian2RelationRaw)
+        : undefined,
       guardian2Phone: guardian2Name ? guardian2Phone : undefined,
       guardian2Email: guardian2Name ? guardian2Email || undefined : undefined,
-      guardian2Profession: guardian2Name ? guardian2Profession || undefined : undefined,
+      guardian2Profession: guardian2Name
+        ? guardian2Profession || undefined
+        : undefined,
     });
   }
 

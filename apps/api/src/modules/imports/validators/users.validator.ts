@@ -1,5 +1,12 @@
 import { ParsedTab, TabValidation, ValidUserRow } from '../types';
-import { EMAIL_REGEX, PHONE_REGEX, cleanName, issue, normalizedName, pushLowercaseNameWarning } from './shared';
+import {
+  EMAIL_REGEX,
+  PHONE_REGEX,
+  cleanName,
+  issue,
+  normalizedName,
+  pushLowercaseNameWarning,
+} from './shared';
 import { ALLOWED_ROLES } from '../tab-schema';
 
 const TAB = 'Users' as const;

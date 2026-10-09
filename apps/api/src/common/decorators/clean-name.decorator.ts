@@ -5,4 +5,6 @@ import { Transform } from 'class-transformer';
  * Capitalisation is never changed — stored names are shown exactly as entered.
  */
 export const CleanName = () =>
-  Transform(({ value }) => (typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : value));
+  Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : value,
+  );

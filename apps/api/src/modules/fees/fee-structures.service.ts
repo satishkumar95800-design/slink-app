@@ -74,7 +74,9 @@ export class FeeStructuresService {
         where: { tenantId, teachers: { some: { teacherId: user.id } } },
         select: { id: true },
       });
-      where.classes = { some: { classId: { in: teacherClasses.map((c) => c.id) } } };
+      where.classes = {
+        some: { classId: { in: teacherClasses.map((c) => c.id) } },
+      };
     }
 
     return this.prisma.feeStructure.findMany({
@@ -132,7 +134,8 @@ export class FeeStructuresService {
 
   async update(tenantId: string, id: string, dto: UpdateFeeStructureDto) {
     await this.requireFeeStructure(tenantId, id);
-    if (dto.classIds !== undefined) await this.requireClasses(tenantId, dto.classIds);
+    if (dto.classIds !== undefined)
+      await this.requireClasses(tenantId, dto.classIds);
 
     const data: Prisma.FeeStructureUpdateInput = {};
 
@@ -200,11 +203,16 @@ export class FeeStructuresService {
     dto: AssignFeeStructureDto,
     actor: ActiveUser,
   ) {
-    const structure = await this.requireFeeStructureWithItems(tenantId, feeStructureId);
+    const structure = await this.requireFeeStructureWithItems(
+      tenantId,
+      feeStructureId,
+    );
 
     const linkedClassIds = new Set(structure.classes.map((c) => c.classId));
     if (!linkedClassIds.has(dto.classId)) {
-      throw new BadRequestException('This fee structure is not linked to the given class');
+      throw new BadRequestException(
+        'This fee structure is not linked to the given class',
+      );
     }
 
     const students = await this.prisma.student.findMany({
@@ -223,7 +231,9 @@ export class FeeStructuresService {
     const alreadyAssigned = new Set(existingLinks.map((l) => l.studentId));
     const toAssign = students.filter((s) => !alreadyAssigned.has(s.id));
 
-    const dueDate = dto.dueDateOverride ? new Date(dto.dueDateOverride) : structure.dueDate;
+    const dueDate = dto.dueDateOverride
+      ? new Date(dto.dueDateOverride)
+      : structure.dueDate;
 
     if (toAssign.length > 0) {
       const discountsByStudent = await this.loadDiscountsByStudent(
@@ -239,7 +249,10 @@ export class FeeStructuresService {
         );
         const amountDue = dto.amountDueOverride
           ? new Prisma.Decimal(dto.amountDueOverride.toFixed(2))
-          : components.reduce((sum, c) => sum.add(c.amountDue), new Prisma.Decimal(0));
+          : components.reduce(
+              (sum, c) => sum.add(c.amountDue),
+              new Prisma.Decimal(0),
+            );
 
         await this.prisma.studentFee.create({
           data: {
@@ -255,7 +268,8 @@ export class FeeStructuresService {
     }
 
     if (dto.notifyParents) {
-      const amountDue = dto.amountDueOverride ?? structure.totalAmount.toNumber();
+      const amountDue =
+        dto.amountDueOverride ?? structure.totalAmount.toNumber();
       await this.notifications.broadcast(
         tenantId,
         {
@@ -300,7 +314,9 @@ export class FeeStructuresService {
       if (outstanding.lessThanOrEqualTo(0)) continue;
       balanceByStudent.set(
         fee.studentId,
-        (balanceByStudent.get(fee.studentId) ?? new Prisma.Decimal(0)).add(outstanding),
+        (balanceByStudent.get(fee.studentId) ?? new Prisma.Decimal(0)).add(
+          outstanding,
+        ),
       );
     }
 
@@ -312,7 +328,13 @@ export class FeeStructuresService {
     const systemName = 'Previous Year Dues';
 
     let systemStructure = await this.prisma.feeStructure.findUnique({
-      where: { tenantId_name_academicYear: { tenantId, name: systemName, academicYear: dto.toAcademicYear } },
+      where: {
+        tenantId_name_academicYear: {
+          tenantId,
+          name: systemName,
+          academicYear: dto.toAcademicYear,
+        },
+      },
       include: { items: true },
     });
     if (!systemStructure) {
@@ -325,7 +347,13 @@ export class FeeStructuresService {
           totalAmount: new Prisma.Decimal(0),
           isSystem: true,
           items: {
-            create: [{ label: systemName, amount: new Prisma.Decimal(0), billingFrequency: 'one_time' }],
+            create: [
+              {
+                label: systemName,
+                amount: new Prisma.Decimal(0),
+                billingFrequency: 'one_time',
+              },
+            ],
           },
         },
         include: { items: true },
@@ -337,7 +365,12 @@ export class FeeStructuresService {
     let totalCarried = new Prisma.Decimal(0);
     for (const [studentId, balance] of balanceByStudent) {
       const existing = await this.prisma.studentFee.findUnique({
-        where: { studentId_feeStructureId: { studentId, feeStructureId: systemStructure.id } },
+        where: {
+          studentId_feeStructureId: {
+            studentId,
+            feeStructureId: systemStructure.id,
+          },
+        },
       });
       if (existing) continue;
 
@@ -366,10 +399,16 @@ export class FeeStructuresService {
       totalCarried = totalCarried.add(balance);
     }
 
-    return { studentsProcessed: processed, totalCarried: totalCarried.toFixed(2) };
+    return {
+      studentsProcessed: processed,
+      totalCarried: totalCarried.toFixed(2),
+    };
   }
 
-  private isTeacherPlan(structure: FeeStructureWithRelations, teacherId: string) {
+  private isTeacherPlan(
+    structure: FeeStructureWithRelations,
+    teacherId: string,
+  ) {
     return structure.classes.some((link) =>
       link.class.teachers.some((t) => t.teacherId === teacherId),
     );

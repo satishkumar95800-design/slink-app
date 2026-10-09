@@ -6,7 +6,13 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
-import { NotificationChannel, Prisma, Role, ReportStatus, ReportType } from '@prisma/client';
+import {
+  NotificationChannel,
+  Prisma,
+  Role,
+  ReportStatus,
+  ReportType,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FilesService } from '../files/files.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -26,7 +32,10 @@ const reportInclude = {
 const HOMEWORK_PHOTO_URL_TTL_SECONDS = 60 * 60;
 
 const publishedPush = {
-  title: (type: ReportType) => (type === ReportType.report_card ? 'Report card published' : 'New progress report'),
+  title: (type: ReportType) =>
+    type === ReportType.report_card
+      ? 'Report card published'
+      : 'New progress report',
   body: (firstName: string, type: ReportType) =>
     type === ReportType.report_card
       ? `${firstName}'s report card is ready to view.`
@@ -48,38 +57,80 @@ export class ReportsService {
    * URL, from which the key is recovered). Returns a freshly signed URL, or the
    * stored one if no key can be found.
    */
-  async homeworkAttachmentUrl(tenantId: string, content: Prisma.JsonValue): Promise<string | null> {
-    if (!content || typeof content !== 'object' || Array.isArray(content)) return null;
-    const stored = typeof content.attachmentUrl === 'string' ? content.attachmentUrl : null;
-    const key = typeof content.fileKey === 'string' ? content.fileKey : stored ? this.files.keyFromUrl(stored) : null;
+  async homeworkAttachmentUrl(
+    tenantId: string,
+    content: Prisma.JsonValue,
+  ): Promise<string | null> {
+    if (!content || typeof content !== 'object' || Array.isArray(content))
+      return null;
+    const stored =
+      typeof content.attachmentUrl === 'string' ? content.attachmentUrl : null;
+    const key =
+      typeof content.fileKey === 'string'
+        ? content.fileKey
+        : stored
+          ? this.files.keyFromUrl(stored)
+          : null;
     if (!key) return stored;
     try {
-      return await this.files.getSignedUrl(key, tenantId, HOMEWORK_PHOTO_URL_TTL_SECONDS, { verifyExists: false });
+      return await this.files.getSignedUrl(
+        key,
+        tenantId,
+        HOMEWORK_PHOTO_URL_TTL_SECONDS,
+        { verifyExists: false },
+      );
     } catch {
       return stored;
     }
   }
 
   /** Every homework photo (newer homework can have up to 3), freshly signed. */
-  async homeworkAttachmentUrls(tenantId: string, content: Prisma.JsonValue): Promise<string[]> {
-    if (!content || typeof content !== 'object' || Array.isArray(content)) return [];
-    const keys = Array.isArray(content.fileKeys) ? content.fileKeys.filter((k): k is string => typeof k === 'string') : [];
+  async homeworkAttachmentUrls(
+    tenantId: string,
+    content: Prisma.JsonValue,
+  ): Promise<string[]> {
+    if (!content || typeof content !== 'object' || Array.isArray(content))
+      return [];
+    const keys = Array.isArray(content.fileKeys)
+      ? content.fileKeys.filter((k): k is string => typeof k === 'string')
+      : [];
     if (keys.length === 0) {
       const single = await this.homeworkAttachmentUrl(tenantId, content);
       return single ? [single] : [];
     }
     return Promise.all(
       keys.map((key) =>
-        this.files.getSignedUrl(key, tenantId, HOMEWORK_PHOTO_URL_TTL_SECONDS, { verifyExists: false }).catch(() => null),
+        this.files
+          .getSignedUrl(key, tenantId, HOMEWORK_PHOTO_URL_TTL_SECONDS, {
+            verifyExists: false,
+          })
+          .catch(() => null),
       ),
     ).then((urls) => urls.filter((u): u is string => !!u));
   }
 
-  private async withFreshAttachment<T extends { type: ReportType; content: Prisma.JsonValue }>(tenantId: string, report: T): Promise<T> {
+  private async withFreshAttachment<
+    T extends { type: ReportType; content: Prisma.JsonValue },
+  >(tenantId: string, report: T): Promise<T> {
     if (report.type !== ReportType.homework) return report;
-    const attachmentUrls = await this.homeworkAttachmentUrls(tenantId, report.content);
-    const content = report.content && typeof report.content === 'object' && !Array.isArray(report.content) ? report.content : {};
-    return { ...report, content: { ...content, attachmentUrl: attachmentUrls[0] ?? null, attachmentUrls } };
+    const attachmentUrls = await this.homeworkAttachmentUrls(
+      tenantId,
+      report.content,
+    );
+    const content =
+      report.content &&
+      typeof report.content === 'object' &&
+      !Array.isArray(report.content)
+        ? report.content
+        : {};
+    return {
+      ...report,
+      content: {
+        ...content,
+        attachmentUrl: attachmentUrls[0] ?? null,
+        attachmentUrls,
+      },
+    };
   }
 
   async create(tenantId: string, dto: CreateReportDto, user: ActiveUser) {
@@ -96,7 +147,9 @@ export class ReportsService {
     });
     if (!cls) throw new NotFoundException('Class not found');
     if (!cls.teachers.some((t) => t.teacherId === user.id)) {
-      throw new ForbiddenException('You can only create reports for students in your class');
+      throw new ForbiddenException(
+        'You can only create reports for students in your class',
+      );
     }
 
     return this.prisma.report.create({
@@ -129,7 +182,9 @@ export class ReportsService {
     ]);
 
     return {
-      data: await Promise.all(data.map((r) => this.withFreshAttachment(tenantId, r))),
+      data: await Promise.all(
+        data.map((r) => this.withFreshAttachment(tenantId, r)),
+      ),
       total,
       page: query.page ?? 1,
       limit: query.limit ?? 20,
@@ -147,7 +202,12 @@ export class ReportsService {
     return this.withFreshAttachment(tenantId, report);
   }
 
-  async update(tenantId: string, id: string, dto: UpdateReportDto, user: ActiveUser) {
+  async update(
+    tenantId: string,
+    id: string,
+    dto: UpdateReportDto,
+    user: ActiveUser,
+  ) {
     const report = await this.requireReport(tenantId, id);
     this.assertTeacherOwns(report, user);
     if (report.status !== ReportStatus.draft) {
@@ -159,7 +219,9 @@ export class ReportsService {
       data: {
         ...(dto.type !== undefined && { type: dto.type }),
         ...(dto.term !== undefined && { term: dto.term }),
-        ...(dto.content !== undefined && { content: dto.content as Prisma.InputJsonValue }),
+        ...(dto.content !== undefined && {
+          content: dto.content as Prisma.InputJsonValue,
+        }),
         ...(dto.pdfKey !== undefined && { pdfKey: dto.pdfKey }),
       },
       include: reportInclude,
@@ -185,7 +247,11 @@ export class ReportsService {
   /** Report cards and progress reports push to the student's parents; homework has its own push at send time. */
   private async notifyParentsOfPublish(
     tenantId: string,
-    report: { id: string; type: ReportType; student: { id: string; name: string } },
+    report: {
+      id: string;
+      type: ReportType;
+      student: { id: string; name: string };
+    },
   ) {
     if (report.type === ReportType.homework) return;
     const parents = await this.prisma.studentParent.findMany({
@@ -202,9 +268,17 @@ export class ReportsService {
             channel: NotificationChannel.fcm,
             title: publishedPush.title(report.type),
             body: publishedPush.body(firstName, report.type),
-            data: { type: 'report_published', reportId: report.id, studentId: report.student.id },
+            data: {
+              type: 'report_published',
+              reportId: report.id,
+              studentId: report.student.id,
+            },
           })
-          .catch((err) => this.logger.warn(`Report push to ${p.parentId} failed: ${(err as Error).message}`)),
+          .catch((err) =>
+            this.logger.warn(
+              `Report push to ${p.parentId} failed: ${(err as Error).message}`,
+            ),
+          ),
       ),
     );
   }
@@ -226,12 +300,16 @@ export class ReportsService {
     const report = await this.requireReport(tenantId, id);
 
     if (report.status !== ReportStatus.published) {
-      throw new BadRequestException('Cannot mark an unpublished report as read');
+      throw new BadRequestException(
+        'Cannot mark an unpublished report as read',
+      );
     }
 
     // Verify parent has access to this student (invariant #2)
     const link = await this.prisma.studentParent.findUnique({
-      where: { studentId_parentId: { studentId: report.studentId, parentId: user.id } },
+      where: {
+        studentId_parentId: { studentId: report.studentId, parentId: user.id },
+      },
     });
     if (!link) throw new NotFoundException('Report not found');
 
@@ -310,7 +388,12 @@ export class ReportsService {
 
   private async assertReadAccess(
     tenantId: string,
-    report: { studentId: string; teacherId: string; status: ReportStatus; classId: string },
+    report: {
+      studentId: string;
+      teacherId: string;
+      status: ReportStatus;
+      classId: string;
+    },
     user: ActiveUser,
   ) {
     if (user.role === Role.parent) {
@@ -318,7 +401,12 @@ export class ReportsService {
         throw new NotFoundException('Report not found');
       }
       const link = await this.prisma.studentParent.findUnique({
-        where: { studentId_parentId: { studentId: report.studentId, parentId: user.id } },
+        where: {
+          studentId_parentId: {
+            studentId: report.studentId,
+            parentId: user.id,
+          },
+        },
       });
       if (!link) throw new NotFoundException('Report not found');
     } else if (user.role === Role.teacher) {
@@ -334,10 +422,7 @@ export class ReportsService {
     // admin / accounts can read everything
   }
 
-  private assertTeacherOwns(
-    report: { teacherId: string },
-    user: ActiveUser,
-  ) {
+  private assertTeacherOwns(report: { teacherId: string }, user: ActiveUser) {
     if (report.teacherId !== user.id) {
       throw new ForbiddenException('You can only modify your own reports');
     }

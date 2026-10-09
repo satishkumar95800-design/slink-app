@@ -10,7 +10,11 @@ const fee = (id: string, dueDate: string, due = 6000, paid = 0) => ({
   amountPaid: new Prisma.Decimal(paid),
   dueDate: dbDate(dueDate),
   feeStructure: { name: 'Term 2' },
-  student: { id: 's1', name: 'Avyaan Singha', parents: [{ parentId: 'parent-1' }] },
+  student: {
+    id: 's1',
+    name: 'Avyaan Singha',
+    parents: [{ parentId: 'parent-1' }],
+  },
 });
 
 describe('FeeRemindersService', () => {
@@ -24,7 +28,11 @@ describe('FeeRemindersService', () => {
 
   beforeEach(() => {
     prisma = {
-      tenant: { findMany: jest.fn().mockResolvedValue([{ id: 'tenant-a', timezone: 'Asia/Kolkata' }]) },
+      tenant: {
+        findMany: jest
+          .fn()
+          .mockResolvedValue([{ id: 'tenant-a', timezone: 'Asia/Kolkata' }]),
+      },
       studentFee: { findMany: jest.fn().mockResolvedValue([]) },
       notification: { findFirst: jest.fn().mockResolvedValue(null) },
     };
@@ -48,7 +56,10 @@ describe('FeeRemindersService', () => {
   });
 
   it('sends "due in 3 days" and "due today" pushes with Indian formatting', async () => {
-    prisma.studentFee.findMany.mockResolvedValue([fee('f-today', '2026-10-12', 6000, 1000), fee('f-soon', '2026-10-15')]);
+    prisma.studentFee.findMany.mockResolvedValue([
+      fee('f-today', '2026-10-12', 6000, 1000),
+      fee('f-soon', '2026-10-15'),
+    ]);
 
     const { sent } = await service.sendDueReminders(NOW);
 
@@ -58,29 +69,48 @@ describe('FeeRemindersService', () => {
         userId: 'parent-1',
         title: 'Fee due today',
         body: '₹5,000 for Avyaan (Term 2) is due on 12/10/2026.',
-        data: { type: 'fee_due', studentFeeId: 'f-today', studentId: 's1', reminderKey: 'fee_due:f-today:today:2026-10-12' },
+        data: {
+          type: 'fee_due',
+          studentFeeId: 'f-today',
+          studentId: 's1',
+          reminderKey: 'fee_due:f-today:today:2026-10-12',
+        },
       }),
     );
     expect(notifications.send).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Fee due in 3 days', body: '₹6,000 for Avyaan (Term 2) is due on 15/10/2026.' }),
+      expect.objectContaining({
+        title: 'Fee due in 3 days',
+        body: '₹6,000 for Avyaan (Term 2) is due on 15/10/2026.',
+      }),
     );
   });
 
   it('never sends the same reminder twice in a day', async () => {
-    prisma.studentFee.findMany.mockResolvedValue([fee('f-today', '2026-10-12')]);
+    prisma.studentFee.findMany.mockResolvedValue([
+      fee('f-today', '2026-10-12'),
+    ]);
     prisma.notification.findFirst.mockResolvedValue({ id: 'already-sent' });
 
     expect((await service.sendDueReminders(NOW)).sent).toBe(0);
     expect(prisma.notification.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { tenantId: 'tenant-a', userId: 'parent-1', data: { path: ['reminderKey'], equals: 'fee_due:f-today:today:2026-10-12' } },
+        where: {
+          tenantId: 'tenant-a',
+          userId: 'parent-1',
+          data: {
+            path: ['reminderKey'],
+            equals: 'fee_due:f-today:today:2026-10-12',
+          },
+        },
       }),
     );
     expect(notifications.send).not.toHaveBeenCalled();
   });
 
   it('skips fees whose balance is already cleared', async () => {
-    prisma.studentFee.findMany.mockResolvedValue([fee('f-today', '2026-10-12', 6000, 6000)]);
+    prisma.studentFee.findMany.mockResolvedValue([
+      fee('f-today', '2026-10-12', 6000, 6000),
+    ]);
     expect((await service.sendDueReminders(NOW)).sent).toBe(0);
   });
 });

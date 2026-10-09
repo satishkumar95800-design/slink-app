@@ -36,7 +36,10 @@ export class TimetableController {
 
   @Put('period-timings')
   @Roles(Role.admin, Role.super_admin)
-  replacePeriodTimings(@TenantId() tenantId: string, @Body() dto: ReplacePeriodTimingsDto) {
+  replacePeriodTimings(
+    @TenantId() tenantId: string,
+    @Body() dto: ReplacePeriodTimingsDto,
+  ) {
     return this.timetableService.replacePeriodTimings(tenantId, dto.periods);
   }
 
@@ -49,7 +52,10 @@ export class TimetableController {
   /** Admin grid editor — all slots for one class. */
   @Get()
   @Roles(Role.admin, Role.accounts, Role.super_admin)
-  findForClass(@TenantId() tenantId: string, @Query() query: TimetableQueryDto) {
+  findForClass(
+    @TenantId() tenantId: string,
+    @Query() query: TimetableQueryDto,
+  ) {
     return this.timetableService.findForClass(tenantId, query.classId);
   }
 
@@ -62,7 +68,10 @@ export class TimetableController {
   @Delete(':id')
   @Roles(Role.admin, Role.super_admin)
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@TenantId() tenantId: string, @Param('id', ParseUUIDPipe) id: string) {
+  async remove(
+    @TenantId() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     await this.timetableService.remove(tenantId, id);
   }
 }

@@ -4,7 +4,12 @@ import {
   ForbiddenException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Prisma, Role, PaymentMethod, NotificationChannel } from '@prisma/client';
+import {
+  Prisma,
+  Role,
+  PaymentMethod,
+  NotificationChannel,
+} from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -28,7 +33,9 @@ const receiptInclude = {
       parents: { select: { parent: { select: { id: true } } } },
     },
   },
-  class: { select: { id: true, name: true, section: true, academicYear: true } },
+  class: {
+    select: { id: true, name: true, section: true, academicYear: true },
+  },
   studentFee: {
     select: {
       id: true,
@@ -38,7 +45,13 @@ const receiptInclude = {
   recordedByUser: { select: { id: true, name: true } },
   discountType: { select: { id: true, name: true, kind: true } },
   tenant: {
-    select: { id: true, name: true, logoUrl: true, primaryColor: true, branding: true },
+    select: {
+      id: true,
+      name: true,
+      logoUrl: true,
+      primaryColor: true,
+      branding: true,
+    },
   },
 } satisfies Prisma.ReceiptInclude;
 
@@ -95,7 +108,10 @@ export class ReceiptsService {
    * recordOfflinePayment or capturePayment) so the receipt and the payment it
    * documents commit together.
    */
-  async createForPayment(tx: Prisma.TransactionClient, params: CreateReceiptForPaymentParams) {
+  async createForPayment(
+    tx: Prisma.TransactionClient,
+    params: CreateReceiptForPaymentParams,
+  ) {
     const tenant = await tx.tenant.update({
       where: { id: params.tenantId },
       data: { receiptSequence: { increment: 1 } },
@@ -133,7 +149,10 @@ export class ReceiptsService {
 
   async renderPdf(receipt: Parameters<typeof buildReceiptPdf>[0]) {
     const pdf = await buildReceiptPdf(receipt);
-    return { filename: `receipt-${receipt.receiptNumber.replace(/[^A-Za-z0-9_-]/g, '_')}.pdf`, pdf };
+    return {
+      filename: `receipt-${receipt.receiptNumber.replace(/[^A-Za-z0-9_-]/g, '_')}.pdf`,
+      pdf,
+    };
   }
 
   async findOne(tenantId: string, id: string, user: ActiveUser) {
@@ -144,15 +163,20 @@ export class ReceiptsService {
     if (!receipt) throw new NotFoundException('Receipt not found');
 
     if (user.role === Role.parent) {
-      const isLinked = receipt.student.parents.some((p) => p.parent.id === user.id);
-      if (!isLinked) throw new ForbiddenException('You do not have access to this receipt');
+      const isLinked = receipt.student.parents.some(
+        (p) => p.parent.id === user.id,
+      );
+      if (!isLinked)
+        throw new ForbiddenException('You do not have access to this receipt');
     } else if (user.role === Role.teacher) {
       const cls = await this.prisma.class.findUnique({
         where: { id: receipt.classId },
         select: { teachers: { select: { teacherId: true } } },
       });
       if (!cls?.teachers.some((t) => t.teacherId === user.id)) {
-        throw new ForbiddenException('This receipt is not for a student in your class');
+        throw new ForbiddenException(
+          'This receipt is not for a student in your class',
+        );
       }
     }
 
@@ -165,7 +189,11 @@ export class ReceiptsService {
    * check mirrors findOne's (parent must be linked to the student; teacher
    * must teach the student's class).
    */
-  async findForStudentFee(tenantId: string, studentFeeId: string, user: ActiveUser) {
+  async findForStudentFee(
+    tenantId: string,
+    studentFeeId: string,
+    user: ActiveUser,
+  ) {
     const fee = await this.prisma.studentFee.findUnique({
       where: { id: studentFeeId, tenantId },
       select: {
@@ -178,14 +206,17 @@ export class ReceiptsService {
 
     if (user.role === Role.parent) {
       const isLinked = fee.student.parents.some((p) => p.parentId === user.id);
-      if (!isLinked) throw new ForbiddenException('You do not have access to this fee');
+      if (!isLinked)
+        throw new ForbiddenException('You do not have access to this fee');
     } else if (user.role === Role.teacher) {
       const cls = await this.prisma.class.findUnique({
         where: { id: fee.student.classId },
         select: { teachers: { select: { teacherId: true } } },
       });
       if (!cls?.teachers.some((t) => t.teacherId === user.id)) {
-        throw new ForbiddenException('This fee is not for a student in your class');
+        throw new ForbiddenException(
+          'This fee is not for a student in your class',
+        );
       }
     }
 
@@ -198,24 +229,42 @@ export class ReceiptsService {
 
   /** Signed, time-limited link a parent can open without logging in — used
    * for the SMS link and as the target of a "receipt ready" push tap. */
-  private signPublicToken(tenantId: string, receiptId: string): Promise<string> {
-    return this.jwt.signAsync({ receiptId, tenantId, purpose: RECEIPT_LINK_PURPOSE }, { expiresIn: RECEIPT_LINK_TTL });
+  private signPublicToken(
+    tenantId: string,
+    receiptId: string,
+  ): Promise<string> {
+    return this.jwt.signAsync(
+      { receiptId, tenantId, purpose: RECEIPT_LINK_PURPOSE },
+      { expiresIn: RECEIPT_LINK_TTL },
+    );
   }
 
-  private async signPublicLink(tenantId: string, receiptId: string): Promise<string> {
+  private async signPublicLink(
+    tenantId: string,
+    receiptId: string,
+  ): Promise<string> {
     const token = await this.signPublicToken(tenantId, receiptId);
-    const adminBaseUrl = this.config.get<string>('ADMIN_BASE_URL') ?? 'http://localhost:3001';
+    const adminBaseUrl =
+      this.config.get<string>('ADMIN_BASE_URL') ?? 'http://localhost:3001';
     return `${adminBaseUrl}/receipts/public/${token}`;
   }
 
   /** Authenticated equivalent of signPublicLink — used by the mobile app's
    * in-app "Download" action, gated by findOne's normal role/ownership check. */
-  async getDownloadLink(tenantId: string, id: string, user: ActiveUser): Promise<{ url: string; pdfPath: string }> {
+  async getDownloadLink(
+    tenantId: string,
+    id: string,
+    user: ActiveUser,
+  ): Promise<{ url: string; pdfPath: string }> {
     await this.findOne(tenantId, id, user);
     const token = await this.signPublicToken(tenantId, id);
-    const adminBaseUrl = this.config.get<string>('ADMIN_BASE_URL') ?? 'http://localhost:3001';
+    const adminBaseUrl =
+      this.config.get<string>('ADMIN_BASE_URL') ?? 'http://localhost:3001';
     // pdfPath is relative to the API base URL, which the app already knows.
-    return { url: `${adminBaseUrl}/receipts/public/${token}`, pdfPath: `/receipts/public/${token}/pdf` };
+    return {
+      url: `${adminBaseUrl}/receipts/public/${token}`,
+      pdfPath: `/receipts/public/${token}/pdf`,
+    };
   }
 
   /** Resolves the unauthenticated public receipt link — the verified token is
@@ -225,7 +274,9 @@ export class ReceiptsService {
     try {
       payload = await this.jwt.verifyAsync(token);
     } catch {
-      throw new UnauthorizedException('This receipt link has expired or is invalid');
+      throw new UnauthorizedException(
+        'This receipt link has expired or is invalid',
+      );
     }
     if (payload.purpose !== RECEIPT_LINK_PURPOSE) {
       throw new UnauthorizedException('Invalid receipt link');
@@ -246,7 +297,9 @@ export class ReceiptsService {
    * already catches and marks them failed) so this never throws back into the
    * payment-recording flow that calls it.
    */
-  async deliverReceiptNotifications(params: DeliverReceiptParams): Promise<void> {
+  async deliverReceiptNotifications(
+    params: DeliverReceiptParams,
+  ): Promise<void> {
     const parents = await this.prisma.studentParent.findMany({
       where: { studentId: params.studentId },
       select: { parent: { select: { id: true } } },
@@ -304,7 +357,9 @@ export class ReceiptsService {
       studentName: r.student.name,
       amount: r.amount,
       method: r.method,
-      source: claimReceiptIds.has(r.id) ? ('claim' as const) : ('direct' as const),
+      source: claimReceiptIds.has(r.id)
+        ? ('claim' as const)
+        : ('direct' as const),
       paidOn: r.paidOn,
     }));
   }
