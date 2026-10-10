@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/format/money.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
 import '../../shared/models/student.dart';
 import '../attendance/attendance_models.dart';
 import '../attendance/attendance_status_colors.dart';
@@ -42,6 +42,7 @@ class _ParentHomeBodyState extends ConsumerState<ParentHomeBody> {
     if (child == null) return const Center(child: CircularProgressIndicator());
 
     final homeAsync = ref.watch(parentHomeProvider(child.id));
+    final l = context.l10n;
 
     return RefreshIndicator(
       onRefresh: () async => ref.invalidate(parentHomeProvider(child.id)),
@@ -57,10 +58,10 @@ class _ParentHomeBodyState extends ConsumerState<ParentHomeBody> {
             ),
             error: (_, __) => Card(
               child: ListTile(
-                title: const Text(AppStrings.couldNotLoadHome),
+                title: Text(l.homeCouldNotLoad),
                 trailing: TextButton(
                   onPressed: () => ref.invalidate(parentHomeProvider(child.id)),
-                  child: const Text(AppStrings.retryNow),
+                  child: Text(l.commonRetry),
                 ),
               ),
             ),
@@ -76,14 +77,14 @@ class _ParentHomeBodyState extends ConsumerState<ParentHomeBody> {
             ),
           ),
           const SizedBox(height: 24),
-          const _MenuCard(icon: Icons.receipt_long, title: AppStrings.menuFees, subtitle: AppStrings.menuFeesSubtitle, route: '/dashboard/fees'),
-          const _MenuCard(icon: Icons.menu_book_outlined, title: AppStrings.menuHomework, subtitle: AppStrings.menuHomeworkSubtitle, route: '/homework'),
-          const _MenuCard(icon: Icons.campaign_outlined, title: AppStrings.menuNotices, subtitle: AppStrings.menuNoticesSubtitle, route: '/notices'),
-          const _MenuCard(icon: Icons.assignment_outlined, title: AppStrings.menuReports, subtitle: AppStrings.menuReportsSubtitle, route: '/dashboard/reports'),
+          _MenuCard(icon: Icons.receipt_long, title: l.menuFees, subtitle: l.menuFeesSubtitle, route: '/dashboard/fees'),
+          _MenuCard(icon: Icons.menu_book_outlined, title: l.menuHomework, subtitle: l.menuHomeworkSubtitle, route: '/homework'),
+          _MenuCard(icon: Icons.campaign_outlined, title: l.menuNotices, subtitle: l.menuNoticesSubtitle, route: '/notices'),
+          _MenuCard(icon: Icons.assignment_outlined, title: l.menuReports, subtitle: l.menuReportsSubtitle, route: '/dashboard/reports'),
           _MenuCard(
             icon: Icons.event_available_outlined,
-            title: AppStrings.menuAttendance,
-            subtitle: AppStrings.menuAttendanceSubtitle,
+            title: l.attendanceTitle,
+            subtitle: l.menuAttendanceSubtitle,
             route: '/attendance/student/${child.id}',
           ),
         ],
@@ -100,19 +101,21 @@ class _ChildSwitcher extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final label = AppStrings.childWithClass(selected.name, selected.studentClass?.name);
+    final l = context.l10n;
+    String withClass(Student s) => s.studentClass?.name == null ? s.name : l.homeChildWithClass(s.name, s.studentClass!.name);
+    final label = withClass(selected);
     final style = Theme.of(context).textTheme.titleLarge;
     if (children.length < 2) return Text(label, style: style);
 
     return PopupMenuButton<String>(
-      tooltip: AppStrings.switchChild,
+      tooltip: l.homeSwitchChild,
       onSelected: (id) => selectChild(ref, id),
       itemBuilder: (_) => [
         for (final c in children)
           CheckedPopupMenuItem(
             value: c.id,
             checked: c.id == selected.id,
-            child: Text(AppStrings.childWithClass(c.name, c.studentClass?.name)),
+            child: Text(withClass(c)),
           ),
       ],
       child: Padding(
@@ -137,6 +140,7 @@ class _FeeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final next = fees.next;
+    final l = context.l10n;
 
     final Widget headline;
     if (fees.claimsUnderReview > 0) {
@@ -145,7 +149,7 @@ class _FeeCard extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            AppStrings.claimUnderReview(fees.claimAmount == null ? null : formatRupees(fees.claimAmount)),
+            fees.claimAmount == null ? l.homeClaimUnderReview : l.homeClaimAmountUnderReview(formatRupees(fees.claimAmount)),
             style: theme.textTheme.titleMedium,
           ),
         ),
@@ -154,7 +158,7 @@ class _FeeCard extends StatelessWidget {
       headline = Row(children: [
         const Icon(Icons.check_circle, color: AttendanceColors.present),
         const SizedBox(width: 8),
-        Text(AppStrings.allFeesPaid, style: theme.textTheme.titleMedium),
+        Expanded(child: Text(l.homeAllFeesPaid, style: theme.textTheme.titleMedium)),
       ]);
     } else {
       headline = Column(
@@ -165,14 +169,14 @@ class _FeeCard extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 6),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(999)),
-              child: Text(AppStrings.overdue, style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold)),
+              child: Text(l.homeOverdue, style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold)),
             ),
           Text(
-            AppStrings.dueBy(formatRupees(next.outstanding), displayYmd(next.dueDate)),
+            l.homeDueBy(formatRupees(next.outstanding), displayYmd(next.dueDate)),
             style: theme.textTheme.titleLarge?.copyWith(color: next.overdue ? Colors.red.shade700 : null),
           ),
           Text(next.name, style: theme.textTheme.bodySmall),
-          if (fees.openCount > 1) Text(AppStrings.moreDues(fees.openCount - 1), style: theme.textTheme.bodySmall),
+          if (fees.openCount > 1) Text(l.homeMoreDues(fees.openCount - 1), style: theme.textTheme.bodySmall),
         ],
       );
     }
@@ -186,17 +190,18 @@ class _FeeCard extends StatelessWidget {
           children: [
             headline,
             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            // Wrap, not Row: longer Kannada/Hindi labels drop to a second line instead of overflowing.
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                TextButton(onPressed: () => context.push('/dashboard/fees'), child: const Text(AppStrings.viewFees)),
-                if (showPay) ...[
-                  const SizedBox(width: 8),
+                TextButton(onPressed: () => context.push('/dashboard/fees'), child: Text(l.homeViewFees)),
+                if (showPay)
                   FilledButton(
                     onPressed: () => context.push('/fees/${next.studentFeeId}/pay'),
-                    child: const Text(AppStrings.payNow),
+                    child: Text(l.homePayNow),
                   ),
-                ],
               ],
             ),
           ],
@@ -215,6 +220,7 @@ class _TodayCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final notice = home.latestNotice;
+    final l = context.l10n;
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -223,18 +229,18 @@ class _TodayCard extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-              child: Text(AppStrings.todayCardTitle, style: theme.textTheme.titleMedium),
+              child: Text(l.homeTodayTitle, style: theme.textTheme.titleMedium),
             ),
             if (home.homework.isEmpty)
-              const ListTile(leading: Icon(Icons.menu_book_outlined), title: Text(AppStrings.noHomeworkToday))
+              ListTile(leading: const Icon(Icons.menu_book_outlined), title: Text(l.homeNoHomeworkToday))
             else
               for (final hw in home.homework)
                 ListTile(
                   leading: _Thumbnail(url: hw.photoUrl),
-                  title: Text(hw.caption.isEmpty ? AppStrings.menuHomework : hw.caption, maxLines: 2, overflow: TextOverflow.ellipsis),
-                  subtitle: Text(AppStrings.homeworkBy(hw.teacherName, hw.subject)),
+                  title: Text(hw.caption.isEmpty ? l.homeworkKind : hw.caption, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  subtitle: Text(hw.subject == null ? hw.teacherName : l.homeworkBy(hw.teacherName, hw.subject!)),
                   onTap: () => context.push('/notices/detail', extra: {
-                    'title': AppStrings.menuHomework,
+                    'title': l.homeworkKind,
                     'body': hw.caption,
                     'attachments': hw.photoUrls.isNotEmpty ? hw.photoUrls : [if (hw.photoUrl != null) hw.photoUrl],
                     'broadcastId': hw.broadcastId,
@@ -242,14 +248,14 @@ class _TodayCard extends StatelessWidget {
                 ),
             const Divider(height: 1),
             if (notice == null)
-              const ListTile(leading: Icon(Icons.campaign_outlined), title: Text(AppStrings.noNotices))
+              ListTile(leading: const Icon(Icons.campaign_outlined), title: Text(l.noticesEmpty))
             else
               ListTile(
                 leading: const Icon(Icons.campaign_outlined),
-                title: Text(notice.title ?? AppStrings.latestNotice, maxLines: 1, overflow: TextOverflow.ellipsis),
+                title: Text(notice.title ?? l.homeLatestNotice, maxLines: 1, overflow: TextOverflow.ellipsis),
                 subtitle: Text('${displayDate(notice.createdAt)} · ${notice.body}', maxLines: 2, overflow: TextOverflow.ellipsis),
                 onTap: () => context.push('/notices/detail', extra: {
-                  'title': notice.title ?? AppStrings.latestNotice,
+                  'title': notice.title ?? l.homeLatestNotice,
                   'body': notice.body,
                   'attachments': notice.attachments,
                   'broadcastId': notice.broadcastId,
@@ -302,6 +308,7 @@ class _AttendanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final today = home.attendanceToday;
+    final l = context.l10n;
     return Card(
       child: ListTile(
         minVerticalPadding: 16,
@@ -310,8 +317,8 @@ class _AttendanceCard extends StatelessWidget {
           backgroundColor: today == null ? AttendanceColors.holiday : AttendanceColors.of(today),
           child: const Icon(Icons.event_available, size: 16, color: Colors.white),
         ),
-        title: Text(AppStrings.thisMonth(home.attendanceDaysPresent, home.attendanceDaysMarked)),
-        subtitle: Text(AppStrings.todayStatus(today?.label ?? AppStrings.notMarkedYet)),
+        title: Text(l.attendanceThisMonth(home.attendanceDaysPresent, home.attendanceDaysMarked)),
+        subtitle: Text(l.attendanceToday(today?.label(l) ?? l.attendanceNotMarkedYet)),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => context.push('/attendance/student/${home.studentId}'),
       ),

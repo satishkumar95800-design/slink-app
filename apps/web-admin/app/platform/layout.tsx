@@ -8,8 +8,19 @@ import { getSession, isLoggedIn, clearSession } from '../../lib/auth';
 import { ToastProvider } from '../../components/ui/toast';
 import { ChangePasswordModal } from '../../components/layout/change-password-modal';
 import { strings } from '../../lib/strings';
+import { ConsoleI18nProvider } from '../../lib/i18n/provider';
 
+/** The platform (super-admin) console stays English for now (docs/SPEC-languages.md scope);
+ * the provider is here for the shared modal / spinner / password dialog. */
 export default function PlatformLayout({ children }: { children: ReactNode }) {
+  return (
+    <ConsoleI18nProvider>
+      <PlatformShell>{children}</PlatformShell>
+    </ConsoleI18nProvider>
+  );
+}
+
+function PlatformShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [ready, setReady] = useState(false);

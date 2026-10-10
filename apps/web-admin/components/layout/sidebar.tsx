@@ -3,10 +3,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { getSession } from '../../lib/auth';
+import { useTranslations } from 'next-intl';
 import { strings } from '../../lib/strings';
+import { LanguageSwitcher } from './language-switcher';
 
 interface NavItem {
-  label: string;
+  /** Key into messages "nav". */
+  label: 'dashboard' | 'users' | 'students' | 'classes' | 'teachers' | 'fees' | 'studentFees' | 'payments' | 'feeReports' | 'reports' | 'attendance' | 'documents' | 'timetable' | 'paymentClaims' | 'import' | 'settings';
   href: string;
   icon: string;
   /** Roles that should not see this item in the sidebar (still reachable by direct URL if the API allows it). */
@@ -14,22 +17,22 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', href: '/admin', icon: '◼' },
-  { label: 'Users', href: '/admin/users', icon: '👤', hiddenForRoles: ['teacher'] },
-  { label: 'Students', href: '/admin/students', icon: '🎓' },
-  { label: 'Classes', href: '/admin/classes', icon: '🏫' },
-  { label: 'Teachers', href: '/admin/teachers', icon: '🧑‍🏫', hiddenForRoles: ['teacher'] },
-  { label: 'Fee Structures', href: '/admin/fees', icon: '📋', hiddenForRoles: ['teacher'] },
-  { label: 'Student Fees', href: '/admin/student-fees', icon: '💰', hiddenForRoles: ['teacher'] },
-  { label: 'Payments', href: '/admin/payments', icon: '💳', hiddenForRoles: ['teacher'] },
-  { label: 'Fee Reports', href: '/admin/fee-reports', icon: '📈', hiddenForRoles: ['teacher'] },
-  { label: 'Reports', href: '/admin/reports', icon: '📊' },
-  { label: strings.attendance.navLabel, href: '/admin/attendance', icon: '✅', hiddenForRoles: ['teacher', 'accounts'] },
-  { label: 'Documents', href: '/admin/documents', icon: '🗂️', hiddenForRoles: ['teacher'] },
-  { label: 'Timetable', href: '/admin/timetable', icon: '🗓️', hiddenForRoles: ['teacher'] },
-  { label: 'Payment Claims', href: '/admin/payment-claims', icon: '🧾', hiddenForRoles: ['teacher'] },
-  { label: 'Import Data', href: '/admin/import', icon: '📥', hiddenForRoles: ['teacher'] },
-  { label: 'Settings', href: '/admin/settings', icon: '⚙️', hiddenForRoles: ['teacher'] },
+  { label: 'dashboard', href: '/admin', icon: '◼' },
+  { label: 'users', href: '/admin/users', icon: '👤', hiddenForRoles: ['teacher'] },
+  { label: 'students', href: '/admin/students', icon: '🎓' },
+  { label: 'classes', href: '/admin/classes', icon: '🏫' },
+  { label: 'teachers', href: '/admin/teachers', icon: '🧑‍🏫', hiddenForRoles: ['teacher'] },
+  { label: 'fees', href: '/admin/fees', icon: '📋', hiddenForRoles: ['teacher'] },
+  { label: 'studentFees', href: '/admin/student-fees', icon: '💰', hiddenForRoles: ['teacher'] },
+  { label: 'payments', href: '/admin/payments', icon: '💳', hiddenForRoles: ['teacher'] },
+  { label: 'feeReports', href: '/admin/fee-reports', icon: '📈', hiddenForRoles: ['teacher'] },
+  { label: 'reports', href: '/admin/reports', icon: '📊' },
+  { label: 'attendance', href: '/admin/attendance', icon: '✅', hiddenForRoles: ['teacher', 'accounts'] },
+  { label: 'documents', href: '/admin/documents', icon: '🗂️', hiddenForRoles: ['teacher'] },
+  { label: 'timetable', href: '/admin/timetable', icon: '🗓️', hiddenForRoles: ['teacher'] },
+  { label: 'paymentClaims', href: '/admin/payment-claims', icon: '🧾', hiddenForRoles: ['teacher'] },
+  { label: 'import', href: '/admin/import', icon: '📥', hiddenForRoles: ['teacher'] },
+  { label: 'settings', href: '/admin/settings', icon: '⚙️', hiddenForRoles: ['teacher'] },
 ];
 
 interface SidebarProps {
@@ -40,6 +43,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ tenant, open = false, onClose }: SidebarProps) {
+  const t = useTranslations('nav');
   const pathname = usePathname();
   const role = getSession()?.role;
   const items = NAV_ITEMS.filter((item) => !role || !item.hiddenForRoles?.includes(role));
@@ -83,13 +87,16 @@ export function Sidebar({ tenant, open = false, onClose }: SidebarProps) {
                   }`}
                 >
                   <span className="text-base leading-none">{item.icon}</span>
-                  {item.label}
+                  {t(item.label)}
                 </Link>
               </li>
             );
           })}
         </ul>
       </nav>
+      <div className="border-t border-white/10 p-4 sm:hidden">
+        <LanguageSwitcher signedIn />
+      </div>
     </aside>
     </>
   );

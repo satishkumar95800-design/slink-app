@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/l10n/l10n.dart';
 import '../../shared/models/api_exception.dart';
 import 'auth_repository.dart';
 import 'session_controller.dart';
@@ -40,7 +41,7 @@ class PhoneAuthController extends StateNotifier<PhoneAuthState> {
       if (!isRegistered) {
         state = PhoneAuthState(
           phoneNumber: phoneNumber,
-          error: "This number isn't registered. Please contact your school admin to add it.",
+          error: currentL10n.errorPhoneNotRegistered,
         );
         return;
       }
@@ -48,7 +49,7 @@ class PhoneAuthController extends StateNotifier<PhoneAuthState> {
       final message = switch (e) {
         ApiException() => e.message,
         DioException() => ApiException.fromDioError(e).message,
-        _ => 'Could not verify your number. Please try again.',
+        _ => currentL10n.authCouldNotVerifyNumber,
       };
       state = PhoneAuthState(phoneNumber: phoneNumber, error: message);
       return;
@@ -64,7 +65,7 @@ class PhoneAuthController extends StateNotifier<PhoneAuthState> {
         verificationFailed: (e) {
           state = PhoneAuthState(
             phoneNumber: phoneNumber,
-            error: e.message ?? 'Could not send verification code.',
+            error: e.message ?? currentL10n.authCouldNotSendCode,
           );
         },
         codeSent: (verificationId, resendToken) {
@@ -87,7 +88,7 @@ class PhoneAuthController extends StateNotifier<PhoneAuthState> {
     } catch (_) {
       state = PhoneAuthState(
         phoneNumber: phoneNumber,
-        error: 'Could not send verification code. Please try again.',
+        error: currentL10n.authCouldNotSendCodeRetry,
       );
     }
   }
@@ -127,11 +128,11 @@ class PhoneAuthController extends StateNotifier<PhoneAuthState> {
         DioException() => ApiException.fromDioError(e).message,
         FirebaseAuthException(code: 'invalid-verification-code') ||
         FirebaseAuthException(code: 'invalid-verification-id') =>
-          'Invalid code. Please try again.',
+          currentL10n.authInvalidCode,
         FirebaseAuthException(code: 'session-expired') =>
-          'This code has expired. Please request a new one.',
+          currentL10n.authCodeExpired,
         FirebaseAuthException(:final message?) => message,
-        _ => 'Something went wrong. Please try again.',
+        _ => currentL10n.errorGeneric,
       };
       state = PhoneAuthState(
         step: PhoneAuthStep.enterOtp,

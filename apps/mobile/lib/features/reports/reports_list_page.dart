@@ -6,7 +6,9 @@ import '../../shared/models/report.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
 import '../auth/session_controller.dart';
 import 'reports_providers.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
+import '../home/parent_home_models.dart';
+import 'report_labels.dart';
 
 class ReportsListPage extends ConsumerWidget {
   const ReportsListPage({super.key});
@@ -30,15 +32,16 @@ class ReportsListPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final reportsAsync = ref.watch(reportsProvider);
     final isTeacher = ref.watch(sessionControllerProvider).user?.role == UserRole.teacher;
+    final l = context.l10n;
 
     return AuthenticatedScaffold(
       appBar: AppBar(
-        title: Text(isTeacher ? 'Reports' : AppStrings.menuReports),
+        title: Text(isTeacher ? l.teacherReports : l.menuReports),
         actions: [
           if (isTeacher)
             IconButton(
               icon: const Icon(Icons.upload_file),
-              tooltip: 'Upload Report Card',
+              tooltip: l.reportsUploadTooltip,
               onPressed: () => context.push('/reports/upload'),
             ),
         ],
@@ -50,7 +53,7 @@ class ReportsListPage extends ConsumerWidget {
             // Parents see homework on its own Homework screen, so it isn't repeated here.
             final reports = isTeacher ? all : all.where((r) => r.type != ReportType.homework).toList();
             if (reports.isEmpty) {
-              return Center(child: Text(isTeacher ? 'No reports yet.' : AppStrings.noReports));
+              return Center(child: Text(isTeacher ? l.reportsEmptyTeacher : l.reportsEmptyParent));
             }
             return ListView.builder(
               itemCount: reports.length,
@@ -59,10 +62,8 @@ class ReportsListPage extends ConsumerWidget {
                 return ListTile(
                   leading: CircleAvatar(child: Icon(_iconFor(report.type))),
                   title: Text('${report.student.name} • ${report.term}'),
-                  subtitle: Text(report.type.name),
-                  trailing: report.publishedAt != null
-                      ? Text(report.publishedAt!.toLocal().toString().split(' ').first)
-                      : null,
+                  subtitle: Text(reportTypeLabel(l, report.type)),
+                  trailing: report.publishedAt != null ? Text(displayDate(report.publishedAt!)) : null,
                   onTap: () => context.push('/reports/${report.id}'),
                 );
               },
@@ -72,7 +73,7 @@ class ReportsListPage extends ConsumerWidget {
           error: (error, _) => Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Text('Could not load reports. Pull down to retry.\n$error', textAlign: TextAlign.center),
+              child: Text('${l.reportsCouldNotLoad}\n$error', textAlign: TextAlign.center),
             ),
           ),
         ),

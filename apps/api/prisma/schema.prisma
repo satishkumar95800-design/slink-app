@@ -181,6 +181,8 @@ model Tenant {
   isActive           Boolean  @default(true) @map("is_active")
   // What this school calls a "Class" — Class / Grade / Standard / Group / Section / custom.
   classLabel         String   @default("Class") @map("class_label")
+  // Language for users who haven't picked one (en | kn | hi — see common/i18n/languages.ts).
+  defaultLanguage    String   @default("en") @map("default_language") @db.VarChar(8)
   // branding: { coverPhotoUrls, address, contactPhone, contactEmail, websiteUrl, ... }
   branding           Json     @default("{}")
   // features: { installmentPlans, inAppMessaging, transportFeeModule, photoGallery }
@@ -232,6 +234,8 @@ model User {
   passwordHash String?  @map("password_hash")
   fcmTokens    String[] @default([]) @map("fcm_tokens")
   isVerified   Boolean  @default(false) @map("is_verified")
+  // Language the user picked (en | kn | hi); null = follow the school's default.
+  preferredLanguage String? @map("preferred_language") @db.VarChar(8)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 

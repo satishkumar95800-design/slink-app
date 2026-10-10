@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { api, ApiError } from '../../../lib/api-client';
+import { api } from '../../../lib/api-client';
+import { useErrorText } from '../../../lib/i18n/errors';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Select } from '../../../components/ui/select';
@@ -35,24 +37,28 @@ interface Subject {
   name: string;
 }
 
-const assignSchema = z.object({
-  subjectId: z.string().min(1, 'Select a subject'),
-  classId: z.string().min(1, 'Select a class'),
+const makeSchemas = (t: ReturnType<typeof useTranslations<'teachers'>>, tCommon: ReturnType<typeof useTranslations<'common'>>) => ({
+  assign: z.object({
+    subjectId: z.string().min(1, t('selectSubject')),
+    classId: z.string().min(1, tCommon('selectClass')),
+  }),
+  subject: z.object({
+    name: z.string().min(1, t('subjectNameRequired')),
+  }),
 });
 
-type AssignFormData = z.infer<typeof assignSchema>;
-
-const subjectSchema = z.object({
-  name: z.string().min(1, 'Subject name is required'),
-});
-
-type SubjectFormData = z.infer<typeof subjectSchema>;
+type AssignFormData = z.infer<ReturnType<typeof makeSchemas>['assign']>;
+type SubjectFormData = z.infer<ReturnType<typeof makeSchemas>['subject']>;
 
 function classLabel(c: ClassRef): string {
   return `${c.name}${c.section ? ` ${c.section}` : ''} (${c.academicYear})`;
 }
 
 export default function TeachersPage() {
+  const t = useTranslations('teachers');
+  const tCommon = useTranslations('common');
+  const errorText = useErrorText();
+  const schemas = useMemo(() => makeSchemas(t, tCommon), [t, tCommon]);
   const { toast } = useToast();
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -68,14 +74,14 @@ export default function TeachersPage() {
     handleSubmit: handleAssignSubmit,
     reset: resetAssign,
     formState: { errors: assignErrors, isSubmitting: isAssignSubmitting },
-  } = useForm<AssignFormData>({ resolver: zodResolver(assignSchema) });
+  } = useForm<AssignFormData>({ resolver: zodResolver(schemas.assign) });
 
   const {
     register: registerSubject,
     handleSubmit: handleSubjectSubmit,
     reset: resetSubject,
     formState: { errors: subjectErrors, isSubmitting: isSubjectSubmitting },
-  } = useForm<SubjectFormData>({ resolver: zodResolver(subjectSchema) });
+  } = useForm<SubjectFormData>({ resolver: zodResolver(schemas.subject) });
 
   async function fetchAll() {
     try {
@@ -90,7 +96,7 @@ export default function TeachersPage() {
       setClasses(classRes);
       setError(null);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorText(e));
     } finally {
       setLoading(false);
     }
@@ -109,23 +115,23 @@ export default function TeachersPage() {
     if (!assigningTeacher) return;
     try {
       await api.post(`/teachers/${assigningTeacher.id}/subjects`, data);
-      toast('Subject assignment added', 'success');
+      toast(t('assignmentAdded'), 'success');
       setAssigningTeacher(null);
       fetchAll();
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     }
   }
 
   async function onSubjectSubmit(data: SubjectFormData) {
     try {
       await api.post('/subjects', data);
-      toast('Subject added', 'success');
+      toast(t('subjectAdded'), 'success');
       setShowSubjectModal(false);
       resetSubject();
       fetchAll();
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     }
   }
 
@@ -133,10 +139,10 @@ export default function TeachersPage() {
     setRemovingId(assignmentId);
     try {
       await api.delete(`/teachers/${teacherId}/subjects/${assignmentId}`);
-      toast('Assignment removed', 'success');
+      toast(t('assignmentRemoved'), 'success');
       fetchAll();
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     } finally {
       setRemovingId(null);
     }
@@ -149,10 +155,10 @@ export default function TeachersPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-gray-500">
-          {teachers.length} teacher{teachers.length !== 1 ? 's' : ''}
+          {t('count', { count: teachers.length })}
         </p>
         <Button variant="secondary" onClick={() => setShowSubjectModal(true)}>
-          + Add Subject
+          {t('addSubject')}
         </Button>
       </div>
 
@@ -164,53 +170,53 @@ export default function TeachersPage() {
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
       ) : teachers.length === 0 ? (
         <EmptyState
-          title="No teachers yet"
-          description="Add teacher accounts from the Users page, then assign subjects and classes here."
+          title={t('emptyTitle')}
+          description={t('emptyDescription')}
         />
       ) : (
         <div className="space-y-3">
-          {teachers.map((t) => (
-            <div key={t.id} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+          {teachers.map((teacher) => (
+            <div key={teacher.id} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{t.name}</p>
-                  <p className="text-xs text-gray-500">{t.phone ?? '—'} · {t.email ?? '—'}</p>
+                  <p className="text-sm font-medium text-gray-900">{teacher.name}</p>
+                  <p className="text-xs text-gray-500">{teacher.phone ?? '—'} · {teacher.email ?? '—'}</p>
                 </div>
                 <button
-                  onClick={() => openAssign(t)}
+                  onClick={() => openAssign(teacher)}
                   className="text-xs text-teal hover:underline"
                 >
-                  + Assign subject/class
+                  {t('assignSubjectClass')}
                 </button>
               </div>
 
-              {t.taughtClasses.some((c) => c.isClassTeacher) && (
+              {teacher.taughtClasses.some((c) => c.isClassTeacher) && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {t.taughtClasses
+                  {teacher.taughtClasses
                     .filter((c) => c.isClassTeacher)
                     .map((c) => (
                       <Badge key={c.class.id} variant="green">
-                        Class teacher — {classLabel(c.class)}
+                        {t('classTeacherOf', { className: classLabel(c.class) })}
                       </Badge>
                     ))}
                 </div>
               )}
 
               <div className="mt-2 flex flex-wrap gap-1.5">
-                {t.taughtSubjects.length === 0 ? (
-                  <span className="text-xs text-gray-400">No subject assignments</span>
+                {teacher.taughtSubjects.length === 0 ? (
+                  <span className="text-xs text-gray-400">{t('noAssignments')}</span>
                 ) : (
-                  t.taughtSubjects.map((a) => (
+                  teacher.taughtSubjects.map((a) => (
                     <span
                       key={a.id}
                       className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-700"
                     >
-                      {a.subject.name} — {classLabel(a.class)}
+                      {t('assignmentChip', { subject: a.subject.name, className: classLabel(a.class) })}
                       <button
-                        onClick={() => handleRemoveAssignment(t.id, a.id)}
+                        onClick={() => handleRemoveAssignment(teacher.id, a.id)}
                         disabled={removingId === a.id}
                         className="text-gray-400 hover:text-red-600 disabled:opacity-50"
-                        aria-label={`Remove ${a.subject.name} assignment`}
+                        aria-label={t('removeAssignment', { subject: a.subject.name })}
                       >
                         ×
                       </button>
@@ -226,29 +232,29 @@ export default function TeachersPage() {
       <Modal
         open={!!assigningTeacher}
         onClose={() => setAssigningTeacher(null)}
-        title={`Assign Subject — ${assigningTeacher?.name ?? ''}`}
+        title={t('assignTitle', { name: assigningTeacher?.name ?? '' })}
       >
         <form onSubmit={handleAssignSubmit(onAssignSubmit)} className="space-y-4">
           <Select
-            label="Subject" required
+            label={t('subject')} required
             options={subjectOptions}
-            placeholder="Select a subject"
+            placeholder={t('selectSubject')}
             error={assignErrors.subjectId?.message}
             {...registerAssign('subjectId')}
           />
           <Select
-            label="Class" required
+            label={t('class')} required
             options={classOptions}
-            placeholder="Select a class"
+            placeholder={tCommon('selectClass')}
             error={assignErrors.classId?.message}
             {...registerAssign('classId')}
           />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setAssigningTeacher(null)}>
-              Cancel
+              {tCommon('cancel')}
             </Button>
             <Button type="submit" loading={isAssignSubmitting}>
-              Assign
+              {t('assign')}
             </Button>
           </div>
         </form>
@@ -257,21 +263,21 @@ export default function TeachersPage() {
       <Modal
         open={showSubjectModal}
         onClose={() => { setShowSubjectModal(false); resetSubject(); }}
-        title="Add Subject"
+        title={t('addSubjectTitle')}
       >
         <form onSubmit={handleSubjectSubmit(onSubjectSubmit)} className="space-y-4">
           <Input
-            label="Subject Name" required
-            placeholder="e.g. Mathematics"
+            label={t('subjectName')} required
+            placeholder={t('subjectNamePlaceholder')}
             error={subjectErrors.name?.message}
             {...registerSubject('name')}
           />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => { setShowSubjectModal(false); resetSubject(); }}>
-              Cancel
+              {tCommon('cancel')}
             </Button>
             <Button type="submit" loading={isSubjectSubmitting}>
-              Add Subject
+              {t('addSubjectSubmit')}
             </Button>
           </div>
         </form>

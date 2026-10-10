@@ -6,8 +6,10 @@ import { api } from '../../lib/api-client';
 import { Spinner } from '../../components/ui/spinner';
 import { Badge } from '../../components/ui/badge';
 import { getSession } from '../../lib/auth';
-import { formatDateOnly, formatRupees } from '../../lib/format';
-import { strings } from '../../lib/strings';
+import { useLocale, useTranslations } from 'next-intl';
+import { formatDateOnly, formatMonthYear, formatRupees, weekdayName } from '../../lib/format';
+import { useErrorText } from '../../lib/i18n/errors';
+import { reportTypeLabel } from '../../lib/i18n/labels';
 
 interface Stats {
   userCount: number;
@@ -75,10 +77,6 @@ interface MyClass {
   }[];
 }
 
-const DAY_LABELS: Record<number, string> = {
-  1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday',
-};
-
 function StatCard({ label, value, icon, color, subtitle }: { label: string; value: string | number; icon: string; color: string; subtitle?: string }) {
   return (
     <div className="rounded-2xl bg-white p-6 shadow-sm border border-gray-100">
@@ -94,31 +92,35 @@ function StatCard({ label, value, icon, color, subtitle }: { label: string; valu
   );
 }
 
-const MONTH_LABEL_FORMATTER = new Intl.DateTimeFormat('en-IN', { month: 'short', year: 'numeric' });
-function formatMonthLabel(month: string) {
-  return MONTH_LABEL_FORMATTER.format(new Date(`${month}-01`));
-}
-
 type BadgeVariant = 'green' | 'blue' | 'orange' | 'purple' | 'gray';
 
 /** Recent Payments badge: approved claims first (they're stored under their underlying method), then by method. */
-function paymentBadge(p: RecentPayment): { label: string; variant: BadgeVariant } {
-  if (p.source === 'claim') return { label: strings.paymentMethod.claim, variant: 'purple' };
+function paymentBadge(
+  t: ReturnType<typeof useTranslations<'paymentMethod'>>,
+  p: RecentPayment,
+): { label: string; variant: BadgeVariant } {
+  if (p.source === 'claim') return { label: t('claim'), variant: 'purple' };
   switch (p.method) {
     case 'cash':
-      return { label: strings.paymentMethod.cash, variant: 'green' };
+      return { label: t('cash'), variant: 'green' };
     case 'cheque':
     case 'demand_draft':
-      return { label: strings.paymentMethod.chequeOrDd, variant: 'orange' };
+      return { label: t('chequeOrDd'), variant: 'orange' };
     case 'gateway':
     case 'bank_transfer':
-      return { label: strings.paymentMethod.online, variant: 'blue' };
+      return { label: t('online'), variant: 'blue' };
     default:
       return { label: p.method, variant: 'gray' };
   }
 }
 
 export default function DashboardPage() {
+  const t = useTranslations('dashboard');
+  const tCommon = useTranslations('common');
+  const tMethod = useTranslations('paymentMethod');
+  const tReport = useTranslations('reportType');
+  const locale = useLocale();
+  const errorText = useErrorText();
   const [stats, setStats] = useState<Partial<Stats>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -162,13 +164,13 @@ export default function DashboardPage() {
 
         setStats(partialStats);
       } catch (e) {
-        setError((e as Error).message);
+        setError(errorText(e));
       } finally {
         setLoading(false);
       }
     }
     fetchStats();
-  }, [isTeacher]);
+  }, [isTeacher, errorText]);
 
   useEffect(() => {
     if (!isTeacher) return;
@@ -181,13 +183,13 @@ export default function DashboardPage() {
         if (slotsRes.status === 'fulfilled') setMySlots(slotsRes.value);
         if (classesRes.status === 'fulfilled') setMyClasses(classesRes.value);
       } catch (e) {
-        setError((e as Error).message);
+        setError(errorText(e));
       } finally {
         setLoading(false);
       }
     }
     fetchMyDashboard();
-  }, [isTeacher]);
+  }, [isTeacher, errorText]);
 
   useEffect(() => {
     // Addendum 4 / A14 — Teacher Workload is Admin Dashboard only, not accounts/super_admin.
@@ -227,7 +229,9 @@ export default function DashboardPage() {
   }, [isTeacher]);
 
   if (loading) return <div className="flex h-64 items-center justify-center"><Spinner className="h-8 w-8 text-teal" /></div>;
-  if (error) return <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">Failed to load: {error}</div>;
+  if (error) return <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{tCommon('failedToLoad', { error })}</div>;
+
+  const yearLabel = stats.feesAcademicYear ? t('thisAcademicYearNamed', { year: stats.feesAcademicYear }) : t('thisAcademicYear');
 
   const slotsByDay = mySlots.reduce<Record<number, TimetableSlot[]>>((acc, slot) => {
     (acc[slot.dayOfWeek] ??= []).push(slot);
@@ -244,19 +248,19 @@ export default function DashboardPage() {
       {!isTeacher && (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="Total Users" value={stats.userCount ?? '—'} icon="👤" color="bg-teal/5" />
-            <StatCard label="Total Students" value={stats.studentCount ?? '—'} icon="🎓" color="bg-purple-50" />
+            <StatCard label={t('totalUsers')} value={stats.userCount ?? '—'} icon="👤" color="bg-teal/5" />
+            <StatCard label={t('totalStudents')} value={stats.studentCount ?? '—'} icon="🎓" color="bg-purple-50" />
             <StatCard
-              label={strings.dashboard.feesCollected}
+              label={t('feesCollected')}
               value={stats.feesCollected != null ? formatRupees(stats.feesCollected) : '—'}
-              subtitle={strings.dashboard.thisAcademicYear(stats.feesAcademicYear ?? null)}
+              subtitle={yearLabel}
               icon="✅"
               color="bg-green-50"
             />
             <StatCard
-              label={strings.dashboard.outstandingFees}
+              label={t('outstandingFees')}
               value={stats.feesOutstanding != null ? formatRupees(stats.feesOutstanding) : '—'}
-              subtitle={strings.dashboard.thisAcademicYear(stats.feesAcademicYear ?? null)}
+              subtitle={yearLabel}
               icon="⏳"
               color="bg-orange-50"
             />
@@ -264,11 +268,11 @@ export default function DashboardPage() {
 
           <div className="rounded-2xl bg-white shadow-sm border border-gray-100">
             <div className="border-b px-6 py-4">
-              <h2 className="text-sm font-semibold text-gray-900">Recent Payments</h2>
+              <h2 className="text-sm font-semibold text-gray-900">{t('recentPayments')}</h2>
             </div>
             <div className="divide-y">
               {(stats.recentPayments ?? []).length === 0 ? (
-                <p className="px-6 py-8 text-center text-sm text-gray-500">No payments yet</p>
+                <p className="px-6 py-8 text-center text-sm text-gray-500">{t('noPayments')}</p>
               ) : (
                 stats.recentPayments!.map((p) => (
                   <div key={p.id} className="flex items-center justify-between px-6 py-3">
@@ -278,7 +282,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-semibold text-gray-900">{formatRupees(p.amount)}</span>
-                      <Badge variant={paymentBadge(p).variant}>{paymentBadge(p).label}</Badge>
+                      <Badge variant={paymentBadge(tMethod, p).variant}>{paymentBadge(tMethod, p).label}</Badge>
                     </div>
                   </div>
                 ))
@@ -292,10 +296,10 @@ export default function DashboardPage() {
         <>
           <div className="rounded-2xl bg-white shadow-sm border border-gray-100">
             <div className="border-b px-6 py-4">
-              <h2 className="text-sm font-semibold text-gray-900">Weekly Routine</h2>
+              <h2 className="text-sm font-semibold text-gray-900">{t('weeklyRoutine')}</h2>
             </div>
             {mySlots.length === 0 ? (
-              <p className="px-6 py-8 text-center text-sm text-gray-500">No timetable slots assigned yet</p>
+              <p className="px-6 py-8 text-center text-sm text-gray-500">{t('noSlots')}</p>
             ) : (
               <div className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3">
                 {Object.keys(slotsByDay)
@@ -304,12 +308,12 @@ export default function DashboardPage() {
                   .map((day) => (
                     <div key={day}>
                       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        {DAY_LABELS[day]}
+                        {weekdayName(day, locale)}
                       </p>
                       <ul className="space-y-1.5">
                         {slotsByDay[day].map((slot) => (
                           <li key={slot.id} className="text-sm text-gray-700">
-                            <span className="font-medium text-gray-900">Period {slot.periodNumber}</span>
+                            <span className="font-medium text-gray-900">{t('period', { n: slot.periodNumber })}</span>
                             {' — '}
                             {slot.subject.name} ({slot.class.name} {slot.class.section})
                           </li>
@@ -323,10 +327,10 @@ export default function DashboardPage() {
 
           <div className="rounded-2xl bg-white shadow-sm border border-gray-100">
             <div className="border-b px-6 py-4">
-              <h2 className="text-sm font-semibold text-gray-900">About My Class(es)</h2>
+              <h2 className="text-sm font-semibold text-gray-900">{t('aboutMyClasses')}</h2>
             </div>
             {myClasses.length === 0 ? (
-              <p className="px-6 py-8 text-center text-sm text-gray-500">No classes assigned yet</p>
+              <p className="px-6 py-8 text-center text-sm text-gray-500">{t('noClasses')}</p>
             ) : (
               <div className="divide-y">
                 {myClasses.map((mc) => (
@@ -335,21 +339,21 @@ export default function DashboardPage() {
                       {mc.class.name} {mc.class.section}
                     </p>
                     <p className="mt-1 text-xs text-gray-500">
-                      Strength: {mc.strength.total} ({mc.strength.male} boys, {mc.strength.female} girls)
+                      {t('strength', { total: mc.strength.total, boys: mc.strength.male, girls: mc.strength.female })}
                       {mc.strength.other + mc.strength.unspecified > 0
-                        ? `, ${mc.strength.other + mc.strength.unspecified} other/unspecified`
+                        ? t('strengthOther', { count: mc.strength.other + mc.strength.unspecified })
                         : ''}
                     </p>
                     <p className="mt-1 text-xs text-gray-500">
-                      Subjects: {mc.subjects.map((s) => s.name).join(', ') || '—'}
+                      {t('subjects', { list: mc.subjects.map((s) => s.name).join(', ') || '—' })}
                     </p>
                     {mc.recentReports.length > 0 && (
                       <ul className="mt-2 space-y-1">
                         {mc.recentReports.map((r) => (
                           <li key={r.id} className="flex items-center gap-2 text-xs text-gray-600">
-                            <span>{r.studentName} — {r.type} report</span>
+                            <span>{t('reportLine', { student: r.studentName, type: reportTypeLabel(tReport, r.type) })}</span>
                             <Badge variant={r.readByAnyParent ? 'green' : 'yellow'}>
-                              {r.readByAnyParent ? 'read' : 'unread'}
+                              {r.readByAnyParent ? t('read') : t('unread')}
                             </Badge>
                           </li>
                         ))}
@@ -366,26 +370,28 @@ export default function DashboardPage() {
       {isAdmin && attendance && (
         <div className="rounded-2xl bg-white shadow-sm border border-gray-100">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b px-6 py-4">
-            <h2 className="text-sm font-semibold text-gray-900">{strings.attendance.todayCardTitle}</h2>
+            <h2 className="text-sm font-semibold text-gray-900">{t('todayAttendance')}</h2>
             <Link href="/admin/attendance" className="text-xs font-semibold text-teal hover:underline">
-              {strings.attendance.pageTitle} →
+              {t('attendanceLink')} →
             </Link>
           </div>
           <div className="px-6 py-4">
             {attendance.holiday ? (
-              <p className="text-sm text-gray-600">{strings.attendance.holidayToday(attendance.holiday.name)}</p>
+              <p className="text-sm text-gray-600">{t('holidayToday', { name: attendance.holiday.name })}</p>
             ) : attendance.daysMarked === 0 ? (
-              <p className="text-sm text-gray-600">{strings.attendance.noneMarkedYet}</p>
+              <p className="text-sm text-gray-600">{t('noneMarkedYet')}</p>
             ) : (
               <p className="text-2xl font-extrabold text-gray-900">
-                {strings.attendance.todaySummary(attendance.daysPresent, attendance.daysMarked, attendance.percentage)}
+                {attendance.percentage != null
+                  ? t('todaySummaryPct', { present: attendance.daysPresent, total: attendance.daysMarked, pct: attendance.percentage })
+                  : t('todaySummary', { present: attendance.daysPresent, total: attendance.daysMarked })}
               </p>
             )}
             {!attendance.holiday && (
               <p className="mt-2 text-xs font-medium text-gray-500">
                 {attendance.notMarked.length === 0
-                  ? strings.attendance.allMarked
-                  : strings.attendance.classesNotMarked(attendance.notMarked.length)}
+                  ? t('allMarked')
+                  : t('classesNotMarked', { count: attendance.notMarked.length })}
               </p>
             )}
             {!attendance.holiday && attendance.notMarked.length > 0 && (
@@ -404,19 +410,19 @@ export default function DashboardPage() {
       {isAdmin && workload.length > 0 && (
         <div className="rounded-2xl bg-white shadow-sm border border-gray-100">
           <div className="border-b px-6 py-4">
-            <h2 className="text-sm font-semibold text-gray-900">Teacher Workload</h2>
-            <p className="mt-0.5 text-xs text-gray-500">{strings.workload.note}</p>
+            <h2 className="text-sm font-semibold text-gray-900">{t('teacherWorkload')}</h2>
+            <p className="mt-0.5 text-xs text-gray-500">{t('workloadNote')}</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-xs font-medium text-gray-500">
-                  <th className="px-6 py-3">Teacher</th>
-                  <th className="px-6 py-3">Classes</th>
-                  <th className="px-6 py-3">Subjects</th>
-                  <th className="px-6 py-3">Weekly Periods</th>
-                  <th className="px-6 py-3">Reports Sent</th>
-                  <th className="px-6 py-3">Unread</th>
+                  <th className="px-6 py-3">{t('colTeacher')}</th>
+                  <th className="px-6 py-3">{t('colClasses')}</th>
+                  <th className="px-6 py-3">{t('colSubjects')}</th>
+                  <th className="px-6 py-3">{t('colWeeklyPeriods')}</th>
+                  <th className="px-6 py-3">{t('colReportsSent')}</th>
+                  <th className="px-6 py-3">{t('colUnread')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -439,18 +445,18 @@ export default function DashboardPage() {
       {!isTeacher && forecast && (
         <div className="rounded-2xl bg-white shadow-sm border border-gray-100">
           <div className="border-b px-6 py-4">
-            <h2 className="text-sm font-semibold text-gray-900">Collection Forecast</h2>
+            <h2 className="text-sm font-semibold text-gray-900">{t('collectionForecast')}</h2>
             <p className="mt-0.5 text-xs text-gray-500">{forecast.label}</p>
           </div>
           <div className="grid grid-cols-2 gap-4 px-6 py-4 sm:grid-cols-4">
             {forecast.months.map((m) => (
               <div key={m.month}>
-                <p className="text-xs text-gray-500">{formatMonthLabel(m.month)}</p>
+                <p className="text-xs text-gray-500">{formatMonthYear(m.month, locale)}</p>
                 <p className="mt-1 text-lg font-semibold text-gray-900">{formatRupees(m.actual)}</p>
               </div>
             ))}
             <div>
-              <p className="text-xs text-teal">Projected next month</p>
+              <p className="text-xs text-teal">{t('projectedNextMonth')}</p>
               <p className="mt-1 text-lg font-semibold text-teal">
                 {formatRupees(forecast.projectedNextMonth)}
               </p>

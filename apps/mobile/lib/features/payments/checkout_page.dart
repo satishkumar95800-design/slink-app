@@ -8,7 +8,7 @@ import '../fees/fees_providers.dart';
 import '../fees/fees_repository.dart';
 import 'payment_controller.dart';
 import '../../core/format/money.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
 
 class CheckoutPage extends ConsumerStatefulWidget {
   final String feeId;
@@ -42,7 +42,7 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
     });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Pay fee')),
+      appBar: AppBar(title: Text(context.l10n.checkoutTitle)),
       body: SafeArea(
         child: FutureBuilder<StudentFee>(
           future: _feeFuture,
@@ -51,7 +51,7 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError || !snapshot.hasData) {
-              return const Center(child: Text('Could not load this fee.'));
+              return Center(child: Text(context.l10n.checkoutCouldNotLoad));
             }
             return _CheckoutBody(fee: snapshot.data!, paymentState: paymentState);
           },
@@ -72,6 +72,7 @@ class _CheckoutBody extends ConsumerWidget {
     if (paymentState.status == PaymentStatus.success) {
       return _SuccessView(onDone: () => context.go('/dashboard/fees'));
     }
+    final l = context.l10n;
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -80,7 +81,7 @@ class _CheckoutBody extends ConsumerWidget {
         children: [
           Text(fee.feeStructure.name, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 4),
-          Text('${fee.student.name} • ${fee.student.className ?? ''}'),
+          Text([fee.student.name, if (fee.student.className != null) fee.student.className!].join(' • ')),
           const SizedBox(height: 24),
           Card(
             child: Padding(
@@ -94,7 +95,7 @@ class _CheckoutBody extends ConsumerWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(item.label),
+                          Flexible(child: Text(item.label)),
                           Text(formatRupees(item.amount)),
                         ],
                       ),
@@ -103,7 +104,7 @@ class _CheckoutBody extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Amount due', style: TextStyle(fontWeight: FontWeight.bold)),
+                      Flexible(child: Text(l.checkoutAmountDue, style: const TextStyle(fontWeight: FontWeight.bold))),
                       Text(
                         formatRupees(fee.outstanding),
                         style: const TextStyle(fontWeight: FontWeight.bold),
@@ -118,25 +119,23 @@ class _CheckoutBody extends ConsumerWidget {
           if (paymentState.status == PaymentStatus.failed && paymentState.errorMessage != null)
             ErrorBanner(message: paymentState.errorMessage!),
           if (paymentState.status == PaymentStatus.timedOut)
-            const ErrorBanner(
-              message: 'Payment received — confirming with the bank. Check back on this fee shortly.',
-            ),
+            ErrorBanner(message: l.checkoutConfirmingWithBank),
           if (paymentState.status == PaymentStatus.confirming)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
               child: Center(
                 child: Column(
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 12),
-                    Text('Confirming your payment…'),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 12),
+                    Text(l.checkoutConfirming),
                   ],
                 ),
               ),
             )
           else
             PrimaryButton(
-              label: AppStrings.payAmount(formatRupees(fee.outstanding)),
+              label: l.checkoutPayAmount(formatRupees(fee.outstanding)),
               isLoading: paymentState.status == PaymentStatus.creatingOrder ||
                   paymentState.status == PaymentStatus.awaitingCheckout,
               onPressed: () => ref.read(paymentControllerProvider.notifier).payFor(fee.id),
@@ -162,9 +161,9 @@ class _SuccessView extends StatelessWidget {
           children: [
             const Icon(Icons.check_circle, color: Colors.green, size: 64),
             const SizedBox(height: 16),
-            Text('Payment successful', style: Theme.of(context).textTheme.headlineSmall),
+            Text(context.l10n.checkoutSuccess, style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 24),
-            PrimaryButton(label: 'Back to fees', onPressed: onDone),
+            PrimaryButton(label: context.l10n.checkoutBackToFees, onPressed: onDone),
           ],
         ),
       ),

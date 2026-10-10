@@ -1,0 +1,651 @@
+{
+  "@@locale": "en",
+  "appName": "Schoolinkd",
+  "languageNativeName": "English",
+  "@languageNativeName": {
+    "description": "This language's own name, in its own script. Shown in the language switcher."
+  },
+  "languageTitle": "Language",
+  "languageChoose": "Choose your language",
+  "languageSaveFailed": "Language changed on this phone. We couldn't save it to your account — it will be saved next time you change it.",
+  "commonCancel": "Cancel",
+  "commonConfirm": "Confirm",
+  "commonSubmit": "Submit",
+  "commonUpdate": "Update",
+  "commonRetry": "Retry now",
+  "commonContinue": "Continue",
+  "commonRemove": "Remove",
+  "commonClass": "Class",
+  "commonStudent": "Student",
+  "commonSendToClass": "Send to class",
+  "commonCouldNotLoadClasses": "Could not load your classes.",
+  "commonNotAssignedToClass": "You aren't assigned to any class yet.",
+  "commonPullToRetry": "Pull down to retry.",
+  "commonListItem": "{first} · {second}",
+  "@commonListItem": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "second": {
+        "type": "String"
+      }
+    }
+  },
+  "errorNetworkTimeout": "Network timeout — check your connection and try again.",
+  "errorNoInternet": "No internet connection.",
+  "errorGeneric": "Something went wrong. Please try again.",
+  "errorTryAgain": "Please try again.",
+  "errorPhoneNotRegistered": "This number isn't registered. Please contact your school admin to add it.",
+  "errorSchoolNotFound": "We couldn't find a school with this code. Check the code and try again.",
+  "authSchoolCodeIntro": "Enter the school code your school gave you to get started.",
+  "authSchoolCodeLabel": "School code",
+  "authSchoolCodeHint": "e.g. greenfield-school",
+  "authSchoolCodeRequired": "Enter your school code to continue.",
+  "authSignIn": "Sign in",
+  "authEnterMobile": "Enter your mobile number",
+  "authOtpExplainer": "We'll send a one-time code to verify it's you.",
+  "authInvalidMobile": "Enter a valid 10-digit mobile number.",
+  "authMobileLabel": "Mobile number",
+  "authSendCode": "Send code",
+  "authCouldNotVerifyNumber": "Could not verify your number. Please try again.",
+  "authCouldNotSendCode": "Could not send verification code.",
+  "authCouldNotSendCodeRetry": "Could not send verification code. Please try again.",
+  "authVerifyCodeTitle": "Verify code",
+  "authEnterSixDigit": "Enter the 6-digit code",
+  "authSentTo": "Sent to {phone}",
+  "@authSentTo": {
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "authVerify": "Verify",
+  "authResendCode": "Resend code",
+  "authInvalidCode": "Invalid code. Please try again.",
+  "authCodeExpired": "This code has expired. Please request a new one.",
+  "roleParent": "Parent",
+  "roleTeacher": "Teacher",
+  "roleAdmin": "Admin",
+  "roleAccounts": "Accounts",
+  "roleSuperAdmin": "Super admin",
+  "profileTitle": "Profile",
+  "profileNoUser": "No user profile available.",
+  "profileSchool": "School",
+  "profileLogout": "Log out",
+  "profileLogoutConfirm": "Log out of Schoolinkd on this phone?",
+  "dashboardGreeting": "Hi, {name}",
+  "@dashboardGreeting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardNoChildren": "No children are linked to your account yet. Please contact the school office.",
+  "dashboardCouldNotLoadChildren": "Could not load your children.",
+  "teacherDashboardTitle": "Teacher dashboard",
+  "teacherSignedInAs": "Signed in as {name}",
+  "@teacherSignedInAs": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "teacherSendHomework": "Send Homework",
+  "teacherSendHomeworkSubtitle": "Photos and a note for a class",
+  "teacherSendNotice": "Send Notice",
+  "teacherSendNoticeSubtitle": "Message all parents in your class",
+  "teacherReports": "Reports",
+  "teacherReportsSubtitle": "Progress reports and report cards",
+  "teacherAddStudentNote": "Add Student Note",
+  "teacherAddStudentNoteSubtitle": "Internal note, MOM, complaint or parent discussion",
+  "teacherWeeklyRoutine": "Weekly Routine",
+  "teacherWeeklyRoutineSubtitle": "Your own class timetable for the week",
+  "teacherAboutMyClasses": "About My Class(es)",
+  "teacherAboutMyClassesSubtitle": "Strength, subjects, and recent reports for your classes",
+  "todayNow": "Now: {className} · {subject}",
+  "@todayNow": {
+    "placeholders": {
+      "className": {
+        "type": "String"
+      },
+      "subject": {
+        "type": "String"
+      }
+    }
+  },
+  "todayNowWithTime": "Now: {className} · {subject} ({time})",
+  "@todayNowWithTime": {
+    "placeholders": {
+      "className": {
+        "type": "String"
+      },
+      "subject": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "todayNext": "Next: {className} · {subject}",
+  "@todayNext": {
+    "placeholders": {
+      "className": {
+        "type": "String"
+      },
+      "subject": {
+        "type": "String"
+      }
+    }
+  },
+  "todayNextWithTime": "Next: {className} · {subject} ({time})",
+  "@todayNextWithTime": {
+    "placeholders": {
+      "className": {
+        "type": "String"
+      },
+      "subject": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "todayNoMorePeriods": "No more periods today",
+  "todayNoPeriods": "No periods today",
+  "todayPeriodLabel": "P{period} · {className} · {subject}",
+  "@todayPeriodLabel": {
+    "placeholders": {
+      "period": {
+        "type": "int"
+      },
+      "className": {
+        "type": "String"
+      },
+      "subject": {
+        "type": "String"
+      }
+    }
+  },
+  "myClassesEmpty": "You are not linked to any classes yet.",
+  "myClassesCouldNotLoad": "Could not load your classes. Pull down to retry.",
+  "myClassesStrength": "Boys: {boys} · Girls: {girls} · Total: {total}",
+  "@myClassesStrength": {
+    "placeholders": {
+      "boys": {
+        "type": "int"
+      },
+      "girls": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "myClassesRecentReports": "Recent reports",
+  "myClassesRead": "Read",
+  "myClassesUnread": "Unread",
+  "attendanceTitle": "Attendance",
+  "attendanceMark": "Mark Attendance",
+  "attendanceMarkSubtitle": "Take today's attendance for your class",
+  "attendanceDoneForToday": "Done for today",
+  "attendanceDoneForClasses": "{done} of {total} classes done today",
+  "@attendanceDoneForClasses": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "attendancePickClass": "Pick a class",
+  "attendanceStudentCount": "{count, plural, =1{1 student} other{{count} students}}",
+  "@attendanceStudentCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "attendancePresent": "Present",
+  "attendanceAbsent": "Absent",
+  "attendanceLate": "Late",
+  "attendanceLeave": "Leave",
+  "attendanceNotMarkedYet": "Not marked yet",
+  "attendanceHoliday": "Holiday",
+  "attendanceHolidayToday": "Today is a holiday: {name}",
+  "@attendanceHolidayToday": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "attendanceTapHint": "Tap to mark absent · long-press for Late or Leave",
+  "attendanceCounts": "{present} present · {absent} absent",
+  "@attendanceCounts": {
+    "placeholders": {
+      "present": {
+        "type": "int"
+      },
+      "absent": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceCountsWithOther": "{present} present · {absent} absent · {other} late/leave",
+  "@attendanceCountsWithOther": {
+    "placeholders": {
+      "present": {
+        "type": "int"
+      },
+      "absent": {
+        "type": "int"
+      },
+      "other": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceConfirmSubmit": "Submit attendance: {present} present, {absent} absent?",
+  "@attendanceConfirmSubmit": {
+    "placeholders": {
+      "present": {
+        "type": "int"
+      },
+      "absent": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceSubmitted": "Attendance submitted",
+  "attendanceQueuedOffline": "No connection — saved on this phone. It will be sent automatically.",
+  "attendancePendingSend": "Waiting to send…",
+  "attendanceSendingNow": "Sending…",
+  "attendanceAlreadySubmitted": "Already submitted today — you can still change it until midnight.",
+  "attendanceReadOnlyDay": "Attendance for this day can only be changed by an admin.",
+  "attendanceNoStudents": "No students in this class yet.",
+  "attendanceNoClassesToMark": "You're not the class teacher of any class yet.",
+  "attendanceCouldNotLoad": "Could not load attendance.",
+  "attendanceThisMonth": "This month: {present}/{marked} days",
+  "@attendanceThisMonth": {
+    "placeholders": {
+      "present": {
+        "type": "int"
+      },
+      "marked": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceYearPercentage": "Academic year {year}: {percent}",
+  "@attendanceYearPercentage": {
+    "placeholders": {
+      "year": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "attendanceToday": "Today: {status}",
+  "@attendanceToday": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "attendanceChooseStatus": "Mark as",
+  "homeChildWithClass": "{name} · {className}",
+  "@homeChildWithClass": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "className": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSwitchChild": "Switch child",
+  "homeDueBy": "{amount} due by {date}",
+  "@homeDueBy": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "homeOverdue": "Overdue",
+  "homeMoreDues": "{count, plural, =1{+ 1 more fee pending} other{+ {count} more fees pending}}",
+  "@homeMoreDues": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeAllFeesPaid": "All fees paid",
+  "homeClaimUnderReview": "Payment claim under review",
+  "homeClaimAmountUnderReview": "{amount} claim under review",
+  "@homeClaimAmountUnderReview": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "homePayNow": "Pay Now",
+  "homeViewFees": "View fees",
+  "homeTodayTitle": "Today",
+  "homeNoHomeworkToday": "No homework today",
+  "homeLatestNotice": "Latest notice",
+  "homeCouldNotLoad": "Couldn't load this child's summary.",
+  "menuFees": "Fees",
+  "menuFeesSubtitle": "Dues, online payment, upload proof, receipts",
+  "menuHomework": "Homework",
+  "menuHomeworkSubtitle": "All homework sent to this child's class",
+  "menuNotices": "Notices",
+  "menuNoticesSubtitle": "Class and school notices",
+  "menuReports": "Report Cards & Reports",
+  "menuReportsSubtitle": "Report cards and progress reports",
+  "menuAttendanceSubtitle": "Monthly calendar",
+  "feesPayOnline": "Pay Online",
+  "feesPaidByCashOrCheque": "I paid by cash/cheque – upload proof",
+  "feesReceipts": "Receipts",
+  "feesPaidInFull": "Paid in full",
+  "feesDueOn": "Due {date}",
+  "@feesDueOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "feesAmountDue": "{amount} due",
+  "@feesAmountDue": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "feesEmpty": "No fees found.",
+  "feesMyClaims": "Payment proofs you uploaded",
+  "feesCouldNotLoad": "Could not load fees. Pull down to retry.",
+  "feeStatusPaid": "Paid",
+  "feeStatusPending": "Pending",
+  "feeStatusOverdue": "Overdue",
+  "feeStatusPartial": "Partly paid",
+  "feeStatusWaived": "Waived",
+  "paymentModeCash": "Cash",
+  "paymentModeCheque": "Cheque",
+  "paymentModeBankTransfer": "Bank Transfer",
+  "paymentModeUpi": "UPI",
+  "paymentModeDemandDraft": "Demand Draft",
+  "paymentModeOnline": "Online Payment",
+  "claimStatusPending": "Under review",
+  "claimStatusApproved": "Approved",
+  "claimStatusRejected": "Rejected",
+  "claimSubmittedOn": "Submitted {date}",
+  "@claimSubmittedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "claimClaimedAmount": "Claimed amount: {amount}",
+  "@claimClaimedAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "claimMode": "Mode: {mode}",
+  "@claimMode": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "claimRejectedReason": "Reason: {reason}",
+  "@claimRejectedReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "claimsTitle": "My Payment Claims",
+  "claimsEmpty": "No payment claims submitted yet.",
+  "claimsCouldNotLoad": "Could not load your payment claims. Pull down to retry.",
+  "claimFormTitle": "Already Paid?",
+  "claimFormIntro": "Attach a photo or screenshot of your payment (bank transfer, cash receipt, cheque, etc.). The school will review it before it is recorded.",
+  "claimTakePhoto": "Take photo",
+  "claimRetakePhoto": "Retake photo",
+  "claimChooseFromGallery": "Choose from gallery",
+  "claimAmountLabel": "Amount paid (optional)",
+  "claimDateLabel": "Date paid (optional)",
+  "claimSelectDate": "Select a date",
+  "claimModeLabel": "Payment mode (optional)",
+  "claimNoteLabel": "Note (optional)",
+  "claimSubmitForReview": "Submit for review",
+  "claimAttachProofFirst": "Attach a photo or screenshot of the payment proof first.",
+  "claimSubmittedToast": "Submitted — your school will review it shortly",
+  "claimCouldNotSubmit": "Could not submit your claim. {reason}",
+  "@claimCouldNotSubmit": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "checkoutTitle": "Pay fee",
+  "checkoutCouldNotLoad": "Could not load this fee.",
+  "checkoutAmountDue": "Amount due",
+  "checkoutPayAmount": "Pay {amount}",
+  "@checkoutPayAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "checkoutConfirmingWithBank": "Payment received — confirming with the bank. Check back on this fee shortly.",
+  "checkoutConfirming": "Confirming your payment…",
+  "checkoutSuccess": "Payment successful",
+  "checkoutBackToFees": "Back to fees",
+  "checkoutNotSetUp": "Payment is not set up for this school yet. Please contact the school office.",
+  "checkoutCouldNotStart": "Could not start payment. Please try again.",
+  "checkoutNotCompleted": "Payment was not completed.",
+  "checkoutCouldNotConfirm": "The payment could not be confirmed. Please try again.",
+  "checkoutDescription": "Fee payment — {studentName}",
+  "@checkoutDescription": {
+    "placeholders": {
+      "studentName": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptTitle": "Receipt",
+  "receiptCouldNotLoad": "Could not load this receipt.",
+  "receiptAmountReceived": "Amount Received",
+  "receiptDiscountApplied": "Discount applied",
+  "receiptDiscountAppliedNamed": "Discount applied: {name}",
+  "@receiptDiscountAppliedNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptMethod": "Method: {method}",
+  "@receiptMethod": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptPaidOn": "Paid on: {date}",
+  "@receiptPaidOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptReference": "Reference: {reference}",
+  "@receiptReference": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "receiptNotes": "Notes",
+  "receiptDownload": "Download receipt",
+  "receiptOpening": "Opening…",
+  "receiptCouldNotOpen": "Could not open the receipt. Please try again.",
+  "receiptsCouldNotLoad": "Could not load receipts.",
+  "receiptsEmpty": "No receipts yet for this fee.",
+  "receiptsRowWithDiscount": "{date} · Discount applied",
+  "@receiptsRowWithDiscount": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "noticeKind": "Notice",
+  "homeworkKind": "Homework",
+  "noticesEmpty": "No notices yet",
+  "noticesCouldNotLoad": "Could not load notices.",
+  "noticeOpenPdf": "Open PDF",
+  "noticeEnterMessage": "Enter a message.",
+  "noticeSent": "Notice sent",
+  "noticeCouldNotSend": "Could not send the notice. {reason}",
+  "@noticeCouldNotSend": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "noticeNotClassTeacher": "You aren't set as the class teacher for any class yet.",
+  "noticeTitleLabel": "Title (optional)",
+  "noticeMessageLabel": "Message",
+  "homeworkEmpty": "No homework yet",
+  "homeworkCouldNotLoad": "Could not load homework.",
+  "homeworkBy": "{teacher} · {subject}",
+  "@homeworkBy": {
+    "placeholders": {
+      "teacher": {
+        "type": "String"
+      },
+      "subject": {
+        "type": "String"
+      }
+    }
+  },
+  "homeworkAddPhotoFirst": "Add at least one photo.",
+  "homeworkDefaultBody": "New homework has been posted.",
+  "homeworkSent": "Homework sent",
+  "homeworkCouldNotSend": "Could not send the homework. {reason}",
+  "@homeworkCouldNotSend": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "homeworkCaptionLabel": "Caption (optional)",
+  "homeworkSubjectOptional": "Subject (optional)",
+  "homeworkNoSubject": "No subject",
+  "attachCamera": "Camera",
+  "attachGallery": "Gallery",
+  "attachPdf": "Attach PDF",
+  "attachHintPhotos": "Up to 3 photos",
+  "attachHintPhotosOrPdf": "Up to 3 photos, or 1 PDF",
+  "sentTitle": "Sent",
+  "sentSeenBy": "{total, plural, =1{Seen by {seen}/1 parent} other{Seen by {seen}/{total} parents}}",
+  "@sentSeenBy": {
+    "placeholders": {
+      "seen": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "sentNotSeenYet": "Haven't opened it yet",
+  "sentEveryoneSeen": "Every parent has opened it",
+  "sentEmpty": "Nothing sent yet",
+  "sentCouldNotLoad": "Could not load sent items.",
+  "noteTypeLabel": "Type",
+  "noteTextLabel": "Note",
+  "noteTypeNote": "Note",
+  "noteTypeMom": "MOM",
+  "noteTypeComplaint": "Complaint",
+  "noteTypeParentDiscussion": "Parent Discussion",
+  "noteInternalHint": "Only school staff can see this. Parents never see student notes.",
+  "noteSave": "Save note",
+  "noteSaved": "Note saved",
+  "noteEnterFirst": "Type the note first.",
+  "noteRecent": "Recent notes",
+  "noteCouldNotLoad": "Could not load notes.",
+  "reportsEmptyTeacher": "No reports yet.",
+  "reportsEmptyParent": "No report cards or reports yet",
+  "reportsCouldNotLoad": "Could not load reports. Pull down to retry.",
+  "reportsUploadTooltip": "Upload Report Card",
+  "reportTitle": "Report",
+  "reportCouldNotLoad": "Could not load this report.",
+  "reportBy": "By {name}",
+  "@reportBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reportTypeAcademic": "Academic",
+  "reportTypeAttendance": "Attendance",
+  "reportTypeBehavior": "Behaviour",
+  "reportTypeHomework": "Homework",
+  "reportTypeReportCard": "Report card",
+  "uploadTitle": "Upload Report Card",
+  "uploadCouldNotLoadStudents": "Could not load students.",
+  "uploadFillAll": "Fill in all fields and choose a PDF.",
+  "uploadYearFormat": "Academic year must be in format YYYY-YY, e.g. 2026-27.",
+  "uploadSuccess": "Report card uploaded",
+  "uploadFailed": "Could not upload the report card.",
+  "uploadTermLabel": "Term",
+  "uploadTermHint": "e.g. Term 1",
+  "uploadYearLabel": "Academic Year",
+  "uploadYearHint": "e.g. 2026-27",
+  "uploadChoosePdf": "Choose PDF",
+  "uploadPublishNow": "Publish now (parent can see it immediately)",
+  "uploadButton": "Upload",
+  "timetableEmpty": "No timetable has been set up for you yet.",
+  "timetableCouldNotLoad": "Could not load your routine. Pull down to retry.",
+  "notificationsTitle": "Notifications",
+  "notificationsEmpty": "No notifications yet.",
+  "notificationsCouldNotLoad": "Could not load notifications. Pull down to retry."
+}

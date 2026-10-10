@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
 
 const maxPhotos = 3;
 
@@ -34,6 +34,7 @@ class AttachmentPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -64,7 +65,7 @@ class AttachmentPicker extends StatelessWidget {
                       top: 0,
                       child: IconButton.filledTonal(
                         visualDensity: VisualDensity.compact,
-                        tooltip: AppStrings.remove,
+                        tooltip: l.commonRemove,
                         icon: const Icon(Icons.close, size: 16),
                         onPressed: () => onChanged([...files]..removeAt(i)),
                       ),
@@ -82,23 +83,23 @@ class AttachmentPicker extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: _canAddPhoto ? () => _addPhoto(ImageSource.camera) : null,
               icon: const Icon(Icons.camera_alt_outlined),
-              label: const Text(AppStrings.takePhoto),
+              label: Text(l.attachCamera),
             ),
             OutlinedButton.icon(
               onPressed: _canAddPhoto ? () => _addPhoto(ImageSource.gallery) : null,
               icon: const Icon(Icons.photo_library_outlined),
-              label: const Text(AppStrings.fromGallery),
+              label: Text(l.attachGallery),
             ),
             if (allowPdf)
               OutlinedButton.icon(
                 onPressed: files.isEmpty ? _addPdf : null,
                 icon: const Icon(Icons.picture_as_pdf_outlined),
-                label: const Text(AppStrings.attachPdf),
+                label: Text(l.attachPdf),
               ),
           ],
         ),
         const SizedBox(height: 4),
-        Text(AppStrings.attachmentsHint(allowPdf), style: Theme.of(context).textTheme.bodySmall),
+        Text(allowPdf ? l.attachHintPhotosOrPdf : l.attachHintPhotos, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }

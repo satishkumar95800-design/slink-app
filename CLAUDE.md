@@ -51,6 +51,16 @@ pnpm only — never use npm or yarn in this repo.
 
 `pnpm --filter api seed:demo` builds/resets the fictional "Green Valley Public School" (school code `gvps-demo`). It refuses to touch any school not flagged `features.isDemo`. Logins: `apps/api/prisma/DEMO_SEED.md`.
 
+## Languages (English, Kannada, Hindi)
+
+Spec: `docs/SPEC-languages.md`. English is the source of truth; any missing translation shows English.
+
+- **Mobile:** `apps/mobile/lib/l10n/app_{en,kn,hi}.arb` (Flutter gen-l10n). Widgets use `context.l10n.key`; code without a context uses `currentL10n`. Run `flutter gen-l10n` after editing ARB files.
+- **Console:** `apps/web-admin/messages/{en,kn,hi}.json` (next-intl, keys type-checked). Use `useTranslations('namespace')`. `pnpm --filter web-admin check:i18n` checks for hard-coded text and stray keys. The marketing site stays English (`lib/strings.ts`).
+- **API:** `users.preferred_language`, `tenants.default_language`, `PATCH /users/me/language`; login and `/users/me` return `language`. Errors the apps translate carry `error.code` (throw `{ code, message }`).
+- **Review spreadsheet:** `node tools/i18n/review-csv.mjs export|import`.
+- No hard-coded user-facing text, no string concatenation for sentences, digits 0–9, ₹ Indian grouping, DD/MM/YYYY.
+
 ## Database
 
 PostgreSQL 16. Schema managed by Prisma 5 (pinned — do not upgrade to v6+ until Node 22 compat is confirmed).

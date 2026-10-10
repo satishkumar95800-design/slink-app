@@ -4,7 +4,8 @@ import '../../shared/models/payment_claim.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
 import 'payment_claims_repository.dart';
 import '../../core/format/money.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
+import '../fees/fee_labels.dart';
 import '../home/parent_home_models.dart';
 
 final myPaymentClaimsProvider = FutureProvider.autoDispose<List<PaymentClaim>>((ref) {
@@ -19,13 +20,13 @@ class MyPaymentClaimsPage extends ConsumerWidget {
     final claimsAsync = ref.watch(myPaymentClaimsProvider);
 
     return AuthenticatedScaffold(
-      appBar: AppBar(title: const Text('My Payment Claims')),
+      appBar: AppBar(title: Text(context.l10n.claimsTitle)),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(myPaymentClaimsProvider),
         child: claimsAsync.when(
           data: (claims) {
             if (claims.isEmpty) {
-              return const Center(child: Text('No payment claims submitted yet.'));
+              return Center(child: Text(context.l10n.claimsEmpty));
             }
             return ListView.builder(
               padding: const EdgeInsets.all(16),
@@ -37,7 +38,7 @@ class MyPaymentClaimsPage extends ConsumerWidget {
           error: (error, _) => Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Text('Could not load your payment claims. Pull down to retry.\n$error', textAlign: TextAlign.center),
+              child: Text('${context.l10n.claimsCouldNotLoad}\n$error', textAlign: TextAlign.center),
             ),
           ),
         ),
@@ -52,10 +53,10 @@ class PaymentClaimCard extends StatelessWidget {
 
   const PaymentClaimCard({super.key, required this.claim});
 
-  String _statusLabel() => switch (claim.status) {
-        PaymentClaimStatus.pending => AppStrings.claimStatusPending,
-        PaymentClaimStatus.approved => AppStrings.claimStatusApproved,
-        PaymentClaimStatus.rejected => AppStrings.claimStatusRejected,
+  String _statusLabel(AppLocalizations l) => switch (claim.status) {
+        PaymentClaimStatus.pending => l.claimStatusPending,
+        PaymentClaimStatus.approved => l.claimStatusApproved,
+        PaymentClaimStatus.rejected => l.claimStatusRejected,
       };
 
   Color _statusColor() {
@@ -71,6 +72,7 @@ class PaymentClaimCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -94,16 +96,16 @@ class PaymentClaimCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    _statusLabel(),
+                    _statusLabel(l),
                     style: TextStyle(color: _statusColor(), fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 4),
-            Text(AppStrings.claimSubmitted(displayDate(claim.createdAt))),
-            if (claim.claimedAmount != null) Text(AppStrings.claimedAmount(formatRupees(claim.claimedAmount))),
-            if (claim.claimedMode != null) Text('Mode: ${claim.claimedMode}'),
+            Text(l.claimSubmittedOn(displayDate(claim.createdAt))),
+            if (claim.claimedAmount != null) Text(l.claimClaimedAmount(formatRupees(claim.claimedAmount))),
+            if (claim.claimedMode != null) Text(l.claimMode(paymentModeLabel(l, claim.claimedMode!))),
             if (claim.note != null && claim.note!.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(claim.note!),
@@ -111,7 +113,7 @@ class PaymentClaimCard extends StatelessWidget {
             if (claim.status == PaymentClaimStatus.rejected && claim.reviewNote != null && claim.reviewNote!.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
-                AppStrings.claimRejectedReason(claim.reviewNote!),
+                l.claimRejectedReason(claim.reviewNote!),
                 style: TextStyle(color: Colors.red.shade700, fontStyle: FontStyle.italic),
               ),
             ],

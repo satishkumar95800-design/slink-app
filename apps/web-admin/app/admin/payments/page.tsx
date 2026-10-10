@@ -1,11 +1,14 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { api } from '../../../lib/api-client';
+import { useErrorText } from '../../../lib/i18n/errors';
+import { paymentStatusLabel } from '../../../lib/i18n/labels';
 import { Badge } from '../../../components/ui/badge';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
-import { formatRupees } from '../../../lib/format';
+import { formatDate, formatRupees } from '../../../lib/format';
 
 type PaymentStatus = 'created' | 'attempted' | 'paid' | 'failed' | 'refunded';
 
@@ -36,6 +39,9 @@ const statusVariant = (s: PaymentStatus): 'green' | 'red' | 'yellow' | 'blue' | 
 };
 
 export default function PaymentsPage() {
+  const t = useTranslations('payments');
+  const tStatus = useTranslations('paymentStatus');
+  const errorText = useErrorText();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -51,7 +57,7 @@ export default function PaymentsPage() {
       setTotal(res.total);
       setError(null);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorText(e));
     } finally {
       setLoading(false);
     }
@@ -62,12 +68,8 @@ export default function PaymentsPage() {
   }, []);
 
   const statusOptions = [
-    { value: '', label: 'All statuses' },
-    { value: 'paid', label: 'Paid' },
-    { value: 'created', label: 'Created' },
-    { value: 'attempted', label: 'Attempted' },
-    { value: 'failed', label: 'Failed' },
-    { value: 'refunded', label: 'Refunded' },
+    { value: '', label: t('allStatuses') },
+    ...(['paid', 'created', 'attempted', 'failed', 'refunded'] as const).map((value) => ({ value, label: tStatus(value) })),
   ];
 
   return (
@@ -86,7 +88,7 @@ export default function PaymentsPage() {
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
-          <span className="text-sm text-gray-500">{total} payment{total !== 1 ? 's' : ''}</span>
+          <span className="text-sm text-gray-500">{t('count', { count: total })}</span>
         </div>
       </div>
 
@@ -98,16 +100,16 @@ export default function PaymentsPage() {
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
       ) : payments.length === 0 ? (
         <EmptyState
-          title="No payments"
-          description="Payment orders will appear here as parents initiate them."
+          title={t('emptyTitle')}
+          description={t('emptyDescription')}
         />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-cream/60">
               <tr>
-                {['Student', 'Fee', 'Gateway Order', 'Amount', 'Gateway', 'Status', 'Date'].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
+                {[t('colStudent'), t('colFee'), t('colOrder'), t('colAmount'), t('colGateway'), t('colStatus'), t('colDate')].map((h, i) => (
+                  <th key={i} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
                     {h}
                   </th>
                 ))}
@@ -135,10 +137,10 @@ export default function PaymentsPage() {
                     <Badge variant="gray">{p.gateway}</Badge>
                   </td>
                   <td className="px-6 py-4">
-                    <Badge variant={statusVariant(p.status)}>{p.status}</Badge>
+                    <Badge variant={statusVariant(p.status)}>{paymentStatusLabel(tStatus, p.status)}</Badge>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
-                    {new Date(p.createdAt).toLocaleDateString('en-IN')}
+                    {formatDate(p.createdAt)}
                   </td>
                 </tr>
               ))}

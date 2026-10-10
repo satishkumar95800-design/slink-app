@@ -1,11 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { api, ApiError } from '../../../lib/api-client';
+import { api } from '../../../lib/api-client';
+import { useErrorText } from '../../../lib/i18n/errors';
+import { feeStatusLabel } from '../../../lib/i18n/labels';
 import { Button } from '../../../components/ui/button';
 import { Select } from '../../../components/ui/select';
 import { Input } from '../../../components/ui/input';
@@ -14,7 +17,7 @@ import { Modal } from '../../../components/ui/modal';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
-import { formatRupees } from '../../../lib/format';
+import { formatDateOnly, formatRupees } from '../../../lib/format';
 
 type FeeStatus = 'pending' | 'partial' | 'paid' | 'overdue' | 'waived';
 
@@ -54,12 +57,12 @@ interface DiscountType {
   name: string;
 }
 
-const assignSchema = z.object({
-  studentId: z.string().min(1, 'Student is required'),
-  feeStructureId: z.string().min(1, 'Fee structure is required'),
-});
-
-const offlineSchema = z.object({
+const makeSchemas = (t: ReturnType<typeof useTranslations<'studentFees'>>) => ({
+  assign: z.object({
+    studentId: z.string().min(1, t('studentRequired')),
+    feeStructureId: z.string().min(1, t('structureRequired')),
+  }),
+  offline: z.object({
   studentFeeId: z.string().min(1),
   allocations: z
     .array(
@@ -70,7 +73,7 @@ const offlineSchema = z.object({
         amount: z.number().min(0),
       }),
     )
-    .refine((rows) => rows.some((r) => r.amount > 0), 'Enter an amount for at least one fee component'),
+    .refine((rows) => rows.some((r) => r.amount > 0), t('allocationRequired')),
   method: z.enum(['cash', 'cheque', 'bank_transfer', 'demand_draft']),
   reference: z.string().optional(),
   paidOn: z.string().optional(),
@@ -78,10 +81,11 @@ const offlineSchema = z.object({
   discountTypeId: z.string().optional(),
   discountAmount: z.number().optional(),
   discountNote: z.string().optional(),
+  }),
 });
 
-type AssignData = z.infer<typeof assignSchema>;
-type OfflineData = z.infer<typeof offlineSchema>;
+type AssignData = z.infer<ReturnType<typeof makeSchemas>['assign']>;
+type OfflineData = z.infer<ReturnType<typeof makeSchemas>['offline']>;
 
 const statusVariant = (s: FeeStatus): 'green' | 'red' | 'yellow' | 'blue' | 'gray' => {
   const m: Record<FeeStatus, 'green' | 'red' | 'yellow' | 'blue' | 'gray'> = {
@@ -95,6 +99,12 @@ const statusVariant = (s: FeeStatus): 'green' | 'red' | 'yellow' | 'blue' | 'gra
 };
 
 export default function StudentFeesPage() {
+  const t = useTranslations('studentFees');
+  const tCommon = useTranslations('common');
+  const tStatus = useTranslations('feeStatus');
+  const tMethod = useTranslations('paymentMethod');
+  const errorText = useErrorText();
+  const schemas = useMemo(() => makeSchemas(t), [t]);
   const { toast } = useToast();
   const [fees, setFees] = useState<StudentFee[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -107,9 +117,9 @@ export default function StudentFeesPage() {
   const [selectedFee, setSelectedFee] = useState<StudentFee | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
 
-  const assignForm = useForm<AssignData>({ resolver: zodResolver(assignSchema) });
+  const assignForm = useForm<AssignData>({ resolver: zodResolver(schemas.assign) });
   const offlineForm = useForm<OfflineData>({
-    resolver: zodResolver(offlineSchema),
+    resolver: zodResolver(schemas.offline),
     defaultValues: { allocations: [] },
   });
   const allocationFields = useFieldArray({ control: offlineForm.control, name: 'allocations' });
@@ -132,7 +142,7 @@ export default function StudentFeesPage() {
       setDiscountTypes(discountTypesRes);
       setError(null);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorText(e));
     } finally {
       setLoading(false);
     }
@@ -145,12 +155,12 @@ export default function StudentFeesPage() {
   async function onAssign(data: AssignData) {
     try {
       await api.post('/student-fees', data);
-      toast('Fee assigned', 'success');
+      toast(t('assigned'), 'success');
       setShowAssign(false);
       assignForm.reset();
       fetchFees(statusFilter);
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     }
   }
 
@@ -172,13 +182,13 @@ export default function StudentFeesPage() {
           discountNote: data.discountTypeId ? data.discountNote || undefined : undefined,
         },
       );
-      toast('Offline payment recorded', 'success');
+      toast(t('paymentRecorded'), 'success');
       setSelectedFee(null);
       offlineForm.reset({ allocations: [] });
       fetchFees(statusFilter);
       window.open(`/receipts/${res.receipt.id}/print`, '_blank');
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     }
   }
 
@@ -209,12 +219,8 @@ export default function StudentFeesPage() {
   }));
 
   const statusOptions = [
-    { value: '', label: 'All statuses' },
-    { value: 'pending', label: 'Pending' },
-    { value: 'overdue', label: 'Overdue' },
-    { value: 'partial', label: 'Partial' },
-    { value: 'paid', label: 'Paid' },
-    { value: 'waived', label: 'Waived' },
+    { value: '', label: t('allStatuses') },
+    ...(['pending', 'overdue', 'partial', 'paid', 'waived'] as const).map((value) => ({ value, label: tStatus(value) })),
   ];
 
   return (
@@ -233,9 +239,9 @@ export default function StudentFeesPage() {
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
-          <span className="text-sm text-gray-500">{total} record{total !== 1 ? 's' : ''}</span>
+          <span className="text-sm text-gray-500">{t('count', { count: total })}</span>
         </div>
-        <Button onClick={() => setShowAssign(true)}>+ Assign Fee</Button>
+        <Button onClick={() => setShowAssign(true)}>{t('assign')}</Button>
       </div>
 
       {loading ? (
@@ -246,17 +252,17 @@ export default function StudentFeesPage() {
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
       ) : fees.length === 0 ? (
         <EmptyState
-          title="No fee records"
-          description="Assign fee structures to students to start tracking payments."
-          action={<Button onClick={() => setShowAssign(true)}>+ Assign Fee</Button>}
+          title={t('emptyTitle')}
+          description={t('emptyDescription')}
+          action={<Button onClick={() => setShowAssign(true)}>{t('assign')}</Button>}
         />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-cream/60">
               <tr>
-                {['Student', 'Fee', 'Due', 'Paid', 'Balance', 'Status', 'Due Date', ''].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
+                {[t('colStudent'), t('colFee'), t('colDue'), t('colPaid'), t('colBalance'), t('colStatus'), t('colDueDate'), ''].map((h, i) => (
+                  <th key={i} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
                     {h}
                   </th>
                 ))}
@@ -278,10 +284,10 @@ export default function StudentFeesPage() {
                     {formatRupees(Math.max(0, f.amountDue - f.amountPaid))}
                   </td>
                   <td className="px-6 py-4">
-                    <Badge variant={statusVariant(f.status)}>{f.status}</Badge>
+                    <Badge variant={statusVariant(f.status)}>{feeStatusLabel(tStatus, f.status)}</Badge>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
-                    {new Date(f.dueDate).toLocaleDateString('en-IN')}
+                    {formatDateOnly(f.dueDate)}
                   </td>
                   <td className="px-6 py-4 text-right">
                     {f.status !== 'paid' && f.status !== 'waived' && (
@@ -289,7 +295,7 @@ export default function StudentFeesPage() {
                         onClick={() => openOffline(f)}
                         className="text-xs text-teal hover:underline"
                       >
-                        Record payment
+                        {t('recordPayment')}
                       </button>
                     )}
                   </td>
@@ -304,29 +310,29 @@ export default function StudentFeesPage() {
       <Modal
         open={showAssign}
         onClose={() => { setShowAssign(false); assignForm.reset(); }}
-        title="Assign Fee"
+        title={t('assignTitle')}
       >
         <form onSubmit={assignForm.handleSubmit(onAssign)} className="space-y-4">
           <Select
-            label="Student" required
+            label={t('student')} required
             options={studentOptions}
-            placeholder="Select a student"
+            placeholder={t('selectStudent')}
             error={assignForm.formState.errors.studentId?.message}
             {...assignForm.register('studentId')}
           />
           <Select
-            label="Fee Structure" required
+            label={t('feeStructure')} required
             options={structureOptions}
-            placeholder="Select a fee structure"
+            placeholder={t('selectStructure')}
             error={assignForm.formState.errors.feeStructureId?.message}
             {...assignForm.register('feeStructureId')}
           />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => { setShowAssign(false); assignForm.reset(); }}>
-              Cancel
+              {tCommon('cancel')}
             </Button>
             <Button type="submit" loading={assignForm.formState.isSubmitting}>
-              Assign
+              {t('assignSubmit')}
             </Button>
           </div>
         </form>
@@ -336,7 +342,7 @@ export default function StudentFeesPage() {
       <Modal
         open={!!selectedFee}
         onClose={() => { setSelectedFee(null); offlineForm.reset(); }}
-        title="Record Offline Payment"
+        title={t('offlineTitle')}
       >
         {selectedFee && (
           <form onSubmit={offlineForm.handleSubmit(onOfflinePayment)} className="space-y-4">
@@ -344,15 +350,15 @@ export default function StudentFeesPage() {
               <p className="font-medium text-gray-900">{selectedFee.student?.name}</p>
               <p className="text-gray-600">{selectedFee.feeStructure?.name}</p>
               <p className="mt-1 text-gray-500">
-                Balance: <span className="font-semibold text-gray-900">{formatRupees(Math.max(0, selectedFee.amountDue - selectedFee.amountPaid))}</span>
+                {t('balance')} <span className="font-semibold text-gray-900">{formatRupees(Math.max(0, selectedFee.amountDue - selectedFee.amountPaid))}</span>
               </p>
             </div>
             <div className="space-y-3">
-              <p className="text-sm font-medium text-gray-700">Amount per fee component (₹)<span className="ml-0.5 text-red-500" aria-hidden="true">*</span></p>
+              <p className="text-sm font-medium text-gray-700">{t('perComponent')}<span className="ml-0.5 text-red-500" aria-hidden="true">*</span></p>
               {allocationFields.fields.map((field, index) => (
                 <div key={field.id} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                   <label htmlFor={`allocation-${index}`} className="text-sm text-gray-600">
-                    {field.label} <span className="text-gray-400">(balance {formatRupees(field.balance)})</span>
+                    {field.label} <span className="text-gray-400">{t('componentBalance', { amount: formatRupees(field.balance) })}</span>
                   </label>
                   <Input
                     id={`allocation-${index}`}
@@ -368,60 +374,60 @@ export default function StudentFeesPage() {
               )}
             </div>
             <Select
-              label="Method" required
+              label={t('method')} required
               options={[
-                { value: 'cash', label: 'Cash' },
-                { value: 'cheque', label: 'Cheque' },
-                { value: 'bank_transfer', label: 'Bank Transfer' },
-                { value: 'demand_draft', label: 'Demand Draft' },
+                { value: 'cash', label: tMethod('cash') },
+                { value: 'cheque', label: tMethod('cheque') },
+                { value: 'bank_transfer', label: tMethod('bankTransferOnly') },
+                { value: 'demand_draft', label: tMethod('demand_draft') },
               ]}
               error={offlineForm.formState.errors.method?.message}
               {...offlineForm.register('method')}
             />
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Input
-                label="Reference (optional)"
-                placeholder="Cheque no. / UTR / DD no."
+                label={t('reference')}
+                placeholder={t('referencePlaceholder')}
                 {...offlineForm.register('reference')}
               />
               <Input
-                label="Paid On"
+                label={t('paidOn')}
                 type="date"
                 {...offlineForm.register('paidOn')}
               />
             </div>
             <Input
-              label="Notes (optional)"
-              placeholder="Any additional notes"
+              label={t('notes')}
+              placeholder={t('notesPlaceholder')}
               {...offlineForm.register('notes')}
             />
             <Select
-              label="Discount/Concession Type (optional)"
+              label={t('discountType')}
               options={discountTypes.map((d) => ({ value: d.id, label: d.name }))}
-              placeholder="None"
+              placeholder={t('discountNone')}
               {...offlineForm.register('discountTypeId')}
             />
             {selectedDiscountTypeId && (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Input
-                  label="Discount Amount (₹)"
+                  label={t('discountAmount')}
                   type="number"
                   step="0.01"
                   {...offlineForm.register('discountAmount', { valueAsNumber: true })}
                 />
                 <Input
-                  label="Note"
-                  placeholder="e.g. Sibling of ADM-2025-0001"
+                  label={t('discountNote')}
+                  placeholder={t('discountNotePlaceholder')}
                   {...offlineForm.register('discountNote')}
                 />
               </div>
             )}
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="secondary" type="button" onClick={() => { setSelectedFee(null); offlineForm.reset(); }}>
-                Cancel
+                {tCommon('cancel')}
               </Button>
               <Button type="submit" loading={offlineForm.formState.isSubmitting}>
-                Record Payment
+                {t('recordSubmit')}
               </Button>
             </div>
           </form>

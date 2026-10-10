@@ -1,7 +1,10 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
-import { api, ApiError } from '../../../lib/api-client';
+import { api } from '../../../lib/api-client';
+import { useErrorText } from '../../../lib/i18n/errors';
+import { claimStatusLabel, paymentMethodLabel } from '../../../lib/i18n/labels';
 import { Button } from '../../../components/ui/button';
 import { Select } from '../../../components/ui/select';
 import { Input } from '../../../components/ui/input';
@@ -10,7 +13,7 @@ import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { Badge } from '../../../components/ui/badge';
 import { useToast } from '../../../components/ui/toast';
-import { formatRupees } from '../../../lib/format';
+import { formatDate, formatDateOnly, formatRupees } from '../../../lib/format';
 
 type ClaimStatus = 'pending' | 'approved' | 'rejected';
 type ClaimMode = 'cash' | 'cheque' | 'bank_transfer' | 'upi';
@@ -31,27 +34,22 @@ interface PaymentClaim {
   reviewer: { id: string; name: string } | null;
 }
 
-const MODE_LABELS: Record<ClaimMode, string> = {
-  cash: 'Cash',
-  cheque: 'Cheque',
-  bank_transfer: 'Bank Transfer',
-  upi: 'UPI',
+const STATUS_VARIANT: Record<ClaimStatus, 'yellow' | 'green' | 'red'> = {
+  pending: 'yellow',
+  approved: 'green',
+  rejected: 'red',
 };
-
-const STATUS_BADGE: Record<ClaimStatus, { label: string; variant: 'yellow' | 'green' | 'red' }> = {
-  pending: { label: 'Pending', variant: 'yellow' },
-  approved: { label: 'Approved', variant: 'green' },
-  rejected: { label: 'Rejected', variant: 'red' },
-};
-
-const STATUS_OPTIONS = [
-  { value: 'pending', label: 'Pending' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'rejected', label: 'Rejected' },
-  { value: 'all', label: 'All' },
-];
 
 export default function PaymentClaimsPage() {
+  const t = useTranslations('paymentClaims');
+  const tCommon = useTranslations('common');
+  const tStatus = useTranslations('claimStatus');
+  const tMethod = useTranslations('paymentMethod');
+  const errorText = useErrorText();
+  const statusOptions = [
+    ...(['pending', 'approved', 'rejected'] as const).map((value) => ({ value, label: tStatus(value) })),
+    { value: 'all', label: t('filterAll') },
+  ];
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
   const [claims, setClaims] = useState<PaymentClaim[]>([]);
@@ -74,7 +72,7 @@ export default function PaymentClaimsPage() {
       setClaims(res);
       setError(null);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorText(e));
     } finally {
       setLoading(false);
     }
@@ -90,7 +88,7 @@ export default function PaymentClaimsPage() {
       const { url } = await api.get<{ url: string }>(`/payment-claims/${claim.id}/proof-url`);
       window.open(url, '_blank');
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     }
   }
 
@@ -109,7 +107,7 @@ export default function PaymentClaimsPage() {
     const needsAmount = !approveTarget.claimedAmount;
     const trimmed = approveAmount.trim();
     if (needsAmount && !trimmed) {
-      toast('Enter an amount to approve this claim', 'error');
+      toast(t('enterAmount'), 'error');
       return;
     }
     const body: { amount?: number } = {};
@@ -119,11 +117,11 @@ export default function PaymentClaimsPage() {
     try {
       setApproving(true);
       await api.post(`/payment-claims/${approveTarget.id}/approve`, body);
-      toast('Claim approved and receipt recorded', 'success');
+      toast(t('approved'), 'success');
       setClaims((prev) => prev.filter((c) => c.id !== approveTarget.id));
       closeApprove();
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     } finally {
       setApproving(false);
     }
@@ -146,11 +144,11 @@ export default function PaymentClaimsPage() {
       await api.post(`/payment-claims/${rejectTarget.id}/reject`, {
         reviewNote: rejectNote.trim() || undefined,
       });
-      toast('Claim rejected', 'success');
+      toast(t('rejected'), 'success');
       setClaims((prev) => prev.filter((c) => c.id !== rejectTarget.id));
       closeReject();
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     } finally {
       setRejecting(false);
     }
@@ -160,14 +158,12 @@ export default function PaymentClaimsPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl font-extrabold tracking-tight text-gray-900">Payment Claims</h1>
-          <p className="text-sm text-gray-500">
-            Review offline payments parents have claimed to have made — approve to record the receipt, or reject with a reason.
-          </p>
+          <h1 className="text-xl font-extrabold tracking-tight text-gray-900">{t('title')}</h1>
+          <p className="text-sm text-gray-500">{t('intro')}</p>
         </div>
         <div className="w-full sm:w-40">
           <Select
-            options={STATUS_OPTIONS}
+            options={statusOptions}
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
           />
@@ -182,8 +178,8 @@ export default function PaymentClaimsPage() {
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
       ) : claims.length === 0 ? (
         <EmptyState
-          title="No claims here"
-          description="There are no payment claims matching this filter right now."
+          title={t('emptyTitle')}
+          description={t('emptyDescription')}
         />
       ) : (
         <div className="space-y-3">
@@ -194,57 +190,57 @@ export default function PaymentClaimsPage() {
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-sm font-semibold text-gray-900">{claim.student.name}</h3>
                     <span className="text-xs text-gray-400">#{claim.student.admissionNo}</span>
-                    <Badge variant={STATUS_BADGE[claim.status].variant}>
-                      {STATUS_BADGE[claim.status].label}
-                    </Badge>
+                    <Badge variant={STATUS_VARIANT[claim.status]}>{claimStatusLabel(tStatus, claim.status)}</Badge>
                   </div>
                   <div className="text-sm text-gray-600">
-                    Claimed amount:{' '}
+                    {t('claimedAmount')}{' '}
                     <span className="font-medium text-gray-900">
-                      {claim.claimedAmount ? formatRupees(claim.claimedAmount) : 'not specified'}
+                      {claim.claimedAmount ? formatRupees(claim.claimedAmount) : t('notSpecified')}
                     </span>
                     {claim.claimedDate && (
                       <span className="text-gray-400">
                         {' '}
-                        · {new Date(claim.claimedDate).toLocaleDateString('en-IN')}
+                        · {formatDateOnly(claim.claimedDate)}
                       </span>
                     )}
                     {claim.claimedMode && (
-                      <span className="text-gray-400"> · {MODE_LABELS[claim.claimedMode]}</span>
+                      <span className="text-gray-400"> · {paymentMethodLabel(tMethod, claim.claimedMode)}</span>
                     )}
                   </div>
-                  {claim.note && <p className="text-sm text-gray-500">Note: {claim.note}</p>}
+                  {claim.note && <p className="text-sm text-gray-500">{t('note', { note: claim.note })}</p>}
                   <p className="text-xs text-gray-400">
-                    Submitted by {claim.submitter.name}
-                    {claim.submitter.phone ? ` · ${claim.submitter.phone}` : ''} on{' '}
-                    {new Date(claim.createdAt).toLocaleDateString('en-IN')}
+                    {claim.submitter.phone
+                      ? t('submittedByWithPhone', { name: claim.submitter.name, phone: claim.submitter.phone, date: formatDate(claim.createdAt) })
+                      : t('submittedBy', { name: claim.submitter.name, date: formatDate(claim.createdAt) })}
                   </p>
                   <p className="text-xs text-gray-400">
-                    Outstanding on fee: {formatRupees(
-                      (parseFloat(claim.studentFee.amountDue) - parseFloat(claim.studentFee.amountPaid)).toFixed(2),
-                    )}
+                    {t('outstanding', {
+                      amount: formatRupees(
+                        (parseFloat(claim.studentFee.amountDue) - parseFloat(claim.studentFee.amountPaid)).toFixed(2),
+                      ),
+                    })}
                   </p>
                   {claim.reviewNote && (
-                    <p className="text-xs text-gray-500">Review note: {claim.reviewNote}</p>
+                    <p className="text-xs text-gray-500">{t('reviewNote', { note: claim.reviewNote })}</p>
                   )}
                   {claim.reviewer && (
-                    <p className="text-xs text-gray-400">Reviewed by {claim.reviewer.name}</p>
+                    <p className="text-xs text-gray-400">{t('reviewedBy', { name: claim.reviewer.name })}</p>
                   )}
                 </div>
                 <div className="flex flex-shrink-0 flex-col items-end gap-2">
                   <Button variant="secondary" size="sm" onClick={() => onViewProof(claim)}>
-                    View Proof
+                    {t('viewProof')}
                   </Button>
                   {claim.status === 'pending' && (
                     <div className="flex gap-2">
                       <Button variant="danger" size="sm" onClick={() => openReject(claim)}>
-                        Reject
+                        {t('reject')}
                       </Button>
                       <Button size="sm" onClick={() => openApprove(claim)}>
-                        Approve
+                        {t('approve')}
                       </Button>
                     </div>
                   )}
@@ -255,52 +251,52 @@ export default function PaymentClaimsPage() {
         </div>
       )}
 
-      <Modal open={!!approveTarget} onClose={closeApprove} title="Approve Payment Claim">
+      <Modal open={!!approveTarget} onClose={closeApprove} title={t('approveTitle')}>
         {approveTarget && (
           <div className="space-y-4">
             <p className="text-sm text-gray-600">
-              Confirm the amount to record for <span className="font-medium text-gray-900">{approveTarget.student.name}</span>{' '}
-              before approving. This will create a receipt and mark the fee accordingly.
+              {t.rich('approveExplainer', {
+                name: approveTarget.student.name,
+                strong: (chunks) => <span className="font-medium text-gray-900">{chunks}</span>,
+              })}
             </p>
             <Input
-              label="Amount to confirm" required
+              label={t('amountToConfirm')} required
               type="number"
               step="0.01"
               min="0"
-              placeholder={approveTarget.claimedAmount ? undefined : 'Enter amount'}
+              placeholder={approveTarget.claimedAmount ? undefined : t('amountPlaceholder')}
               value={approveAmount}
               onChange={(e) => setApproveAmount(e.target.value)}
             />
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="secondary" type="button" onClick={closeApprove}>
-                Cancel
+                {tCommon('cancel')}
               </Button>
               <Button type="button" loading={approving} onClick={onConfirmApprove}>
-                Confirm Approval
+                {t('confirmApproval')}
               </Button>
             </div>
           </div>
         )}
       </Modal>
 
-      <Modal open={!!rejectTarget} onClose={closeReject} title="Reject Payment Claim">
+      <Modal open={!!rejectTarget} onClose={closeReject} title={t('rejectTitle')}>
         {rejectTarget && (
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              Optionally add a reason — the parent will be notified.
-            </p>
+            <p className="text-sm text-gray-600">{t('rejectExplainer')}</p>
             <Input
-              label="Reason (optional)"
-              placeholder="e.g. Proof unclear, please resubmit"
+              label={t('reason')}
+              placeholder={t('reasonPlaceholder')}
               value={rejectNote}
               onChange={(e) => setRejectNote(e.target.value)}
             />
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="secondary" type="button" onClick={closeReject}>
-                Cancel
+                {tCommon('cancel')}
               </Button>
               <Button variant="danger" type="button" loading={rejecting} onClick={onConfirmReject}>
-                Confirm Rejection
+                {t('confirmRejection')}
               </Button>
             </div>
           </div>

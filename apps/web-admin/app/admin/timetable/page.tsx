@@ -1,7 +1,10 @@
 'use client';
 
+import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
-import { api, ApiError } from '../../../lib/api-client';
+import { api } from '../../../lib/api-client';
+import { useErrorText } from '../../../lib/i18n/errors';
+import { weekdayName } from '../../../lib/format';
 import { Button } from '../../../components/ui/button';
 import { Select } from '../../../components/ui/select';
 import { Modal } from '../../../components/ui/modal';
@@ -9,7 +12,6 @@ import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
 import { getSession } from '../../../lib/auth';
-import { strings } from '../../../lib/strings';
 
 interface SchoolClass {
   id: string;
@@ -47,14 +49,8 @@ interface TimetableSlot {
   class: { id: string; name: string; section: string | null; academicYear: string };
 }
 
-const DAYS = [
-  { value: 1, label: 'Mon' },
-  { value: 2, label: 'Tue' },
-  { value: 3, label: 'Wed' },
-  { value: 4, label: 'Thu' },
-  { value: 5, label: 'Fri' },
-  { value: 6, label: 'Sat' },
-];
+/** Mon–Sat (1 = Monday); labels come from the UI language. */
+const DAY_NUMBERS = [1, 2, 3, 4, 5, 6];
 
 const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
 
@@ -64,6 +60,11 @@ function classLabel(c: SchoolClass): string {
 }
 
 export default function TimetablePage() {
+  const t = useTranslations('timetable');
+  const tCommon = useTranslations('common');
+  const locale = useLocale();
+  const errorText = useErrorText();
+  const DAYS = DAY_NUMBERS.map((value) => ({ value, label: weekdayName(value, locale, 'short') }));
   const { toast } = useToast();
   const [classes, setClasses] = useState<SchoolClass[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -94,7 +95,7 @@ export default function TimetablePage() {
       setError(null);
       if (classRes.length > 0) setSelectedClassId(classRes[0].id);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorText(e));
     } finally {
       setLoading(false);
     }
@@ -111,7 +112,7 @@ export default function TimetablePage() {
       setSlots(res);
       setError(null);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorText(e));
     } finally {
       setGridLoading(false);
     }
@@ -126,7 +127,7 @@ export default function TimetablePage() {
   }, [selectedClassId]);
 
   const classOptions = classes.map((c) => ({ value: c.id, label: classLabel(c) }));
-  const teacherOptions = teachers.map((t) => ({ value: t.id, label: t.name }));
+  const teacherOptions = teachers.map((teacher) => ({ value: teacher.id, label: teacher.name }));
   const subjectOptions = subjects.map((s) => ({ value: s.id, label: s.name }));
 
   function slotFor(dayOfWeek: number, periodNumber: number): TimetableSlot | undefined {
@@ -149,7 +150,7 @@ export default function TimetablePage() {
   async function onSaveCell() {
     if (!activeCell || !selectedClassId) return;
     if (!formTeacherId || !formSubjectId) {
-      toast('Select both a subject and a teacher', 'error');
+      toast(t('selectBoth'), 'error');
       return;
     }
     try {
@@ -161,11 +162,11 @@ export default function TimetablePage() {
         dayOfWeek: activeCell.dayOfWeek,
         periodNumber: activeCell.periodNumber,
       });
-      toast('Timetable slot saved', 'success');
+      toast(t('slotSaved'), 'success');
       closeCell();
       fetchGrid(selectedClassId);
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     } finally {
       setSaving(false);
     }
@@ -178,11 +179,11 @@ export default function TimetablePage() {
     try {
       setRemoving(true);
       await api.delete(`/timetable/${existing.id}`);
-      toast('Timetable slot removed', 'success');
+      toast(t('slotRemoved'), 'success');
       closeCell();
       fetchGrid(selectedClassId);
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     } finally {
       setRemoving(false);
     }
@@ -194,7 +195,7 @@ export default function TimetablePage() {
   // Addendum — soft, non-blocking check: warn (don't prevent saving) when the
   // selected teacher has no TeacherSubject assignment matching this subject
   // + class, e.g. a substitute being slotted in ad hoc is still allowed.
-  const selectedTeacher = teachers.find((t) => t.id === formTeacherId);
+  const selectedTeacher = teachers.find((teacher) => teacher.id === formTeacherId);
   const isMismatch = Boolean(
     formTeacherId &&
       formSubjectId &&
@@ -210,10 +211,8 @@ export default function TimetablePage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl font-extrabold tracking-tight text-gray-900">Timetable</h1>
-          <p className="text-sm text-gray-500">
-            Manage the weekly period grid — which teacher teaches which subject, and when.
-          </p>
+          <h1 className="text-xl font-extrabold tracking-tight text-gray-900">{t('title')}</h1>
+          <p className="text-sm text-gray-500">{t('intro')}</p>
         </div>
       </div>
 
@@ -225,14 +224,14 @@ export default function TimetablePage() {
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
       ) : classes.length === 0 ? (
         <EmptyState
-          title="No classes yet"
-          description="Create a class first before building its timetable."
+          title={t('emptyTitle')}
+          description={t('emptyDescription')}
         />
       ) : (
         <div className="space-y-4">
           <div className="max-w-xs">
             <Select
-              label="Class"
+              label={t('class')}
               options={classOptions}
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
@@ -249,7 +248,7 @@ export default function TimetablePage() {
                 <thead className="bg-cream/60">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
-                      Period
+                      {t('period')}
                     </th>
                     {DAYS.map((d) => (
                       <th
@@ -284,7 +283,7 @@ export default function TimetablePage() {
                                   <div className="text-gray-500">{slot.teacher.name}</div>
                                 </>
                               ) : (
-                                '+ Add'
+                                t('addSlot')
                               )}
                             </button>
                           </td>
@@ -304,44 +303,46 @@ export default function TimetablePage() {
       <Modal
         open={!!activeCell}
         onClose={closeCell}
-        title={activeCell ? `${activeDayLabel} · Period ${activeCell.periodNumber}` : ''}
+        title={activeCell ? t('cellTitle', { day: activeDayLabel ?? '', n: activeCell.periodNumber }) : ''}
       >
         <div className="space-y-4">
           <Select
-            label="Subject" required
+            label={t('subject')} required
             options={subjectOptions}
-            placeholder="Select a subject"
+            placeholder={t('selectSubject')}
             value={formSubjectId}
             onChange={(e) => setFormSubjectId(e.target.value)}
           />
           <Select
-            label="Teacher" required
+            label={t('teacher')} required
             options={teacherOptions}
-            placeholder="Select a teacher"
+            placeholder={t('selectTeacher')}
             value={formTeacherId}
             onChange={(e) => setFormTeacherId(e.target.value)}
           />
           {isMismatch && (
             <div className="rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
-              ⚠ {selectedTeacher?.name} is not assigned to teach {selectedSubjectName} for{' '}
-              {selectedClassLabel ? classLabel(selectedClassLabel) : 'this class'} — you can still
-              save this slot.
+              {t('mismatch', {
+                teacher: selectedTeacher?.name ?? '',
+                subject: selectedSubjectName ?? '',
+                className: selectedClassLabel ? classLabel(selectedClassLabel) : t('thisClass'),
+              })}
             </div>
           )}
           <div className="flex items-center justify-between gap-3 pt-2">
             {activeSlot ? (
               <Button variant="danger" type="button" loading={removing} onClick={onRemoveCell}>
-                Remove
+                {t('remove')}
               </Button>
             ) : (
               <span />
             )}
             <div className="flex gap-3">
               <Button variant="secondary" type="button" onClick={closeCell}>
-                Cancel
+                {tCommon('cancel')}
               </Button>
               <Button type="button" loading={saving} onClick={onSaveCell}>
-                Save
+                {tCommon('save')}
               </Button>
             </div>
           </div>
@@ -359,7 +360,8 @@ interface PeriodTiming {
 
 /** Bell schedule editor — drives the teacher app's "Now / Next" strip. */
 function PeriodTimingsSection() {
-  const t = strings.periodTimings;
+  const t = useTranslations('periodTimings');
+  const errorText = useErrorText();
   const { toast } = useToast();
   const [rows, setRows] = useState<Record<number, { start: string; end: string }>>({});
   const [saving, setSaving] = useState(false);
@@ -381,7 +383,7 @@ function PeriodTimingsSection() {
       const r = rows[p];
       if (!r || (!r.start && !r.end)) continue;
       if (!r.start || !r.end) {
-        toast(t.incomplete(p), 'error');
+        toast(t('incomplete', { n: p }), 'error');
         return;
       }
       periods.push({ periodNumber: p, startTime: r.start, endTime: r.end });
@@ -389,9 +391,9 @@ function PeriodTimingsSection() {
     setSaving(true);
     try {
       await api.put('/timetable/period-timings', { periods });
-      toast(t.saved, 'success');
+      toast(t('saved'), 'success');
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     } finally {
       setSaving(false);
     }
@@ -399,16 +401,16 @@ function PeriodTimingsSection() {
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-      <h2 className="text-base font-semibold text-gray-900">{t.title}</h2>
-      <p className="mt-1 text-sm text-gray-500">{t.help}</p>
+      <h2 className="text-base font-semibold text-gray-900">{t('title')}</h2>
+      <p className="mt-1 text-sm text-gray-500">{t('help')}</p>
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {PERIODS.map((p) => (
           <div key={p} className="rounded-xl border border-gray-100 p-3">
-            <p className="text-xs font-semibold text-gray-500">{t.period(p)}</p>
+            <p className="text-xs font-semibold text-gray-500">{t('period', { n: p })}</p>
             <div className="mt-2 flex items-center gap-2">
               <input
                 type="time"
-                aria-label={`${t.period(p)} ${t.start}`}
+                aria-label={t('startOf', { n: p })}
                 value={rows[p]?.start ?? ''}
                 onChange={(e) => update(p, 'start', e.target.value)}
                 className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
@@ -416,7 +418,7 @@ function PeriodTimingsSection() {
               <span className="text-gray-400">–</span>
               <input
                 type="time"
-                aria-label={`${t.period(p)} ${t.end}`}
+                aria-label={t('endOf', { n: p })}
                 value={rows[p]?.end ?? ''}
                 onChange={(e) => update(p, 'end', e.target.value)}
                 className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
@@ -427,7 +429,7 @@ function PeriodTimingsSection() {
       </div>
       <div className="mt-4 flex justify-end">
         <Button onClick={save} loading={saving}>
-          {t.save}
+          {t('save')}
         </Button>
       </div>
     </div>

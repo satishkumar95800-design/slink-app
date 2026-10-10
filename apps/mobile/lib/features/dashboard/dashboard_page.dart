@@ -8,7 +8,7 @@ import '../classes/classes_repository.dart';
 import 'students_repository.dart';
 import 'today_strip.dart';
 import '../home/parent_home_body.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
 import '../attendance/attendance_outbox.dart';
 import '../attendance/attendance_repository.dart';
 import '../attendance/attendance_status_colors.dart';
@@ -21,15 +21,16 @@ class DashboardPage extends ConsumerWidget {
     final session = ref.watch(sessionControllerProvider);
     final user = session.user;
     final isTeacher = user?.role == UserRole.teacher;
+    final l = context.l10n;
 
     return AuthenticatedScaffold(
       appBar: AppBar(
-        title: Text(user != null ? 'Hi, ${user.name}' : AppStrings.appName),
+        title: Text(user != null ? l.dashboardGreeting(user.name) : l.appName),
         actions: [
           if (user != null)
             IconButton(
               icon: const Icon(Icons.person_outline),
-              tooltip: 'Profile',
+              tooltip: l.profileTitle,
               onPressed: () => context.push('/profile'),
             ),
         ],
@@ -53,11 +54,11 @@ class _ParentDashboardBody extends ConsumerWidget {
     return childrenAsync.when(
       data: (children) {
         if (children.isEmpty) {
-          return const Center(
+          return Center(
             child: Padding(
-              padding: EdgeInsets.all(24),
+              padding: const EdgeInsets.all(24),
               child: Text(
-                "No children are linked to your account yet. Please contact the school office.",
+                context.l10n.dashboardNoChildren,
                 textAlign: TextAlign.center,
               ),
             ),
@@ -69,7 +70,7 @@ class _ParentDashboardBody extends ConsumerWidget {
       error: (error, _) => Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Text('Could not load your children.\n$error',
+          child: Text('${context.l10n.dashboardCouldNotLoadChildren}\n$error',
               textAlign: TextAlign.center),
         ),
       ),
@@ -89,6 +90,7 @@ class _TeacherDashboardBody extends ConsumerWidget {
         classesAsync.valueOrNull?.any((c) => c.isClassTeacherFor(user.id)) ??
             false;
     final hasAnyClass = classesAsync.valueOrNull?.isNotEmpty ?? false;
+    final l = context.l10n;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -102,10 +104,10 @@ class _TeacherDashboardBody extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Teacher dashboard',
+            Text(l.teacherDashboardTitle,
                 style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
-            Text('Signed in as ${user.name}',
+            Text(l.teacherSignedInAs(user.name),
                 style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 24),
             const TodayStrip(),
@@ -113,8 +115,8 @@ class _TeacherDashboardBody extends ConsumerWidget {
             if (hasAnyClass) ...[
               _NavCard(
                 icon: Icons.camera_alt_outlined,
-                title: AppStrings.sendHomework,
-                subtitle: AppStrings.sendHomeworkSubtitle,
+                title: l.teacherSendHomework,
+                subtitle: l.teacherSendHomeworkSubtitle,
                 onTap: () => context.push('/homework/send'),
               ),
               const SizedBox(height: 12),
@@ -122,39 +124,39 @@ class _TeacherDashboardBody extends ConsumerWidget {
             if (isClassTeacherOfAny) ...[
               _NavCard(
                 icon: Icons.campaign_outlined,
-                title: AppStrings.sendNotice,
-                subtitle: AppStrings.sendNoticeSubtitle,
+                title: l.teacherSendNotice,
+                subtitle: l.teacherSendNoticeSubtitle,
                 onTap: () => context.push('/notices/send'),
               ),
               const SizedBox(height: 12),
             ],
             _NavCard(
               icon: Icons.assignment,
-              title: AppStrings.reportsCard,
-              subtitle: AppStrings.reportsCardSubtitle,
+              title: l.teacherReports,
+              subtitle: l.teacherReportsSubtitle,
               onTap: () => context.push('/dashboard/reports'),
             ),
             const SizedBox(height: 12),
             if (hasAnyClass) ...[
               _NavCard(
                 icon: Icons.sticky_note_2_outlined,
-                title: AppStrings.addStudentNote,
-                subtitle: AppStrings.addStudentNoteSubtitle,
+                title: l.teacherAddStudentNote,
+                subtitle: l.teacherAddStudentNoteSubtitle,
                 onTap: () => context.push('/student-notes/add'),
               ),
               const SizedBox(height: 12),
             ],
             _NavCard(
               icon: Icons.calendar_view_week,
-              title: AppStrings.weeklyRoutine,
-              subtitle: AppStrings.weeklyRoutineSubtitle,
+              title: l.teacherWeeklyRoutine,
+              subtitle: l.teacherWeeklyRoutineSubtitle,
               onTap: () => context.push('/dashboard/routine'),
             ),
             const SizedBox(height: 12),
             _NavCard(
               icon: Icons.groups_outlined,
-              title: AppStrings.aboutMyClasses,
-              subtitle: AppStrings.aboutMyClassesSubtitle,
+              title: l.teacherAboutMyClasses,
+              subtitle: l.teacherAboutMyClassesSubtitle,
               onTap: () => context.push('/dashboard/my-classes'),
             ),
           ],
@@ -208,17 +210,18 @@ class _MarkAttendanceCard extends ConsumerWidget {
     if (data != null && data.classes.isEmpty) return const SizedBox.shrink();
 
     final done = data?.allDone ?? false;
+    final l = context.l10n;
     final String subtitle;
     if (waiting) {
-      subtitle = AppStrings.pendingSend;
+      subtitle = l.attendancePendingSend;
     } else if (data?.holidayName != null) {
-      subtitle = AppStrings.holidayToday(data!.holidayName!);
+      subtitle = l.attendanceHolidayToday(data!.holidayName!);
     } else if (done) {
-      subtitle = AppStrings.doneForToday;
+      subtitle = l.attendanceDoneForToday;
     } else if (data != null && data.classes.length > 1 && data.doneCount > 0) {
-      subtitle = AppStrings.doneForClasses(data.doneCount, data.classes.length);
+      subtitle = l.attendanceDoneForClasses(data.doneCount, data.classes.length);
     } else {
-      subtitle = AppStrings.markAttendanceSubtitle;
+      subtitle = l.attendanceMarkSubtitle;
     }
 
     return Padding(
@@ -231,7 +234,7 @@ class _MarkAttendanceCard extends ConsumerWidget {
             size: 32,
             color: done ? AttendanceColors.present : null,
           ),
-          title: Text(AppStrings.markAttendance,
+          title: Text(l.attendanceMark,
               style: Theme.of(context).textTheme.titleMedium),
           subtitle: Text(subtitle),
           trailing: const Icon(Icons.chevron_right),

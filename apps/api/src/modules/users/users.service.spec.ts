@@ -311,10 +311,41 @@ describe('UsersService', () => {
 
   describe('getMe', () => {
     it('returns own profile', async () => {
-      mockPrisma.user.findUniqueOrThrow.mockResolvedValue(makeUser());
+      mockPrisma.user.findUniqueOrThrow.mockResolvedValue({
+        ...makeUser(),
+        tenant: { defaultLanguage: 'kn' },
+      });
 
       const result = await service.getMe('user-uuid');
       expect(result.id).toBe('user-uuid');
+      expect(result.language).toBe('kn'); // no own pick → school default
+      expect(result).not.toHaveProperty('tenant');
+    });
+
+    it("prefers the user's own language over the school default", async () => {
+      mockPrisma.user.findUniqueOrThrow.mockResolvedValue({
+        ...makeUser(),
+        preferredLanguage: 'hi',
+        tenant: { defaultLanguage: 'kn' },
+      });
+
+      expect((await service.getMe('user-uuid')).language).toBe('hi');
+    });
+  });
+
+  describe('updateMyLanguage', () => {
+    it('saves the choice on the caller only', async () => {
+      mockPrisma.user.update.mockResolvedValue({ preferredLanguage: 'kn' });
+
+      const result = await service.updateMyLanguage('user-uuid', 'kn');
+
+      expect(mockPrisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'user-uuid' },
+          data: { preferredLanguage: 'kn' },
+        }),
+      );
+      expect(result).toEqual({ preferredLanguage: 'kn', language: 'kn' });
     });
   });
 

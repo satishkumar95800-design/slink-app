@@ -1,0 +1,9 @@
+# Interface languages (docs/SPEC-languages.md). English is the source of truth;
+# any key missing from app_kn.arb / app_hi.arb falls back to English at build
+# time and is listed in l10n_untranslated.json (gitignored) for the translators.
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false
+untranslated-messages-file: l10n_untranslated.json

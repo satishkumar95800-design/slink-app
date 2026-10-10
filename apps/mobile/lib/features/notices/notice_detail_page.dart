@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
 import '../../shared/services/broadcast_repository.dart';
 
 class NoticeAttachment {
@@ -68,7 +68,7 @@ class _NoticeDetailPageState extends ConsumerState<NoticeDetailPage> {
                 OutlinedButton.icon(
                   onPressed: () => launchUrl(Uri.parse(a.url), mode: LaunchMode.externalApplication),
                   icon: const Icon(Icons.picture_as_pdf_outlined),
-                  label: const Text(AppStrings.openPdf),
+                  label: Text(context.l10n.noticeOpenPdf),
                 )
               else
                 ClipRRect(

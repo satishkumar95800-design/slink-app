@@ -17,6 +17,7 @@ const mockUser = {
   passwordHash: null,
   fcmTokens: [],
   isVerified: true,
+  preferredLanguage: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -26,6 +27,9 @@ const prismaMock = {
     findUnique: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+  },
+  tenant: {
+    findUnique: jest.fn(),
   },
   refreshToken: {
     create: jest.fn(),
@@ -82,6 +86,41 @@ describe('AuthService', () => {
       ).rejects.toThrow(ForbiddenException);
 
       expect(prismaMock.user.create).not.toHaveBeenCalled();
+    });
+
+    it("signs in with the school's default language when the user hasn't picked one", async () => {
+      firebaseMock.verifyIdToken.mockResolvedValue({ phone_number: '+911234567890' });
+      prismaMock.user.findUnique.mockResolvedValue(mockUser);
+      prismaMock.tenant.findUnique.mockResolvedValue({ defaultLanguage: 'kn' });
+      prismaMock.refreshToken.create.mockResolvedValue({});
+
+      const result = await service.verifyPhoneOtp('tenant-uuid', { firebaseIdToken: 'firebase.id.token' });
+
+      expect(result.user.preferredLanguage).toBeNull();
+      expect(result.user.language).toBe('kn');
+    });
+
+    it("signs in with the user's own language on a new device", async () => {
+      firebaseMock.verifyIdToken.mockResolvedValue({ phone_number: '+911234567890' });
+      prismaMock.user.findUnique.mockResolvedValue({ ...mockUser, preferredLanguage: 'hi' });
+      prismaMock.refreshToken.create.mockResolvedValue({});
+
+      const result = await service.verifyPhoneOtp('tenant-uuid', { firebaseIdToken: 'firebase.id.token' });
+
+      expect(result.user.language).toBe('hi');
+      expect(prismaMock.tenant.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('tags an unregistered phone with PHONE_NOT_REGISTERED so apps can translate it', async () => {
+      firebaseMock.verifyIdToken.mockResolvedValue({ phone_number: '+911234567890' });
+      prismaMock.user.findUnique.mockResolvedValue(null);
+
+      const err = await service
+        .verifyPhoneOtp('tenant-uuid', { firebaseIdToken: 'firebase.id.token' })
+        .catch((e: ForbiddenException) => e);
+
+      expect(err).toBeInstanceOf(ForbiddenException);
+      expect((err as ForbiddenException).getResponse()).toMatchObject({ code: 'PHONE_NOT_REGISTERED' });
     });
 
     it('returns tokens for existing verified user without re-creating', async () => {

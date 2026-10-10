@@ -20,14 +20,20 @@
   --color-coral-dark: var(--coral-dark);
   --color-teal: var(--teal);
   --color-teal-light: var(--teal-light);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-geist-sans), var(--font-noto-kannada), var(--font-noto-devanagari);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), var(--font-noto-kannada), var(--font-noto-devanagari), Arial, Helvetica, sans-serif;
+}
+
+/* Kannada and Devanagari vowel signs sit above and below the line — give them room. */
+html:lang(kn) body,
+html:lang(hi) body {
+  line-height: 1.5;
 }
 
 @keyframes marquee-scroll {

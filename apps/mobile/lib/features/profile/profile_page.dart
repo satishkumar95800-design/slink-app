@@ -4,7 +4,9 @@ import '../../shared/models/active_user.dart';
 import '../../shared/services/branding_repository.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
 import '../auth/session_controller.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
+import '../../core/l10n/language_controller.dart';
+import '../../shared/widgets/language_picker.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -13,15 +15,17 @@ class ProfilePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(sessionControllerProvider).user;
     final schoolName = ref.watch(brandingProvider).valueOrNull?.name;
+    final locale = ref.watch(languageControllerProvider);
+    final l = context.l10n;
 
     if (user == null) {
-      return const Scaffold(
-        body: Center(child: Text('No user profile available.')),
+      return Scaffold(
+        body: Center(child: Text(l.profileNoUser)),
       );
     }
 
     return AuthenticatedScaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(title: Text(l.profileTitle)),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -48,25 +52,34 @@ class ProfilePage extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  _roleLabel(user.role),
+                  _roleLabel(l, user.role),
                   style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),
               const SizedBox(height: 24),
-              if (schoolName != null) _InfoRow(label: 'School', value: schoolName),
+              if (schoolName != null) _InfoRow(label: l.profileSchool, value: schoolName),
+              const SizedBox(height: 8),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.language),
+                title: Text(l.languageTitle),
+                subtitle: Text(languageNativeName(locale)),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => showLanguagePicker(context, ref, signedIn: true),
+              ),
               const Spacer(),
               const Divider(height: 32),
               ListTile(
                 leading: const Icon(Icons.logout),
-                title: const Text(AppStrings.logout),
+                title: Text(l.profileLogout),
                 onTap: () async {
                   final ok = await showDialog<bool>(
                     context: context,
                     builder: (context) => AlertDialog(
-                      content: const Text(AppStrings.logoutConfirm),
+                      content: Text(l.profileLogoutConfirm),
                       actions: [
-                        TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text(AppStrings.cancel)),
-                        FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text(AppStrings.logout)),
+                        TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l.commonCancel)),
+                        FilledButton(onPressed: () => Navigator.of(context).pop(true), child: Text(l.profileLogout)),
                       ],
                     ),
                   );
@@ -80,20 +93,13 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 
-  String _roleLabel(UserRole role) {
-    switch (role) {
-      case UserRole.parent:
-        return 'Parent';
-      case UserRole.teacher:
-        return 'Teacher';
-      case UserRole.admin:
-        return 'Admin';
-      case UserRole.accounts:
-        return 'Accounts';
-      case UserRole.superAdmin:
-        return 'Super admin';
-    }
-  }
+  String _roleLabel(AppLocalizations l, UserRole role) => switch (role) {
+        UserRole.parent => l.roleParent,
+        UserRole.teacher => l.roleTeacher,
+        UserRole.admin => l.roleAdmin,
+        UserRole.accounts => l.roleAccounts,
+        UserRole.superAdmin => l.roleSuperAdmin,
+      };
 }
 
 class _InfoRow extends StatelessWidget {

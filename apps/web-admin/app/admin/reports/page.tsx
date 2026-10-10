@@ -1,7 +1,11 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
-import { api, apiUpload, ApiError } from '../../../lib/api-client';
+import { api, apiUpload } from '../../../lib/api-client';
+import { useErrorText } from '../../../lib/i18n/errors';
+import { reportStatusLabel, reportTypeLabel } from '../../../lib/i18n/labels';
+import { formatDate } from '../../../lib/format';
 import { getSession } from '../../../lib/auth';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -48,6 +52,10 @@ const typeVariant = (t: string): 'blue' | 'orange' | 'yellow' | 'gray' | 'red' =
 };
 
 export default function ReportsPage() {
+  const t = useTranslations('reports');
+  const tType = useTranslations('reportType');
+  const tStatus = useTranslations('reportStatus');
+  const errorText = useErrorText();
   const { toast } = useToast();
   const [reports, setReports] = useState<Report[]>([]);
   const [total, setTotal] = useState(0);
@@ -65,7 +73,7 @@ export default function ReportsPage() {
       setReports(res.data);
       setTotal(res.total);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorText(e));
     } finally {
       setLoading(false);
     }
@@ -78,20 +86,20 @@ export default function ReportsPage() {
   async function onPublish(id: string) {
     try {
       await api.post(`/reports/${id}/publish`, {});
-      toast('Report published', 'success');
+      toast(t('published'), 'success');
       fetchReports();
     } catch (e) {
-      toast(e instanceof ApiError ? e.message : 'Could not publish report', 'error');
+      toast(errorText(e, t('publishFailed')), 'error');
     }
   }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-gray-500">{total} report{total !== 1 ? 's' : ''}</p>
+        <p className="text-sm text-gray-500">{t('count', { count: total })}</p>
         {isTeacher && (
           <Button type="button" onClick={() => setUploadOpen(true)}>
-            Upload Report Card
+            {t('upload')}
           </Button>
         )}
       </div>
@@ -104,16 +112,16 @@ export default function ReportsPage() {
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
       ) : reports.length === 0 ? (
         <EmptyState
-          title="No reports"
-          description="Progress reports created by teachers will appear here."
+          title={t('emptyTitle')}
+          description={t('emptyDescription')}
         />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-cream/60">
               <tr>
-                {['Term', 'Academic Year', 'Student', 'Type', 'Author', 'Status', 'Published', 'Created', ''].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
+                {[t('colTerm'), t('colYear'), t('colStudent'), t('colType'), t('colAuthor'), t('colStatus'), t('colPublished'), t('colCreated'), ''].map((h, i) => (
+                  <th key={i} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
                     {h}
                   </th>
                 ))}
@@ -129,17 +137,17 @@ export default function ReportsPage() {
                     <p className="text-xs text-gray-500">{r.student?.admissionNo ?? ''}</p>
                   </td>
                   <td className="px-6 py-4">
-                    <Badge variant={typeVariant(r.type)}>{r.type}</Badge>
+                    <Badge variant={typeVariant(r.type)}>{reportTypeLabel(tType, r.type)}</Badge>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{r.teacher?.name ?? '—'}</td>
                   <td className="px-6 py-4">
-                    <Badge variant={statusVariant(r.status)}>{r.status}</Badge>
+                    <Badge variant={statusVariant(r.status)}>{reportStatusLabel(tStatus, r.status)}</Badge>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
-                    {r.publishedAt ? new Date(r.publishedAt).toLocaleDateString('en-IN') : '—'}
+                    {r.publishedAt ? formatDate(r.publishedAt) : '—'}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
-                    {new Date(r.createdAt).toLocaleDateString('en-IN')}
+                    {formatDate(r.createdAt)}
                   </td>
                   <td className="px-6 py-4 text-sm">
                     {isTeacher && r.status === 'draft' && r.teacher?.id === session?.id && (
@@ -148,7 +156,7 @@ export default function ReportsPage() {
                         onClick={() => onPublish(r.id)}
                         className="text-teal hover:text-coral-dark font-medium"
                       >
-                        Publish
+                        {t('publish')}
                       </button>
                     )}
                   </td>
@@ -173,6 +181,9 @@ export default function ReportsPage() {
 }
 
 function UploadReportCardModal({ onClose, onUploaded }: { onClose: () => void; onUploaded: () => void }) {
+  const t = useTranslations('reports');
+  const tCommon = useTranslations('common');
+  const errorText = useErrorText();
   const { toast } = useToast();
   const [students, setStudents] = useState<StudentOption[]>([]);
   const [studentId, setStudentId] = useState('');
@@ -188,7 +199,7 @@ function UploadReportCardModal({ onClose, onUploaded }: { onClose: () => void; o
         const res = await api.get<{ data: StudentOption[] }>('/students?limit=200');
         setStudents(res.data);
       } catch (e) {
-        toast(e instanceof ApiError ? e.message : 'Could not load students', 'error');
+        toast(errorText(e, t('studentsFailed')), 'error');
       }
     }
     fetchStudents();
@@ -197,11 +208,11 @@ function UploadReportCardModal({ onClose, onUploaded }: { onClose: () => void; o
 
   async function onSubmit() {
     if (!studentId || !term || !academicYear || !file) {
-      toast('Fill in all fields and choose a PDF', 'error');
+      toast(t('fillAll'), 'error');
       return;
     }
     if (!/^\d{4}-\d{2}$/.test(academicYear)) {
-      toast('Academic year must be in format YYYY-YY, e.g. 2026-27', 'error');
+      toast(t('yearFormat'), 'error');
       return;
     }
     try {
@@ -221,34 +232,34 @@ function UploadReportCardModal({ onClose, onUploaded }: { onClose: () => void; o
       if (publishNow) {
         await api.post(`/reports/${report.id}/publish`, {});
       }
-      toast('Report card uploaded', 'success');
+      toast(t('uploaded'), 'success');
       onUploaded();
     } catch (e) {
-      toast(e instanceof ApiError ? e.message : 'Could not upload report card', 'error');
+      toast(errorText(e, t('uploadFailed')), 'error');
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <Modal open onClose={onClose} title="Upload Report Card">
+    <Modal open onClose={onClose} title={t('uploadTitle')}>
       <div className="space-y-4">
         <Select
-          label="Student" required
-          placeholder="Select a student"
+          label={t('student')} required
+          placeholder={t('selectStudent')}
           value={studentId}
           onChange={(e) => setStudentId(e.target.value)}
           options={students.map((s) => ({ value: s.id, label: `${s.name} (${s.admissionNo})` }))}
         />
-        <Input label="Term" required value={term} onChange={(e) => setTerm(e.target.value)} placeholder="e.g. Term 1" />
+        <Input label={t('term')} required value={term} onChange={(e) => setTerm(e.target.value)} placeholder={t('termPlaceholder')} />
         <Input
-          label="Academic Year" required
+          label={t('academicYear')} required
           value={academicYear}
           onChange={(e) => setAcademicYear(e.target.value)}
-          placeholder="e.g. 2026-27"
+          placeholder={t('academicYearPlaceholder')}
         />
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700">Report Card (PDF)<span className="ml-0.5 text-red-500" aria-hidden="true">*</span></label>
+          <label className="text-sm font-medium text-gray-700">{t('pdf')}<span className="ml-0.5 text-red-500" aria-hidden="true">*</span></label>
           <input
             type="file"
             accept="application/pdf"
@@ -258,14 +269,14 @@ function UploadReportCardModal({ onClose, onUploaded }: { onClose: () => void; o
         </div>
         <label className="flex items-center gap-2 text-sm text-gray-700">
           <input type="checkbox" checked={publishNow} onChange={(e) => setPublishNow(e.target.checked)} />
-          Publish now (parent can see it immediately)
+          {t('publishNow')}
         </label>
         <div className="flex justify-end gap-3 pt-2">
           <Button variant="secondary" type="button" onClick={onClose}>
-            Cancel
+            {tCommon('cancel')}
           </Button>
           <Button type="button" loading={submitting} onClick={onSubmit}>
-            Upload
+            {t('uploadSubmit')}
           </Button>
         </div>
       </div>

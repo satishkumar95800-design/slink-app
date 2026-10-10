@@ -8,7 +8,8 @@
     "postbuild": "cp -r public .next/standalone/apps/web-admin/public && mkdir -p .next/standalone/apps/web-admin/.next && cp -r .next/static .next/standalone/apps/web-admin/.next/static",
     "start": "next start",
     "start:standalone": "node .next/standalone/apps/web-admin/server.js",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:i18n": "node scripts/check-i18n.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",
@@ -16,6 +17,7 @@
     "@slink/types": "*",
     "lucide-react": "^1.47.0",
     "next": "16.3.0",
+    "next-intl": "^4.14.9",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-hook-form": "^7.84.0",

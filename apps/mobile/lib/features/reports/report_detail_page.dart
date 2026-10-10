@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/l10n/l10n.dart';
 import '../../shared/models/report.dart';
+import 'report_labels.dart';
 import 'reports_repository.dart';
 
 class ReportDetailPage extends ConsumerStatefulWidget {
@@ -31,8 +33,9 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     return Scaffold(
-      appBar: AppBar(title: const Text('Report')),
+      appBar: AppBar(title: Text(l.reportTitle)),
       body: FutureBuilder<Report>(
         future: _reportFuture,
         builder: (context, snapshot) {
@@ -40,7 +43,7 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError || !snapshot.hasData) {
-            return const Center(child: Text('Could not load this report.'));
+            return Center(child: Text(l.reportCouldNotLoad));
           }
 
           final report = snapshot.data!;
@@ -51,9 +54,9 @@ class _ReportDetailPageState extends ConsumerState<ReportDetailPage> {
               padding: const EdgeInsets.all(24),
               children: [
                 Text(report.term, style: Theme.of(context).textTheme.headlineSmall),
-                Text('${report.academicYear} • ${report.type.name}'),
+                Text('${report.academicYear} • ${reportTypeLabel(l, report.type)}'),
                 const SizedBox(height: 8),
-                Text('By ${report.teacher.name}', style: Theme.of(context).textTheme.bodySmall),
+                Text(l.reportBy(report.teacher.name), style: Theme.of(context).textTheme.bodySmall),
                 const Divider(height: 32),
                 ...report.content.entries.map(
                   (entry) => Padding(

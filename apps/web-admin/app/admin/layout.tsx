@@ -8,6 +8,9 @@ import { ChangePasswordModal } from '../../components/layout/change-password-mod
 import { isLoggedIn } from '../../lib/auth';
 import { ToastProvider } from '../../components/ui/toast';
 import { api } from '../../lib/api-client';
+import { useTranslations } from 'next-intl';
+import { ConsoleI18nProvider } from '../../lib/i18n/provider';
+import { LanguageSwitcher } from '../../components/layout/language-switcher';
 
 interface TenantBrand {
   id: string;
@@ -16,21 +19,31 @@ interface TenantBrand {
   backgroundImageUrl: string | null;
 }
 
-const ROUTE_TITLES: Record<string, string> = {
-  '/admin': 'Dashboard',
-  '/admin/users': 'Users',
-  '/admin/students': 'Students',
-  '/admin/classes': 'Classes',
-  '/admin/fees': 'Fee Structures',
-  '/admin/student-fees': 'Student Fees',
-  '/admin/payments': 'Payments',
-  '/admin/fee-reports': 'Fee Reports',
-  '/admin/reports': 'Reports',
-  '/admin/import': 'Import Data',
-  '/admin/settings': 'Settings',
-};
+/** Header title (shown when the school's name hasn't loaded) — keys into messages "nav". */
+const ROUTE_TITLES = {
+  '/admin': 'dashboard',
+  '/admin/users': 'users',
+  '/admin/students': 'students',
+  '/admin/classes': 'classes',
+  '/admin/fees': 'fees',
+  '/admin/student-fees': 'studentFees',
+  '/admin/payments': 'payments',
+  '/admin/fee-reports': 'feeReports',
+  '/admin/reports': 'reports',
+  '/admin/import': 'import',
+  '/admin/settings': 'settings',
+} as const;
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
+  return (
+    <ConsoleI18nProvider>
+      <AdminShell>{children}</AdminShell>
+    </ConsoleI18nProvider>
+  );
+}
+
+function AdminShell({ children }: { children: ReactNode }) {
+  const t = useTranslations('nav');
   const router = useRouter();
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
@@ -60,7 +73,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  const title = ROUTE_TITLES[pathname] ?? 'Admin';
+  const titleKey = ROUTE_TITLES[pathname as keyof typeof ROUTE_TITLES];
+  const title = titleKey ? t(titleKey) : t('admin');
 
   return (
     <ToastProvider>
@@ -73,7 +87,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 type="button"
                 onClick={() => setNavOpen(true)}
                 className="-ml-1 rounded-md p-2 text-gray-600 hover:bg-gray-100 lg:hidden"
-                aria-label="Open navigation menu"
+                aria-label={t('openMenu')}
               >
                 <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                   <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm1 4a1 1 0 100 2h12a1 1 0 100-2H4z" clipRule="evenodd" />
@@ -109,6 +123,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 }
 
 function LogoutButton() {
+  const t = useTranslations('header');
+  const tRoles = useTranslations('roles');
   const router = useRouter();
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -124,7 +140,10 @@ function LogoutButton() {
   }, []);
 
   function handleLogout() {
+    // Keep the language: the login page should stay in the language they use.
+    const language = localStorage.getItem('slink_language');
     localStorage.clear();
+    if (language) localStorage.setItem('slink_language', language);
     document.cookie = 'slink_authed=; path=/; max-age=0';
     router.push('/login');
   }
@@ -136,22 +155,32 @@ function LogoutButton() {
       {user && (
         <div className="hidden text-right md:block">
           <p className="text-sm font-medium text-gray-900">{user.name}</p>
-          <p className="text-xs text-gray-500 capitalize">{user.role.replace('_', ' ')}</p>
+          <p className="text-xs text-gray-500">{roleLabel(tRoles, user.role)}</p>
         </div>
       )}
+      {/* Phones get the switcher in the slide-out menu instead — the header has no room. */}
+      <span className="hidden sm:block">
+        <LanguageSwitcher signedIn />
+      </span>
       <button
         onClick={() => setShowChangePassword(true)}
         className="whitespace-nowrap rounded-full border border-gray-300 bg-white px-2 py-1.5 text-xs font-medium sm:px-3 sm:text-sm text-gray-700 hover:bg-cream transition-colors cursor-pointer"
       >
-        Change Password
+        {t('changePassword')}
       </button>
       <button
         onClick={handleLogout}
         className="whitespace-nowrap rounded-full border border-gray-300 bg-white px-2 py-1.5 text-xs font-medium sm:px-3 sm:text-sm text-gray-700 hover:bg-cream transition-colors cursor-pointer"
       >
-        Logout
+        {t('logout')}
       </button>
       <ChangePasswordModal open={showChangePassword} onClose={() => setShowChangePassword(false)} />
     </div>
   );
+}
+
+const ROLE_KEYS = ['parent', 'teacher', 'admin', 'accounts', 'super_admin'] as const;
+
+function roleLabel(t: ReturnType<typeof useTranslations<'roles'>>, role: string) {
+  return (ROLE_KEYS as readonly string[]).includes(role) ? t(role as (typeof ROLE_KEYS)[number]) : role;
 }

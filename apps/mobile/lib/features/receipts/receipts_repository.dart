@@ -4,7 +4,7 @@ import '../../shared/models/receipt.dart';
 import '../../shared/services/api_client.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
 
 class ReceiptsRepository {
   final Dio _dio;
@@ -43,12 +43,13 @@ class ReceiptsRepository {
 /// Opens a receipt PDF in the phone's browser/PDF viewer, which can save or share it.
 Future<void> openReceiptPdf(WidgetRef ref, BuildContext context, String receiptId) async {
   final messenger = ScaffoldMessenger.of(context);
+  final message = context.l10n.receiptCouldNotOpen;
   try {
     final uri = await ref.read(receiptsRepositoryProvider).getPdfLink(receiptId);
     final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!opened) throw Exception('No app could open the PDF');
   } catch (_) {
-    messenger.showSnackBar(const SnackBar(content: Text(AppStrings.couldNotOpenReceipt)));
+    messenger.showSnackBar(SnackBar(content: Text(message)));
   }
 }
 

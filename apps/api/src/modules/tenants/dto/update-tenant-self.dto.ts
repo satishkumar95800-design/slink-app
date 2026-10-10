@@ -9,8 +9,11 @@ import {
   IsHexColor,
   ValidateNested,
   IsPhoneNumber,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { SUPPORTED_LANGUAGES } from '../../../common/i18n/languages';
+import type { Language } from '../../../common/i18n/languages';
 
 export class BrandingDto {
   @IsString()
@@ -63,6 +66,11 @@ export class UpdateTenantSelfDto {
   @MaxLength(30)
   @IsOptional()
   classLabel?: string;
+
+  /** Language for parents and teachers who haven't picked one; never overrides a user's own choice. */
+  @IsIn(SUPPORTED_LANGUAGES)
+  @IsOptional()
+  defaultLanguage?: Language;
 
   /** S3 key for the tenant logo (returned by POST /files/upload with category=logo) */
   @IsString()

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../l10n/language_controller.dart';
 
 /// Brand palette — shared with the web landing page (cream + coral + deep teal).
 class AppColors {
@@ -17,7 +18,31 @@ class AppThemeData {
   const AppThemeData({required this.lightTheme, required this.darkTheme});
 }
 
-ThemeData _build(Brightness brightness) {
+/// The app uses the platform font (no custom font), so Kannada and Devanagari use
+/// the OS's own fallbacks (Noto on Android, Kannada Sangam / Kohinoor on iOS) —
+/// no fontFamilyFallback needed; setting one also replaced the Latin UI font on iOS.
+///
+/// Kannada and Devanagari vowel signs sit above and below the line; a 1.5 line
+/// height keeps them from being clipped.
+TextTheme _withLineHeight(TextTheme t, double h) => TextTheme(
+      displayLarge: t.displayLarge?.copyWith(height: h),
+      displayMedium: t.displayMedium?.copyWith(height: h),
+      displaySmall: t.displaySmall?.copyWith(height: h),
+      headlineLarge: t.headlineLarge?.copyWith(height: h),
+      headlineMedium: t.headlineMedium?.copyWith(height: h),
+      headlineSmall: t.headlineSmall?.copyWith(height: h),
+      titleLarge: t.titleLarge?.copyWith(height: h),
+      titleMedium: t.titleMedium?.copyWith(height: h),
+      titleSmall: t.titleSmall?.copyWith(height: h),
+      bodyLarge: t.bodyLarge?.copyWith(height: h),
+      bodyMedium: t.bodyMedium?.copyWith(height: h),
+      bodySmall: t.bodySmall?.copyWith(height: h),
+      labelLarge: t.labelLarge?.copyWith(height: h),
+      labelMedium: t.labelMedium?.copyWith(height: h),
+      labelSmall: t.labelSmall?.copyWith(height: h),
+    );
+
+ThemeData _build(Brightness brightness, {required bool indicScript}) {
   final dark = brightness == Brightness.dark;
 
   final scheme = ColorScheme.fromSeed(
@@ -58,10 +83,13 @@ ThemeData _build(Brightness brightness) {
         color: Colors.white,
       ),
     ),
-    textTheme: ThemeData(brightness: brightness).textTheme.apply(
-          bodyColor: onSurface,
-          displayColor: onSurface,
-        ),
+    textTheme: () {
+      final base = ThemeData(brightness: brightness).textTheme.apply(
+            bodyColor: onSurface,
+            displayColor: onSurface,
+          );
+      return indicScript ? _withLineHeight(base, 1.5) : base;
+    }(),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: scheme.primary,
@@ -165,8 +193,9 @@ ThemeData _build(Brightness brightness) {
 }
 
 final appThemeProvider = Provider<AppThemeData>((ref) {
+  final indicScript = ref.watch(languageControllerProvider).languageCode != 'en';
   return AppThemeData(
-    lightTheme: _build(Brightness.light),
-    darkTheme: _build(Brightness.dark),
+    lightTheme: _build(Brightness.light, indicScript: indicScript),
+    darkTheme: _build(Brightness.dark, indicScript: indicScript),
   );
 });

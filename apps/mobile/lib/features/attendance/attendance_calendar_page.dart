@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
 import 'attendance_models.dart';
 import 'attendance_repository.dart';
@@ -31,7 +31,8 @@ class _AttendanceCalendarPageState extends ConsumerState<AttendanceCalendarPage>
   void _shiftMonth(String current, int delta) {
     final parts = current.split('-').map(int.parse).toList();
     final shifted = DateTime(parts[0], parts[1] + delta);
-    setState(() => _month = DateFormat('yyyy-MM').format(shifted));
+    // API month key — always Latin digits, whatever the UI language.
+    setState(() => _month = DateFormat('yyyy-MM', 'en').format(shifted));
   }
 
   @override
@@ -39,18 +40,18 @@ class _AttendanceCalendarPageState extends ConsumerState<AttendanceCalendarPage>
     final summaryAsync = ref.watch(studentAttendanceProvider((studentId: widget.studentId, month: _month)));
 
     return AuthenticatedScaffold(
-      appBar: AppBar(title: Text(summaryAsync.valueOrNull?.studentName ?? AppStrings.attendance)),
+      appBar: AppBar(title: Text(summaryAsync.valueOrNull?.studentName ?? context.l10n.attendanceTitle)),
       body: summaryAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(AppStrings.couldNotLoad),
+              Text(context.l10n.attendanceCouldNotLoad),
               const SizedBox(height: 12),
               OutlinedButton(
                 onPressed: () => ref.invalidate(studentAttendanceProvider((studentId: widget.studentId, month: _month))),
-                child: const Text(AppStrings.retryNow),
+                child: Text(context.l10n.commonRetry),
               ),
             ],
           ),
@@ -75,7 +76,9 @@ class _AttendanceCalendarPageState extends ConsumerState<AttendanceCalendarPage>
                           ),
                           Expanded(
                             child: Text(
-                              DateFormat('MMMM yyyy').format(DateTime.parse('${summary.month}-01')),
+                              // Month name in the UI language ("ಅಕ್ಟೋಬರ್ 2026"), digits stay 0–9.
+                              DateFormat.yMMMM(Localizations.localeOf(context).languageCode)
+                                  .format(DateTime.parse('${summary.month}-01')),
                               textAlign: TextAlign.center,
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
@@ -113,6 +116,9 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final today = summary.todayStatus;
+    final l = context.l10n;
+    final pct = summary.yearTotals.percentage;
+    final pctLabel = pct == null ? '—' : '${pct.toStringAsFixed(pct.truncateToDouble() == pct ? 0 : 1)}%';
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -120,11 +126,11 @@ class _SummaryCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              AppStrings.thisMonth(summary.monthTotals.daysPresent, summary.monthTotals.daysMarked),
+              l.attendanceThisMonth(summary.monthTotals.daysPresent, summary.monthTotals.daysMarked),
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 4),
-            Text(AppStrings.yearPercentage(summary.academicYearLabel, summary.yearTotals.percentage)),
+            Text(l.attendanceYearPercentage(summary.academicYearLabel, pctLabel)),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -133,7 +139,7 @@ class _SummaryCard extends StatelessWidget {
                   backgroundColor: today == null ? AttendanceColors.holiday : AttendanceColors.of(today),
                 ),
                 const SizedBox(width: 8),
-                Text(AppStrings.todayStatus(today?.label ?? AppStrings.notMarkedYet)),
+                Expanded(child: Text(l.attendanceToday(today?.label(l) ?? l.attendanceNotMarkedYet))),
               ],
             ),
           ],
@@ -154,13 +160,17 @@ class _MonthGrid extends StatelessWidget {
     final daysInMonth = DateTime(first.year, first.month + 1, 0).day;
     final leadingBlanks = first.weekday - 1; // Monday-first weeks
     final cells = leadingBlanks + daysInMonth;
-    final fmt = DateFormat('yyyy-MM-dd');
+    final fmt = DateFormat('yyyy-MM-dd', 'en');
+    final l = context.l10n;
+    // narrowWeekdays starts on Sunday; the grid starts on Monday.
+    final narrow = MaterialLocalizations.of(context).narrowWeekdays;
+    final weekdayInitials = [...narrow.skip(1), narrow.first];
 
     return Column(
       children: [
         Row(
           children: [
-            for (final d in AppStrings.weekdayInitials)
+            for (final d in weekdayInitials)
               Expanded(child: Center(child: Text(d, style: Theme.of(context).textTheme.labelMedium))),
           ],
         ),
@@ -184,7 +194,7 @@ class _MonthGrid extends StatelessWidget {
                     : null;
 
             return Tooltip(
-              message: holiday ?? status?.label ?? '',
+              message: holiday ?? status?.label(l) ?? '',
               child: Container(
                 decoration: BoxDecoration(
                   color: fill,
@@ -213,9 +223,10 @@ class _Legend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     final items = [
-      for (final s in AttendanceStatus.values) (AttendanceColors.of(s), s.label),
-      (AttendanceColors.holiday.withValues(alpha: 0.35), AppStrings.holiday),
+      for (final s in AttendanceStatus.values) (AttendanceColors.of(s), s.label(l)),
+      (AttendanceColors.holiday.withValues(alpha: 0.35), l.attendanceHoliday),
     ];
     return Wrap(
       spacing: 16,

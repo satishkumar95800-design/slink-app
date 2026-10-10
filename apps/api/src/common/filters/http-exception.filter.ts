@@ -34,6 +34,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       );
     }
 
+    // `error.code` (e.g. PHONE_NOT_REGISTERED) is set by throwing an exception with
+    // { code, message }; apps translate known codes and show `message` otherwise.
     response.status(status).json({
       success: false,
       statusCode: status,

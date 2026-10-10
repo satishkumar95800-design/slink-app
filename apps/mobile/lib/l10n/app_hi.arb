@@ -1,0 +1,7 @@
+{
+  "@@locale": "hi",
+  "@@x-note": "Stage 1: only the language picker is translated. Every other key falls back to English (see l10n_untranslated.json). Draft — needs native-speaker review.",
+  "languageNativeName": "हिन्दी",
+  "languageTitle": "भाषा",
+  "languageChoose": "अपनी भाषा चुनें"
+}

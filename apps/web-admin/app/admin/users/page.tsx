@@ -1,10 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { api, ApiError } from '../../../lib/api-client';
+import { api } from '../../../lib/api-client';
+import { useErrorText } from '../../../lib/i18n/errors';
+import { roleLabel } from '../../../lib/i18n/labels';
+import { formatDate } from '../../../lib/format';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Select } from '../../../components/ui/select';
@@ -28,36 +32,33 @@ interface User {
   _count: { linkedStudents: number };
 }
 
-const schema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Enter a valid email'),
-  phone: z.string().optional(),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  role: z.enum(['teacher', 'admin', 'accounts']),
+type TCommon = ReturnType<typeof useTranslations<'common'>>;
+
+const makeSchemas = (t: TCommon) => ({
+  create: z.object({
+    name: z.string().min(1, t('nameRequired')),
+    email: z.string().email(t('invalidEmail')),
+    phone: z.string().optional(),
+    password: z.string().min(8, t('passwordTooShort')),
+    role: z.enum(['teacher', 'admin', 'accounts']),
+  }),
+  edit: z.object({
+    name: z.string().min(1, t('nameRequired')),
+    email: z.string().email(t('invalidEmail')).optional().or(z.literal('')),
+    phone: z.string().optional(),
+    role: z.enum(['teacher', 'admin', 'accounts']).optional(),
+  }),
+  resetPassword: z.object({
+    newPassword: z.string().min(8, t('passwordTooShort')),
+  }),
 });
 
-type FormData = z.infer<typeof schema>;
+type Schemas = ReturnType<typeof makeSchemas>;
+type FormData = z.infer<Schemas['create']>;
+type EditFormData = z.infer<Schemas['edit']>;
+type ResetPasswordFormData = z.infer<Schemas['resetPassword']>;
 
-const editSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Enter a valid email').optional().or(z.literal('')),
-  phone: z.string().optional(),
-  role: z.enum(['teacher', 'admin', 'accounts']).optional(),
-});
-
-type EditFormData = z.infer<typeof editSchema>;
-
-const resetPasswordSchema = z.object({
-  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
-});
-
-type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
-
-const roleOptions = [
-  { value: 'teacher', label: 'Teacher' },
-  { value: 'admin', label: 'Admin' },
-  { value: 'accounts', label: 'Accounts' },
-];
+const STAFF_ROLES = ['teacher', 'admin', 'accounts'] as const;
 
 // The role field can only ever change between these three — parent (and any
 // platform role like developer/super_admin) isn't reassignable from this form.
@@ -75,6 +76,12 @@ const roleVariant = (role: string): 'blue' | 'green' | 'orange' | 'gray' => {
 };
 
 export default function UsersPage() {
+  const t = useTranslations('users');
+  const tCommon = useTranslations('common');
+  const tRoles = useTranslations('roles');
+  const errorText = useErrorText();
+  const schemas = useMemo(() => makeSchemas(tCommon), [tCommon]);
+  const roleOptions = STAFF_ROLES.map((value) => ({ value, label: tRoles(value) }));
   const { toast } = useToast();
   // Creating/editing/deleting users is admin-only on the backend (accounts can only
   // view) — hide the actions here instead of letting them fail with "Forbidden resource".
@@ -94,7 +101,7 @@ export default function UsersPage() {
     reset,
     control,
     formState: { errors, isSubmitting },
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
+  } = useForm<FormData>({ resolver: zodResolver(schemas.create) });
 
   const {
     register: registerEdit,
@@ -102,7 +109,7 @@ export default function UsersPage() {
     reset: resetEdit,
     control: editControl,
     formState: { errors: editErrors, isSubmitting: isEditSubmitting },
-  } = useForm<EditFormData>({ resolver: zodResolver(editSchema) });
+  } = useForm<EditFormData>({ resolver: zodResolver(schemas.edit) });
   const nameValue = useWatch({ control, name: 'name' });
   const editNameValue = useWatch({ control: editControl, name: 'name' });
 
@@ -111,7 +118,7 @@ export default function UsersPage() {
     handleSubmit: handleResetPasswordSubmit,
     reset: resetResetPasswordForm,
     formState: { errors: resetPasswordErrors, isSubmitting: isResettingPassword },
-  } = useForm<ResetPasswordFormData>({ resolver: zodResolver(resetPasswordSchema) });
+  } = useForm<ResetPasswordFormData>({ resolver: zodResolver(schemas.resetPassword) });
 
   async function fetchUsers() {
     try {
@@ -121,7 +128,7 @@ export default function UsersPage() {
       setTotal(res.meta.total);
       setError(null);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorText(e));
     } finally {
       setLoading(false);
     }
@@ -134,12 +141,12 @@ export default function UsersPage() {
   async function onSubmit(data: FormData) {
     try {
       await api.post('/users', data);
-      toast('User created successfully', 'success');
+      toast(t('created'), 'success');
       setShowModal(false);
       reset();
       fetchUsers();
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     }
   }
 
@@ -164,11 +171,11 @@ export default function UsersPage() {
         // change the form never actually offered a choice for.
         ...(data.role ? { role: data.role } : {}),
       });
-      toast('User updated successfully', 'success');
+      toast(t('updated'), 'success');
       setEditingUser(null);
       fetchUsers();
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     }
   }
 
@@ -176,23 +183,23 @@ export default function UsersPage() {
     if (!resettingUser) return;
     try {
       await api.post(`/users/${resettingUser.id}/reset-password`, data);
-      toast(`Password reset for ${resettingUser.name}`, 'success');
+      toast(t('passwordReset', { name: resettingUser.name }), 'success');
       setResettingUser(null);
       resetResetPasswordForm();
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this user? This action cannot be undone.')) return;
+    if (!confirm(t('confirmDelete'))) return;
     setDeletingId(id);
     try {
       await api.delete(`/users/${id}`);
-      toast('User deleted', 'success');
+      toast(t('deleted'), 'success');
       fetchUsers();
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     } finally {
       setDeletingId(null);
     }
@@ -201,8 +208,8 @@ export default function UsersPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-gray-500">{total} user{total !== 1 ? 's' : ''}</p>
-        {isAdmin && <Button onClick={() => setShowModal(true)}>+ Add User</Button>}
+        <p className="text-sm text-gray-500">{t('count', { count: total })}</p>
+        {isAdmin && <Button onClick={() => setShowModal(true)}>{t('add')}</Button>}
       </div>
 
       {loading ? (
@@ -213,18 +220,18 @@ export default function UsersPage() {
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
       ) : users.length === 0 ? (
         <EmptyState
-          title="No users yet"
-          description="Add teachers, admins, and accounts staff."
-          action={isAdmin ? <Button onClick={() => setShowModal(true)}>+ Add User</Button> : undefined}
+          title={t('emptyTitle')}
+          description={t('emptyDescription')}
+          action={isAdmin ? <Button onClick={() => setShowModal(true)}>{t('add')}</Button> : undefined}
         />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-cream/60">
               <tr>
-                {['Name', 'Email', 'Phone', 'Role', 'Students', 'Joined', ''].map((h) => (
+                {[t('colName'), t('colEmail'), t('colPhone'), t('colRole'), t('colStudents'), t('colJoined'), ''].map((h, i) => (
                   <th
-                    key={h}
+                    key={i}
                     className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80"
                   >
                     {h}
@@ -239,11 +246,11 @@ export default function UsersPage() {
                   <td className="px-6 py-4 text-sm text-gray-600">{u.email ?? '—'}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{u.phone ?? '—'}</td>
                   <td className="px-6 py-4">
-                    <Badge variant={roleVariant(u.role)}>{u.role}</Badge>
+                    <Badge variant={roleVariant(u.role)}>{roleLabel(tRoles, u.role)}</Badge>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{u._count.linkedStudents}</td>
                   <td className="px-6 py-4 text-sm text-gray-500">
-                    {new Date(u.createdAt).toLocaleDateString('en-IN')}
+                    {formatDate(u.createdAt)}
                   </td>
                   <td className="px-6 py-4 text-right">
                     {isAdmin && (
@@ -252,14 +259,14 @@ export default function UsersPage() {
                           onClick={() => openEdit(u)}
                           className="text-xs text-teal hover:underline"
                         >
-                          Edit
+                          {tCommon('edit')}
                         </button>
                         {u.role !== 'parent' && (
                           <button
                             onClick={() => setResettingUser(u)}
                             className="text-xs text-teal hover:underline"
                           >
-                            Reset Password
+                            {t('resetPassword')}
                           </button>
                         )}
                         <button
@@ -267,7 +274,7 @@ export default function UsersPage() {
                           disabled={deletingId === u.id}
                           className="text-xs text-red-600 hover:underline disabled:opacity-50"
                         >
-                          {deletingId === u.id ? 'Deleting…' : 'Delete'}
+                          {deletingId === u.id ? tCommon('deleting') : tCommon('delete')}
                         </button>
                       </div>
                     )}
@@ -282,31 +289,31 @@ export default function UsersPage() {
       <Modal
         open={showModal}
         onClose={() => { setShowModal(false); reset(); }}
-        title="Add User"
+        title={t('addTitle')}
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <Input label="Full Name" required error={errors.name?.message} warning={nameCaseWarning(nameValue)} {...register('name')} />
-          <Input label="Email" required type="email" error={errors.email?.message} {...register('email')} />
-          <Input label="Phone" placeholder="+91..." error={errors.phone?.message} {...register('phone')} />
+          <Input label={t('fullName')} required error={errors.name?.message} warning={nameCaseWarning(nameValue, tCommon('nameLowercaseWarning'))} {...register('name')} />
+          <Input label={t('email')} required type="email" error={errors.email?.message} {...register('email')} />
+          <Input label={t('phone')} placeholder={t('phonePlaceholder')} error={errors.phone?.message} {...register('phone')} />
           <Input
-            label="Password" required
+            label={t('password')} required
             type="password"
             error={errors.password?.message}
             {...register('password')}
           />
           <Select
-            label="Role" required
+            label={t('role')} required
             options={roleOptions}
-            placeholder="Select a role"
+            placeholder={t('selectRole')}
             error={errors.role?.message}
             {...register('role')}
           />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => { setShowModal(false); reset(); }}>
-              Cancel
+              {tCommon('cancel')}
             </Button>
             <Button type="submit" loading={isSubmitting}>
-              Create User
+              {t('create')}
             </Button>
           </div>
         </form>
@@ -315,35 +322,35 @@ export default function UsersPage() {
       <Modal
         open={!!editingUser}
         onClose={() => setEditingUser(null)}
-        title="Edit User"
+        title={t('editTitle')}
       >
         <form onSubmit={handleEditSubmit(onEditSubmit)} className="space-y-4">
-          <Input label="Full Name" required error={editErrors.name?.message} warning={nameCaseWarning(editNameValue)} {...registerEdit('name')} />
-          <Input label="Email" type="email" error={editErrors.email?.message} {...registerEdit('email')} />
-          <Input label="Phone" placeholder="+91..." error={editErrors.phone?.message} {...registerEdit('phone')} />
+          <Input label={t('fullName')} required error={editErrors.name?.message} warning={nameCaseWarning(editNameValue, tCommon('nameLowercaseWarning'))} {...registerEdit('name')} />
+          <Input label={t('email')} type="email" error={editErrors.email?.message} {...registerEdit('email')} />
+          <Input label={t('phone')} placeholder={t('phonePlaceholder')} error={editErrors.phone?.message} {...registerEdit('phone')} />
           {editingUser && isStaffRole(editingUser.role) ? (
             <Select
-              label="Role"
+              label={t('role')}
               options={roleOptions}
-              placeholder="Select a role"
+              placeholder={t('selectRole')}
               error={editErrors.role?.message}
               {...registerEdit('role')}
             />
           ) : (
             <div className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-gray-700">Role</span>
+              <span className="text-sm font-medium text-gray-700">{t('role')}</span>
               <div className="flex items-center gap-2">
-                <Badge variant={roleVariant(editingUser?.role ?? '')}>{editingUser?.role}</Badge>
-                <span className="text-xs text-gray-500">Not editable from this form</span>
+                <Badge variant={roleVariant(editingUser?.role ?? '')}>{roleLabel(tRoles, editingUser?.role ?? '')}</Badge>
+                <span className="text-xs text-gray-500">{t('roleNotEditable')}</span>
               </div>
             </div>
           )}
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setEditingUser(null)}>
-              Cancel
+              {tCommon('cancel')}
             </Button>
             <Button type="submit" loading={isEditSubmitting}>
-              Save Changes
+              {tCommon('saveChanges')}
             </Button>
           </div>
         </form>
@@ -352,15 +359,12 @@ export default function UsersPage() {
       <Modal
         open={!!resettingUser}
         onClose={() => { setResettingUser(null); resetResetPasswordForm(); }}
-        title={`Reset Password${resettingUser ? ` — ${resettingUser.name}` : ''}`}
+        title={resettingUser ? t('resetTitleNamed', { name: resettingUser.name }) : t('resetTitle')}
       >
         <form onSubmit={handleResetPasswordSubmit(onResetPasswordSubmit)} className="space-y-4">
-          <p className="text-sm text-gray-500">
-            Sets a new password for this user without needing their current one. Share it with
-            them securely — they can change it themselves afterwards from their account menu.
-          </p>
+          <p className="text-sm text-gray-500">{t('resetExplainer')}</p>
           <Input
-            label="New Password" required
+            label={t('newPassword')} required
             type="password"
             error={resetPasswordErrors.newPassword?.message}
             {...registerResetPassword('newPassword')}
@@ -371,10 +375,10 @@ export default function UsersPage() {
               type="button"
               onClick={() => { setResettingUser(null); resetResetPasswordForm(); }}
             >
-              Cancel
+              {tCommon('cancel')}
             </Button>
             <Button type="submit" loading={isResettingPassword}>
-              Reset Password
+              {t('resetPassword')}
             </Button>
           </div>
         </form>

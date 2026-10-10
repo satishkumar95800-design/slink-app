@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/l10n/language_controller.dart';
 import '../../shared/models/active_user.dart';
 import '../../shared/services/secure_storage_service.dart';
 import '../../shared/services/push_notification_service.dart';
@@ -59,6 +60,12 @@ class SessionController extends StateNotifier<SessionState> {
     try {
       await _ref.read(pushNotificationServiceProvider).registerToken();
     } catch (_) {}
+
+    // Open in the account's language, even on a brand-new phone.
+    await _ref.read(languageControllerProvider.notifier).applyFromAccount(
+          preferredLanguage: result.user.preferredLanguage,
+          effectiveLanguage: result.user.language,
+        );
 
     state = SessionState.loggedIn(result.user);
   }

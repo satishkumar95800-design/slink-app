@@ -24,6 +24,7 @@ import '../../features/reports/upload_report_card_page.dart';
 import '../../features/timetable/weekly_routine_page.dart';
 import '../../shared/services/secure_storage_service.dart';
 import '../../features/attendance/attendance_calendar_page.dart';
+import '../l10n/l10n.dart';
 import '../../features/attendance/mark_attendance_page.dart';
 import '../../features/homework/homework_list_page.dart';
 import '../../features/notices/notices_list_page.dart';
@@ -124,13 +125,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/homework/send', builder: (_, __) => const SendHomeworkPage()),
       GoRoute(
         path: '/notices/detail',
-        builder: (_, state) {
+        builder: (context, state) {
           final data = (state.extra as Map<String, dynamic>?) ?? const {};
           // Lists pass `attachments` ([{url, contentType}] or URLs); push taps only have `attachmentUrl`.
           final raw = data['attachments'] as List<dynamic>? ??
               [if (data['attachmentUrl'] != null && data['attachmentUrl'].toString().isNotEmpty) data['attachmentUrl']];
           return NoticeDetailPage(
-            title: data['title']?.toString() ?? 'Notice',
+            title: data['title']?.toString() ?? context.l10n.noticeKind,
             body: data['body']?.toString() ?? '',
             attachments: [for (final a in raw) NoticeAttachment.fromAny(a as Object)],
             broadcastId: data['broadcastId']?.toString(),

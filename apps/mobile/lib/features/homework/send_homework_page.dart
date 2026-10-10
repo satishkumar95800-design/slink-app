@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,7 +8,7 @@ import '../../shared/services/files_repository.dart';
 import '../../shared/widgets/error_banner.dart';
 import '../../shared/widgets/attachment_picker.dart';
 import '../../shared/widgets/primary_button.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
 import '../classes/classes_repository.dart';
 import '../dashboard/teacher_classes_repository.dart';
 
@@ -39,33 +38,35 @@ class _SendHomeworkPageState extends ConsumerState<SendHomeworkPage> {
 
   Future<void> _send(String classId) async {
     if (_photos.isEmpty) {
-      setState(() => _error = 'Add at least one photo.');
+      setState(() => _error = context.l10n.homeworkAddPhotoFirst);
       return;
     }
     setState(() {
       _isSending = true;
       _error = null;
     });
+    final l = context.l10n;
     try {
       final files = ref.read(filesRepositoryProvider);
       final fileKeys = [for (final photo in _photos) await files.upload(photo, category: 'attachment')];
       await ref.read(broadcastRepositoryProvider).sendToClass(
             classId: classId,
             kind: BroadcastKind.homework,
-            title: 'Homework',
-            body: _captionController.text.trim().isEmpty ? 'New homework has been posted.' : _captionController.text.trim(),
+            // Stored with the homework, so in the sender's language (see SPEC-languages Stage 3).
+            title: l.homeworkKind,
+            body: _captionController.text.trim().isEmpty ? l.homeworkDefaultBody : _captionController.text.trim(),
             fileKeys: fileKeys,
             subjectId: _subjectId,
           );
       ref.invalidate(sentItemsProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Homework sent')),
+          SnackBar(content: Text(l.homeworkSent)),
         );
         Navigator.of(context).pop();
       }
     } catch (e) {
-      setState(() => _error = 'Could not send the homework. ${_describeError(e)}');
+      setState(() => _error = l.homeworkCouldNotSend(describeError(e)));
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
@@ -74,27 +75,28 @@ class _SendHomeworkPageState extends ConsumerState<SendHomeworkPage> {
   @override
   Widget build(BuildContext context) {
     final classesAsync = ref.watch(myClassesProvider);
+    final l = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(AppStrings.sendHomework),
+        title: Text(l.teacherSendHomework),
         actions: [
           TextButton.icon(
             onPressed: () => context.push('/broadcasts/sent'),
             icon: const Icon(Icons.done_all),
-            label: const Text(AppStrings.sentItems),
+            label: Text(l.sentTitle),
           ),
         ],
       ),
       body: classesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Could not load your classes.\n$error')),
+        error: (error, _) => Center(child: Text('${l.commonCouldNotLoadClasses}\n$error')),
         data: (classes) {
           if (classes.isEmpty) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text("You aren't assigned to any class yet.", textAlign: TextAlign.center),
+                padding: const EdgeInsets.all(24),
+                child: Text(l.commonNotAssignedToClass, textAlign: TextAlign.center),
               ),
             );
           }
@@ -116,7 +118,7 @@ class _SendHomeworkPageState extends ConsumerState<SendHomeworkPage> {
                 if (_error != null) ErrorBanner(message: _error!),
                 DropdownButtonFormField<String>(
                   initialValue: _selectedClassId,
-                  decoration: const InputDecoration(labelText: 'Class', border: OutlineInputBorder()),
+                  decoration: InputDecoration(labelText: l.commonClass, border: const OutlineInputBorder()),
                   items: [
                     for (final cls in classes) DropdownMenuItem(value: cls.id, child: Text(cls.displayName)),
                   ],
@@ -130,9 +132,9 @@ class _SendHomeworkPageState extends ConsumerState<SendHomeworkPage> {
                   DropdownButtonFormField<String?>(
                     key: ValueKey(_selectedClassId),
                     initialValue: _subjectId,
-                    decoration: const InputDecoration(labelText: AppStrings.subjectOptional, border: OutlineInputBorder()),
+                    decoration: InputDecoration(labelText: l.homeworkSubjectOptional, border: const OutlineInputBorder()),
                     items: [
-                      const DropdownMenuItem<String?>(value: null, child: Text(AppStrings.noSubject)),
+                      DropdownMenuItem<String?>(value: null, child: Text(l.homeworkNoSubject)),
                       for (final subject in subjects) DropdownMenuItem<String?>(value: subject.id, child: Text(subject.name)),
                     ],
                     onChanged: (value) => setState(() => _subjectId = value),
@@ -152,11 +154,11 @@ class _SendHomeworkPageState extends ConsumerState<SendHomeworkPage> {
                   controller: _captionController,
                   minLines: 2,
                   maxLines: 4,
-                  decoration: const InputDecoration(labelText: 'Caption (optional)', border: OutlineInputBorder()),
+                  decoration: InputDecoration(labelText: l.homeworkCaptionLabel, border: const OutlineInputBorder()),
                 ),
                 const SizedBox(height: 24),
                 PrimaryButton(
-                  label: 'Send to class',
+                  label: l.commonSendToClass,
                   isLoading: _isSending,
                   onPressed: () => _send(_selectedClassId!),
                 ),
@@ -168,9 +170,3 @@ class _SendHomeworkPageState extends ConsumerState<SendHomeworkPage> {
     );
   }
 }
-
-String _describeError(Object e) => switch (e) {
-      ApiException() => e.message,
-      DioException() => ApiException.fromDioError(e).message,
-      _ => 'Please try again.',
-    };

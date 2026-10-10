@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { api, ApiError } from '../../../lib/api-client';
+import { api } from '../../../lib/api-client';
+import { useErrorText } from '../../../lib/i18n/errors';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Select } from '../../../components/ui/select';
@@ -12,7 +14,7 @@ import { Modal } from '../../../components/ui/modal';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
-import { formatRupees } from '../../../lib/format';
+import { formatDateOnly, formatRupees } from '../../../lib/format';
 
 interface FeeStructure {
   id: string;
@@ -32,23 +34,25 @@ interface Class {
   academicYear: string;
 }
 
-const feeItemSchema = z.object({
-  label: z.string().min(1, 'Label required'),
-  amount: z.number().min(1, 'Amount required'),
-});
+const makeSchema = (t: ReturnType<typeof useTranslations<'fees'>>, tCommon: ReturnType<typeof useTranslations<'common'>>) =>
+  z.object({
+    name: z.string().min(1, tCommon('nameRequired')),
+    classId: z.string().min(1, tCommon('classRequired')),
+    academicYear: z.string().min(4, t('yearHint')),
+    dueDate: z.string().min(1, t('dueDateRequired')),
+    lateFeePerDay: z.number().min(0),
+    items: z
+      .array(z.object({ label: z.string().min(1, t('labelRequired')), amount: z.number().min(1, t('amountRequired')) }))
+      .min(1, t('itemsRequired')),
+  });
 
-const schema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  classId: z.string().min(1, 'Class is required'),
-  academicYear: z.string().min(4, 'e.g. 2024-25'),
-  dueDate: z.string().min(1, 'Due date is required'),
-  lateFeePerDay: z.number().min(0),
-  items: z.array(feeItemSchema).min(1, 'Add at least one fee item'),
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = z.infer<ReturnType<typeof makeSchema>>;
 
 export default function FeesPage() {
+  const t = useTranslations('fees');
+  const tCommon = useTranslations('common');
+  const errorText = useErrorText();
+  const schema = useMemo(() => makeSchema(t, tCommon), [t, tCommon]);
   const { toast } = useToast();
   const [structures, setStructures] = useState<FeeStructure[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
@@ -95,7 +99,7 @@ export default function FeesPage() {
       setClasses(classRes);
       setError(null);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorText(e));
     } finally {
       setLoading(false);
     }
@@ -108,12 +112,12 @@ export default function FeesPage() {
   async function onSubmit(data: FormData) {
     try {
       await api.post('/fee-structures', data);
-      toast('Fee structure created', 'success');
+      toast(t('created'), 'success');
       setShowModal(false);
       reset({ items: [{ label: '', amount: 0 }] });
       fetchData();
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     }
   }
 
@@ -133,11 +137,11 @@ export default function FeesPage() {
     if (!editingStructure) return;
     try {
       await api.patch(`/fee-structures/${editingStructure.id}`, data);
-      toast('Fee structure updated', 'success');
+      toast(t('updated'), 'success');
       setEditingStructure(null);
       fetchData();
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     }
   }
 
@@ -149,8 +153,8 @@ export default function FeesPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-gray-500">{total} structure{total !== 1 ? 's' : ''}</p>
-        <Button onClick={() => setShowModal(true)}>+ Add Structure</Button>
+        <p className="text-sm text-gray-500">{t('count', { count: total })}</p>
+        <Button onClick={() => setShowModal(true)}>{t('add')}</Button>
       </div>
 
       {loading ? (
@@ -161,17 +165,17 @@ export default function FeesPage() {
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
       ) : structures.length === 0 ? (
         <EmptyState
-          title="No fee structures"
-          description="Define fee templates for each class."
-          action={<Button onClick={() => setShowModal(true)}>+ Add Structure</Button>}
+          title={t('emptyTitle')}
+          description={t('emptyDescription')}
+          action={<Button onClick={() => setShowModal(true)}>{t('add')}</Button>}
         />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-cream/60">
               <tr>
-                {['Name', 'Class', 'Academic Year', 'Total', 'Due Date', 'Late Fee/Day', ''].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
+                {[t('colName'), t('colClass'), t('colYear'), t('colTotal'), t('colDueDate'), t('colLateFee'), ''].map((h, i) => (
+                  <th key={i} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
                     {h}
                   </th>
                 ))}
@@ -185,14 +189,14 @@ export default function FeesPage() {
                   <td className="px-6 py-4 text-sm text-gray-600">{s.academicYear}</td>
                   <td className="px-6 py-4 text-sm font-semibold text-gray-900">{formatRupees(s.totalAmount)}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {new Date(s.dueDate).toLocaleDateString('en-IN')}
+                    {formatDateOnly(s.dueDate)}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
                     {s.lateFeePerDay ? formatRupees(s.lateFeePerDay) : '—'}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button onClick={() => openEdit(s)} className="text-xs text-teal hover:underline">
-                      Edit
+                      {tCommon('edit')}
                     </button>
                   </td>
                 </tr>
@@ -205,25 +209,25 @@ export default function FeesPage() {
       <Modal
         open={showModal}
         onClose={() => { setShowModal(false); reset({ items: [{ label: '', amount: 0 }] }); }}
-        title="Add Fee Structure"
+        title={t('addTitle')}
         size="lg"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Input label="Name" required placeholder="Annual Fees" error={errors.name?.message} {...register('name')} />
+            <Input label={t('name')} required placeholder={t('namePlaceholder')} error={errors.name?.message} {...register('name')} />
             <Select
-              label="Class" required
+              label={t('class')} required
               options={classOptions}
-              placeholder="Select a class"
+              placeholder={tCommon('selectClass')}
               error={errors.classId?.message}
               {...register('classId')}
             />
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Input label="Academic Year" required placeholder="2024-25" error={errors.academicYear?.message} {...register('academicYear')} />
-            <Input label="Due Date" required type="date" error={errors.dueDate?.message} {...register('dueDate')} />
+            <Input label={t('academicYear')} required placeholder={t('academicYearPlaceholder')} error={errors.academicYear?.message} {...register('academicYear')} />
+            <Input label={t('dueDate')} required type="date" error={errors.dueDate?.message} {...register('dueDate')} />
             <Input
-              label="Late Fee / Day (₹)"
+              label={t('lateFee')}
               type="number"
               step="0.01"
               placeholder="0"
@@ -234,13 +238,13 @@ export default function FeesPage() {
 
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Fee Items<span className="ml-0.5 text-red-500" aria-hidden="true">*</span></p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">{t('items')}<span className="ml-0.5 text-red-500" aria-hidden="true">*</span></p>
               <button
                 type="button"
                 onClick={() => append({ label: '', amount: 0 })}
                 className="text-xs text-teal hover:underline"
               >
-                + Add item
+                {t('addItem')}
               </button>
             </div>
             <div className="space-y-2">
@@ -248,14 +252,14 @@ export default function FeesPage() {
                 <div key={field.id} className="flex flex-wrap gap-2 sm:flex-nowrap">
                   <input
                     className="min-w-0 flex-1 basis-full rounded-md border border-gray-300 px-3 py-1.5 sm:basis-auto text-sm focus:border-coral focus:ring-1 focus:ring-coral outline-none"
-                    placeholder="Label (e.g. Tuition)"
+                    placeholder={t('itemLabelPlaceholder')}
                     {...register(`items.${idx}.label`)}
                   />
                   <input
                     type="number"
                     step="0.01"
                     className="w-28 flex-1 rounded-md border sm:w-32 sm:flex-none border-gray-300 px-3 py-1.5 text-sm focus:border-coral focus:ring-1 focus:ring-coral outline-none"
-                    placeholder="Amount (₹)"
+                    placeholder={t('itemAmountPlaceholder')}
                     {...register(`items.${idx}.amount`, { valueAsNumber: true })}
                   />
                   {fields.length > 1 && (
@@ -263,6 +267,7 @@ export default function FeesPage() {
                       type="button"
                       onClick={() => remove(idx)}
                       className="px-2 text-gray-400 hover:text-red-600"
+                      aria-label={t('removeItem')}
                     >
                       ✕
                     </button>
@@ -272,17 +277,17 @@ export default function FeesPage() {
             </div>
             {errors.items && (
               <p className="mt-1 text-xs text-red-600">
-                {typeof errors.items.message === 'string' ? errors.items.message : 'Fix fee items'}
+                {typeof errors.items.message === 'string' ? errors.items.message : t('fixItems')}
               </p>
             )}
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => { setShowModal(false); reset({ items: [{ label: '', amount: 0 }] }); }}>
-              Cancel
+              {tCommon('cancel')}
             </Button>
             <Button type="submit" loading={isSubmitting}>
-              Create Structure
+              {t('create')}
             </Button>
           </div>
         </form>
@@ -291,25 +296,25 @@ export default function FeesPage() {
       <Modal
         open={!!editingStructure}
         onClose={() => setEditingStructure(null)}
-        title="Edit Fee Structure"
+        title={t('editTitle')}
         size="lg"
       >
         <form onSubmit={handleEditSubmit(onEditSubmit)} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Input label="Name" required placeholder="Annual Fees" error={editErrors.name?.message} {...registerEdit('name')} />
+            <Input label={t('name')} required placeholder={t('namePlaceholder')} error={editErrors.name?.message} {...registerEdit('name')} />
             <Select
-              label="Class" required
+              label={t('class')} required
               options={classOptions}
-              placeholder="Select a class"
+              placeholder={tCommon('selectClass')}
               error={editErrors.classId?.message}
               {...registerEdit('classId')}
             />
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Input label="Academic Year" required placeholder="2024-25" error={editErrors.academicYear?.message} {...registerEdit('academicYear')} />
-            <Input label="Due Date" required type="date" error={editErrors.dueDate?.message} {...registerEdit('dueDate')} />
+            <Input label={t('academicYear')} required placeholder={t('academicYearPlaceholder')} error={editErrors.academicYear?.message} {...registerEdit('academicYear')} />
+            <Input label={t('dueDate')} required type="date" error={editErrors.dueDate?.message} {...registerEdit('dueDate')} />
             <Input
-              label="Late Fee / Day (₹)"
+              label={t('lateFee')}
               type="number"
               step="0.01"
               placeholder="0"
@@ -320,13 +325,13 @@ export default function FeesPage() {
 
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Fee Items<span className="ml-0.5 text-red-500" aria-hidden="true">*</span></p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">{t('items')}<span className="ml-0.5 text-red-500" aria-hidden="true">*</span></p>
               <button
                 type="button"
                 onClick={() => appendEdit({ label: '', amount: 0 })}
                 className="text-xs text-teal hover:underline"
               >
-                + Add item
+                {t('addItem')}
               </button>
             </div>
             <div className="space-y-2">
@@ -334,14 +339,14 @@ export default function FeesPage() {
                 <div key={field.id} className="flex flex-wrap gap-2 sm:flex-nowrap">
                   <input
                     className="min-w-0 flex-1 basis-full rounded-md border border-gray-300 px-3 py-1.5 sm:basis-auto text-sm focus:border-coral focus:ring-1 focus:ring-coral outline-none"
-                    placeholder="Label (e.g. Tuition)"
+                    placeholder={t('itemLabelPlaceholder')}
                     {...registerEdit(`items.${idx}.label`)}
                   />
                   <input
                     type="number"
                     step="0.01"
                     className="w-28 flex-1 rounded-md border sm:w-32 sm:flex-none border-gray-300 px-3 py-1.5 text-sm focus:border-coral focus:ring-1 focus:ring-coral outline-none"
-                    placeholder="Amount (₹)"
+                    placeholder={t('itemAmountPlaceholder')}
                     {...registerEdit(`items.${idx}.amount`, { valueAsNumber: true })}
                   />
                   {editFields.length > 1 && (
@@ -349,6 +354,7 @@ export default function FeesPage() {
                       type="button"
                       onClick={() => removeEdit(idx)}
                       className="px-2 text-gray-400 hover:text-red-600"
+                      aria-label={t('removeItem')}
                     >
                       ✕
                     </button>
@@ -358,17 +364,17 @@ export default function FeesPage() {
             </div>
             {editErrors.items && (
               <p className="mt-1 text-xs text-red-600">
-                {typeof editErrors.items.message === 'string' ? editErrors.items.message : 'Fix fee items'}
+                {typeof editErrors.items.message === 'string' ? editErrors.items.message : t('fixItems')}
               </p>
             )}
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setEditingStructure(null)}>
-              Cancel
+              {tCommon('cancel')}
             </Button>
             <Button type="submit" loading={isEditSubmitting}>
-              Save Changes
+              {tCommon('saveChanges')}
             </Button>
           </div>
         </form>

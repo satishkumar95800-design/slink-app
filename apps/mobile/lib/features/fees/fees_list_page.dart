@@ -5,7 +5,8 @@ import '../../shared/models/student_fee.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
 import 'fees_providers.dart';
 import '../../core/format/money.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
+import 'fee_labels.dart';
 import '../../shared/models/payment_claim.dart';
 import '../dashboard/students_repository.dart';
 import '../home/parent_home_models.dart';
@@ -22,9 +23,10 @@ class FeesListPage extends ConsumerWidget {
     final claims = (ref.watch(myPaymentClaimsProvider).valueOrNull ?? const <PaymentClaim>[])
         .where((c) => selectedChildId == null || c.student.id == selectedChildId)
         .toList();
+    final l = context.l10n;
 
     return AuthenticatedScaffold(
-      appBar: AppBar(title: const Text(AppStrings.menuFees)),
+      appBar: AppBar(title: Text(l.menuFees)),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(studentFeesProvider);
@@ -36,11 +38,11 @@ class FeesListPage extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               children: [
                 if (fees.isEmpty)
-                  const Padding(padding: EdgeInsets.symmetric(vertical: 48), child: Center(child: Text(AppStrings.noFees))),
+                  Padding(padding: const EdgeInsets.symmetric(vertical: 48), child: Center(child: Text(l.feesEmpty))),
                 for (final fee in fees) _FeeCard(fee: fee),
                 if (claims.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  Text(AppStrings.myClaims, style: Theme.of(context).textTheme.titleMedium),
+                  Text(l.feesMyClaims, style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
                   for (final claim in claims) PaymentClaimCard(claim: claim),
                 ],
@@ -51,7 +53,7 @@ class FeesListPage extends ConsumerWidget {
           error: (error, _) => Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Text('Could not load fees. Pull down to retry.\n$error', textAlign: TextAlign.center),
+              child: Text('${l.feesCouldNotLoad}\n$error', textAlign: TextAlign.center),
             ),
           ),
         ),
@@ -84,6 +86,7 @@ class _FeeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final canPay = fee.outstanding > 0 && fee.status != FeeStatus.waived;
     final hasReceipt = fee.status == FeeStatus.paid || fee.status == FeeStatus.partial;
+    final l = context.l10n;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -108,29 +111,29 @@ class _FeeCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    fee.status.name.toUpperCase(),
+                    feeStatusLabel(l, fee.status).toUpperCase(),
                     style: TextStyle(color: _statusColor(), fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 4),
-            Text('${fee.student.name} • ${AppStrings.dueOn(displayDate(fee.dueDate))}'),
+            Text('${fee.student.name} • ${l.feesDueOn(displayDate(fee.dueDate))}'),
             const SizedBox(height: 12),
             Text(
-              canPay ? AppStrings.amountDue(formatRupees(fee.outstanding)) : AppStrings.paidInFull,
+              canPay ? l.feesAmountDue(formatRupees(fee.outstanding)) : l.feesPaidInFull,
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             if (canPay) ...[
               const SizedBox(height: 12),
               FilledButton(
                 onPressed: () => context.push('/fees/${fee.id}/pay'),
-                child: const Text(AppStrings.payOnline),
+                child: Text(l.feesPayOnline),
               ),
               const SizedBox(height: 8),
               OutlinedButton(
                 onPressed: () => context.push('/fees/${fee.id}/claim', extra: fee.outstanding),
-                child: const Text(AppStrings.paidByCashOrCheque, textAlign: TextAlign.center),
+                child: Text(l.feesPaidByCashOrCheque, textAlign: TextAlign.center),
               ),
             ],
             if (hasReceipt)
@@ -139,7 +142,7 @@ class _FeeCard extends StatelessWidget {
                 child: TextButton.icon(
                   onPressed: () => context.push('/fees/${fee.id}/receipts'),
                   icon: const Icon(Icons.receipt_outlined),
-                  label: const Text(AppStrings.viewReceipts),
+                  label: Text(l.feesReceipts),
                 ),
               ),
           ],

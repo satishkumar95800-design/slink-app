@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/l10n/l10n.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
+import '../home/parent_home_models.dart';
 import 'notifications_providers.dart';
 
 class NotificationHistoryPage extends ConsumerWidget {
@@ -10,19 +12,20 @@ class NotificationHistoryPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final historyAsync = ref.watch(notificationHistoryProvider);
+    final l = context.l10n;
 
     return AuthenticatedScaffold(
-      appBar: AppBar(title: const Text('Notifications')),
+      appBar: AppBar(title: Text(l.notificationsTitle)),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(notificationHistoryProvider),
         child: historyAsync.when(
           data: (items) {
             if (items.isEmpty) {
               return ListView(
-                children: const [
+                children: [
                   Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Center(child: Text('No notifications yet.')),
+                    padding: const EdgeInsets.all(24),
+                    child: Center(child: Text(l.notificationsEmpty)),
                   ),
                 ],
               );
@@ -34,11 +37,11 @@ class NotificationHistoryPage extends ConsumerWidget {
                 final hasAttachment = item.attachmentUrl != null && item.attachmentUrl!.isNotEmpty;
                 return ListTile(
                   leading: CircleAvatar(child: Icon(hasAttachment ? Icons.assignment : Icons.campaign_outlined)),
-                  title: Text(item.title ?? (hasAttachment ? 'Homework' : 'Notice')),
+                  title: Text(item.title ?? (hasAttachment ? l.homeworkKind : l.noticeKind)),
                   subtitle: Text(item.body, maxLines: 2, overflow: TextOverflow.ellipsis),
-                  trailing: Text(_formatDate(item.createdAt)),
+                  trailing: Text(displayDate(item.createdAt)),
                   onTap: () => context.push('/notices/detail', extra: {
-                    'title': item.title ?? (hasAttachment ? 'Homework' : 'Notice'),
+                    'title': item.title ?? (hasAttachment ? l.homeworkKind : l.noticeKind),
                     'body': item.body,
                     'attachmentUrl': item.attachmentUrl,
                   }),
@@ -50,16 +53,11 @@ class NotificationHistoryPage extends ConsumerWidget {
           error: (error, _) => Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Text('Could not load notifications. Pull down to retry.\n$error', textAlign: TextAlign.center),
+              child: Text('${l.notificationsCouldNotLoad}\n$error', textAlign: TextAlign.center),
             ),
           ),
         ),
       ),
     );
-  }
-
-  String _formatDate(DateTime dateTime) {
-    final local = dateTime.toLocal();
-    return '${local.day}/${local.month}/${local.year}';
   }
 }

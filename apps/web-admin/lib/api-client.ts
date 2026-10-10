@@ -15,8 +15,24 @@ export class ApiError extends Error {
     public status: number,
     message: string,
     public body?: unknown,
+    /** API error code (e.g. INVALID_CREDENTIALS) or NETWORK_ERROR / SESSION_EXPIRED; translated by lib/i18n/errors.ts. */
+    public code?: string,
   ) {
     super(message);
+  }
+}
+
+function errorCode(body: unknown): string | undefined {
+  const code = (body as { error?: { code?: unknown } })?.error?.code;
+  return typeof code === 'string' ? code : undefined;
+}
+
+/** fetch() itself failed (offline, DNS, CORS) — surfaced as a translatable ApiError. */
+async function send(url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch {
+    throw new ApiError(0, 'Network error — check your connection and try again.', undefined, 'NETWORK_ERROR');
   }
 }
 
@@ -63,7 +79,7 @@ export async function apiRequest<T>(
   const { token, tenantId } = getAuth();
   const effectiveTenant = options.tenantOverride ?? tenantId;
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await send(`${API_BASE}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -80,7 +96,7 @@ export async function apiRequest<T>(
     const newToken = await refreshPromise;
     if (newToken) return apiRequest<T>(path, options, true);
     forceLogout();
-    throw new ApiError(401, 'Session expired — please log in again');
+    throw new ApiError(401, 'Session expired — please log in again', undefined, 'SESSION_EXPIRED');
   }
 
   if (!res.ok) {
@@ -89,7 +105,7 @@ export async function apiRequest<T>(
       (body as { error?: { message?: string } })?.error?.message ??
       (body as { message?: string })?.message ??
       `HTTP ${res.status}`;
-    throw new ApiError(res.status, message, body);
+    throw new ApiError(res.status, Array.isArray(message) ? message.join(', ') : message, body, errorCode(body));
   }
 
   if (res.status === 204) return undefined as T;
@@ -127,7 +143,7 @@ export async function apiUpload<T>(
     for (const [key, value] of Object.entries(fields)) formData.append(key, value);
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await send(`${API_BASE}${path}`, {
     method: 'POST',
     body: formData,
     headers: {
@@ -143,7 +159,7 @@ export async function apiUpload<T>(
       (body as { message?: unknown })?.message ??
       `HTTP ${res.status}`;
     const message = Array.isArray(rawMessage) ? rawMessage.join(', ') : String(rawMessage);
-    throw new ApiError(res.status, message, body);
+    throw new ApiError(res.status, message, body, errorCode(body));
   }
 
   return res.json() as Promise<T>;
@@ -154,7 +170,7 @@ export async function apiDownload(path: string, filename: string, tenantOverride
   const { token, tenantId } = getAuth();
   const effectiveTenant = tenantOverride ?? tenantId;
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await send(`${API_BASE}${path}`, {
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(effectiveTenant ? { 'X-Tenant-ID': effectiveTenant } : {}),

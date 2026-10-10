@@ -1,14 +1,17 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
-import { api, apiDownload, ApiError } from '../../../lib/api-client';
+import { api, apiDownload } from '../../../lib/api-client';
+import { useErrorText } from '../../../lib/i18n/errors';
+import { feeStatusLabel, paymentMethodLabel } from '../../../lib/i18n/labels';
 import { Button } from '../../../components/ui/button';
 import { Select } from '../../../components/ui/select';
 import { Input } from '../../../components/ui/input';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
-import { formatRupees } from '../../../lib/format';
+import { formatDateOnly, formatRupees } from '../../../lib/format';
 
 type ReportType =
   | 'fee-pending'
@@ -25,17 +28,20 @@ interface Class {
   academicYear: string;
 }
 
-const REPORT_OPTIONS: { value: ReportType; label: string }[] = [
-  { value: 'fee-pending', label: 'Students with Fee Pending' },
-  { value: 'paid-history', label: 'Paid Fee History' },
-  { value: 'defaulters', label: 'Defaulters (Overdue)' },
-  { value: 'students-in-class', label: 'Students in a Class' },
-  { value: 'class-collection-summary', label: 'Class-wise Collection Summary' },
-  { value: 'collection-register', label: 'Daily Collection Register' },
-  { value: 'student-fee-summary', label: 'Student Fee Summary (Whole Year)' },
-];
+/** Report type → its label key in messages "feeReports". */
+const REPORT_OPTIONS = [
+  { value: 'fee-pending', labelKey: 'typeFeePending' },
+  { value: 'paid-history', labelKey: 'typePaidHistory' },
+  { value: 'defaulters', labelKey: 'typeDefaulters' },
+  { value: 'students-in-class', labelKey: 'typeStudentsInClass' },
+  { value: 'class-collection-summary', labelKey: 'typeClassSummary' },
+  { value: 'collection-register', labelKey: 'typeRegister' },
+  { value: 'student-fee-summary', labelKey: 'typeStudentSummary' },
+] as const satisfies readonly { value: ReportType; labelKey: string }[];
 
 export default function FeeReportsPage() {
+  const t = useTranslations('feeReports');
+  const errorText = useErrorText();
   const { toast } = useToast();
   const [reportType, setReportType] = useState<ReportType>('fee-pending');
   const [classes, setClasses] = useState<Class[]>([]);
@@ -78,7 +84,7 @@ export default function FeeReportsPage() {
       );
       setRows(res.data);
     } catch (e) {
-      setError((e as ApiError).message);
+      setError(errorText(e));
     } finally {
       setLoading(false);
     }
@@ -98,7 +104,7 @@ export default function FeeReportsPage() {
       if (dateTo) params.set('dateTo', dateTo);
       await apiDownload(`/insights/${reportType}?${params.toString()}`, `${reportType}.csv`);
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     }
   }
 
@@ -113,8 +119,8 @@ export default function FeeReportsPage() {
       <div className="flex flex-wrap items-end gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
         <div className="w-full sm:w-64">
           <Select
-            label="Report"
-            options={REPORT_OPTIONS}
+            label={t('report')}
+            options={REPORT_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey) }))}
             value={reportType}
             onChange={(e) => setReportType(e.target.value as ReportType)}
           />
@@ -122,9 +128,9 @@ export default function FeeReportsPage() {
         {showClassFilter && (
           <div className="w-full sm:w-56">
             <Select
-              label="Class (optional)"
+              label={t('class')}
               options={classOptions}
-              placeholder="All classes"
+              placeholder={t('allClasses')}
               value={classId}
               onChange={(e) => setClassId(e.target.value)}
             />
@@ -133,8 +139,8 @@ export default function FeeReportsPage() {
         {showAcademicYearFilter && (
           <div className="w-full sm:w-40">
             <Input
-              label="Academic Year (optional)"
-              placeholder="e.g. 2025-26"
+              label={t('academicYear')}
+              placeholder={t('academicYearPlaceholder')}
               value={academicYear}
               onChange={(e) => setAcademicYear(e.target.value)}
             />
@@ -142,14 +148,14 @@ export default function FeeReportsPage() {
         )}
         {showDateRange && (
           <>
-            <Input label="From" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-            <Input label="To" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            <Input label={t('from')} type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            <Input label={t('to')} type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
           </>
         )}
-        <Button onClick={runReport}>Run Report</Button>
+        <Button onClick={runReport}>{t('run')}</Button>
         {supportsCsvExport && (
           <Button variant="secondary" onClick={exportCsv}>
-            Export CSV
+            {t('exportCsv')}
           </Button>
         )}
       </div>
@@ -161,7 +167,7 @@ export default function FeeReportsPage() {
       ) : error ? (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
       ) : rows.length === 0 ? (
-        <EmptyState title="No data" description="No records match this report's filters." />
+        <EmptyState title={t('emptyTitle')} description={t('emptyDescription')} />
       ) : (
         <ReportTable reportType={reportType} rows={rows} />
       )}
@@ -170,10 +176,13 @@ export default function FeeReportsPage() {
 }
 
 function ReportTable({ reportType, rows }: { reportType: ReportType; rows: Record<string, unknown>[] }) {
+  const t = useTranslations('feeReports');
+  const tStatus = useTranslations('feeStatus');
+  const tMethod = useTranslations('paymentMethod');
   if (reportType === 'fee-pending' || reportType === 'defaulters') {
     return (
       <Table
-        headers={['Student', 'Class', 'Fee', 'Due', 'Paid', 'Balance', 'Status', 'Due Date']}
+        headers={[t('colStudent'), t('colClass'), t('colFee'), t('colDue'), t('colPaid'), t('colBalance'), t('colStatus'), t('colDueDate')]}
         rows={rows}
         render={(f: any) => [
           f.student?.name ?? '—',
@@ -182,8 +191,8 @@ function ReportTable({ reportType, rows }: { reportType: ReportType; rows: Recor
           formatRupees(f.amountDue),
           formatRupees(f.amountPaid),
           formatRupees(Math.max(0, parseFloat(f.amountDue) - parseFloat(f.amountPaid))),
-          f.status,
-          new Date(f.dueDate).toLocaleDateString('en-IN'),
+          feeStatusLabel(tStatus, f.status),
+          formatDateOnly(f.dueDate),
         ]}
       />
     );
@@ -192,7 +201,7 @@ function ReportTable({ reportType, rows }: { reportType: ReportType; rows: Recor
   if (reportType === 'paid-history') {
     return (
       <Table
-        headers={['Receipt No.', 'Student', 'Class', 'Fee', 'Amount', 'Method', 'Paid On']}
+        headers={[t('colReceiptNo'), t('colStudent'), t('colClass'), t('colFee'), t('colAmount'), t('colMethod'), t('colPaidOn')]}
         rows={rows}
         render={(r: any) => [
           r.receiptNumber,
@@ -200,8 +209,8 @@ function ReportTable({ reportType, rows }: { reportType: ReportType; rows: Recor
           r.class?.name ?? '—',
           r.studentFee?.feeStructure?.name ?? '—',
           formatRupees(r.amount),
-          r.method,
-          new Date(r.paidOn).toLocaleDateString('en-IN'),
+          paymentMethodLabel(tMethod, r.method),
+          formatDateOnly(r.paidOn),
         ]}
       />
     );
@@ -210,12 +219,12 @@ function ReportTable({ reportType, rows }: { reportType: ReportType; rows: Recor
   if (reportType === 'students-in-class') {
     return (
       <Table
-        headers={['Admission No', 'Name', 'Date of Birth']}
+        headers={[t('colAdmissionNo'), t('colName'), t('colDob')]}
         rows={rows}
         render={(s: any) => [
           s.admissionNo,
           s.name,
-          s.dob ? new Date(s.dob).toLocaleDateString('en-IN') : '—',
+          s.dob ? formatDateOnly(s.dob) : '—',
         ]}
       />
     );
@@ -224,7 +233,7 @@ function ReportTable({ reportType, rows }: { reportType: ReportType; rows: Recor
   if (reportType === 'student-fee-summary') {
     return (
       <Table
-        headers={['Student', 'Class', 'Total Due', 'Total Collected', 'Outstanding']}
+        headers={[t('colStudent'), t('colClass'), t('colTotalDue'), t('colTotalCollected'), t('colOutstanding')]}
         rows={rows}
         render={(s: any) => [
           `${s.studentName}${s.admissionNo ? ` (${s.admissionNo})` : ''}`,
@@ -240,7 +249,7 @@ function ReportTable({ reportType, rows }: { reportType: ReportType; rows: Recor
   if (reportType === 'class-collection-summary') {
     return (
       <Table
-        headers={['Class', 'Academic Year', 'Expected', 'Collected', 'Outstanding']}
+        headers={[t('colClass'), t('colAcademicYear'), t('colExpected'), t('colCollected'), t('colOutstanding')]}
         rows={rows}
         render={(c: any) => [
           `${c.className}${c.section ? ` (${c.section})` : ''}`,
@@ -256,11 +265,11 @@ function ReportTable({ reportType, rows }: { reportType: ReportType; rows: Recor
   // collection-register
   return (
     <Table
-      headers={['Date', 'Method', 'Total Amount', 'Count']}
+      headers={[t('colDate'), t('colMethod'), t('colTotalAmount'), t('colCount')]}
       rows={rows}
       render={(g: any) => [
-        new Date(g.date).toLocaleDateString('en-IN'),
-        g.method,
+        formatDateOnly(g.date),
+        paymentMethodLabel(tMethod, g.method),
         formatRupees(g.totalAmount),
         g.count,
       ]}
@@ -282,8 +291,8 @@ function Table({
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-cream/60">
           <tr>
-            {headers.map((h) => (
-              <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
+            {headers.map((h, i) => (
+              <th key={i} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
                 {h}
               </th>
             ))}

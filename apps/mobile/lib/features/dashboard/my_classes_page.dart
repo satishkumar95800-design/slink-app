@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/l10n/l10n.dart';
 import '../../shared/models/teacher_class_overview.dart';
+import '../reports/report_labels.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
 import 'teacher_classes_repository.dart';
 
@@ -15,13 +17,13 @@ class MyClassesPage extends ConsumerWidget {
     final overviewsAsync = ref.watch(myClassOverviewsProvider);
 
     return AuthenticatedScaffold(
-      appBar: AppBar(title: const Text('About My Class(es)')),
+      appBar: AppBar(title: Text(context.l10n.teacherAboutMyClasses)),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(myClassOverviewsProvider),
         child: overviewsAsync.when(
           data: (overviews) {
             if (overviews.isEmpty) {
-              return const Center(child: Text('You are not linked to any classes yet.'));
+              return Center(child: Text(context.l10n.myClassesEmpty));
             }
             return ListView.builder(
               padding: const EdgeInsets.all(16),
@@ -33,7 +35,7 @@ class MyClassesPage extends ConsumerWidget {
           error: (error, _) => Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Text('Could not load your classes. Pull down to retry.\n$error',
+              child: Text('${context.l10n.myClassesCouldNotLoad}\n$error',
                   textAlign: TextAlign.center),
             ),
           ),
@@ -62,7 +64,7 @@ class _ClassOverviewCard extends StatelessWidget {
             Text(overview.studentClass.displayName, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 4),
             Text(
-              'Boys: ${strength.male} · Girls: ${strength.female} · Total: ${strength.total}',
+              context.l10n.myClassesStrength(strength.male, strength.female, strength.total),
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             if (overview.subjects.isNotEmpty) ...[
@@ -77,7 +79,7 @@ class _ClassOverviewCard extends StatelessWidget {
             ],
             if (overview.recentReports.isNotEmpty) ...[
               const Divider(height: 24),
-              Text('Recent reports', style: Theme.of(context).textTheme.titleSmall),
+              Text(context.l10n.myClassesRecentReports, style: Theme.of(context).textTheme.titleSmall),
               const SizedBox(height: 8),
               for (final report in overview.recentReports) _RecentReportRow(report: report),
             ],
@@ -100,7 +102,7 @@ class _RecentReportRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text('${report.studentName} • ${report.type} • ${report.term}'),
+            child: Text('${report.studentName} • ${reportTypeLabelFromApi(context.l10n, report.type)} • ${report.term}'),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -109,7 +111,7 @@ class _RecentReportRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
-              report.readByAnyParent ? 'Read' : 'Unread',
+              report.readByAnyParent ? context.l10n.myClassesRead : context.l10n.myClassesUnread,
               style: TextStyle(
                 color: report.readByAnyParent ? Colors.green : Colors.orange,
                 fontSize: 11,

@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { api, ApiError } from '../../../lib/api-client';
+import { api } from '../../../lib/api-client';
+import { useErrorText } from '../../../lib/i18n/errors';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Select } from '../../../components/ui/select';
@@ -27,21 +29,25 @@ interface Teacher {
   name: string;
 }
 
-const schema = z.object({
-  name: z.string().min(1, 'Class name is required'),
-  academicYear: z.string().min(4, 'e.g. 2024-25'),
-  section: z.string().optional(),
+const makeSchemas = (t: ReturnType<typeof useTranslations<'classes'>>) => ({
+  create: z.object({
+    name: z.string().min(1, t('nameRequired')),
+    academicYear: z.string().min(4, t('yearHint')),
+    section: z.string().optional(),
+  }),
+  assign: z.object({
+    teacherId: z.string().min(1, t('selectTeacher')),
+  }),
 });
 
-type FormData = z.infer<typeof schema>;
-
-const assignSchema = z.object({
-  teacherId: z.string().min(1, 'Select a teacher'),
-});
-
-type AssignFormData = z.infer<typeof assignSchema>;
+type FormData = z.infer<ReturnType<typeof makeSchemas>['create']>;
+type AssignFormData = z.infer<ReturnType<typeof makeSchemas>['assign']>;
 
 export default function ClassesPage() {
+  const t = useTranslations('classes');
+  const tCommon = useTranslations('common');
+  const errorText = useErrorText();
+  const schemas = useMemo(() => makeSchemas(t), [t]);
   const { toast } = useToast();
   const [classes, setClasses] = useState<Class[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -56,14 +62,14 @@ export default function ClassesPage() {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
+  } = useForm<FormData>({ resolver: zodResolver(schemas.create) });
 
   const {
     register: registerAssign,
     handleSubmit: handleAssignSubmit,
     reset: resetAssign,
     formState: { errors: assignErrors, isSubmitting: isAssignSubmitting },
-  } = useForm<AssignFormData>({ resolver: zodResolver(assignSchema) });
+  } = useForm<AssignFormData>({ resolver: zodResolver(schemas.assign) });
 
   async function fetchClasses() {
     try {
@@ -77,7 +83,7 @@ export default function ClassesPage() {
       setTeachers(teacherRes.data);
       setError(null);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errorText(e));
     } finally {
       setLoading(false);
     }
@@ -93,12 +99,12 @@ export default function ClassesPage() {
         ...data,
         section: data.section || undefined,
       });
-      toast('Class created', 'success');
+      toast(t('created'), 'success');
       setShowModal(false);
       reset();
       fetchClasses();
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     }
   }
 
@@ -114,26 +120,26 @@ export default function ClassesPage() {
         teacherId: data.teacherId,
         isClassTeacher: true,
       });
-      toast('Class teacher assigned', 'success');
+      toast(t('teacherAssigned'), 'success');
       setAssigningClass(null);
       fetchClasses();
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     }
   }
 
-  const teacherOptions = teachers.map((t) => ({ value: t.id, label: t.name }));
+  const teacherOptions = teachers.map((teacher) => ({ value: teacher.id, label: teacher.name }));
 
   function classTeacherNames(cls: Class): string {
-    const names = cls.teachers.filter((t) => t.isClassTeacher).map((t) => t.teacher.name);
+    const names = cls.teachers.filter((ct) => ct.isClassTeacher).map((ct) => ct.teacher.name);
     return names.length > 0 ? names.join(', ') : '—';
   }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-gray-500">{total} class{total !== 1 ? 'es' : ''}</p>
-        <Button onClick={() => setShowModal(true)}>+ Add Class</Button>
+        <p className="text-sm text-gray-500">{t('count', { count: total })}</p>
+        <Button onClick={() => setShowModal(true)}>{t('add')}</Button>
       </div>
 
       {loading ? (
@@ -144,17 +150,17 @@ export default function ClassesPage() {
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
       ) : classes.length === 0 ? (
         <EmptyState
-          title="No classes yet"
-          description="Create a class to start enrolling students."
-          action={<Button onClick={() => setShowModal(true)}>+ Add Class</Button>}
+          title={t('emptyTitle')}
+          description={t('emptyDescription')}
+          action={<Button onClick={() => setShowModal(true)}>{t('add')}</Button>}
         />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-cream/60">
               <tr>
-                {['Name', 'Academic Year', 'Section', 'Class Teacher', 'Students', ''].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
+                {[t('colName'), t('colYear'), t('colSection'), t('colClassTeacher'), t('colStudents'), ''].map((h, i) => (
+                  <th key={i} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
                     {h}
                   </th>
                 ))}
@@ -173,7 +179,7 @@ export default function ClassesPage() {
                       onClick={() => openAssign(c)}
                       className="text-xs text-teal hover:underline"
                     >
-                      Assign teacher
+                      {t('assignTeacher')}
                     </button>
                   </td>
                 </tr>
@@ -186,18 +192,18 @@ export default function ClassesPage() {
       <Modal
         open={showModal}
         onClose={() => { setShowModal(false); reset(); }}
-        title="Add Class"
+        title={t('addTitle')}
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <Input label="Class Name" required placeholder="e.g. Grade 5" error={errors.name?.message} {...register('name')} />
-          <Input label="Academic Year" required placeholder="2024-25" error={errors.academicYear?.message} {...register('academicYear')} />
-          <Input label="Section" placeholder="A" error={errors.section?.message} {...register('section')} />
+          <Input label={t('className')} required placeholder={t('classNamePlaceholder')} error={errors.name?.message} {...register('name')} />
+          <Input label={t('academicYear')} required placeholder={t('academicYearPlaceholder')} error={errors.academicYear?.message} {...register('academicYear')} />
+          <Input label={t('section')} placeholder={t('sectionPlaceholder')} error={errors.section?.message} {...register('section')} />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => { setShowModal(false); reset(); }}>
-              Cancel
+              {tCommon('cancel')}
             </Button>
             <Button type="submit" loading={isSubmitting}>
-              Create Class
+              {t('create')}
             </Button>
           </div>
         </form>
@@ -206,22 +212,22 @@ export default function ClassesPage() {
       <Modal
         open={!!assigningClass}
         onClose={() => setAssigningClass(null)}
-        title={`Assign Class Teacher — ${assigningClass?.name ?? ''}`}
+        title={t('assignTitle', { name: assigningClass?.name ?? '' })}
       >
         <form onSubmit={handleAssignSubmit(onAssignSubmit)} className="space-y-4">
           <Select
-            label="Teacher" required
+            label={t('teacher')} required
             options={teacherOptions}
-            placeholder="Select a teacher"
+            placeholder={t('selectTeacher')}
             error={assignErrors.teacherId?.message}
             {...registerAssign('teacherId')}
           />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setAssigningClass(null)}>
-              Cancel
+              {tCommon('cancel')}
             </Button>
             <Button type="submit" loading={isAssignSubmitting}>
-              Assign
+              {t('assign')}
             </Button>
           </div>
         </form>

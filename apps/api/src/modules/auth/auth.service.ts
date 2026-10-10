@@ -16,6 +16,8 @@ import { EmailLoginDto } from './dto/email-login.dto';
 import { SuperAdminLoginDto } from './dto/super-admin-login.dto';
 import { CheckPhoneDto } from './dto/check-phone.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
+import { effectiveLanguage, isLanguage } from '../../common/i18n/languages';
+import type { Language } from '../../common/i18n/languages';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -28,6 +30,10 @@ export interface AuthResult {
     name: string;
     role: Role;
     tenantId: string;
+    /** The user's own pick, or null when they follow the school default. */
+    preferredLanguage: string | null;
+    /** What the apps should show right after sign-in, even on a new device. */
+    language: Language;
   };
 }
 
@@ -65,9 +71,11 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new ForbiddenException(
-        'This phone number is not registered — please contact your school admin to add it.',
-      );
+      throw new ForbiddenException({
+        code: 'PHONE_NOT_REGISTERED',
+        message:
+          'This phone number is not registered — please contact your school admin to add it.',
+      });
     }
 
     if (!user.isVerified) {
@@ -98,20 +106,23 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Invalid credentials' });
     }
 
     if (user.role === Role.parent) {
-      throw new ForbiddenException('Parents must use phone OTP login');
+      throw new ForbiddenException({
+        code: 'PARENT_USE_OTP',
+        message: 'Parents must use phone OTP login',
+      });
     }
 
     if (!user.passwordHash) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Invalid credentials' });
     }
 
     const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordMatch) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Invalid credentials' });
     }
 
     return this.issueTokens(user, dto.deviceId);
@@ -128,12 +139,12 @@ export class AuthService {
     });
 
     if (!user || !user.passwordHash) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Invalid credentials' });
     }
 
     const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordMatch) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Invalid credentials' });
     }
 
     return this.issueTokens(user, dto.deviceId);
@@ -184,6 +195,19 @@ export class AuthService {
     });
   }
 
+  /** GET /auth/me — the signed-in user plus their saved and effective language. */
+  async me(user: { id: string; name: string; role: Role; tenantId: string }) {
+    const row = await this.prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+      select: { preferredLanguage: true },
+    });
+    return {
+      ...user,
+      preferredLanguage: row.preferredLanguage,
+      language: await this.languageFor({ tenantId: user.tenantId, preferredLanguage: row.preferredLanguage }),
+    };
+  }
+
   /**
    * Hash a plain password for storage (used when admin creates teacher/admin accounts).
    */
@@ -194,7 +218,13 @@ export class AuthService {
   // ─── Private helpers ────────────────────────────────────────────────────────
 
   private async issueTokens(
-    user: { id: string; tenantId: string; role: Role; name: string },
+    user: {
+      id: string;
+      tenantId: string;
+      role: Role;
+      name: string;
+      preferredLanguage: string | null;
+    },
     deviceId?: string,
   ): Promise<AuthResult> {
     const accessExpiresIn = this.config.get<string>('JWT_ACCESS_EXPIRES_IN') ?? '15m';
@@ -231,8 +261,25 @@ export class AuthService {
       accessToken,
       refreshToken: rawRefreshToken,
       expiresIn: expiresInSeconds,
-      user: { id: user.id, name: user.name, role: user.role, tenantId: user.tenantId },
+      user: {
+        id: user.id,
+        name: user.name,
+        role: user.role,
+        tenantId: user.tenantId,
+        preferredLanguage: user.preferredLanguage,
+        language: await this.languageFor(user),
+      },
     };
+  }
+
+  /** Effective interface language for a user: their pick, else their school's default, else English. */
+  async languageFor(user: { tenantId: string; preferredLanguage: string | null }): Promise<Language> {
+    if (isLanguage(user.preferredLanguage)) return user.preferredLanguage;
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: user.tenantId },
+      select: { defaultLanguage: true },
+    });
+    return effectiveLanguage(null, tenant?.defaultLanguage);
   }
 
   /** SHA-256 hash of a token string — fast and sufficient for a 128-bit random UUID. */

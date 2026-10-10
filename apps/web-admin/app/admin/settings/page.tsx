@@ -1,12 +1,15 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
-import { api, apiUpload, ApiError } from '../../../lib/api-client';
+import { api, apiUpload } from '../../../lib/api-client';
+import { useErrorText } from '../../../lib/i18n/errors';
+import { formatDateOnly } from '../../../lib/format';
+import { LanguageSwitcher } from '../../../components/layout/language-switcher';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { useToast } from '../../../components/ui/toast';
 import { getSession } from '../../../lib/auth';
-import { strings } from '../../../lib/strings';
 
 interface TenantSelf {
   id: string;
@@ -23,6 +26,8 @@ interface UploadResult {
 type Stage = 'idle' | 'uploading';
 
 export default function SettingsPage() {
+  const t = useTranslations('settings');
+  const errorText = useErrorText();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -44,9 +49,9 @@ export default function SettingsPage() {
       const uploaded = await apiUpload<UploadResult>('/files/upload', file, { category: 'background' });
       const updated = await api.patch<TenantSelf>('/tenant', { backgroundImageKey: uploaded.key });
       setTenant(updated);
-      toast('Background image updated', 'success');
+      toast(t('backgroundUpdated'), 'success');
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : 'Upload failed', 'error');
+      toast(errorText(err, t('uploadFailed')), 'error');
     } finally {
       setStage('idle');
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -56,22 +61,27 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
-        <h2 className="text-base font-semibold text-gray-900">Branding</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Upload an image for your school. It's shown as a background across the admin console and the mobile
-          app once a parent or teacher logs in.
-        </p>
+        <h2 className="text-base font-semibold text-gray-900">{t('yourLanguage')}</h2>
+        <p className="mt-1 text-sm text-gray-500">{t('yourLanguageHelp')}</p>
+        <div className="mt-4">
+          <LanguageSwitcher signedIn />
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
+        <h2 className="text-base font-semibold text-gray-900">{t('branding')}</h2>
+        <p className="mt-1 text-sm text-gray-500">{t('brandingHelp')}</p>
 
         <div className="mt-5">
           {tenant?.backgroundImageUrl ? (
             <img
               src={tenant.backgroundImageUrl}
-              alt="School background"
+              alt={t('backgroundAlt')}
               className="h-48 w-full rounded-md border object-cover"
             />
           ) : (
             <div className="flex h-48 w-full items-center justify-center rounded-md border border-dashed text-sm text-gray-400">
-              No background image set yet
+              {t('noBackground')}
             </div>
           )}
         </div>
@@ -85,9 +95,9 @@ export default function SettingsPage() {
             disabled={stage === 'uploading'}
             className="block text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-teal/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-teal hover:file:bg-teal/20"
           />
-          {stage === 'uploading' && <Button loading disabled>Uploading…</Button>}
+          {stage === 'uploading' && <Button loading disabled>{t('uploading')}</Button>}
         </div>
-        <p className="mt-2 text-xs text-gray-400">JPEG, PNG, or WebP — up to 8 MB.</p>
+        <p className="mt-2 text-xs text-gray-400">{t('fileHint')}</p>
       </div>
 
       {getSession()?.role === 'admin' && <HolidaysSection />}
@@ -102,7 +112,8 @@ interface Holiday {
 }
 
 function HolidaysSection() {
-  const h = strings.holidays;
+  const t = useTranslations('holidays');
+  const errorText = useErrorText();
   const { toast } = useToast();
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [date, setDate] = useState('');
@@ -122,52 +133,52 @@ function HolidaysSection() {
       setHolidays((prev) => [...prev, created].sort((a, b) => a.date.localeCompare(b.date)));
       setDate('');
       setName('');
-      toast(h.added, 'success');
+      toast(t('added'), 'success');
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : 'Failed', 'error');
+      toast(errorText(err), 'error');
     } finally {
       setSaving(false);
     }
   }
 
   async function remove(holiday: Holiday) {
-    if (!confirm(h.confirmRemove(holiday.name))) return;
+    if (!confirm(t('confirmRemove', { name: holiday.name }))) return;
     try {
       await api.delete(`/attendance/holidays/${holiday.id}`);
       setHolidays((prev) => prev.filter((x) => x.id !== holiday.id));
-      toast(h.removed, 'success');
+      toast(t('removed'), 'success');
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : 'Failed', 'error');
+      toast(errorText(err), 'error');
     }
   }
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
-      <h2 className="text-base font-semibold text-gray-900">{h.sectionTitle}</h2>
-      <p className="mt-1 text-sm text-gray-500">{h.sectionHelp}</p>
+      <h2 className="text-base font-semibold text-gray-900">{t('sectionTitle')}</h2>
+      <p className="mt-1 text-sm text-gray-500">{t('sectionHelp')}</p>
 
       <form onSubmit={add} className="mt-4 flex flex-wrap items-end gap-3">
-        <Input label={h.date} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
+        <Input label={t('date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
         <div className="min-w-48 flex-1">
-          <Input label={h.name} required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
+          <Input label={t('name')} required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <Button type="submit" loading={saving} disabled={!date || !name.trim()}>
-          {h.add}
+          {t('add')}
         </Button>
       </form>
 
       {holidays.length === 0 ? (
-        <p className="mt-4 text-sm text-gray-500">{h.empty}</p>
+        <p className="mt-4 text-sm text-gray-500">{t('empty')}</p>
       ) : (
         <ul className="mt-4 divide-y divide-gray-100">
           {holidays.map((holiday) => (
             <li key={holiday.id} className="flex items-center justify-between py-2">
               <span className="text-sm text-gray-900">
-                <span className="mr-3 font-mono text-gray-500">{holiday.date.split('-').reverse().join('/')}</span>
+                <span className="mr-3 font-mono text-gray-500">{formatDateOnly(holiday.date)}</span>
                 {holiday.name}
               </span>
               <Button variant="ghost" size="sm" onClick={() => remove(holiday)}>
-                {h.remove}
+                {t('remove')}
               </Button>
             </li>
           ))}

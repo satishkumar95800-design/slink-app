@@ -1,9 +1,11 @@
 import 'dart:io';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../core/l10n/l10n.dart';
 import '../../shared/models/api_exception.dart';
+import '../fees/fee_labels.dart';
+import '../home/parent_home_models.dart';
 import '../../shared/services/files_repository.dart';
 import '../../shared/widgets/error_banner.dart';
 import '../../shared/widgets/primary_button.dart';
@@ -12,21 +14,6 @@ import 'my_payment_claims_page.dart';
 import 'payment_claims_repository.dart';
 
 const _paymentModes = ['cash', 'cheque', 'bank_transfer', 'upi'];
-
-String _modeLabel(String mode) {
-  switch (mode) {
-    case 'cash':
-      return 'Cash';
-    case 'cheque':
-      return 'Cheque';
-    case 'bank_transfer':
-      return 'Bank Transfer';
-    case 'upi':
-      return 'UPI';
-    default:
-      return mode;
-  }
-}
 
 /// Lets a parent tell the school "I already paid this outside the app" by
 /// attaching proof (photo/screenshot) — POST /files/upload followed by
@@ -91,7 +78,7 @@ class _SubmitPaymentClaimPageState extends ConsumerState<SubmitPaymentClaimPage>
 
   Future<void> _submit() async {
     if (_photo == null) {
-      setState(() => _error = 'Attach a photo or screenshot of the payment proof first.');
+      setState(() => _error = context.l10n.claimAttachProofFirst);
       return;
     }
     setState(() {
@@ -114,12 +101,12 @@ class _SubmitPaymentClaimPageState extends ConsumerState<SubmitPaymentClaimPage>
       ref.invalidate(parentHomeProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Submitted — your school will review it shortly')),
+          SnackBar(content: Text(context.l10n.claimSubmittedToast)),
         );
         Navigator.of(context).pop();
       }
     } catch (e) {
-      setState(() => _error = 'Could not submit your claim. ${_describeError(e)}');
+      setState(() => _error = currentL10n.claimCouldNotSubmit(describeError(e)));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -127,18 +114,16 @@ class _SubmitPaymentClaimPageState extends ConsumerState<SubmitPaymentClaimPage>
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     return Scaffold(
-      appBar: AppBar(title: const Text('Already Paid?')),
+      appBar: AppBar(title: Text(l.claimFormTitle)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (_error != null) ErrorBanner(message: _error!),
-            const Text(
-              'Attach a photo or screenshot of your payment (bank transfer, cash receipt, cheque, etc.). '
-              'The school will review it before it is recorded.',
-            ),
+            Text(l.claimFormIntro),
             const SizedBox(height: 16),
             if (_photo != null)
               ClipRRect(
@@ -146,22 +131,19 @@ class _SubmitPaymentClaimPageState extends ConsumerState<SubmitPaymentClaimPage>
                 child: Image.file(_photo!, height: 220, width: double.infinity, fit: BoxFit.cover),
               ),
             const SizedBox(height: 8),
-            Row(
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _pickPhoto(ImageSource.camera),
-                    icon: const Icon(Icons.camera_alt_outlined),
-                    label: Text(_photo == null ? 'Take photo' : 'Retake photo'),
-                  ),
+                OutlinedButton.icon(
+                  onPressed: () => _pickPhoto(ImageSource.camera),
+                  icon: const Icon(Icons.camera_alt_outlined),
+                  label: Text(_photo == null ? l.claimTakePhoto : l.claimRetakePhoto),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _pickPhoto(ImageSource.gallery),
-                    icon: const Icon(Icons.photo_library_outlined),
-                    label: const Text('Choose from gallery'),
-                  ),
+                OutlinedButton.icon(
+                  onPressed: () => _pickPhoto(ImageSource.gallery),
+                  icon: const Icon(Icons.photo_library_outlined),
+                  label: Text(l.claimChooseFromGallery),
                 ),
               ],
             ),
@@ -169,24 +151,22 @@ class _SubmitPaymentClaimPageState extends ConsumerState<SubmitPaymentClaimPage>
             TextField(
               controller: _amountController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Amount paid (optional)', border: OutlineInputBorder(), prefixText: '₹'),
+              decoration: InputDecoration(labelText: l.claimAmountLabel, border: const OutlineInputBorder(), prefixText: '₹'),
             ),
             const SizedBox(height: 16),
             InkWell(
               onTap: _pickDate,
               child: InputDecorator(
-                decoration: const InputDecoration(labelText: 'Date paid (optional)', border: OutlineInputBorder()),
-                child: Text(
-                  _claimedDate == null ? 'Select a date' : _claimedDate!.toLocal().toString().split(' ').first,
-                ),
+                decoration: InputDecoration(labelText: l.claimDateLabel, border: const OutlineInputBorder()),
+                child: Text(_claimedDate == null ? l.claimSelectDate : displayDate(_claimedDate!)),
               ),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               initialValue: _claimedMode,
-              decoration: const InputDecoration(labelText: 'Payment mode (optional)', border: OutlineInputBorder()),
+              decoration: InputDecoration(labelText: l.claimModeLabel, border: const OutlineInputBorder()),
               items: [
-                for (final mode in _paymentModes) DropdownMenuItem(value: mode, child: Text(_modeLabel(mode))),
+                for (final mode in _paymentModes) DropdownMenuItem(value: mode, child: Text(paymentModeLabel(l, mode))),
               ],
               onChanged: (value) => setState(() => _claimedMode = value),
             ),
@@ -196,11 +176,11 @@ class _SubmitPaymentClaimPageState extends ConsumerState<SubmitPaymentClaimPage>
               minLines: 2,
               maxLines: 4,
               maxLength: 500,
-              decoration: const InputDecoration(labelText: 'Note (optional)', border: OutlineInputBorder()),
+              decoration: InputDecoration(labelText: l.claimNoteLabel, border: const OutlineInputBorder()),
             ),
             const SizedBox(height: 24),
             PrimaryButton(
-              label: 'Submit for review',
+              label: l.claimSubmitForReview,
               isLoading: _isSubmitting,
               onPressed: _submit,
             ),
@@ -210,9 +190,3 @@ class _SubmitPaymentClaimPageState extends ConsumerState<SubmitPaymentClaimPage>
     );
   }
 }
-
-String _describeError(Object e) => switch (e) {
-      ApiException() => e.message,
-      DioException() => ApiException.fromDioError(e).message,
-      _ => 'Please try again.',
-    };

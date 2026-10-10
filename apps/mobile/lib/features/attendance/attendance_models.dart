@@ -1,4 +1,4 @@
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
 
 enum AttendanceStatus { present, absent, late, leave }
 
@@ -11,11 +11,11 @@ AttendanceStatus? parseAttendanceStatus(Object? raw) => switch (raw) {
     };
 
 extension AttendanceStatusLabel on AttendanceStatus {
-  String get label => switch (this) {
-        AttendanceStatus.present => AppStrings.present,
-        AttendanceStatus.absent => AppStrings.absent,
-        AttendanceStatus.late => AppStrings.late,
-        AttendanceStatus.leave => AppStrings.leave,
+  String label(AppLocalizations l) => switch (this) {
+        AttendanceStatus.present => l.attendancePresent,
+        AttendanceStatus.absent => l.attendanceAbsent,
+        AttendanceStatus.late => l.attendanceLate,
+        AttendanceStatus.leave => l.attendanceLeave,
       };
 }
 

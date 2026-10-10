@@ -1,0 +1,7 @@
+{
+  "@@locale": "kn",
+  "@@x-note": "Stage 1: only the language picker is translated. Every other key falls back to English (see l10n_untranslated.json). Draft — needs native-speaker review.",
+  "languageNativeName": "ಕನ್ನಡ",
+  "languageTitle": "ಭಾಷೆ",
+  "languageChoose": "ನಿಮ್ಮ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ"
+}

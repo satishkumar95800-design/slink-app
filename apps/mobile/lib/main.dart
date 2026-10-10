@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
-import 'core/strings.dart';
+import 'core/l10n/l10n.dart';
+import 'core/l10n/language_controller.dart';
 import 'features/dashboard/students_repository.dart';
 
 /// Must be a top-level function — the OS invokes this in a separate isolate
@@ -20,7 +22,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  runApp(const ProviderScope(child: SlinkApp()));
+  final locale = await LanguageController.loadInitial();
+  runApp(ProviderScope(
+    overrides: [initialLocaleProvider.overrideWithValue(locale)],
+    child: const SlinkApp(),
+  ));
 }
 
 class SlinkApp extends ConsumerStatefulWidget {
@@ -88,7 +94,9 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
         return (
           route: '/notices/detail',
           extra: {
-            'title': message.notification?.title ?? data['title'] ?? (type == 'homework' ? 'Homework' : 'Notice'),
+            'title': message.notification?.title ??
+                data['title'] ??
+                (type == 'homework' ? currentL10n.homeworkKind : currentL10n.noticeKind),
             'body': message.notification?.body ?? data['body'] ?? '',
             'attachmentUrl': data['attachmentUrl'],
             'broadcastId': data['broadcastId'],
@@ -123,13 +131,23 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
   Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
     final theme = ref.watch(appThemeProvider);
+    final locale = ref.watch(languageControllerProvider);
 
     return MaterialApp.router(
-      title: AppStrings.appName,
+      onGenerateTitle: (context) => context.l10n.appName,
       theme: theme.lightTheme,
       darkTheme: theme.darkTheme,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
+      // Changing language rebuilds from here down — no restart or re-login.
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
     );
   }
 }

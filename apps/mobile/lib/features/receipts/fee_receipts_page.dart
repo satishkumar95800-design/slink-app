@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../shared/models/receipt.dart';
 import 'receipts_repository.dart';
 import '../../core/format/money.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
 import '../home/parent_home_models.dart';
 
 /// A partially-paid fee can have more than one receipt (one per payment
@@ -30,8 +30,9 @@ class _FeeReceiptsPageState extends ConsumerState<FeeReceiptsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     return Scaffold(
-      appBar: AppBar(title: const Text('Receipts')),
+      appBar: AppBar(title: Text(l.feesReceipts)),
       body: FutureBuilder<List<Receipt>>(
         future: _receiptsFuture,
         builder: (context, snapshot) {
@@ -39,11 +40,11 @@ class _FeeReceiptsPageState extends ConsumerState<FeeReceiptsPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return const Center(child: Text('Could not load receipts.'));
+            return Center(child: Text(l.receiptsCouldNotLoad));
           }
           final receipts = snapshot.data ?? [];
           if (receipts.isEmpty) {
-            return const Center(child: Text('No receipts yet for this fee.'));
+            return Center(child: Text(l.receiptsEmpty));
           }
           return ListView.separated(
             padding: const EdgeInsets.all(16),
@@ -56,13 +57,11 @@ class _FeeReceiptsPageState extends ConsumerState<FeeReceiptsPage> {
                 child: ListTile(
                   title: Text('${formatRupees(receipt.amount)} · ${receipt.receiptNumber}'),
                   subtitle: Text(
-                    receipt.discountAmount != null
-                        ? '$paidOnLabel · Discount applied'
-                        : paidOnLabel,
+                    receipt.discountAmount != null ? l.receiptsRowWithDiscount(paidOnLabel) : paidOnLabel,
                   ),
                   trailing: IconButton(
                     icon: const Icon(Icons.download),
-                    tooltip: AppStrings.downloadReceipt,
+                    tooltip: l.receiptDownload,
                     onPressed: () => openReceiptPdf(ref, context, receipt.id),
                   ),
                   onTap: () => context.push('/receipts/${receipt.id}'),

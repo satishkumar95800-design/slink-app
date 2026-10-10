@@ -3,16 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/models/receipt.dart';
 import 'receipts_repository.dart';
 import '../../core/format/money.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
+import '../fees/fee_labels.dart';
 import '../home/parent_home_models.dart';
-
-const _methodLabels = {
-  'cash': 'Cash',
-  'cheque': 'Cheque',
-  'bank_transfer': 'Bank Transfer',
-  'demand_draft': 'Demand Draft',
-  'gateway': 'Online Payment',
-};
 
 class ReceiptDetailPage extends ConsumerStatefulWidget {
   final String receiptId;
@@ -44,8 +37,9 @@ class _ReceiptDetailPageState extends ConsumerState<ReceiptDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     return Scaffold(
-      appBar: AppBar(title: const Text('Receipt')),
+      appBar: AppBar(title: Text(l.receiptTitle)),
       body: FutureBuilder<Receipt>(
         future: _receiptFuture,
         builder: (context, snapshot) {
@@ -53,7 +47,7 @@ class _ReceiptDetailPageState extends ConsumerState<ReceiptDetailPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError || !snapshot.hasData) {
-            return const Center(child: Text('Could not load this receipt.'));
+            return Center(child: Text(l.receiptCouldNotLoad));
           }
 
           final receipt = snapshot.data!;
@@ -66,7 +60,7 @@ class _ReceiptDetailPageState extends ConsumerState<ReceiptDetailPage> {
                 Text(receipt.studentName),
                 Text(receipt.feeStructureName, style: Theme.of(context).textTheme.bodySmall),
                 const Divider(height: 32),
-                Text('Amount Received', style: Theme.of(context).textTheme.bodySmall),
+                Text(l.receiptAmountReceived, style: Theme.of(context).textTheme.bodySmall),
                 Text(
                   formatRupees(receipt.amount),
                   style: Theme.of(context).textTheme.headlineMedium,
@@ -84,8 +78,8 @@ class _ReceiptDetailPageState extends ConsumerState<ReceiptDetailPage> {
                       children: [
                         Text(
                           receipt.discountTypeName != null
-                              ? 'Discount applied: ${receipt.discountTypeName}'
-                              : 'Discount applied',
+                              ? l.receiptDiscountAppliedNamed(receipt.discountTypeName!)
+                              : l.receiptDiscountApplied,
                           style: Theme.of(context).textTheme.titleSmall,
                         ),
                         Text('−${formatRupees(receipt.discountAmount)}'),
@@ -101,19 +95,19 @@ class _ReceiptDetailPageState extends ConsumerState<ReceiptDetailPage> {
                   ),
                 ],
                 const SizedBox(height: 16),
-                Text('Method: ${_methodLabels[receipt.method] ?? receipt.method}'),
-                Text('Paid on: ${displayDate(receipt.paidOn)}'),
-                if (receipt.reference != null) Text('Reference: ${receipt.reference}'),
+                Text(l.receiptMethod(paymentModeLabel(l, receipt.method))),
+                Text(l.receiptPaidOn(displayDate(receipt.paidOn))),
+                if (receipt.reference != null) Text(l.receiptReference(receipt.reference!)),
                 if (receipt.notes != null) ...[
                   const SizedBox(height: 16),
-                  Text('Notes', style: Theme.of(context).textTheme.bodySmall),
+                  Text(l.receiptNotes, style: Theme.of(context).textTheme.bodySmall),
                   Text(receipt.notes!),
                 ],
                 const SizedBox(height: 32),
                 FilledButton.icon(
                   onPressed: _downloading ? null : _download,
                   icon: const Icon(Icons.download),
-                  label: Text(_downloading ? AppStrings.openingReceipt : AppStrings.downloadReceipt),
+                  label: Text(_downloading ? l.receiptOpening : l.receiptDownload),
                 ),
               ],
             ),

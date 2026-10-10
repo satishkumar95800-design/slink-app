@@ -23,11 +23,19 @@ class ActiveUser {
   final UserRole role;
   final String tenantId;
 
+  /// The language the user saved on their account, or null if they never chose.
+  final String? preferredLanguage;
+
+  /// What to show after sign-in: [preferredLanguage], else the school default.
+  final String? language;
+
   const ActiveUser({
     required this.id,
     required this.name,
     required this.role,
     required this.tenantId,
+    this.preferredLanguage,
+    this.language,
   });
 
   factory ActiveUser.fromJson(Map<String, dynamic> json) => ActiveUser(
@@ -35,6 +43,8 @@ class ActiveUser {
         name: json['name'] as String,
         role: _parseRole(json['role'] as String),
         tenantId: json['tenantId'] as String,
+        preferredLanguage: json['preferredLanguage'] as String?,
+        language: json['language'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -42,6 +52,8 @@ class ActiveUser {
         'name': name,
         'role': role.name,
         'tenantId': tenantId,
+        'preferredLanguage': preferredLanguage,
+        'language': language,
       };
 }
 

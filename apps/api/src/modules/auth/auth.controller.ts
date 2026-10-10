@@ -1,5 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
 import { Request } from 'express';
+import type { ActiveUser } from '../../common/types/active-user.type';
 import { AuthService } from './auth.service';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { EmailLoginDto } from './dto/email-login.dto';
@@ -90,7 +91,7 @@ export class AuthController {
    * Return the current authenticated user's profile.
    */
   @Get('me')
-  me(@CurrentUser() user: { id: string; name: string; role: string; tenantId: string }) {
-    return { success: true, data: user };
+  async me(@CurrentUser() user: ActiveUser) {
+    return { success: true, data: await this.authService.me(user) };
   }
 }

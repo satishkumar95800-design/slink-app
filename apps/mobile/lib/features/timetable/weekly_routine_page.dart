@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import '../../core/l10n/l10n.dart';
 import '../../shared/models/timetable_slot.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
 import 'timetable_repository.dart';
 
-const _dayNames = {
-  1: 'Monday',
-  2: 'Tuesday',
-  3: 'Wednesday',
-  4: 'Thursday',
-  5: 'Friday',
-  6: 'Saturday',
-};
+/// Weekday name (1 = Monday) in the UI language. 2024-01-01 was a Monday.
+String _dayName(int day, String languageCode) =>
+    DateFormat.EEEE(languageCode).format(DateTime(2024, 1, day));
 
 class WeeklyRoutinePage extends ConsumerWidget {
   const WeeklyRoutinePage({super.key});
@@ -19,15 +16,16 @@ class WeeklyRoutinePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final timetableAsync = ref.watch(myTimetableProvider);
+    final l = context.l10n;
 
     return AuthenticatedScaffold(
-      appBar: AppBar(title: const Text('Weekly Routine')),
+      appBar: AppBar(title: Text(l.teacherWeeklyRoutine)),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(myTimetableProvider),
         child: timetableAsync.when(
           data: (slots) {
             if (slots.isEmpty) {
-              return const Center(child: Text('No timetable has been set up for you yet.'));
+              return Center(child: Text(l.timetableEmpty));
             }
 
             final byDay = <int, List<TimetableSlot>>{};
@@ -50,7 +48,7 @@ class WeeklyRoutinePage extends ConsumerWidget {
           error: (error, _) => Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Text('Could not load your routine. Pull down to retry.\n$error',
+              child: Text('${l.timetableCouldNotLoad}\n$error',
                   textAlign: TextAlign.center),
             ),
           ),
@@ -73,7 +71,7 @@ class _DaySection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_dayNames[day] ?? 'Day $day', style: Theme.of(context).textTheme.titleMedium),
+          Text(_dayName(day, Localizations.localeOf(context).languageCode), style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           Card(
             child: Column(

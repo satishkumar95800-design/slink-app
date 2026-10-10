@@ -24,7 +24,7 @@ export class TenantMiddleware implements NestMiddleware {
     });
 
     if (!tenant) {
-      throw new NotFoundException('Tenant not found');
+      throw new NotFoundException({ code: 'SCHOOL_NOT_FOUND', message: 'Tenant not found' });
     }
 
     req.tenantId = tenant.id;

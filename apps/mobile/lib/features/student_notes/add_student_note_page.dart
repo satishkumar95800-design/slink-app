@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
 import '../../shared/models/api_exception.dart';
 import '../../shared/models/student.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
@@ -15,6 +15,14 @@ import 'student_notes_repository.dart';
 final _classStudentsProvider = FutureProvider.autoDispose.family<List<Student>, String>((ref, classId) {
   return ref.watch(studentsRepositoryProvider).getStudentsForClass(classId);
 });
+
+/// Note types in the order the chips show, keyed by the API value.
+Map<String, String> noteTypeLabels(AppLocalizations l) => {
+      'note': l.noteTypeNote,
+      'mom': l.noteTypeMom,
+      'complaint': l.noteTypeComplaint,
+      'parent_discussion': l.noteTypeParentDiscussion,
+    };
 
 /// Teacher: pick class → student → type, write the note, save. Internal only.
 class AddStudentNotePage extends ConsumerStatefulWidget {
@@ -43,18 +51,19 @@ class _AddStudentNotePageState extends ConsumerState<AddStudentNotePage> {
     final text = _textController.text.trim();
     if (studentId == null) return;
     if (text.isEmpty) {
-      setState(() => _error = AppStrings.enterNote);
+      setState(() => _error = context.l10n.noteEnterFirst);
       return;
     }
     setState(() {
       _saving = true;
       _error = null;
     });
+    final savedMessage = context.l10n.noteSaved;
     try {
       await ref.read(studentNotesRepositoryProvider).create(studentId: studentId, type: _type, content: text);
       _textController.clear();
       ref.invalidate(studentNotesProvider(studentId));
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppStrings.noteSaved)));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(savedMessage)));
     } on DioException catch (e) {
       setState(() => _error = ApiException.fromDioError(e).message);
     } finally {
@@ -65,14 +74,15 @@ class _AddStudentNotePageState extends ConsumerState<AddStudentNotePage> {
   @override
   Widget build(BuildContext context) {
     final classesAsync = ref.watch(myClassesProvider);
+    final l = context.l10n;
 
     return AuthenticatedScaffold(
-      appBar: AppBar(title: const Text(AppStrings.addStudentNote)),
+      appBar: AppBar(title: Text(l.teacherAddStudentNote)),
       body: classesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => const Center(child: Text(AppStrings.couldNotLoad)),
+        error: (_, __) => Center(child: Text(l.commonCouldNotLoadClasses)),
         data: (classes) {
-          if (classes.isEmpty) return const Center(child: Text(AppStrings.noClassesToMark));
+          if (classes.isEmpty) return Center(child: Text(l.commonNotAssignedToClass));
           _classId ??= classes.first.id;
           final studentsAsync = ref.watch(_classStudentsProvider(_classId!));
           final students = studentsAsync.valueOrNull ?? const <Student>[];
@@ -86,17 +96,17 @@ class _AddStudentNotePageState extends ConsumerState<AddStudentNotePage> {
                   color: Theme.of(context).colorScheme.secondaryContainer,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Row(children: [
-                  Icon(Icons.lock_outline, size: 18),
-                  SizedBox(width: 8),
-                  Expanded(child: Text(AppStrings.noteInternalHint)),
+                child: Row(children: [
+                  const Icon(Icons.lock_outline, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(l.noteInternalHint)),
                 ]),
               ),
               const SizedBox(height: 16),
               if (_error != null) ErrorBanner(message: _error!),
               DropdownButtonFormField<String>(
                 initialValue: _classId,
-                decoration: const InputDecoration(labelText: 'Class', border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: l.commonClass, border: const OutlineInputBorder()),
                 items: [for (final c in classes) DropdownMenuItem(value: c.id, child: Text(c.displayName))],
                 onChanged: (v) => setState(() {
                   _classId = v;
@@ -109,7 +119,7 @@ class _AddStudentNotePageState extends ConsumerState<AddStudentNotePage> {
                 initialValue: _studentId,
                 isExpanded: true,
                 decoration: InputDecoration(
-                  labelText: AppStrings.pickStudent,
+                  labelText: l.commonStudent,
                   border: const OutlineInputBorder(),
                   suffixIcon: studentsAsync.isLoading
                       ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))
@@ -119,13 +129,13 @@ class _AddStudentNotePageState extends ConsumerState<AddStudentNotePage> {
                 onChanged: (v) => setState(() => _studentId = v),
               ),
               const SizedBox(height: 16),
-              Text(AppStrings.noteType, style: Theme.of(context).textTheme.labelLarge),
+              Text(l.noteTypeLabel, style: Theme.of(context).textTheme.labelLarge),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  for (final entry in AppStrings.noteTypes.entries)
+                  for (final entry in noteTypeLabels(l).entries)
                     ChoiceChip(
                       label: Text(entry.value),
                       selected: _type == entry.key,
@@ -139,13 +149,13 @@ class _AddStudentNotePageState extends ConsumerState<AddStudentNotePage> {
                 minLines: 4,
                 maxLines: 10,
                 maxLength: 5000,
-                decoration: const InputDecoration(labelText: AppStrings.noteText, border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: l.noteTextLabel, border: const OutlineInputBorder()),
               ),
               const SizedBox(height: 8),
-              PrimaryButton(label: AppStrings.saveNote, isLoading: _saving, onPressed: _studentId == null ? null : _save),
+              PrimaryButton(label: l.noteSave, isLoading: _saving, onPressed: _studentId == null ? null : _save),
               if (_studentId != null) ...[
                 const SizedBox(height: 24),
-                Text(AppStrings.recentNotes, style: Theme.of(context).textTheme.titleMedium),
+                Text(l.noteRecent, style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
                 _RecentNotes(studentId: _studentId!),
               ],
@@ -164,16 +174,18 @@ class _RecentNotes extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final types = noteTypeLabels(l);
     return ref.watch(studentNotesProvider(studentId)).when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => const Text(AppStrings.couldNotLoad),
+          error: (_, __) => Text(l.noteCouldNotLoad),
           data: (notes) => Column(
             children: [
               for (final n in notes.take(10))
                 Card(
                   child: ListTile(
                     title: Text(n.content, maxLines: 3, overflow: TextOverflow.ellipsis),
-                    subtitle: Text('${AppStrings.noteTypes[n.type] ?? n.type} · ${n.authorName} · ${displayDate(n.createdAt)}'),
+                    subtitle: Text('${types[n.type] ?? n.type} · ${n.authorName} · ${displayDate(n.createdAt)}'),
                   ),
                 ),
             ],

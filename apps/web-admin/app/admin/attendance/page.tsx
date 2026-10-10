@@ -1,16 +1,16 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
-import { api, apiDownload, ApiError } from '../../../lib/api-client';
+import { api, apiDownload } from '../../../lib/api-client';
+import { useErrorText } from '../../../lib/i18n/errors';
+import { formatDateOnly } from '../../../lib/format';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Select } from '../../../components/ui/select';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
-import { strings } from '../../../lib/strings';
-
-const s = strings.attendance;
 
 type Status = 'present' | 'absent' | 'late' | 'leave';
 const STATUSES: Status[] = ['present', 'absent', 'late', 'leave'];
@@ -64,6 +64,7 @@ function firstOfMonth() {
 }
 
 export default function AttendancePage() {
+  const t = useTranslations('attendance');
   const [tab, setTab] = useState<'report' | 'mark'>('report');
   const [classes, setClasses] = useState<ClassOption[]>([]);
 
@@ -79,16 +80,16 @@ export default function AttendancePage() {
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
-        {(['report', 'mark'] as const).map((t) => (
+        {(['report', 'mark'] as const).map((key) => (
           <button
-            key={t}
+            key={key}
             type="button"
-            onClick={() => setTab(t)}
+            onClick={() => setTab(key)}
             className={`rounded-full px-4 py-2 text-sm font-bold transition-colors ${
-              tab === t ? 'bg-teal text-white' : 'bg-white text-teal border border-teal/30 hover:bg-teal/10'
+              tab === key ? 'bg-teal text-white' : 'bg-white text-teal border border-teal/30 hover:bg-teal/10'
             }`}
           >
-            {t === 'report' ? s.reportTab : s.markTab}
+            {key === 'report' ? t('reportTab') : t('markTab')}
           </button>
         ))}
       </div>
@@ -98,6 +99,8 @@ export default function AttendancePage() {
 }
 
 function ReportTab({ classOptions }: { classOptions: { value: string; label: string }[] }) {
+  const t = useTranslations('attendance');
+  const errorText = useErrorText();
   const { toast } = useToast();
   const [classId, setClassId] = useState('');
   const [from, setFrom] = useState(firstOfMonth);
@@ -120,7 +123,7 @@ function ReportTab({ classOptions }: { classOptions: { value: string; label: str
       const res = await api.get<{ data: ReportRow[] }>(`/attendance/report?${params()}`);
       setRows(res.data);
     } catch (e) {
-      setError((e as ApiError).message);
+      setError(errorText(e));
     } finally {
       setLoading(false);
     }
@@ -130,7 +133,7 @@ function ReportTab({ classOptions }: { classOptions: { value: string; label: str
     try {
       await apiDownload(`/attendance/report?${params('csv')}`, `attendance-${from}-to-${to}.csv`);
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     }
   }
 
@@ -139,18 +142,18 @@ function ReportTab({ classOptions }: { classOptions: { value: string; label: str
       <div className="flex flex-wrap items-end gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
         <div className="w-full sm:w-64">
           <Select
-            label={s.filterClass}
+            label={t('filterClass')}
             options={classOptions}
-            placeholder={s.allClasses}
+            placeholder={t('allClasses')}
             value={classId}
             onChange={(e) => setClassId(e.target.value)}
           />
         </div>
-        <Input label={s.from} type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-        <Input label={s.to} type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-        <Button onClick={run}>{strings.attendance.loadRoster}</Button>
+        <Input label={t('from')} type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+        <Input label={t('to')} type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+        <Button onClick={run}>{t('load')}</Button>
         <Button variant="secondary" onClick={exportCsv}>
-          {s.exportCsv}
+          {t('exportCsv')}
         </Button>
       </div>
 
@@ -161,13 +164,13 @@ function ReportTab({ classOptions }: { classOptions: { value: string; label: str
       ) : error ? (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
       ) : rows === null ? null : rows.length === 0 ? (
-        <EmptyState title={s.noStudents} />
+        <EmptyState title={t('noStudents')} />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-xs font-medium text-gray-500">
-                {[s.rollNo, s.columns.student, s.columns.className, s.columns.daysMarked, s.columns.present, s.columns.late, s.columns.absent, s.columns.leave, s.columns.percentage].map((h) => (
+                {[t('colRollNo'), t('colStudent'), t('colClass'), t('colDaysMarked'), t('colPresent'), t('colLate'), t('colAbsent'), t('colLeave'), t('colPercentage')].map((h) => (
                   <th key={h} className="px-4 py-3 whitespace-nowrap">
                     {h}
                   </th>
@@ -202,6 +205,9 @@ function ReportTab({ classOptions }: { classOptions: { value: string; label: str
 }
 
 function MarkTab({ classOptions }: { classOptions: { value: string; label: string }[] }) {
+  const t = useTranslations('attendance');
+  const tStatus = useTranslations('attendanceStatus');
+  const errorText = useErrorText();
   const { toast } = useToast();
   const [classId, setClassId] = useState('');
   const [date, setDate] = useState(() => localYmd());
@@ -221,7 +227,7 @@ function MarkTab({ classOptions }: { classOptions: { value: string; label: strin
       // Unmarked students start as Present, like the teacher app.
       setStatuses(Object.fromEntries(r.students.map((st) => [st.id, st.status ?? 'present'])));
     } catch (e) {
-      setError((e as ApiError).message);
+      setError(errorText(e));
       setRoster(null);
     } finally {
       setLoading(false);
@@ -236,7 +242,7 @@ function MarkTab({ classOptions }: { classOptions: { value: string; label: strin
 
   async function save() {
     if (!roster) return;
-    if (!confirm(s.confirmSave(counts.present + counts.late, counts.absent))) return;
+    if (!confirm(t('confirmSave', { present: counts.present + counts.late, absent: counts.absent }))) return;
     setSaving(true);
     try {
       const updated = await api.put<Roster>('/attendance/class', {
@@ -245,9 +251,9 @@ function MarkTab({ classOptions }: { classOptions: { value: string; label: strin
         entries: roster.students.map((st) => ({ studentId: st.id, status: statuses[st.id] })),
       });
       setRoster(updated);
-      toast(s.saved, 'success');
+      toast(t('saved'), 'success');
     } catch (e) {
-      toast((e as ApiError).message, 'error');
+      toast(errorText(e), 'error');
     } finally {
       setSaving(false);
     }
@@ -260,16 +266,16 @@ function MarkTab({ classOptions }: { classOptions: { value: string; label: strin
       <div className="flex flex-wrap items-end gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
         <div className="w-full sm:w-64">
           <Select
-            label={s.filterClass}
+            label={t('filterClass')}
             options={classOptions}
-            placeholder={s.filterClass}
+            placeholder={t('filterClass')}
             value={classId}
             onChange={(e) => setClassId(e.target.value)}
           />
         </div>
-        <Input label={s.date} type="date" value={date} max={localYmd()} onChange={(e) => setDate(e.target.value)} />
+        <Input label={t('date')} type="date" value={date} max={localYmd()} onChange={(e) => setDate(e.target.value)} />
         <Button onClick={load} disabled={!classId}>
-          {s.loadRoster}
+          {t('load')}
         </Button>
       </div>
 
@@ -280,21 +286,21 @@ function MarkTab({ classOptions }: { classOptions: { value: string; label: strin
       ) : error ? (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
       ) : !roster ? (
-        <p className="text-sm text-gray-500">{s.pickClassAndDate}</p>
+        <p className="text-sm text-gray-500">{t('pickClassAndDate')}</p>
       ) : roster.holiday ? (
-        <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-800">{s.holidayNoMarking(roster.holiday.name)}</div>
+        <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-800">{t('holidayNoMarking', { name: roster.holiday.name })}</div>
       ) : roster.students.length === 0 ? (
-        <EmptyState title={s.noStudents} />
+        <EmptyState title={t('noStudents')} />
       ) : (
         <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b px-6 py-4">
             <div>
               <p className="text-sm font-semibold text-gray-900">
                 {[roster.class.name, roster.class.section].filter(Boolean).join(' ')} ·{' '}
-                {roster.date.split('-').reverse().join('/')}
+                {formatDateOnly(roster.date)}
               </p>
               <p className="text-xs text-gray-500">
-                {!editable ? s.readOnly : roster.submitted ? s.alreadySubmitted : ''}
+                {!editable ? t('readOnly') : roster.submitted ? t('alreadySubmitted') : ''}
               </p>
             </div>
             {editable && (
@@ -303,7 +309,7 @@ function MarkTab({ classOptions }: { classOptions: { value: string; label: strin
                 size="sm"
                 onClick={() => setStatuses(Object.fromEntries(roster.students.map((st) => [st.id, 'present' as Status])))}
               >
-                {s.allPresent}
+                {t('allPresent')}
               </Button>
             )}
           </div>
@@ -317,7 +323,7 @@ function MarkTab({ classOptions }: { classOptions: { value: string; label: strin
                     <p className="text-xs text-gray-500">{st.admissionNo}</p>
                   </div>
                 </div>
-                <div className="flex gap-1.5" role="radiogroup" aria-label={st.name}>
+                <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={st.name}>
                   {STATUSES.map((status) => {
                     const selected = statuses[st.id] === status;
                     return (
@@ -332,7 +338,7 @@ function MarkTab({ classOptions }: { classOptions: { value: string; label: strin
                           selected ? STATUS_CLASSES[status] : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
                         }`}
                       >
-                        {s.status[status]}
+                        {tStatus(status)}
                       </button>
                     );
                   })}
@@ -342,11 +348,13 @@ function MarkTab({ classOptions }: { classOptions: { value: string; label: strin
           </ul>
           <div className="sticky bottom-0 flex flex-wrap items-center justify-between gap-3 rounded-b-2xl border-t bg-white px-6 py-4">
             <p className="text-sm font-semibold text-gray-900">
-              {s.countsLine(counts.present, counts.absent, counts.late + counts.leave)}
+              {counts.late + counts.leave > 0
+                ? t('countsWithOther', { present: counts.present, absent: counts.absent, other: counts.late + counts.leave })
+                : t('counts', { present: counts.present, absent: counts.absent })}
             </p>
             {editable && (
               <Button onClick={save} loading={saving}>
-                {s.save}
+                {t('save')}
               </Button>
             )}
           </div>

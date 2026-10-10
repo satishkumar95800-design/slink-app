@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
 import '../../shared/models/api_exception.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
 import '../../shared/widgets/error_banner.dart';
@@ -19,15 +19,16 @@ class MarkAttendanceEntryPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final classesAsync = ref.watch(myAttendanceClassesProvider);
+    final l = context.l10n;
 
     return AuthenticatedScaffold(
-      appBar: AppBar(title: const Text(AppStrings.markAttendance)),
+      appBar: AppBar(title: Text(l.attendanceMark)),
       body: classesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => _Message(AppStrings.couldNotLoad, onRetry: () => ref.invalidate(myAttendanceClassesProvider)),
+        error: (e, _) => _Message(l.attendanceCouldNotLoad, onRetry: () => ref.invalidate(myAttendanceClassesProvider)),
         data: (data) {
-          if (data.holidayName != null) return _Message(AppStrings.holidayToday(data.holidayName!));
-          if (data.classes.isEmpty) return const _Message(AppStrings.noClassesToMark);
+          if (data.holidayName != null) return _Message(l.attendanceHolidayToday(data.holidayName!));
+          if (data.classes.isEmpty) return _Message(l.attendanceNoClassesToMark);
           if (data.classes.length == 1) {
             // Only one class: skip the picker.
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -38,14 +39,14 @@ class MarkAttendanceEntryPage extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text(AppStrings.pickClass, style: Theme.of(context).textTheme.titleMedium),
+              Text(l.attendancePickClass, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 12),
               for (final c in data.classes)
                 Card(
                   child: ListTile(
                     minVerticalPadding: 16,
                     title: Text(c.label, style: Theme.of(context).textTheme.titleMedium),
-                    subtitle: Text(c.submitted ? AppStrings.doneForToday : '${c.studentCount} students'),
+                    subtitle: Text(c.submitted ? l.attendanceDoneForToday : l.attendanceStudentCount(c.studentCount)),
                     trailing: c.submitted
                         ? const Icon(Icons.check_circle, color: AttendanceColors.present)
                         : const Icon(Icons.chevron_right),
@@ -72,15 +73,16 @@ class MarkAttendancePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final rosterAsync = ref.watch(_rosterProvider(classId));
+    final l = context.l10n;
     return rosterAsync.when(
       loading: () => AuthenticatedScaffold(
-        appBar: AppBar(title: const Text(AppStrings.markAttendance)),
+        appBar: AppBar(title: Text(l.attendanceMark)),
         body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => AuthenticatedScaffold(
-        appBar: AppBar(title: const Text(AppStrings.markAttendance)),
+        appBar: AppBar(title: Text(l.attendanceMark)),
         body: _Message(
-          e is DioException ? ApiException.fromDioError(e).message : AppStrings.couldNotLoad,
+          e is DioException ? ApiException.fromDioError(e).message : l.attendanceCouldNotLoad,
           onRetry: () => ref.invalidate(_rosterProvider(classId)),
         ),
       ),
@@ -132,12 +134,12 @@ class _MarkAttendanceViewState extends ConsumerState<_MarkAttendanceView> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(title: Text(student.name, style: Theme.of(context).textTheme.titleMedium), subtitle: const Text(AppStrings.chooseStatus)),
+            ListTile(title: Text(student.name, style: Theme.of(context).textTheme.titleMedium), subtitle: Text(context.l10n.attendanceChooseStatus)),
             for (final status in AttendanceStatus.values)
               ListTile(
                 minVerticalPadding: 14,
                 leading: CircleAvatar(radius: 10, backgroundColor: AttendanceColors.of(status)),
-                title: Text(status.label),
+                title: Text(status.label(context.l10n)),
                 trailing: _statuses[student.id] == status ? const Icon(Icons.check) : null,
                 onTap: () => Navigator.of(context).pop(status),
               ),
@@ -154,10 +156,10 @@ class _MarkAttendanceViewState extends ConsumerState<_MarkAttendanceView> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        content: Text(AppStrings.confirmSubmit(present, absent)),
+        content: Text(context.l10n.attendanceConfirmSubmit(present, absent)),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text(AppStrings.cancel)),
-          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text(AppStrings.confirm)),
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(context.l10n.commonCancel)),
+          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: Text(context.l10n.commonConfirm)),
         ],
       ),
     );
@@ -169,13 +171,14 @@ class _MarkAttendanceViewState extends ConsumerState<_MarkAttendanceView> {
       _error = null;
     });
     final messenger = ScaffoldMessenger.of(context);
+    final l = context.l10n;
     try {
       await ref.read(attendanceRepositoryProvider).submit(classId: roster.classId, date: roster.date, statuses: _statuses);
       final outbox = ref.read(attendanceOutboxProvider.notifier);
       final stale = outbox.pendingFor(roster.classId, roster.date);
       if (stale != null) await outbox.discard(stale);
       ref.invalidate(myAttendanceClassesProvider);
-      messenger.showSnackBar(const SnackBar(content: Text(AppStrings.submitted)));
+      messenger.showSnackBar(SnackBar(content: Text(l.attendanceSubmitted)));
       if (mounted) context.pop();
     } on DioException catch (e) {
       if (isConnectivityError(e)) {
@@ -185,7 +188,7 @@ class _MarkAttendanceViewState extends ConsumerState<_MarkAttendanceView> {
               date: roster.date,
               statuses: _statuses,
             );
-        messenger.showSnackBar(const SnackBar(content: Text(AppStrings.queuedOffline), duration: Duration(seconds: 6)));
+        messenger.showSnackBar(SnackBar(content: Text(l.attendanceQueuedOffline), duration: const Duration(seconds: 6)));
         if (mounted) context.pop();
       } else {
         setState(() => _error = ApiException.fromDioError(e).message);
@@ -203,28 +206,29 @@ class _MarkAttendanceViewState extends ConsumerState<_MarkAttendanceView> {
     final present = _count(AttendanceStatus.present);
     final absent = _count(AttendanceStatus.absent);
     final other = _count(AttendanceStatus.late) + _count(AttendanceStatus.leave);
+    final l = context.l10n;
 
     return AuthenticatedScaffold(
       appBar: AppBar(title: Text(roster.classLabel)),
       body: Column(
         children: [
           if (roster.holidayName != null)
-            _Banner(text: AppStrings.holidayToday(roster.holidayName!))
+            _Banner(text: l.attendanceHolidayToday(roster.holidayName!))
           else if (pending != null)
             _PendingBanner(item: pending)
           else if (!editable)
-            const _Banner(text: AppStrings.readOnlyDay)
+            _Banner(text: l.attendanceReadOnlyDay)
           else if (roster.submitted)
-            const _Banner(text: AppStrings.alreadySubmittedEditable),
+            _Banner(text: l.attendanceAlreadySubmitted),
           if (_error != null) Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 0), child: ErrorBanner(message: _error!)),
           if (editable && roster.students.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Text(AppStrings.tapHint, style: Theme.of(context).textTheme.bodySmall),
+              child: Text(l.attendanceTapHint, style: Theme.of(context).textTheme.bodySmall),
             ),
           Expanded(
             child: roster.students.isEmpty
-                ? const _Message(AppStrings.noStudents)
+                ? _Message(l.attendanceNoStudents)
                 : ListView.separated(
                     padding: const EdgeInsets.fromLTRB(8, 8, 8, 16),
                     itemCount: roster.students.length,
@@ -256,7 +260,7 @@ class _MarkAttendanceViewState extends ConsumerState<_MarkAttendanceView> {
                   children: [
                     Expanded(
                       child: Text(
-                        AppStrings.countsLine(present, absent, other),
+                        other > 0 ? l.attendanceCountsWithOther(present, absent, other) : l.attendanceCounts(present, absent),
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ),
@@ -266,7 +270,7 @@ class _MarkAttendanceViewState extends ConsumerState<_MarkAttendanceView> {
                         style: FilledButton.styleFrom(minimumSize: const Size(120, 52)),
                         child: _submitting
                             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                            : Text(roster.submitted ? AppStrings.update : AppStrings.submit),
+                            : Text(roster.submitted ? l.commonUpdate : l.commonSubmit),
                       ),
                   ],
                 ),
@@ -316,15 +320,16 @@ class _StudentRow extends StatelessWidget {
               ),
             ),
             Container(
-              width: 92,
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              // Minimum, not fixed: "ಗೈರುಹಾಜರು" / "अनुपस्थित" are wider than "Absent".
+              constraints: const BoxConstraints(minWidth: 92),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
               decoration: BoxDecoration(
                 color: isPresent ? Colors.transparent : color,
                 border: Border.all(color: color, width: 2),
                 borderRadius: BorderRadius.circular(999),
               ),
               child: Text(
-                status.label,
+                status.label(context.l10n),
                 textAlign: TextAlign.center,
                 style: TextStyle(fontWeight: FontWeight.bold, color: isPresent ? color : Colors.white),
               ),
@@ -345,11 +350,16 @@ class _PendingBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final rejected = item.rejectedReason != null;
     return _Banner(
-      text: rejected ? item.rejectedReason! : (item.sending ? AppStrings.sendingNow : AppStrings.pendingSend),
+      text: rejected
+          ? item.rejectedReason!
+          : (item.sending ? context.l10n.attendanceSendingNow : context.l10n.attendancePendingSend),
       color: rejected ? Colors.red.shade50 : Colors.amber.shade50,
       action: rejected
           ? null
-          : TextButton(onPressed: () => ref.read(attendanceOutboxProvider.notifier).flush(), child: const Text(AppStrings.retryNow)),
+          : TextButton(
+              onPressed: () => ref.read(attendanceOutboxProvider.notifier).flush(),
+              child: Text(context.l10n.commonRetry),
+            ),
     );
   }
 }
@@ -394,7 +404,7 @@ class _Message extends StatelessWidget {
             Text(text, textAlign: TextAlign.center),
             if (onRetry != null) ...[
               const SizedBox(height: 12),
-              OutlinedButton(onPressed: onRetry, child: const Text(AppStrings.retryNow)),
+              OutlinedButton(onPressed: onRetry, child: Text(context.l10n.commonRetry)),
             ],
           ],
         ),

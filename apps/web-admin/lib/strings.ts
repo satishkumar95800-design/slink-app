@@ -1,6 +1,6 @@
 /**
- * User-facing text added from docs/SPEC-improvements.md onwards lives here, so
- * Kannada/Hindi can be added later without touching components.
+ * Product name and the marketing site's text (English only — the marketing site
+ * is out of scope for docs/SPEC-languages.md). Console text lives in messages/*.json.
  */
 export const strings = {
   product: {
@@ -8,87 +8,6 @@ export const strings = {
     adminTitle: 'Schoolinkd — Admin',
     adminDescription: 'Schoolinkd admin console',
     platformTitle: 'Schoolinkd — Platform',
-  },
-  dashboard: {
-    feesCollected: 'Fees Collected',
-    outstandingFees: 'Outstanding Fees',
-    thisAcademicYear: (year: string | null) => (year ? `This academic year (${year})` : 'This academic year'),
-  },
-  paymentMethod: {
-    cash: 'Cash',
-    chequeOrDd: 'Cheque/DD',
-    online: 'Online/UPI',
-    claim: 'Claim',
-  },
-  attendance: {
-    navLabel: 'Attendance',
-    pageTitle: 'Attendance',
-    rollNo: 'Roll No',
-    status: { present: 'Present', absent: 'Absent', late: 'Late', leave: 'Leave' } as Record<string, string>,
-    notMarked: 'Not marked',
-    todayCardTitle: "Today's attendance",
-    todaySummary: (present: number, total: number, pct: number | null) =>
-      `${present} / ${total} present${pct != null ? ` (${pct}%)` : ''}`,
-    noneMarkedYet: 'No classes marked yet today',
-    allMarked: 'All classes marked',
-    classesNotMarked: (n: number) => `${n} class${n === 1 ? '' : 'es'} not marked yet`,
-    holidayToday: (name: string) => `Holiday today: ${name}`,
-    reportTab: 'Report',
-    markTab: 'Mark / Edit',
-    filterClass: 'Class',
-    allClasses: 'All classes',
-    from: 'From',
-    to: 'To',
-    exportCsv: 'Export CSV (Excel)',
-    columns: {
-      student: 'Student',
-      admissionNo: 'Admission No',
-      className: 'Class',
-      daysMarked: 'Days Marked',
-      present: 'Present',
-      late: 'Late',
-      absent: 'Absent',
-      leave: 'Leave',
-      percentage: 'Attendance %',
-    },
-    noStudents: 'No students found for this filter',
-    pickClassAndDate: 'Pick a class and date to mark or correct attendance.',
-    date: 'Date',
-    loadRoster: 'Load',
-    allPresent: 'Mark all present',
-    countsLine: (present: number, absent: number, other: number) =>
-      `${present} present · ${absent} absent${other ? ` · ${other} late/leave` : ''}`,
-    save: 'Save attendance',
-    saved: 'Attendance saved',
-    readOnly: 'You can view this day but not change it.',
-    alreadySubmitted: 'Already submitted — saving updates it. Changes are logged.',
-    holidayNoMarking: (name: string) => `${name} is a school holiday — attendance isn't taken.`,
-    confirmSave: (present: number, absent: number) => `Save attendance: ${present} present, ${absent} absent?`,
-  },
-  periodTimings: {
-    title: 'Period timings',
-    help: 'Start and end time of each period. Teachers see "Now" and "Next" on the app from these. Leave a period blank if it isn\'t used.',
-    period: (n: number) => `Period ${n}`,
-    start: 'Starts',
-    end: 'Ends',
-    save: 'Save timings',
-    saved: 'Period timings saved',
-    incomplete: (n: number) => `Period ${n} needs both a start and an end time`,
-  },
-  workload: {
-    note: 'Reports Sent counts progress reports, notices and homework (each homework once). Unread = no parent has opened it yet.',
-  },
-  holidays: {
-    sectionTitle: 'School holidays',
-    sectionHelp: 'Holidays are skipped when listing classes that still need attendance. Teachers cannot mark attendance on them.',
-    date: 'Date',
-    name: 'Holiday name',
-    add: 'Add holiday',
-    added: 'Holiday added',
-    removed: 'Holiday removed',
-    remove: 'Remove',
-    empty: 'No holidays added yet',
-    confirmRemove: (name: string) => `Remove the holiday "${name}"?`,
   },
   marketing: {
     metaTitle: 'Schoolinkd — Fee collection, attendance & parent app for schools',
@@ -173,8 +92,5 @@ export const strings = {
       or: 'or',
       otherWays: 'Other ways to reach us',
     },
-  },
-  names: {
-    allLowercaseWarning: 'This name is all lowercase. Check the capitalisation (e.g. "Aarav Iyer") — it will be saved exactly as typed.',
   },
 } as const;

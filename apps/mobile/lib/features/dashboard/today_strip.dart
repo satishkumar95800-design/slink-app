@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
 import '../../shared/services/api_client.dart';
 
 class TodayPeriod {
@@ -103,13 +103,14 @@ class _TodayStripState extends ConsumerState<TodayStrip> {
     if (today == null || today.offDay) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
+    final l = context.l10n;
     final lines = <Widget>[];
     if (today.periods.isEmpty) {
-      lines.add(Text(AppStrings.noPeriodsToday, style: theme.textTheme.titleSmall));
+      lines.add(Text(l.todayNoPeriods, style: theme.textTheme.titleSmall));
     } else if (!today.timingsConfigured) {
       // No bell schedule yet: list today's periods in order.
       lines.add(Text(
-        today.periods.map((p) => AppStrings.periodLabel(p.periodNumber, p.classLabel, p.subject)).join('\n'),
+        today.periods.map((p) => l.todayPeriodLabel(p.periodNumber, p.classLabel, p.subject)).join('\n'),
         style: theme.textTheme.bodyMedium,
       ));
     } else {
@@ -120,15 +121,19 @@ class _TodayStripState extends ConsumerState<TodayStrip> {
       final next = slot.next;
       if (current != null) {
         lines.add(Text(
-          AppStrings.nowPeriod(current.classLabel, current.subject, '${current.startTime}–${current.endTime}'),
+          l.todayNowWithTime(current.classLabel, current.subject, '${current.startTime}–${current.endTime}'),
           style: theme.textTheme.titleMedium,
         ));
       }
       if (next != null) {
-        lines.add(Text(AppStrings.nextPeriod(next.classLabel, next.subject, next.startTime), style: theme.textTheme.bodyMedium));
+        final start = next.startTime;
+        lines.add(Text(
+          start == null ? l.todayNext(next.classLabel, next.subject) : l.todayNextWithTime(next.classLabel, next.subject, start),
+          style: theme.textTheme.bodyMedium,
+        ));
       }
       if (current == null && next == null) {
-        lines.add(Text(AppStrings.noMorePeriods, style: theme.textTheme.titleSmall));
+        lines.add(Text(l.todayNoMorePeriods, style: theme.textTheme.titleSmall));
       }
     }
 

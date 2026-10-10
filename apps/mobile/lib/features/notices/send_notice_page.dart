@@ -7,9 +7,8 @@ import '../../shared/widgets/error_banner.dart';
 import '../../shared/widgets/primary_button.dart';
 import '../auth/session_controller.dart';
 import '../classes/classes_repository.dart';
-import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
 import '../../shared/models/api_exception.dart';
 import '../../shared/services/files_repository.dart';
 import '../../shared/widgets/attachment_picker.dart';
@@ -40,32 +39,34 @@ class _SendNoticePageState extends ConsumerState<SendNoticePage> {
 
   Future<void> _send(String classId) async {
     if (_bodyController.text.trim().isEmpty) {
-      setState(() => _error = 'Enter a message.');
+      setState(() => _error = context.l10n.noticeEnterMessage);
       return;
     }
     setState(() {
       _isSending = true;
       _error = null;
     });
+    final l = context.l10n;
     try {
       final files = ref.read(filesRepositoryProvider);
       final fileKeys = [for (final f in _attachments) await files.upload(f, category: 'attachment')];
       await ref.read(broadcastRepositoryProvider).sendToClass(
             classId: classId,
             kind: BroadcastKind.notice,
-            title: _titleController.text.trim().isEmpty ? 'Notice' : _titleController.text.trim(),
+            // Default title is stored with the notice, so it's in the sender's language (see SPEC-languages Stage 3).
+            title: _titleController.text.trim().isEmpty ? l.noticeKind : _titleController.text.trim(),
             body: _bodyController.text.trim(),
             fileKeys: fileKeys,
           );
       ref.invalidate(sentItemsProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Notice sent')),
+          SnackBar(content: Text(l.noticeSent)),
         );
         Navigator.of(context).pop();
       }
     } catch (e) {
-      setState(() => _error = 'Could not send the notice. ${_describeError(e)}');
+      setState(() => _error = l.noticeCouldNotSend(describeError(e)));
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
@@ -75,34 +76,32 @@ class _SendNoticePageState extends ConsumerState<SendNoticePage> {
   Widget build(BuildContext context) {
     final userId = ref.watch(sessionControllerProvider).user?.id;
     final classesAsync = ref.watch(myClassesProvider);
+    final l = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(AppStrings.sendNotice),
+        title: Text(l.teacherSendNotice),
         actions: [
           TextButton.icon(
             onPressed: () => context.push('/broadcasts/sent'),
             icon: const Icon(Icons.done_all),
-            label: const Text(AppStrings.sentItems),
+            label: Text(l.sentTitle),
           ),
         ],
       ),
       body: classesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Could not load your classes.\n$error')),
+        error: (error, _) => Center(child: Text('${l.commonCouldNotLoadClasses}\n$error')),
         data: (classes) {
           final classTeacherClasses = userId == null
               ? <TeacherClass>[]
               : classes.where((c) => c.isClassTeacherFor(userId)).toList();
 
           if (classTeacherClasses.isEmpty) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  "You aren't set as the class teacher for any class yet.",
-                  textAlign: TextAlign.center,
-                ),
+                padding: const EdgeInsets.all(24),
+                child: Text(l.noticeNotClassTeacher, textAlign: TextAlign.center),
               ),
             );
           }
@@ -117,7 +116,7 @@ class _SendNoticePageState extends ConsumerState<SendNoticePage> {
                 if (_error != null) ErrorBanner(message: _error!),
                 DropdownButtonFormField<String>(
                   initialValue: _selectedClassId,
-                  decoration: const InputDecoration(labelText: 'Class', border: OutlineInputBorder()),
+                  decoration: InputDecoration(labelText: l.commonClass, border: const OutlineInputBorder()),
                   items: [
                     for (final cls in classTeacherClasses)
                       DropdownMenuItem(value: cls.id, child: Text(cls.displayName)),
@@ -127,14 +126,14 @@ class _SendNoticePageState extends ConsumerState<SendNoticePage> {
                 const SizedBox(height: 16),
                 TextField(
                   controller: _titleController,
-                  decoration: const InputDecoration(labelText: 'Title (optional)', border: OutlineInputBorder()),
+                  decoration: InputDecoration(labelText: l.noticeTitleLabel, border: const OutlineInputBorder()),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _bodyController,
                   minLines: 4,
                   maxLines: 8,
-                  decoration: const InputDecoration(labelText: 'Message', border: OutlineInputBorder()),
+                  decoration: InputDecoration(labelText: l.noticeMessageLabel, border: const OutlineInputBorder()),
                 ),
                 const SizedBox(height: 16),
                 AttachmentPicker(
@@ -144,7 +143,7 @@ class _SendNoticePageState extends ConsumerState<SendNoticePage> {
                 ),
                 const SizedBox(height: 24),
                 PrimaryButton(
-                  label: 'Send to class',
+                  label: l.commonSendToClass,
                   isLoading: _isSending,
                   onPressed: () => _send(_selectedClassId!),
                 ),
@@ -156,9 +155,3 @@ class _SendNoticePageState extends ConsumerState<SendNoticePage> {
     );
   }
 }
-
-String _describeError(Object e) => switch (e) {
-      ApiException() => e.message,
-      DioException() => ApiException.fromDioError(e).message,
-      _ => 'Please try again.',
-    };

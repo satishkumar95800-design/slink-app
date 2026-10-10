@@ -13,6 +13,8 @@ import { UpdateSelfDto } from './dto/update-self.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UserQueryDto } from './dto/user-query.dto';
+import { effectiveLanguage } from '../../common/i18n/languages';
+import type { Language } from '../../common/i18n/languages';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -25,6 +27,7 @@ const userSelect = {
   role: true,
   profession: true,
   isVerified: true,
+  preferredLanguage: true,
   createdAt: true,
   updatedAt: true,
   _count: { select: { linkedStudents: true } },
@@ -188,11 +191,27 @@ export class UsersService {
 
   // ─── Self: get own profile ────────────────────────────────────────────────────
 
+  /** Own profile plus `language` — the one the apps should show (user's pick, else school default). */
   async getMe(userId: string) {
-    return this.prisma.user.findUniqueOrThrow({
+    const { tenant, ...user } = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: userSelect,
+      select: { ...userSelect, tenant: { select: { defaultLanguage: true } } },
     });
+    return {
+      ...user,
+      language: effectiveLanguage(user.preferredLanguage, tenant.defaultLanguage),
+    };
+  }
+
+  // ─── Self: interface language ─────────────────────────────────────────────────
+
+  async updateMyLanguage(userId: string, language: Language) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { preferredLanguage: language },
+      select: { preferredLanguage: true },
+    });
+    return { preferredLanguage: user.preferredLanguage, language };
   }
 
   // ─── Self: update own profile ─────────────────────────────────────────────────

@@ -3,7 +3,7 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../shared/models/api_exception.dart';
 import '../../shared/models/payment_order.dart';
 import 'payments_repository.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
 
 enum PaymentStatus { idle, creatingOrder, awaitingCheckout, confirming, success, failed, timedOut }
 
@@ -35,9 +35,9 @@ class PaymentController extends StateNotifier<PaymentState> {
     try {
       final order = await _ref.read(paymentsRepositoryProvider).createOrder(studentFeeId);
       if (order.keyId == null) {
-        state = const PaymentState(
+        state = PaymentState(
           status: PaymentStatus.failed,
-          errorMessage: 'Payment is not set up for this school yet. Please contact the school office.',
+          errorMessage: currentL10n.checkoutNotSetUp,
         );
         return;
       }
@@ -45,7 +45,7 @@ class PaymentController extends StateNotifier<PaymentState> {
     } catch (e) {
       state = PaymentState(
         status: PaymentStatus.failed,
-        errorMessage: e is ApiException ? e.message : 'Could not start payment. Please try again.',
+        errorMessage: e is ApiException ? e.message : currentL10n.checkoutCouldNotStart,
       );
     }
   }
@@ -62,7 +62,7 @@ class PaymentController extends StateNotifier<PaymentState> {
       _disposeRazorpay();
       state = PaymentState(
         status: PaymentStatus.failed,
-        errorMessage: response.message ?? 'Payment was not completed.',
+        errorMessage: response.message ?? currentL10n.checkoutNotCompleted,
       );
     });
     razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, (ExternalWalletResponse response) {});
@@ -72,8 +72,8 @@ class PaymentController extends StateNotifier<PaymentState> {
       'amount': order.amountInPaise,
       'currency': order.currency,
       'order_id': order.gatewayOrderId,
-      'name': AppStrings.appName,
-      'description': 'Fee payment — ${order.studentFee.studentName}',
+      'name': currentL10n.appName,
+      'description': currentL10n.checkoutDescription(order.studentFee.studentName),
       if (parentPhone != null) 'prefill': {'contact': parentPhone},
     });
   }
@@ -92,9 +92,9 @@ class PaymentController extends StateNotifier<PaymentState> {
           return;
         }
         if (order.status == PaymentOrderStatus.failed) {
-          state = const PaymentState(
+          state = PaymentState(
             status: PaymentStatus.failed,
-            errorMessage: 'The payment could not be confirmed. Please try again.',
+            errorMessage: currentL10n.checkoutCouldNotConfirm,
           );
           return;
         }

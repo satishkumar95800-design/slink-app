@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/strings.dart';
+import '../../core/l10n/l10n.dart';
 import '../../shared/services/broadcast_repository.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
 import '../home/parent_home_models.dart';
@@ -12,17 +12,18 @@ class SentItemsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final itemsAsync = ref.watch(sentItemsProvider);
+    final l = context.l10n;
 
     return AuthenticatedScaffold(
-      appBar: AppBar(title: const Text(AppStrings.sentItems)),
+      appBar: AppBar(title: Text(l.sentTitle)),
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(sentItemsProvider),
         child: itemsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => ListView(children: const [SizedBox(height: 120), Center(child: Text(AppStrings.couldNotLoad))]),
+          error: (_, __) => ListView(children: [const SizedBox(height: 120), Center(child: Text(l.sentCouldNotLoad))]),
           data: (items) {
             if (items.isEmpty) {
-              return ListView(children: const [SizedBox(height: 120), Center(child: Text(AppStrings.noSentItems))]);
+              return ListView(children: [const SizedBox(height: 120), Center(child: Text(l.sentEmpty))]);
             }
             return ListView.separated(
               padding: const EdgeInsets.all(16),
@@ -46,8 +47,9 @@ class _SentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final ratio = item.recipients == 0 ? 0.0 : item.seen / item.recipients;
+    final l = context.l10n;
     final meta = [
-      item.kind == BroadcastKind.homework ? AppStrings.homeworkKind : AppStrings.noticeKind,
+      item.kind == BroadcastKind.homework ? l.homeworkKind : l.noticeKind,
       if (item.classLabel != null) item.classLabel!,
       if (item.subject != null) item.subject!,
       displayDate(item.createdAt),
@@ -80,7 +82,7 @@ class _SentCard extends StatelessWidget {
                 child: LinearProgressIndicator(value: ratio, minHeight: 6),
               ),
               const SizedBox(height: 6),
-              Text(AppStrings.seenBy(item.seen, item.recipients), style: theme.textTheme.titleSmall),
+              Text(l.sentSeenBy(item.seen, item.recipients), style: theme.textTheme.titleSmall),
             ],
           ),
         ),
@@ -101,6 +103,7 @@ class _UnseenSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final unseenAsync = ref.watch(_unseenProvider(item.id));
+    final l = context.l10n;
     return SafeArea(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
@@ -109,16 +112,16 @@ class _UnseenSheet extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ListTile(
-              title: Text(AppStrings.notSeenYet, style: Theme.of(context).textTheme.titleMedium),
-              subtitle: Text(AppStrings.seenBy(item.seen, item.recipients)),
+              title: Text(l.sentNotSeenYet, style: Theme.of(context).textTheme.titleMedium),
+              subtitle: Text(l.sentSeenBy(item.seen, item.recipients)),
             ),
             const Divider(height: 1),
             Flexible(
               child: unseenAsync.when(
                 loading: () => const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
-                error: (_, __) => const Padding(padding: EdgeInsets.all(24), child: Text(AppStrings.couldNotLoad)),
+                error: (_, __) => Padding(padding: const EdgeInsets.all(24), child: Text(l.sentCouldNotLoad)),
                 data: (parents) => parents.isEmpty
-                    ? const Padding(padding: EdgeInsets.all(24), child: Text(AppStrings.everyoneSeen))
+                    ? Padding(padding: const EdgeInsets.all(24), child: Text(l.sentEveryoneSeen))
                     : ListView(
                         shrinkWrap: true,
                         children: [
