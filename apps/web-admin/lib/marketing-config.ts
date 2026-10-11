@@ -12,7 +12,7 @@ export const marketingConfig = {
   whatsappMessage: "Hi, I'd like a demo of Schoolinkd for my school.",
 
   /** YouTube video id (the part after watch?v=). Empty shows a "coming soon" placeholder. */
-  demoVideoYoutubeId: '',
+  demoVideoYoutubeId: '4VjQ5CyHPKs',
 
   /** Flip to true once real testimonials replace the placeholders in components/marketing/testimonials.tsx. */
   showTestimonials: false,
