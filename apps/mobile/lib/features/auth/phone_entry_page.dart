@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/l10n/l10n.dart';
 import '../../shared/widgets/error_banner.dart';
-import '../../shared/widgets/language_picker.dart';
+import '../../shared/widgets/auth_shell.dart';
 import '../../shared/widgets/primary_button.dart';
 import 'phone_auth_controller.dart';
 
@@ -46,51 +46,36 @@ class _PhoneEntryPageState extends ConsumerState<PhoneEntryPage> {
     final authState = ref.watch(phoneAuthControllerProvider);
     final l = context.l10n;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l.authSignIn),
-        actions: const [LanguageButton(color: Colors.white)],
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/onboarding/tenant'),
-        ),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(l.authEnterMobile, style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 8),
-              Text(
-                l.authOtpExplainer,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 24),
-              if (_localError != null) ErrorBanner(message: _localError!),
-              if (_localError == null && authState.error != null) ErrorBanner(message: authState.error!),
-              TextField(
-                controller: _controller,
-                keyboardType: TextInputType.phone,
-                maxLength: 10,
-                decoration: InputDecoration(
-                  labelText: l.authMobileLabel,
-                  prefixText: '+91 ',
-                  border: const OutlineInputBorder(),
-                  counterText: '',
-                ),
-              ),
-              const SizedBox(height: 24),
-              PrimaryButton(
-                label: l.authSendCode,
-                isLoading: authState.isLoading,
-                onPressed: _submit,
-              ),
-            ],
+    return AuthShell(
+      onBack: () => context.go('/onboarding/tenant'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l.authEnterMobile, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
+          const SizedBox(height: 8),
+          Text(l.authOtpExplainer, style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: 24),
+          if (_localError != null) ErrorBanner(message: _localError!),
+          if (_localError == null && authState.error != null) ErrorBanner(message: authState.error!),
+          TextField(
+            controller: _controller,
+            keyboardType: TextInputType.phone,
+            maxLength: 10,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: 1),
+            decoration: InputDecoration(
+              labelText: l.authMobileLabel,
+              prefixIcon: const Icon(Icons.phone_iphone_rounded),
+              prefixText: '+91 ',
+              counterText: '',
+            ),
           ),
-        ),
+          const SizedBox(height: 24),
+          PrimaryButton(
+            label: l.authSendCode,
+            isLoading: authState.isLoading,
+            onPressed: _submit,
+          ),
+        ],
       ),
     );
   }

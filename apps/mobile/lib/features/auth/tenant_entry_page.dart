@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/l10n/l10n.dart';
 import '../../shared/services/secure_storage_service.dart';
 import '../../shared/widgets/error_banner.dart';
-import '../../shared/widgets/language_picker.dart';
+import '../../shared/widgets/auth_shell.dart';
 import '../../shared/widgets/primary_button.dart';
 
 /// First-launch screen — the school gives parents a short code at onboarding
@@ -49,42 +49,30 @@ class _TenantEntryPageState extends ConsumerState<TenantEntryPage> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            const Positioned(top: 4, right: 4, child: LanguageButton()),
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(l.appName, style: Theme.of(context).textTheme.headlineMedium),
-                  const SizedBox(height: 8),
-                  Text(
-                    l.authSchoolCodeIntro,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 24),
-                  if (_error != null) ErrorBanner(message: _error!),
-                  TextField(
-                    controller: _controller,
-                    autocorrect: false,
-                    textCapitalization: TextCapitalization.none,
-                    decoration: InputDecoration(
-                      labelText: l.authSchoolCodeLabel,
-                      hintText: l.authSchoolCodeHint,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  PrimaryButton(label: l.commonContinue, isLoading: _isSaving, onPressed: _submit),
-                ],
-              ),
+    return AuthShell(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l.authSchoolCodeLabel, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
+          const SizedBox(height: 8),
+          Text(l.authSchoolCodeIntro, style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: 24),
+          if (_error != null) ErrorBanner(message: _error!),
+          TextField(
+            controller: _controller,
+            autocorrect: false,
+            textCapitalization: TextCapitalization.none,
+            textInputAction: TextInputAction.go,
+            onSubmitted: (_) => _submit(),
+            decoration: InputDecoration(
+              labelText: l.authSchoolCodeLabel,
+              hintText: l.authSchoolCodeHint,
+              prefixIcon: const Icon(Icons.school_rounded),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 24),
+          PrimaryButton(label: l.commonContinue, isLoading: _isSaving, onPressed: _submit),
+        ],
       ),
     );
   }

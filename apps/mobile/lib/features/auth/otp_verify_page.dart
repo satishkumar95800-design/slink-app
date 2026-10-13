@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/l10n/l10n.dart';
+import '../../shared/widgets/auth_shell.dart';
 import '../../shared/widgets/error_banner.dart';
 import '../../shared/widgets/primary_button.dart';
 import 'phone_auth_controller.dart';
@@ -42,58 +43,47 @@ class _OtpVerifyPageState extends ConsumerState<OtpVerifyPage> {
     final phoneNumber = authState.phoneNumber ?? '';
     final l = context.l10n;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l.authVerifyCodeTitle),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            ref.read(phoneAuthControllerProvider.notifier).reset();
-            context.go('/login/phone');
-          },
-        ),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(l.authEnterSixDigit, style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 8),
-              Text(l.authSentTo(phoneNumber), style: Theme.of(context).textTheme.bodyMedium),
-              const SizedBox(height: 24),
-              if (authState.error != null) ErrorBanner(message: authState.error!),
-              TextField(
-                controller: _controller,
-                keyboardType: TextInputType.number,
-                maxLength: 6,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 24, letterSpacing: 8),
-                decoration: const InputDecoration(border: OutlineInputBorder(), counterText: ''),
-                onChanged: (value) {
-                  if (value.length == 6) _submit();
-                },
-              ),
-              const SizedBox(height: 24),
-              PrimaryButton(
-                label: l.authVerify,
-                isLoading: authState.isLoading,
-                onPressed: _submit,
-              ),
-              const SizedBox(height: 12),
-              Center(
-                child: TextButton(
-                  onPressed: authState.isLoading
-                      ? null
-                      : () => ref.read(phoneAuthControllerProvider.notifier).sendOtp(phoneNumber),
-                  child: Text(l.authResendCode),
-                ),
-              ),
-            ],
+    return AuthShell(
+      onBack: () {
+        ref.read(phoneAuthControllerProvider.notifier).reset();
+        context.go('/login/phone');
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l.authEnterSixDigit, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
+          const SizedBox(height: 8),
+          Text(l.authSentTo(phoneNumber), style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: 24),
+          if (authState.error != null) ErrorBanner(message: authState.error!),
+          TextField(
+            controller: _controller,
+            keyboardType: TextInputType.number,
+            autofillHints: const [AutofillHints.oneTimeCode],
+            maxLength: 6,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: 12),
+            decoration: const InputDecoration(counterText: ''),
+            onChanged: (value) {
+              if (value.length == 6) _submit();
+            },
           ),
-        ),
+          const SizedBox(height: 24),
+          PrimaryButton(
+            label: l.authVerify,
+            isLoading: authState.isLoading,
+            onPressed: _submit,
+          ),
+          const SizedBox(height: 12),
+          Center(
+            child: TextButton(
+              onPressed: authState.isLoading
+                  ? null
+                  : () => ref.read(phoneAuthControllerProvider.notifier).sendOtp(phoneNumber),
+              child: Text(l.authResendCode),
+            ),
+          ),
+        ],
       ),
     );
   }

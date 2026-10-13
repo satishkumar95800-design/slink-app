@@ -30,6 +30,12 @@ class FilesRepository {
     );
     return response.data!['key'] as String;
   }
+
+  /// GET /files/signed-url — a short-lived link to a private file (e.g. a report card PDF).
+  Future<String> signedUrl(String key) async {
+    final response = await _dio.get<Map<String, dynamic>>('/files/signed-url', queryParameters: {'key': key});
+    return response.data!['url'] as String;
+  }
 }
 
 final filesRepositoryProvider = Provider<FilesRepository>((ref) {

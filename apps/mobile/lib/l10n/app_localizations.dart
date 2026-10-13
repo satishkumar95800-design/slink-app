@@ -1809,6 +1809,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not load notifications. Pull down to retry.'**
   String get notificationsCouldNotLoad;
+
+  /// No description provided for @homeQuickAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick access'**
+  String get homeQuickAccess;
+
+  /// No description provided for @homeAmountDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount due'**
+  String get homeAmountDue;
+
+  /// No description provided for @homeAttendanceRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance this month'**
+  String get homeAttendanceRate;
+
+  /// No description provided for @teacherQuickActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick actions'**
+  String get teacherQuickActions;
+
+  /// No description provided for @teacherTodayClasses.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s classes'**
+  String get teacherTodayClasses;
+
+  /// No description provided for @reportSubjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Subjects'**
+  String get reportSubjects;
+
+  /// No description provided for @reportTeacherRemark.
+  ///
+  /// In en, this message translates to:
+  /// **'Teacher\'s remark'**
+  String get reportTeacherRemark;
+
+  /// No description provided for @reportOpenPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Open report card'**
+  String get reportOpenPdf;
+
+  /// No description provided for @reportPdfFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the report card.'**
+  String get reportPdfFailed;
+
+  /// No description provided for @authTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Fees, homework, attendance and reports — all in one app.'**
+  String get authTagline;
 }
 
 class _AppLocalizationsDelegate

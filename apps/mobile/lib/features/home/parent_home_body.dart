@@ -4,19 +4,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/format/money.dart';
 import '../../core/l10n/l10n.dart';
+import '../../core/theme/app_theme.dart';
 import '../../shared/models/student.dart';
+import '../../shared/widgets/ui_kit.dart';
 import '../attendance/attendance_models.dart';
 import '../attendance/attendance_status_colors.dart';
+import '../dashboard/home_header.dart';
 import '../dashboard/students_repository.dart';
 import 'parent_home_models.dart';
 import 'parent_home_repository.dart';
 
-/// Parent home (docs/SPEC-improvements.md §3.1–3.3): child switcher, then the
-/// Fee, Today and Attendance cards for the selected child, then the menu.
+const _overlap = 36.0;
+
+/// Parent home (docs/SPEC-improvements.md §3.1–3.3): teal header with the child
+/// switcher, the fee card overlapping it, a grid of every feature, then this
+/// month's attendance and today's homework and notice.
 class ParentHomeBody extends ConsumerStatefulWidget {
   final List<Student> children;
+  final String userName;
 
-  const ParentHomeBody({super.key, required this.children});
+  const ParentHomeBody({super.key, required this.children, required this.userName});
 
   @override
   ConsumerState<ParentHomeBody> createState() => _ParentHomeBodyState();
@@ -42,50 +49,101 @@ class _ParentHomeBodyState extends ConsumerState<ParentHomeBody> {
     if (child == null) return const Center(child: CircularProgressIndicator());
 
     final homeAsync = ref.watch(parentHomeProvider(child.id));
+    final home = homeAsync.valueOrNull;
     final l = context.l10n;
 
     return RefreshIndicator(
       onRefresh: () async => ref.invalidate(parentHomeProvider(child.id)),
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.zero,
         children: [
-          _ChildSwitcher(children: widget.children, selected: child),
-          const SizedBox(height: 16),
-          homeAsync.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.symmetric(vertical: 48),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (_, __) => Card(
-              child: ListTile(
-                title: Text(l.homeCouldNotLoad),
-                trailing: TextButton(
-                  onPressed: () => ref.invalidate(parentHomeProvider(child.id)),
-                  child: Text(l.commonRetry),
-                ),
-              ),
-            ),
-            data: (home) => Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _FeeCard(fees: home.fees),
-                const SizedBox(height: 12),
-                _TodayCard(home: home),
-                const SizedBox(height: 12),
-                _AttendanceCard(home: home),
-              ],
+          HeroHeader(
+            overlap: _overlap,
+            child: HomeHeader(
+              name: widget.userName,
+              bottom: _ChildSwitcher(children: widget.children, selected: child),
             ),
           ),
-          const SizedBox(height: 24),
-          _MenuCard(icon: Icons.receipt_long, title: l.menuFees, subtitle: l.menuFeesSubtitle, route: '/dashboard/fees'),
-          _MenuCard(icon: Icons.menu_book_outlined, title: l.menuHomework, subtitle: l.menuHomeworkSubtitle, route: '/homework'),
-          _MenuCard(icon: Icons.campaign_outlined, title: l.menuNotices, subtitle: l.menuNoticesSubtitle, route: '/notices'),
-          _MenuCard(icon: Icons.assignment_outlined, title: l.menuReports, subtitle: l.menuReportsSubtitle, route: '/dashboard/reports'),
-          _MenuCard(
-            icon: Icons.event_available_outlined,
-            title: l.attendanceTitle,
-            subtitle: l.menuAttendanceSubtitle,
-            route: '/attendance/student/${child.id}',
+          OverlapUp(
+            by: _overlap,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  homeAsync.when(
+                    loading: () => const LoadingBlock(height: 150),
+                    error: (_, __) => SoftCard(
+                      child: Row(
+                        children: [
+                          const IconBadge(icon: Icons.cloud_off_rounded, color: AppColors.coral),
+                          const SizedBox(width: 12),
+                          Expanded(child: Text(l.homeCouldNotLoad)),
+                          TextButton(
+                            onPressed: () => ref.invalidate(parentHomeProvider(child.id)),
+                            child: Text(l.commonRetry),
+                          ),
+                        ],
+                      ),
+                    ),
+                    data: (home) => _FeeCard(fees: home.fees),
+                  ),
+                  const SizedBox(height: 24),
+                  SectionHeader(title: l.homeQuickAccess),
+                  FeatureGrid(tiles: [
+                    FeatureTile(
+                      icon: Icons.account_balance_wallet_rounded,
+                      label: l.menuFees,
+                      color: FeatureColors.fees,
+                      caption: home == null || home.fees.allPaid ? null : formatRupees(home.fees.totalOutstanding),
+                      alert: home?.fees.overdue ?? false,
+                      onTap: () => context.push('/dashboard/fees'),
+                    ),
+                    FeatureTile(
+                      icon: Icons.event_available_rounded,
+                      label: l.attendanceTitle,
+                      color: FeatureColors.attendance,
+                      caption: home == null || home.attendanceDaysMarked == 0
+                          ? null
+                          : '${home.attendanceDaysPresent}/${home.attendanceDaysMarked}',
+                      onTap: () => context.push('/attendance/student/${child.id}'),
+                    ),
+                    FeatureTile(
+                      icon: Icons.menu_book_rounded,
+                      label: l.menuHomework,
+                      color: FeatureColors.homework,
+                      badge: home?.homework.length,
+                      onTap: () => context.push('/homework'),
+                    ),
+                    FeatureTile(
+                      icon: Icons.campaign_rounded,
+                      label: l.menuNotices,
+                      color: FeatureColors.notices,
+                      onTap: () => context.push('/notices'),
+                    ),
+                    FeatureTile(
+                      icon: Icons.insights_rounded,
+                      label: l.teacherReports,
+                      color: FeatureColors.reports,
+                      onTap: () => context.push('/dashboard/reports'),
+                    ),
+                    FeatureTile(
+                      icon: Icons.notifications_rounded,
+                      label: l.notificationsTitle,
+                      color: FeatureColors.notifications,
+                      onTap: () => context.push('/dashboard/notifications'),
+                    ),
+                  ]),
+                  if (home != null) ...[
+                    const SizedBox(height: 24),
+                    _AttendanceCard(home: home),
+                    const SizedBox(height: 24),
+                    SectionHeader(title: l.homeTodayTitle),
+                    _TodaySection(home: home),
+                  ],
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -93,6 +151,7 @@ class _ParentHomeBodyState extends ConsumerState<ParentHomeBody> {
   }
 }
 
+/// One pill per child (name over class); tapping switches the whole home screen.
 class _ChildSwitcher extends ConsumerWidget {
   final List<Student> children;
   final Student selected;
@@ -101,33 +160,85 @@ class _ChildSwitcher extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l = context.l10n;
-    String withClass(Student s) => s.studentClass?.name == null ? s.name : l.homeChildWithClass(s.name, s.studentClass!.name);
-    final label = withClass(selected);
-    final style = Theme.of(context).textTheme.titleLarge;
-    if (children.length < 2) return Text(label, style: style);
+    final canSwitch = children.length > 1;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final c in children)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: _ChildChip(
+                student: c,
+                selected: c.id == selected.id,
+                tooltip: canSwitch ? context.l10n.homeSwitchChild : null,
+                onTap: canSwitch ? () => selectChild(ref, c.id) : null,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
 
-    return PopupMenuButton<String>(
-      tooltip: l.homeSwitchChild,
-      onSelected: (id) => selectChild(ref, id),
-      itemBuilder: (_) => [
-        for (final c in children)
-          CheckedPopupMenuItem(
-            value: c.id,
-            checked: c.id == selected.id,
-            child: Text(withClass(c)),
+class _ChildChip extends StatelessWidget {
+  final Student student;
+  final bool selected;
+  final String? tooltip;
+  final VoidCallback? onTap;
+
+  const _ChildChip({required this.student, required this.selected, this.tooltip, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final className = student.studentClass?.name;
+    final chip = Material(
+      color: selected ? Colors.white : Colors.white.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.fromLTRB(6, 6, 16, 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              InitialAvatar(
+                name: student.name,
+                radius: 16,
+                background: selected ? AppColors.coral : Colors.white.withValues(alpha: 0.2),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    student.name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                      color: selected ? AppColors.teal : Colors.white,
+                    ),
+                  ),
+                  if (className != null)
+                    Text(
+                      className,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: selected ? AppColors.muted : Colors.white70,
+                      ),
+                    ),
+                ],
+              ),
+            ],
           ),
-      ],
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: [
-            Flexible(child: Text(label, style: style, overflow: TextOverflow.ellipsis)),
-            const Icon(Icons.arrow_drop_down),
-          ],
         ),
       ),
     );
+    return tooltip == null ? chip : Tooltip(message: tooltip!, child: chip);
   }
 }
 
@@ -141,161 +252,108 @@ class _FeeCard extends StatelessWidget {
     final theme = Theme.of(context);
     final next = fees.next;
     final l = context.l10n;
+    final muted = theme.brightness == Brightness.dark ? Colors.white70 : AppColors.muted;
 
-    final Widget headline;
-    if (fees.claimsUnderReview > 0) {
-      headline = Row(children: [
-        const Icon(Icons.hourglass_top, color: Colors.orange),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            fees.claimAmount == null ? l.homeClaimUnderReview : l.homeClaimAmountUnderReview(formatRupees(fees.claimAmount)),
-            style: theme.textTheme.titleMedium,
-          ),
-        ),
-      ]);
-    } else if (fees.allPaid || next == null) {
-      headline = Row(children: [
-        const Icon(Icons.check_circle, color: AttendanceColors.present),
-        const SizedBox(width: 8),
-        Expanded(child: Text(l.homeAllFeesPaid, style: theme.textTheme.titleMedium)),
-      ]);
-    } else {
-      headline = Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (next.overdue)
-            Container(
-              margin: const EdgeInsets.only(bottom: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(999)),
-              child: Text(l.homeOverdue, style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold)),
+    if (fees.claimsUnderReview > 0 || fees.allPaid || next == null) {
+      final underReview = fees.claimsUnderReview > 0;
+      return SoftCard(
+        onTap: () => context.push('/dashboard/fees'),
+        child: Row(
+          children: [
+            IconBadge(
+              icon: underReview ? Icons.hourglass_top_rounded : Icons.verified_rounded,
+              color: underReview ? FeatureColors.fees : FeatureColors.attendance,
+              size: 52,
             ),
-          Text(
-            l.homeDueBy(formatRupees(next.outstanding), displayYmd(next.dueDate)),
-            style: theme.textTheme.titleLarge?.copyWith(color: next.overdue ? Colors.red.shade700 : null),
-          ),
-          Text(next.name, style: theme.textTheme.bodySmall),
-          if (fees.openCount > 1) Text(l.homeMoreDues(fees.openCount - 1), style: theme.textTheme.bodySmall),
-        ],
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                underReview
+                    ? (fees.claimAmount == null
+                        ? l.homeClaimUnderReview
+                        : l.homeClaimAmountUnderReview(formatRupees(fees.claimAmount)))
+                    : l.homeAllFeesPaid,
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              ),
+            ),
+            TextButton(onPressed: () => context.push('/dashboard/fees'), child: Text(l.homeViewFees)),
+          ],
+        ),
       );
     }
 
-    final showPay = fees.claimsUnderReview == 0 && next != null;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            headline,
-            const SizedBox(height: 12),
-            // Wrap, not Row: longer Kannada/Hindi labels drop to a second line instead of overflowing.
-            Wrap(
-              alignment: WrapAlignment.end,
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                TextButton(onPressed: () => context.push('/dashboard/fees'), child: Text(l.homeViewFees)),
-                if (showPay)
-                  FilledButton(
-                    onPressed: () => context.push('/fees/${next.studentFeeId}/pay'),
-                    child: Text(l.homePayNow),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TodayCard extends StatelessWidget {
-  final ParentHome home;
-
-  const _TodayCard({required this.home});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final notice = home.latestNotice;
-    final l = context.l10n;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-              child: Text(l.homeTodayTitle, style: theme.textTheme.titleMedium),
-            ),
-            if (home.homework.isEmpty)
-              ListTile(leading: const Icon(Icons.menu_book_outlined), title: Text(l.homeNoHomeworkToday))
-            else
-              for (final hw in home.homework)
-                ListTile(
-                  leading: _Thumbnail(url: hw.photoUrl),
-                  title: Text(hw.caption.isEmpty ? l.homeworkKind : hw.caption, maxLines: 2, overflow: TextOverflow.ellipsis),
-                  subtitle: Text(hw.subject == null ? hw.teacherName : l.homeworkBy(hw.teacherName, hw.subject!)),
-                  onTap: () => context.push('/notices/detail', extra: {
-                    'title': l.homeworkKind,
-                    'body': hw.caption,
-                    'attachments': hw.photoUrls.isNotEmpty ? hw.photoUrls : [if (hw.photoUrl != null) hw.photoUrl],
-                    'broadcastId': hw.broadcastId,
-                  }),
+    final dueColor = next.overdue ? const Color(0xFFDC2626) : theme.colorScheme.onSurface;
+    return SoftCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(l.homeAmountDue,
+                            style: theme.textTheme.labelLarge?.copyWith(color: muted, fontWeight: FontWeight.w700)),
+                        if (next.overdue)
+                          StatusPill(
+                            label: l.homeOverdue,
+                            color: const Color(0xFFDC2626),
+                            icon: Icons.error_outline_rounded,
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        formatRupees(next.outstanding),
+                        style: theme.textTheme.headlineMedium
+                            ?.copyWith(fontWeight: FontWeight.w900, color: dueColor, letterSpacing: -0.5),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(next.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
+                    Text(l.feesDueOn(displayYmd(next.dueDate)), style: theme.textTheme.bodySmall?.copyWith(color: muted)),
+                    if (fees.openCount > 1)
+                      Text(l.homeMoreDues(fees.openCount - 1), style: theme.textTheme.bodySmall?.copyWith(color: muted)),
+                  ],
                 ),
-            const Divider(height: 1),
-            if (notice == null)
-              ListTile(leading: const Icon(Icons.campaign_outlined), title: Text(l.noticesEmpty))
-            else
-              ListTile(
-                leading: const Icon(Icons.campaign_outlined),
-                title: Text(notice.title ?? l.homeLatestNotice, maxLines: 1, overflow: TextOverflow.ellipsis),
-                subtitle: Text('${displayDate(notice.createdAt)} · ${notice.body}', maxLines: 2, overflow: TextOverflow.ellipsis),
-                onTap: () => context.push('/notices/detail', extra: {
-                  'title': notice.title ?? l.homeLatestNotice,
-                  'body': notice.body,
-                  'attachments': notice.attachments,
-                  'broadcastId': notice.broadcastId,
-                }),
               ),
-          ],
-        ),
+              const IconBadge(icon: Icons.account_balance_wallet_rounded, color: FeatureColors.fees, size: 56),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => context.push('/dashboard/fees'),
+                  child: Text(l.homeViewFees, textAlign: TextAlign.center),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () => context.push('/fees/${next.studentFeeId}/pay'),
+                  icon: const Icon(Icons.bolt_rounded, size: 20),
+                  label: Text(l.homePayNow, textAlign: TextAlign.center),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
-    );
-  }
-}
-
-class _Thumbnail extends StatelessWidget {
-  final String? url;
-
-  const _Thumbnail({this.url});
-
-  @override
-  Widget build(BuildContext context) {
-    const size = 48.0;
-    final placeholder = Container(
-      width: size,
-      height: size,
-      color: Theme.of(context).colorScheme.secondaryContainer,
-      child: const Icon(Icons.menu_book_outlined),
-    );
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: url == null
-          ? placeholder
-          : CachedNetworkImage(
-              imageUrl: url!,
-              width: size,
-              height: size,
-              fit: BoxFit.cover,
-              // Signed URLs change on every load; cache by path so the thumbnail isn't refetched each time.
-              cacheKey: Uri.tryParse(url!)?.path,
-              placeholder: (_, __) => placeholder,
-              errorWidget: (_, __, ___) => placeholder,
-            ),
     );
   }
 }
@@ -307,43 +365,189 @@ class _AttendanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final today = home.attendanceToday;
+    final theme = Theme.of(context);
     final l = context.l10n;
-    return Card(
-      child: ListTile(
-        minVerticalPadding: 16,
-        leading: CircleAvatar(
-          radius: 14,
-          backgroundColor: today == null ? AttendanceColors.holiday : AttendanceColors.of(today),
-          child: const Icon(Icons.event_available, size: 16, color: Colors.white),
-        ),
-        title: Text(l.attendanceThisMonth(home.attendanceDaysPresent, home.attendanceDaysMarked)),
-        subtitle: Text(l.attendanceToday(today?.label(l) ?? l.attendanceNotMarkedYet)),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => context.push('/attendance/student/${home.studentId}'),
+    final today = home.attendanceToday;
+    final marked = home.attendanceDaysMarked;
+    final rate = marked == 0 ? 0.0 : home.attendanceDaysPresent / marked;
+    final ringColor = rate >= 0.85 || marked == 0
+        ? FeatureColors.attendance
+        : rate >= 0.75
+            ? AttendanceColors.late
+            : AttendanceColors.absent;
+
+    return SoftCard(
+      onTap: () => context.push('/attendance/student/${home.studentId}'),
+      child: Row(
+        children: [
+          RingStat(
+            value: rate,
+            color: ringColor,
+            centerText: marked == 0 ? '–' : '${(rate * 100).round()}%',
+            size: 68,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l.homeAttendanceRate, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 2),
+                Text(
+                  l.attendanceThisMonth(home.attendanceDaysPresent, marked),
+                  style: theme.textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                StatusPill(
+                  label: l.attendanceToday(today?.label(l) ?? l.attendanceNotMarkedYet),
+                  color: today == null ? AttendanceColors.holiday : AttendanceColors.of(today),
+                  icon: Icons.today_rounded,
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right_rounded),
+        ],
       ),
     );
   }
 }
 
-class _MenuCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String route;
+/// Today's homework as a swipeable row of photo cards, then the latest notice.
+class _TodaySection extends StatelessWidget {
+  final ParentHome home;
 
-  const _MenuCard({required this.icon, required this.title, required this.subtitle, required this.route});
+  const _TodaySection({required this.home});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: Icon(icon, size: 32),
-        title: Text(title, style: Theme.of(context).textTheme.titleMedium),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => context.push(route),
+    final l = context.l10n;
+    final notice = home.latestNotice;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (home.homework.isEmpty)
+          ListCard(
+            leading: const IconBadge(icon: Icons.menu_book_rounded, color: FeatureColors.homework),
+            title: l.homeNoHomeworkToday,
+          )
+        else
+          SizedBox(
+            height: 230,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              itemCount: home.homework.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, i) => _HomeworkCard(hw: home.homework[i], fullWidth: home.homework.length == 1),
+            ),
+          ),
+        const SizedBox(height: 12),
+        if (notice == null)
+          ListCard(
+            leading: const IconBadge(icon: Icons.campaign_rounded, color: FeatureColors.notices),
+            title: l.noticesEmpty,
+          )
+        else
+          ListCard(
+            leading: const IconBadge(icon: Icons.campaign_rounded, color: FeatureColors.notices),
+            title: notice.title ?? l.homeLatestNotice,
+            subtitle: notice.body,
+            trailing: DateLabel(displayDate(notice.createdAt)),
+            onTap: () => context.push('/notices/detail', extra: {
+              'title': notice.title ?? l.homeLatestNotice,
+              'body': notice.body,
+              'attachments': notice.attachments,
+              'broadcastId': notice.broadcastId,
+            }),
+          ),
+      ],
+    );
+  }
+}
+
+class _HomeworkCard extends StatelessWidget {
+  final HomeworkItem hw;
+  final bool fullWidth;
+
+  const _HomeworkCard({required this.hw, required this.fullWidth});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l = context.l10n;
+    final width = fullWidth ? MediaQuery.sizeOf(context).width - 32 : 250.0;
+    final placeholder = Container(
+      color: FeatureColors.homework.withValues(alpha: 0.12),
+      child: const Center(child: Icon(Icons.menu_book_rounded, color: FeatureColors.homework, size: 40)),
+    );
+
+    return SizedBox(
+      width: width,
+      child: Card(
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => context.push('/notices/detail', extra: {
+            'title': l.homeworkKind,
+            'body': hw.caption,
+            'attachments': hw.photoUrls.isNotEmpty ? hw.photoUrls : [if (hw.photoUrl != null) hw.photoUrl],
+            'broadcastId': hw.broadcastId,
+          }),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    hw.photoUrl == null
+                        ? placeholder
+                        : CachedNetworkImage(
+                            imageUrl: hw.photoUrl!,
+                            fit: BoxFit.cover,
+                            // Signed URLs change on every load; cache by path so the photo isn't refetched each time.
+                            cacheKey: Uri.tryParse(hw.photoUrl!)?.path,
+                            placeholder: (_, __) => placeholder,
+                            errorWidget: (_, __, ___) => placeholder,
+                          ),
+                    if (hw.subject != null)
+                      Positioned(
+                        left: 10,
+                        top: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.55),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(hw.subject!,
+                              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800)),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      hw.caption.isEmpty ? l.homeworkKind : hw.caption,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    Text(hw.teacherName,
+                        maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
