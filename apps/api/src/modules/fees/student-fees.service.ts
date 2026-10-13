@@ -12,6 +12,7 @@ import { AdjustStudentFeeDto, AdjustmentType } from './dto/adjust-student-fee.dt
 import { StudentFeeQueryDto } from './dto/student-fee-query.dto';
 import { ReceiptsService } from '../receipts/receipts.service';
 import { buildStudentFeeComponents, sumComponentAmounts } from './fee-assignment.util';
+import { feeStatusFor } from './fee-status.util';
 import { applyDiscountsToComponents } from '../discounts/discount-application.util';
 import type { ApplicableStudentDiscount } from '../discounts/discount-application.util';
 
@@ -401,11 +402,7 @@ export class StudentFeesService {
     amountPaid: Prisma.Decimal,
     dueDate: Date,
   ): FeeStatus {
-    if (amountPaid.greaterThanOrEqualTo(amountDue)) return FeeStatus.paid;
-    const now = new Date();
-    if (dueDate < now) return FeeStatus.overdue;
-    if (amountPaid.greaterThan(0)) return FeeStatus.partial;
-    return FeeStatus.pending;
+    return feeStatusFor(amountDue, amountPaid, dueDate);
   }
 
   private async loadDiscounts(tenantId: string, studentId: string): Promise<ApplicableStudentDiscount[]> {

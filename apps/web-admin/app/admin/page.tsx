@@ -10,6 +10,8 @@ import { useLocale, useTranslations } from 'next-intl';
 import { formatDateOnly, formatMonthYear, formatRupees, weekdayName } from '../../lib/format';
 import { useErrorText } from '../../lib/i18n/errors';
 import { reportTypeLabel } from '../../lib/i18n/labels';
+import { useTenantFeatures } from '../../lib/tenant-features';
+import { NotifyClassesCard } from './notify-classes';
 
 interface Stats {
   userCount: number;
@@ -119,6 +121,7 @@ export default function DashboardPage() {
   const tCommon = useTranslations('common');
   const tMethod = useTranslations('paymentMethod');
   const tReport = useTranslations('reportType');
+  const tConcession = useTranslations('concession');
   const locale = useLocale();
   const errorText = useErrorText();
   const [stats, setStats] = useState<Partial<Stats>>({});
@@ -131,6 +134,9 @@ export default function DashboardPage() {
   const [myClasses, setMyClasses] = useState<MyClass[]>([]);
   const isTeacher = getSession()?.role === 'teacher';
   const isAdmin = getSession()?.role === 'admin';
+  const isAccounts = getSession()?.role === 'accounts';
+  const { feeConcession } = useTenantFeatures();
+  const [concessionToday, setConcessionToday] = useState<{ total: number; count: number } | null>(null);
 
   useEffect(() => {
     // Addendum 4 / A10 — fee data (collected/outstanding/recent payments) must
@@ -217,6 +223,16 @@ export default function DashboardPage() {
   }, [isAdmin]);
 
   useEffect(() => {
+    if (!feeConcession || !(isAdmin || isAccounts)) return;
+    api
+      .get<{ total: number; count: number }>('/fee-concessions/today')
+      .then(setConcessionToday)
+      .catch(() => {
+        // Non-critical widget — fail silently, keep the rest of the dashboard usable.
+      });
+  }, [feeConcession, isAdmin, isAccounts]);
+
+  useEffect(() => {
     if (isTeacher) return;
     async function fetchForecast() {
       try {
@@ -265,6 +281,20 @@ export default function DashboardPage() {
               color="bg-orange-50"
             />
           </div>
+
+          {concessionToday && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <StatCard
+                label={tConcession('todayTitle')}
+                value={formatRupees(concessionToday.total)}
+                subtitle={tConcession('todayCount', { count: concessionToday.count })}
+                icon="🏷️"
+                color="bg-amber-50"
+              />
+            </div>
+          )}
+
+          {isAdmin && <NotifyClassesCard />}
 
           <div className="rounded-2xl bg-white shadow-sm border border-gray-100">
             <div className="border-b px-6 py-4">

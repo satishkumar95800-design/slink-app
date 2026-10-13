@@ -16,6 +16,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantsService } from './tenants.service';
 import { UsersService } from '../users/users.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
+import { UpdatePlatformFeaturesDto } from './dto/update-platform-features.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { TenantQueryDto } from './dto/tenant-query.dto';
 import { PurgeTenantDto } from './dto/purge-tenant.dto';
@@ -55,6 +56,15 @@ export class TenantsAdminController {
     @Body() dto: UpdateTenantDto,
   ) {
     return this.tenantsService.update(id, dto);
+  }
+
+  /** Switch per-school modules (see common/tenant-features.ts). */
+  @Patch(':id/features')
+  updateFeatures(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdatePlatformFeaturesDto,
+  ) {
+    return this.tenantsService.updateFeatures(id, dto);
   }
 
   @Delete(':id')

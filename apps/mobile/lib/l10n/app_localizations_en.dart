@@ -1000,4 +1000,35 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get notificationsCouldNotLoad =>
       'Could not load notifications. Pull down to retry.';
+
+  @override
+  String get homeQuickAccess => 'Quick access';
+
+  @override
+  String get homeAmountDue => 'Amount due';
+
+  @override
+  String get homeAttendanceRate => 'Attendance this month';
+
+  @override
+  String get teacherQuickActions => 'Quick actions';
+
+  @override
+  String get teacherTodayClasses => 'Today\'s classes';
+
+  @override
+  String get reportSubjects => 'Subjects';
+
+  @override
+  String get reportTeacherRemark => 'Teacher\'s remark';
+
+  @override
+  String get reportOpenPdf => 'Open report card';
+
+  @override
+  String get reportPdfFailed => 'Could not open the report card.';
+
+  @override
+  String get authTagline =>
+      'Fees, homework, attendance and reports — all in one app.';
 }

@@ -47,7 +47,14 @@ interface Student {
   classId: string;
   class?: { name: string; academicYear: string };
   parents?: Array<{ relation: string; isPrimary: boolean; parent: { id: string; name: string; phone: string | null; profession?: string | null } }>;
+  customFieldValues?: Array<{ value: string; fieldDefinition: { id: string } }>;
   createdAt: string;
+}
+
+/** The school's own extra fields (e.g. SATS Number) — one column each; none for most schools. */
+interface FieldDefinition {
+  id: string;
+  label: string;
 }
 
 interface Class {
@@ -100,6 +107,11 @@ export default function StudentsPage() {
   const [search, setSearch] = useState('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const isTeacher = getSession()?.role === 'teacher';
+  const [extraFields, setExtraFields] = useState<FieldDefinition[]>([]);
+
+  useEffect(() => {
+    api.get<FieldDefinition[]>('/custom-field-definitions').then(setExtraFields).catch(() => {});
+  }, []);
 
   const {
     register,
@@ -288,7 +300,7 @@ export default function StudentsPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-cream/60">
               <tr>
-                {[t('colAdmissionNo'), t('colName'), t('colClass'), t('colDob'), t('colBloodGroup'), t('colEnrolled'), ''].map((h, i) => (
+                {[t('colAdmissionNo'), t('colName'), t('colClass'), ...extraFields.map((f) => f.label), t('colDob'), t('colBloodGroup'), t('colEnrolled'), ''].map((h, i) => (
                   <th key={i} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
                     {h}
                   </th>
@@ -318,6 +330,11 @@ export default function StudentsPage() {
                   <td className="px-6 py-4 text-sm text-gray-600">
                     {s.class ? `${s.class.name} (${s.class.academicYear})` : '—'}
                   </td>
+                  {extraFields.map((f) => (
+                    <td key={f.id} className="px-6 py-4 text-sm font-mono text-gray-700">
+                      {s.customFieldValues?.find((v) => v.fieldDefinition.id === f.id)?.value || '—'}
+                    </td>
+                  ))}
                   <td className="px-6 py-4 text-sm text-gray-600">
                     {s.dob ? formatDateOnly(s.dob) : '—'}
                   </td>

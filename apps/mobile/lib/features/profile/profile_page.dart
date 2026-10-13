@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/models/active_user.dart';
 import '../../shared/services/branding_repository.dart';
+import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
+import '../../shared/widgets/ui_kit.dart';
 import '../auth/session_controller.dart';
 import '../../core/l10n/l10n.dart';
 import '../../core/l10n/language_controller.dart';
@@ -24,70 +26,70 @@ class ProfilePage extends ConsumerWidget {
       );
     }
 
+    final theme = Theme.of(context);
+    Future<void> confirmLogout() async {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          content: Text(l.profileLogoutConfirm),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l.commonCancel)),
+            FilledButton(onPressed: () => Navigator.of(context).pop(true), child: Text(l.profileLogout)),
+          ],
+        ),
+      );
+      if (ok == true) await ref.read(sessionControllerProvider.notifier).logout();
+    }
+
     return AuthenticatedScaffold(
       appBar: AppBar(title: Text(l.profileTitle)),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                  child: Text(
-                    user.name.isNotEmpty ? user.name.substring(0, 1).toUpperCase() : '?',
-                    style: Theme.of(context).textTheme.headlineMedium,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(user.name, style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.secondaryContainer,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  _roleLabel(l, user.role),
-                  style: Theme.of(context).textTheme.labelLarge,
-                ),
-              ),
-              const SizedBox(height: 24),
-              if (schoolName != null) _InfoRow(label: l.profileSchool, value: schoolName),
-              const SizedBox(height: 8),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.language),
-                title: Text(l.languageTitle),
-                subtitle: Text(languageNativeName(locale)),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => showLanguagePicker(context, ref, signedIn: true),
-              ),
-              const Spacer(),
-              const Divider(height: 32),
-              ListTile(
-                leading: const Icon(Icons.logout),
-                title: Text(l.profileLogout),
-                onTap: () async {
-                  final ok = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      content: Text(l.profileLogoutConfirm),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l.commonCancel)),
-                        FilledButton(onPressed: () => Navigator.of(context).pop(true), child: Text(l.profileLogout)),
-                      ],
+        top: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+          children: [
+            SoftCard(
+              padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 18),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.coral.withValues(alpha: 0.35), width: 3),
                     ),
-                  );
-                  if (ok == true) await ref.read(sessionControllerProvider.notifier).logout();
-                },
+                    child: InitialAvatar(name: user.name, radius: 42),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(user.name,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 8),
+                  StatusPill(label: _roleLabel(l, user.role), color: FeatureColors.classes, icon: Icons.badge_rounded),
+                ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 20),
+            if (schoolName != null)
+              ListCard(
+                leading: const IconBadge(icon: Icons.school_rounded, color: FeatureColors.timetable),
+                title: schoolName,
+                subtitle: l.profileSchool,
+              ),
+            ListCard(
+              leading: const IconBadge(icon: Icons.translate_rounded, color: FeatureColors.reports),
+              title: l.languageTitle,
+              subtitle: languageNativeName(locale),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => showLanguagePicker(context, ref, signedIn: true),
+            ),
+            const SizedBox(height: 12),
+            ListCard(
+              leading: const IconBadge(icon: Icons.logout_rounded, color: Color(0xFFDC2626)),
+              title: l.profileLogout,
+              onTap: confirmLogout,
+            ),
+          ],
         ),
       ),
     );
@@ -100,29 +102,4 @@ class ProfilePage extends ConsumerWidget {
         UserRole.accounts => l.roleAccounts,
         UserRole.superAdmin => l.roleSuperAdmin,
       };
-}
-
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _InfoRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: Theme.of(context).textTheme.bodyMedium),
-        Flexible(
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-        ),
-      ],
-    );
-  }
 }

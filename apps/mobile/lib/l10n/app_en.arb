@@ -647,5 +647,15 @@
   "timetableCouldNotLoad": "Could not load your routine. Pull down to retry.",
   "notificationsTitle": "Notifications",
   "notificationsEmpty": "No notifications yet.",
-  "notificationsCouldNotLoad": "Could not load notifications. Pull down to retry."
+  "notificationsCouldNotLoad": "Could not load notifications. Pull down to retry.",
+  "homeQuickAccess": "Quick access",
+  "homeAmountDue": "Amount due",
+  "homeAttendanceRate": "Attendance this month",
+  "teacherQuickActions": "Quick actions",
+  "teacherTodayClasses": "Today's classes",
+  "reportSubjects": "Subjects",
+  "reportTeacherRemark": "Teacher's remark",
+  "reportOpenPdf": "Open report card",
+  "reportPdfFailed": "Could not open the report card.",
+  "authTagline": "Fees, homework, attendance and reports — all in one app."
 }

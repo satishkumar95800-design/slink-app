@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '../../../../lib/api-client';
 import { useErrorText } from '../../../../lib/i18n/errors';
@@ -13,6 +13,14 @@ import { Select } from '../../../../components/ui/select';
 import { Spinner } from '../../../../components/ui/spinner';
 import { useToast } from '../../../../components/ui/toast';
 import { formatDateOnly, formatDateTime, formatRupees } from '../../../../lib/format';
+import { useTenantFeatures } from '../../../../lib/tenant-features';
+import {
+  ConcessionPanel,
+  CustomFieldsCard,
+  TransferCertificateCard,
+  type ConcessionFeeComponent,
+  type CustomFieldValue,
+} from './extras';
 
 interface Student {
   id: string;
@@ -26,6 +34,9 @@ interface Student {
     isPrimary: boolean;
     parent: { id: string; name: string; phone: string | null };
   }>;
+  tcFileKey?: string | null;
+  tcUploadedAt?: string | null;
+  customFieldValues?: CustomFieldValue[];
 }
 
 type StudentNoteType = 'note' | 'mom' | 'complaint' | 'parent_discussion';
@@ -45,7 +56,7 @@ interface StudentFeeComponent {
   amountDue: number;
   amountPaid: number;
   status: string;
-  feeItem: { label: string };
+  feeItem: { id: string; label: string };
 }
 
 interface StudentFee {
@@ -78,6 +89,7 @@ export default function StudentDetailPage() {
   const role = getSession()?.role;
   const canSeeNotes = role === 'teacher' || role === 'admin' || role === 'super_admin';
   const canSeeFees = role === 'admin' || role === 'accounts' || role === 'super_admin';
+  const features = useTenantFeatures();
 
   useEffect(() => {
     if (!id) return;
@@ -150,14 +162,35 @@ export default function StudentDetailPage() {
         ))}
       </div>
 
-      {tab === 'overview' && <OverviewTab student={student} />}
+      {tab === 'overview' && (
+        <OverviewTab student={student} canEditFields={role === 'admin' || role === 'super_admin'}>
+          {features.transferCertificate && (
+            <TransferCertificateCard
+              studentId={student.id}
+              initialKey={student.tcFileKey ?? null}
+              initialUploadedAt={student.tcUploadedAt ?? null}
+              canEdit={canSeeFees}
+            />
+          )}
+        </OverviewTab>
+      )}
       {tab === 'notes' && canSeeNotes && <NotesTab studentId={student.id} />}
-      {tab === 'fees' && canSeeFees && <FeeSummaryTab studentId={student.id} />}
+      {tab === 'fees' && canSeeFees && (
+        <FeeSummaryTab studentId={student.id} studentName={student.name} concessions={!!features.feeConcession} />
+      )}
     </div>
   );
 }
 
-function OverviewTab({ student }: { student: Student }) {
+function OverviewTab({
+  student,
+  canEditFields,
+  children,
+}: {
+  student: Student;
+  canEditFields: boolean;
+  children?: ReactNode;
+}) {
   const t = useTranslations('studentDetail');
   const tRelation = useTranslations('relation');
   const primaryParent = student.parents?.find((p) => p.isPrimary) ?? student.parents?.[0];
@@ -192,6 +225,8 @@ function OverviewTab({ student }: { student: Student }) {
         </p>
         <p className="text-xs text-gray-500">{primaryParent?.parent.phone ?? ''}</p>
       </div>
+      <CustomFieldsCard studentId={student.id} values={student.customFieldValues ?? []} canEdit={canEditFields} />
+      {children}
     </div>
   );
 }
@@ -294,13 +329,24 @@ function NotesTab({ studentId }: { studentId: string }) {
   );
 }
 
-function FeeSummaryTab({ studentId }: { studentId: string }) {
+function FeeSummaryTab({
+  studentId,
+  studentName,
+  concessions,
+}: {
+  studentId: string;
+  studentName: string;
+  concessions: boolean;
+}) {
   const t = useTranslations('studentDetail');
   const tStatus = useTranslations('feeStatus');
   const errorText = useErrorText();
   const { toast } = useToast();
   const [fees, setFees] = useState<StudentFee[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Bumped after a concession so the table shows the reduced amounts.
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     async function fetchFees() {
@@ -316,7 +362,7 @@ function FeeSummaryTab({ studentId }: { studentId: string }) {
     }
     fetchFees();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentId]);
+  }, [studentId, reload]);
 
   if (loading) {
     return (
@@ -374,6 +420,15 @@ function FeeSummaryTab({ studentId }: { studentId: string }) {
           </div>
         </div>
       ))}
+
+      {concessions && (
+        <ConcessionPanel
+          studentId={studentId}
+          studentName={studentName}
+          components={fees.flatMap((f) => f.components as ConcessionFeeComponent[])}
+          onApplied={() => setReload((n) => n + 1)}
+        />
+      )}
 
       <div className="flex items-center justify-between rounded-lg border border-teal/30 bg-teal/5 px-5 py-4">
         <span className="text-sm font-semibold text-teal">{t('yearlyTotal')}</span>

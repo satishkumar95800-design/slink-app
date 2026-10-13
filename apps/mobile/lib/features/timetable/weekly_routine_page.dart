@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/l10n/l10n.dart';
 import '../../shared/models/timetable_slot.dart';
+import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
+import '../../shared/widgets/ui_kit.dart';
 import 'timetable_repository.dart';
 
 /// Weekday name (1 = Monday) in the UI language. 2024-01-01 was a Monday.
@@ -25,7 +27,11 @@ class WeeklyRoutinePage extends ConsumerWidget {
         child: timetableAsync.when(
           data: (slots) {
             if (slots.isEmpty) {
-              return Center(child: Text(l.timetableEmpty));
+              return EmptyState(
+                icon: Icons.calendar_view_week_rounded,
+                color: FeatureColors.timetable,
+                message: l.timetableEmpty,
+              );
             }
 
             final byDay = <int, List<TimetableSlot>>{};
@@ -66,27 +72,66 @@ class _DaySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isToday = DateTime.now().weekday == day;
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_dayName(day, Localizations.localeOf(context).languageCode), style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Card(
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10, left: 4),
+            child: Row(
+              children: [
+                Text(
+                  _dayName(day, Localizations.localeOf(context).languageCode),
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                if (isToday) ...[
+                  const SizedBox(width: 8),
+                  StatusPill(label: context.l10n.homeTodayTitle, color: AppColors.coral),
+                ],
+              ],
+            ),
+          ),
+          SoftCard(
+            padding: const EdgeInsets.symmetric(vertical: 6),
             child: Column(
               children: [
-                for (var i = 0; i < slots.length; i++)
-                  Column(
-                    children: [
-                      ListTile(
-                        leading: CircleAvatar(child: Text('${slots[i].periodNumber}')),
-                        title: Text(slots[i].subject.name),
-                        subtitle: Text(slots[i].studentClass.displayName),
-                      ),
-                      if (i != slots.length - 1) const Divider(height: 1),
-                    ],
+                for (var i = 0; i < slots.length; i++) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: isToday ? AppColors.coral : FeatureColors.timetable.withValues(alpha: 0.13),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '${slots[i].periodNumber}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              color: isToday ? Colors.white : FeatureColors.timetable,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Text(
+                            slots[i].subject.name,
+                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                        StatusPill(label: slots[i].studentClass.displayName, color: FeatureColors.classes),
+                      ],
+                    ),
                   ),
+                  if (i != slots.length - 1) const Divider(height: 1, indent: 70),
+                ],
               ],
             ),
           ),

@@ -15,6 +15,8 @@ import { Modal } from '../../../components/ui/modal';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
+import { useTenantFeatures } from '../../../lib/tenant-features';
+import { TransferCertificateReport } from './transfer-certificates';
 
 type ReportStatus = 'draft' | 'published';
 
@@ -65,6 +67,7 @@ export default function ReportsPage() {
 
   const session = getSession();
   const isTeacher = session?.role === 'teacher';
+  const showTc = useTenantFeatures().transferCertificate && !isTeacher;
 
   async function fetchReports() {
     try {
@@ -95,6 +98,8 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-4">
+      {showTc && <TransferCertificateReport />}
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-gray-500">{t('count', { count: total })}</p>
         {isTeacher && (

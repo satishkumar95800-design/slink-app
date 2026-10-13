@@ -11,6 +11,7 @@ import { CreateTenantDto } from './dto/create-tenant.dto';
 import { UpdateTenantDto } from './dto/update-tenant.dto';
 import { UpdateTenantSelfDto } from './dto/update-tenant-self.dto';
 import { UpdateFeaturesDto } from './dto/update-features.dto';
+import { UpdatePlatformFeaturesDto } from './dto/update-platform-features.dto';
 import { TenantQueryDto } from './dto/tenant-query.dto';
 
 const tenantSelect = {
@@ -184,7 +185,7 @@ export class TenantsService {
     });
   }
 
-  async updateFeatures(tenantId: string, dto: UpdateFeaturesDto) {
+  async updateFeatures(tenantId: string, dto: UpdateFeaturesDto | UpdatePlatformFeaturesDto) {
     const current = await this.prisma.tenant.findUniqueOrThrow({
       where: { id: tenantId },
       select: { features: true },

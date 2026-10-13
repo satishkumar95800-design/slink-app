@@ -9,6 +9,25 @@ class AppColors {
   static const coralDark = Color(0xFFC94F2E);
   static const teal = Color(0xFF123E3B);
   static const tealLight = Color(0xFF1B4B4A);
+  static const tealDeep = Color(0xFF0B2A28);
+  static const sand = Color(0xFFF3E9DD);
+  static const ink = Color(0xFF1F2A2E);
+  static const muted = Color(0xFF6B7774);
+}
+
+/// One accent per feature, used for its tile, icon badges and list icons so a
+/// feature looks the same everywhere in the app.
+abstract final class FeatureColors {
+  static const fees = Color(0xFFE0A100);
+  static const attendance = Color(0xFF2E9E6A);
+  static const homework = Color(0xFF4F6BED);
+  static const notices = AppColors.coral;
+  static const reports = Color(0xFF8E5BD8);
+  static const timetable = Color(0xFF1E88B8);
+  static const notifications = Color(0xFFD9467A);
+  static const classes = Color(0xFF2A8C83);
+  static const notes = Color(0xFFB7791F);
+  static const sent = Color(0xFF5B7083);
 }
 
 class AppThemeData {
@@ -76,6 +95,10 @@ ThemeData _build(Brightness brightness, {required bool indicScript}) {
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
+      // Curved lower edge, matching the home screen's header.
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+      ),
       titleTextStyle: const TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w800,
@@ -143,7 +166,7 @@ ThemeData _build(Brightness brightness, {required bool indicScript}) {
       margin: const EdgeInsets.symmetric(vertical: 6),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: dark ? Colors.white12 : const Color(0xFFF3F4F6)),
+        side: BorderSide(color: dark ? Colors.white12 : const Color(0xFFF0E6DA)),
       ),
     ),
     chipTheme: ChipThemeData(

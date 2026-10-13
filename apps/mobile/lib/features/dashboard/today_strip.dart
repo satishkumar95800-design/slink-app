@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/l10n/l10n.dart';
+import '../../core/theme/app_theme.dart';
 import '../../shared/services/api_client.dart';
 
 class TodayPeriod {
@@ -102,16 +103,17 @@ class _TodayStripState extends ConsumerState<TodayStrip> {
     final today = ref.watch(teacherTodayProvider).valueOrNull;
     if (today == null || today.offDay) return const SizedBox.shrink();
 
-    final theme = Theme.of(context);
     final l = context.l10n;
+    const strong = TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15);
+    const soft = TextStyle(color: Colors.white70, fontWeight: FontWeight.w600, fontSize: 13);
     final lines = <Widget>[];
     if (today.periods.isEmpty) {
-      lines.add(Text(l.todayNoPeriods, style: theme.textTheme.titleSmall));
+      lines.add(Text(l.todayNoPeriods, style: strong));
     } else if (!today.timingsConfigured) {
       // No bell schedule yet: list today's periods in order.
       lines.add(Text(
         today.periods.map((p) => l.todayPeriodLabel(p.periodNumber, p.classLabel, p.subject)).join('\n'),
-        style: theme.textTheme.bodyMedium,
+        style: soft,
       ));
     } else {
       final t = TimeOfDay.now();
@@ -122,34 +124,51 @@ class _TodayStripState extends ConsumerState<TodayStrip> {
       if (current != null) {
         lines.add(Text(
           l.todayNowWithTime(current.classLabel, current.subject, '${current.startTime}–${current.endTime}'),
-          style: theme.textTheme.titleMedium,
+          style: strong,
         ));
       }
       if (next != null) {
         final start = next.startTime;
         lines.add(Text(
           start == null ? l.todayNext(next.classLabel, next.subject) : l.todayNextWithTime(next.classLabel, next.subject, start),
-          style: theme.textTheme.bodyMedium,
+          style: current == null ? strong : soft,
         ));
       }
       if (current == null && next == null) {
-        lines.add(Text(l.todayNoMorePeriods, style: theme.textTheme.titleSmall));
+        lines.add(Text(l.todayNoMorePeriods, style: strong));
       }
     }
 
-    return Card(
-      color: theme.colorScheme.secondaryContainer,
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(Icons.schedule),
-            const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: lines)),
-          ],
-        ),
+    // Sits inside the teal home header, so it's a translucent card with white text.
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: AppColors.coral, borderRadius: BorderRadius.circular(12)),
+            child: const Icon(Icons.schedule_rounded, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l.teacherTodayClasses.toUpperCase(),
+                    style: const TextStyle(
+                        color: Colors.white60, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+                const SizedBox(height: 2),
+                ...lines,
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
