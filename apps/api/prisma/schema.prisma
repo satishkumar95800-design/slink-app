@@ -210,6 +210,7 @@ model Tenant {
   teacherSubjects          TeacherSubject[]
   documentCategories       DocumentCategory[]
   accountantDocuments      AccountantDocument[]
+  feeConcessions           FeeConcession[]
   timetableSlots           TimetableSlot[]
   paymentClaims            PaymentClaim[]
   studentNotes             StudentNote[]
@@ -293,6 +294,9 @@ model Student {
   photoUrl        String?     @map("photo_url")
   classId         String      @map("class_id") @db.Uuid
   transportSlabId String?     @map("transport_slab_id") @db.Uuid
+  // Transfer certificate (S3 key) — only used by schools with features.transferCertificate.
+  tcFileKey       String?     @map("tc_file_key")
+  tcUploadedAt    DateTime?   @map("tc_uploaded_at")
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
 
@@ -308,6 +312,7 @@ model Student {
   paymentClaims     PaymentClaim[]
   notes             StudentNote[]
   attendance        AttendanceRecord[]
+  concessions       FeeConcession[]
 
   @@unique([tenantId, admissionNo])
   @@index([tenantId])
@@ -497,6 +502,7 @@ model FeeItem {
   feeStructure         FeeStructure          @relation(fields: [feeStructureId], references: [id], onDelete: Cascade)
   studentFeeComponents StudentFeeComponent[]
   studentDiscounts     StudentDiscount[]
+  feeConcessions       FeeConcession[]
 
   @@map("fee_items")
 }
@@ -857,6 +863,32 @@ model StudentDiscount {
   @@index([tenantId])
   @@index([studentId])
   @@map("student_discounts")
+}
+
+// A percentage concession staff applied to a student's outstanding fees
+// (features.feeConcession). The fee rows are reduced at the time; this row
+// keeps what was given, by whom and on which school day, for the dashboard.
+model FeeConcession {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  studentId   String   @map("student_id") @db.Uuid
+  // null = every fee component; set = one component (e.g. Tuition)
+  feeItemId   String?  @map("fee_item_id") @db.Uuid
+  percentage  Decimal  @db.Decimal(5, 2)
+  amount      Decimal  @db.Decimal(12, 2)
+  reason      String?
+  // Calendar day in the school's timezone, for "concession given today".
+  givenOn     DateTime @map("given_on") @db.Date
+  createdById String   @map("created_by_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  feeItem FeeItem? @relation(fields: [feeItemId], references: [id])
+
+  @@index([tenantId, givenOn])
+  @@index([studentId])
+  @@map("fee_concessions")
 }
 
 // ─── Custom Student Fields ────────────────────────────────────────────────────

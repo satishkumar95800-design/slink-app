@@ -8,6 +8,7 @@ export enum FileCategory {
   STUDENT_PHOTO = 'student_photo', // private/{tenantId}/students/
   GENERAL_DOCUMENT = 'general_document', // private/{tenantId}/documents/ — Addendum 4 A13
   PAYMENT_CLAIM_PROOF = 'payment_claim_proof', // private/{tenantId}/payment-claims/ — Addendum 4 A12
+  TRANSFER_CERTIFICATE = 'transfer_certificate', // private/{tenantId}/students/{studentId}/tc/
 }
 
 export const ALLOWED_MIME: Record<FileCategory, string[]> = {
@@ -24,6 +25,7 @@ export const ALLOWED_MIME: Record<FileCategory, string[]> = {
     'application/pdf',
   ],
   [FileCategory.PAYMENT_CLAIM_PROOF]: ['image/jpeg', 'image/png', 'application/pdf'],
+  [FileCategory.TRANSFER_CERTIFICATE]: ['image/jpeg', 'image/png', 'application/pdf'],
 };
 
 /** Max file size in bytes per category */
@@ -35,6 +37,7 @@ export const MAX_BYTES: Record<FileCategory, number> = {
   [FileCategory.STUDENT_PHOTO]: 2 * 1024 * 1024, // 2 MB
   [FileCategory.GENERAL_DOCUMENT]: 20 * 1024 * 1024, // 20 MB
   [FileCategory.PAYMENT_CLAIM_PROOF]: 10 * 1024 * 1024, // 10 MB
+  [FileCategory.TRANSFER_CERTIFICATE]: 10 * 1024 * 1024, // 10 MB
 };
 
 export class UploadFileDto {

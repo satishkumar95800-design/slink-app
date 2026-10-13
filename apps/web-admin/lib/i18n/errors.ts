@@ -5,7 +5,15 @@ import { useCallback } from 'react';
 import { ApiError } from '../api-client';
 
 /** API error codes the console has its own (translated) text for — see messages/en.json "errors". */
-const KNOWN_CODES = ['NETWORK_ERROR', 'SESSION_EXPIRED', 'INVALID_CREDENTIALS', 'PARENT_USE_OTP', 'SCHOOL_NOT_FOUND'] as const;
+const KNOWN_CODES = [
+  'NETWORK_ERROR',
+  'SESSION_EXPIRED',
+  'INVALID_CREDENTIALS',
+  'PARENT_USE_OTP',
+  'SCHOOL_NOT_FOUND',
+  'FEATURE_DISABLED',
+  'NOTHING_OUTSTANDING',
+] as const;
 type KnownCode = (typeof KNOWN_CODES)[number];
 
 function isKnown(code: string | undefined): code is KnownCode {

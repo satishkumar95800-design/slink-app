@@ -40,6 +40,8 @@ import { ParentModule } from './modules/parent/parent.module';
 import { FeeRemindersModule } from './modules/fee-reminders/fee-reminders.module';
 import { BroadcastsModule } from './modules/broadcasts/broadcasts.module';
 import { PublicSiteModule } from './modules/public-site/public-site.module';
+import { TransferCertificatesModule } from './modules/transfer-certificates/transfer-certificates.module';
+import { FeeConcessionsModule } from './modules/fee-concessions/fee-concessions.module';
 
 @Module({
   imports: [
@@ -84,6 +86,8 @@ import { PublicSiteModule } from './modules/public-site/public-site.module';
     FeeRemindersModule,
     BroadcastsModule,
     PublicSiteModule,
+    TransferCertificatesModule,
+    FeeConcessionsModule,
   ],
 })
 export class AppModule implements NestModule {
@@ -101,6 +105,7 @@ export class AppModule implements NestModule {
         { path: 'tenants/:id/users', method: RequestMethod.ALL },
         { path: 'tenants/:id/users/:userId', method: RequestMethod.ALL },
         { path: 'tenants/:id/purge', method: RequestMethod.ALL },
+        { path: 'tenants/:id/features', method: RequestMethod.ALL },
         { path: 'dev/audit-logs', method: RequestMethod.ALL },
         // Addendum 4 / A9 — unauthenticated receipt link: no X-Tenant-ID header
         // (opened straight from an SMS/push, not a logged-in session); the

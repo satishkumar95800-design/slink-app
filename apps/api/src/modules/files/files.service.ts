@@ -204,6 +204,8 @@ export class FilesService {
         return `private/${tenantId}/documents/${uuid}${ext}`;
       case FileCategory.PAYMENT_CLAIM_PROOF:
         return `private/${tenantId}/payment-claims/${uuid}${ext}`;
+      case FileCategory.TRANSFER_CERTIFICATE:
+        return `private/${tenantId}/students/${entityId ?? uuid}/tc/${uuid}${ext}`;
     }
   }
 

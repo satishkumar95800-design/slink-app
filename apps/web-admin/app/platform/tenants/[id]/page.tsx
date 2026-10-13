@@ -24,8 +24,23 @@ interface Tenant {
   accentColor: string;
   isActive: boolean;
   createdAt: string;
+  features?: Record<string, boolean>;
   _count: { users: number; students: number };
 }
+
+/** Per-school modules only the platform team can switch on (API: common/tenant-features.ts). */
+const OPTIONAL_MODULES = [
+  {
+    key: 'transferCertificate',
+    name: 'Transfer certificates',
+    help: 'TC upload on the student page, and a "TC not attached" report.',
+  },
+  {
+    key: 'feeConcession',
+    name: 'Fee concessions',
+    help: "Percentage concession on a student's unpaid fees, and today's concession total on the dashboard.",
+  },
+] as const;
 
 type Tab = 'overview' | 'import' | 'users' | 'settings';
 
@@ -93,7 +108,12 @@ export default function TenantDetailPage() {
         ))}
       </div>
 
-      {tab === 'overview' && <OverviewTab tenant={tenant} />}
+      {tab === 'overview' && (
+        <>
+          <OverviewTab tenant={tenant} />
+          <ModulesCard tenant={tenant} onSaved={fetchTenant} />
+        </>
+      )}
       {tab === 'import' && <ImportWorkflow tenantOverride={tenant.slug} />}
       {tab === 'users' && <UsersTab tenant={tenant} onChanged={fetchTenant} />}
       {tab === 'settings' && <SettingsTab tenant={tenant} onSaved={fetchTenant} />}
@@ -567,5 +587,51 @@ function PurgeTenantModal({
         </div>
       </div>
     </Modal>
+  );
+}
+
+function ModulesCard({ tenant, onSaved }: { tenant: Tenant; onSaved: () => void }) {
+  const { toast } = useToast();
+  const [saving, setSaving] = useState<string | null>(null);
+
+  async function toggle(key: string, on: boolean) {
+    try {
+      setSaving(key);
+      await api.patch(`/tenants/${tenant.id}/features`, { [key]: on });
+      toast(`${on ? 'Turned on' : 'Turned off'} for ${tenant.name}`, 'success');
+      onSaved();
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : 'Could not update module', 'error');
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
+      <h2 className="text-base font-semibold text-gray-900">Optional modules</h2>
+      <p className="mt-1 text-sm text-gray-500">Off for every school unless switched on here.</p>
+      <ul className="mt-4 divide-y divide-gray-100">
+        {OPTIONAL_MODULES.map((m) => {
+          const on = tenant.features?.[m.key] === true;
+          return (
+            <li key={m.key} className="flex items-center justify-between gap-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-gray-900">{m.name}</p>
+                <p className="text-xs text-gray-500">{m.help}</p>
+              </div>
+              <Button
+                size="sm"
+                variant={on ? 'secondary' : 'primary'}
+                loading={saving === m.key}
+                onClick={() => toggle(m.key, !on)}
+              >
+                {on ? 'Turn off' : 'Turn on'}
+              </Button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
