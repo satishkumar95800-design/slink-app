@@ -21,22 +21,10 @@ export default function OpengraphImage() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <div
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: 18,
-              background: '#123E3B',
-              color: '#FBF3EA',
-              fontSize: 44,
-              fontWeight: 800,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            S
-          </div>
+          <svg width="72" height="72" viewBox="13 13 74 74">
+            <path d="M49 20H43A20 20 0 0 0 43 60H57" stroke="#123E3B" fill="none" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M43 40H57A20 20 0 0 1 57 80H51" stroke="#E8623D" fill="none" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
           <div style={{ fontSize: 40, fontWeight: 800, color: '#123E3B' }}>Schoolinkd</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>

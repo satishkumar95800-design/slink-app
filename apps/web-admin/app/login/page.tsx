@@ -99,9 +99,7 @@ export default function LoginPage() {
       </div>
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-teal text-xl font-extrabold text-white">
-            S
-          </div>
+          <img src="/schoolinkd-mark.svg" alt="" className="mx-auto mb-4 h-14 w-14" />
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">{strings.product.name}</h1>
           <span className="mt-2 inline-flex rounded-full bg-coral/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-coral-dark">
             {t('consoleBadge')}

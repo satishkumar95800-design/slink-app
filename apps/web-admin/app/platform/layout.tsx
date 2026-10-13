@@ -64,8 +64,8 @@ function PlatformShell({ children }: { children: ReactNode }) {
         <header className="flex h-16 flex-shrink-0 items-center justify-between gap-2 border-b bg-teal px-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-3 sm:gap-6">
             <Link href="/platform/tenants" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-coral/20 text-sm font-bold text-white/80">
-                S
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1">
+                <img src="/schoolinkd-mark.svg" alt="" className="h-full w-full" />
               </div>
               <span className="hidden text-sm font-bold tracking-tight text-white sm:inline">{strings.product.platformTitle}</span>
             </Link>

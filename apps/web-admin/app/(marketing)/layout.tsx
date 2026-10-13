@@ -21,14 +21,14 @@ export const metadata: Metadata = {
 };
 
 const NAV_LINKS = [
-  { label: 'Why us', href: '/#why' },
+  { label: 'Why Schoolinkd', href: '/#why' },
   { label: 'Features', href: '/#features' },
   { label: 'Pricing', href: '/#pricing' },
   { label: 'Contact', href: '/contact' },
 ];
 
 const EXPLORE_LINKS = [
-  { label: 'Why schools switch', href: '/#why' },
+  { label: 'Why Schoolinkd', href: '/#why' },
   { label: 'Features', href: '/#features' },
   { label: 'Pricing', href: '/#pricing' },
   { label: 'How it works', href: '/#how-it-works' },
@@ -48,10 +48,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
       <header className="sticky top-0 z-40 border-b border-black/5 bg-cream/90 backdrop-blur">
         <Container className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal text-sm font-extrabold text-white">
-              S
-            </div>
-            <span className="text-sm font-extrabold tracking-tight text-gray-900">Schoolinkd</span>
+            <img src="/schoolinkd-logo.svg" alt={strings.product.name} className="h-7 w-auto" />
           </Link>
           <nav className="hidden items-center gap-6 sm:flex">
             {NAV_LINKS.map((link) => (
@@ -84,10 +81,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
         <Container className="grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal text-sm font-extrabold text-white">
-                S
-              </div>
-              <span className="text-sm font-extrabold tracking-tight text-gray-900">Schoolinkd</span>
+              <img src="/schoolinkd-logo.svg" alt={strings.product.name} className="h-7 w-auto" />
             </div>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-gray-600">
               Schoolinkd brings cash, cheque and online fee collection into one dashboard, with a parent &amp; teacher

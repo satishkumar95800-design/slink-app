@@ -62,8 +62,8 @@ export function Sidebar({ tenant, open = false, onClose }: SidebarProps) {
         {tenant?.logoUrl ? (
           <img src={tenant.logoUrl} alt={tenant.name} className="h-8 w-8 rounded-md object-cover ring-1 ring-white/20" />
         ) : (
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-coral/20 text-sm font-bold text-white/80">
-            S
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-white p-1">
+            <img src="/schoolinkd-mark.svg" alt="" className="h-full w-full" />
           </div>
         )}
         <span className="truncate text-sm font-bold text-white tracking-tight">{tenant?.name ?? strings.product.name}</span>

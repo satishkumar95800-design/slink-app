@@ -96,9 +96,7 @@ function AdminShell({ children }: { children: ReactNode }) {
               {tenant?.logoUrl ? (
                 <img src={tenant.logoUrl} alt={tenant.name} className="h-8 w-8 rounded-md object-cover ring-1 ring-gray-100" />
               ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-teal/10 text-sm font-bold text-teal">
-                  S
-                </div>
+                <img src="/schoolinkd-mark.svg" alt="" className="h-8 w-8" />
               )}
               <h1 className="truncate text-base font-semibold text-gray-900 sm:text-lg">{tenant?.name ?? title}</h1>
             </div>

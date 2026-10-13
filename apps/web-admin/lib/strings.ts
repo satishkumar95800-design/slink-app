@@ -30,7 +30,7 @@ export const strings = {
     videoTitle: 'See Schoolinkd in 90 seconds',
     videoPlay: 'Play the demo',
     videoComingSoon: 'Demo video coming soon',
-    whyEyebrow: 'Why schools switch',
+    whyEyebrow: 'Why Schoolinkd',
     whyTitle: 'Built around what keeps a school owner up at night.',
     why: [
       {
