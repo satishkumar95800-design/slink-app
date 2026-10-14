@@ -17,7 +17,10 @@ const classListSelect = {
   section: true,
   academicYear: true,
   teachers: {
-    select: { isClassTeacher: true, teacher: { select: { id: true, name: true } } },
+    select: {
+      isClassTeacher: true,
+      teacher: { select: { id: true, name: true } },
+    },
   },
   _count: { select: { students: true } },
 } as const;
@@ -44,7 +47,10 @@ export class ClassesService {
       where: { id: classId, tenantId },
       include: {
         teachers: {
-          select: { isClassTeacher: true, teacher: { select: { id: true, name: true } } },
+          select: {
+            isClassTeacher: true,
+            teacher: { select: { id: true, name: true } },
+          },
         },
         _count: { select: { students: true } },
       },
@@ -59,7 +65,10 @@ export class ClassesService {
     return cls;
   }
 
-  isTeacherOf(cls: { teachers: Array<{ teacher: { id: string } }> }, teacherId: string) {
+  isTeacherOf(
+    cls: { teachers: Array<{ teacher: { id: string } }> },
+    teacherId: string,
+  ) {
     return cls.teachers.some((t) => t.teacher.id === teacherId);
   }
 
@@ -108,13 +117,38 @@ export class ClassesService {
       throw new NotFoundException('Teacher not found');
     }
 
+    const isClassTeacher = dto.isClassTeacher ?? true;
     const existing = await this.prisma.classTeacher.findUnique({
       where: { classId_teacherId: { classId, teacherId: dto.teacherId } },
     });
-    if (existing) throw new ConflictException('This teacher is already assigned to the class');
+    // A co-teacher can still be promoted to class teacher; anything else is a repeat.
+    if (existing && (existing.isClassTeacher || !isClassTeacher)) {
+      throw new ConflictException(
+        'This teacher is already assigned to the class',
+      );
+    }
 
-    return this.prisma.classTeacher.create({
-      data: { classId, teacherId: dto.teacherId, isClassTeacher: dto.isClassTeacher ?? true },
+    return this.prisma.$transaction(async (tx) => {
+      // One class teacher per class: the previous one stays on as a co-teacher
+      // (they may still teach a subject here) but loses class-teacher rights.
+      if (isClassTeacher) {
+        await tx.classTeacher.updateMany({
+          where: {
+            classId,
+            isClassTeacher: true,
+            teacherId: { not: dto.teacherId },
+          },
+          data: { isClassTeacher: false },
+        });
+      }
+      return existing
+        ? tx.classTeacher.update({
+            where: { classId_teacherId: { classId, teacherId: dto.teacherId } },
+            data: { isClassTeacher: true },
+          })
+        : tx.classTeacher.create({
+            data: { classId, teacherId: dto.teacherId, isClassTeacher },
+          });
     });
   }
 

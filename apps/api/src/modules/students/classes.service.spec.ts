@@ -50,9 +50,16 @@ const mockPrisma = {
   classTeacher: {
     findUnique: jest.fn(),
     create: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
     delete: jest.fn(),
   },
+  $transaction: jest.fn(),
 };
+// Interactive transactions run against the same mock.
+mockPrisma.$transaction.mockImplementation((fn: (tx: unknown) => unknown) =>
+  fn(mockPrisma),
+);
 
 describe('ClassesService', () => {
   let service: ClassesService;
@@ -90,7 +97,10 @@ describe('ClassesService', () => {
 
       expect(mockPrisma.class.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { tenantId: TENANT, teachers: { some: { teacherId: TEACHER_ID } } },
+          where: {
+            tenantId: TENANT,
+            teachers: { some: { teacherId: TEACHER_ID } },
+          },
         }),
       );
     });
@@ -199,13 +209,74 @@ describe('ClassesService', () => {
       mockPrisma.class.findUnique.mockResolvedValue(baseClass);
       mockPrisma.user.findUnique.mockResolvedValue({ role: Role.teacher });
       mockPrisma.classTeacher.findUnique.mockResolvedValue(null);
-      mockPrisma.classTeacher.create.mockResolvedValue({ classId: CLASS_ID, teacherId: 'teacher-2' });
+      mockPrisma.classTeacher.create.mockResolvedValue({
+        classId: CLASS_ID,
+        teacherId: 'teacher-2',
+      });
 
       await service.addTeacher(TENANT, CLASS_ID, { teacherId: 'teacher-2' });
 
       expect(mockPrisma.classTeacher.create).toHaveBeenCalledWith({
-        data: { classId: CLASS_ID, teacherId: 'teacher-2', isClassTeacher: true },
+        data: {
+          classId: CLASS_ID,
+          teacherId: 'teacher-2',
+          isClassTeacher: true,
+        },
       });
+    });
+
+    it('replaces the current class teacher, keeping them as a co-teacher', async () => {
+      mockPrisma.class.findUnique.mockResolvedValue(baseClass);
+      mockPrisma.user.findUnique.mockResolvedValue({ role: Role.teacher });
+      mockPrisma.classTeacher.findUnique.mockResolvedValue(null);
+
+      await service.addTeacher(TENANT, CLASS_ID, {
+        teacherId: 'teacher-2',
+        isClassTeacher: true,
+      });
+
+      expect(mockPrisma.classTeacher.updateMany).toHaveBeenCalledWith({
+        where: {
+          classId: CLASS_ID,
+          isClassTeacher: true,
+          teacherId: { not: 'teacher-2' },
+        },
+        data: { isClassTeacher: false },
+      });
+      expect(mockPrisma.classTeacher.create).toHaveBeenCalled();
+    });
+
+    it('promotes an existing co-teacher instead of rejecting them', async () => {
+      mockPrisma.class.findUnique.mockResolvedValue(baseClass);
+      mockPrisma.user.findUnique.mockResolvedValue({ role: Role.teacher });
+      mockPrisma.classTeacher.findUnique.mockResolvedValue({
+        classId: CLASS_ID,
+        teacherId: TEACHER_ID,
+        isClassTeacher: false,
+      });
+
+      await service.addTeacher(TENANT, CLASS_ID, { teacherId: TEACHER_ID });
+
+      expect(mockPrisma.classTeacher.update).toHaveBeenCalledWith({
+        where: {
+          classId_teacherId: { classId: CLASS_ID, teacherId: TEACHER_ID },
+        },
+        data: { isClassTeacher: true },
+      });
+      expect(mockPrisma.classTeacher.create).not.toHaveBeenCalled();
+    });
+
+    it('adds a co-teacher without touching the class teacher', async () => {
+      mockPrisma.class.findUnique.mockResolvedValue(baseClass);
+      mockPrisma.user.findUnique.mockResolvedValue({ role: Role.teacher });
+      mockPrisma.classTeacher.findUnique.mockResolvedValue(null);
+
+      await service.addTeacher(TENANT, CLASS_ID, {
+        teacherId: 'teacher-3',
+        isClassTeacher: false,
+      });
+
+      expect(mockPrisma.classTeacher.updateMany).not.toHaveBeenCalled();
     });
 
     it('throws NotFoundException when teacherId is not a teacher', async () => {
@@ -220,7 +291,11 @@ describe('ClassesService', () => {
     it('throws ConflictException when teacher is already assigned', async () => {
       mockPrisma.class.findUnique.mockResolvedValue(baseClass);
       mockPrisma.user.findUnique.mockResolvedValue({ role: Role.teacher });
-      mockPrisma.classTeacher.findUnique.mockResolvedValue({ classId: CLASS_ID, teacherId: TEACHER_ID });
+      mockPrisma.classTeacher.findUnique.mockResolvedValue({
+        classId: CLASS_ID,
+        teacherId: TEACHER_ID,
+        isClassTeacher: true,
+      });
 
       await expect(
         service.addTeacher(TENANT, CLASS_ID, { teacherId: TEACHER_ID }),
@@ -231,13 +306,18 @@ describe('ClassesService', () => {
   describe('removeTeacher', () => {
     it('removes a teacher from a class', async () => {
       mockPrisma.class.findUnique.mockResolvedValue(baseClass);
-      mockPrisma.classTeacher.findUnique.mockResolvedValue({ classId: CLASS_ID, teacherId: TEACHER_ID });
+      mockPrisma.classTeacher.findUnique.mockResolvedValue({
+        classId: CLASS_ID,
+        teacherId: TEACHER_ID,
+      });
       mockPrisma.classTeacher.delete.mockResolvedValue({});
 
       await service.removeTeacher(TENANT, CLASS_ID, TEACHER_ID);
 
       expect(mockPrisma.classTeacher.delete).toHaveBeenCalledWith({
-        where: { classId_teacherId: { classId: CLASS_ID, teacherId: TEACHER_ID } },
+        where: {
+          classId_teacherId: { classId: CLASS_ID, teacherId: TEACHER_ID },
+        },
       });
     });
 

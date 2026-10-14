@@ -30,8 +30,19 @@ class SessionController extends StateNotifier<SessionState> {
 
   Future<void> _bootstrap() async {
     final storage = _ref.read(secureStorageServiceProvider);
-    final token = await storage.readAccessToken();
-    final userJson = await storage.readUserJson();
+    final String? token;
+    final String? userJson;
+    try {
+      token = await storage.readAccessToken();
+      userJson = await storage.readUserJson();
+    } catch (_) {
+      // Unreadable storage must never leave the app on the splash spinner.
+      try {
+        await storage.clearAll();
+      } catch (_) {}
+      state = const SessionState.loggedOut();
+      return;
+    }
 
     if (token == null || userJson == null) {
       state = const SessionState.loggedOut();

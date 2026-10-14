@@ -4,7 +4,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// Centralizes the secure-storage keys used across the app so the auth
 /// interceptor, session bootstrap, and login/logout flows all agree on them.
 class SecureStorageService {
-  static const _storage = FlutterSecureStorage();
+  // resetOnError: if Android restores this storage from a backup, its keystore
+  // key is gone and reads throw BAD_DECRYPT. Wipe it instead (= signed out).
+  static const _storage = FlutterSecureStorage(aOptions: AndroidOptions(resetOnError: true));
 
   static const _accessTokenKey = 'access_token';
   static const _refreshTokenKey = 'refresh_token';
