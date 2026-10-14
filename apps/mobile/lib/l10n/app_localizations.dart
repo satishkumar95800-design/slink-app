@@ -418,6 +418,12 @@ abstract class AppLocalizations {
   /// **'School'**
   String get profileSchool;
 
+  /// No description provided for @profileDarkTheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark theme'**
+  String get profileDarkTheme;
+
   /// No description provided for @profileLogout.
   ///
   /// In en, this message translates to:

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/models/active_user.dart';
 import '../../shared/services/branding_repository.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/theme_mode_controller.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
 import '../../shared/widgets/ui_kit.dart';
 import '../auth/session_controller.dart';
@@ -18,6 +19,7 @@ class ProfilePage extends ConsumerWidget {
     final user = ref.watch(sessionControllerProvider).user;
     final schoolName = ref.watch(brandingProvider).valueOrNull?.name;
     final locale = ref.watch(languageControllerProvider);
+    final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
     final l = context.l10n;
 
     if (user == null) {
@@ -82,6 +84,18 @@ class ProfilePage extends ConsumerWidget {
               subtitle: languageNativeName(locale),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () => showLanguagePicker(context, ref, signedIn: true),
+            ),
+            ListCard(
+              leading: IconBadge(
+                icon: isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                color: FeatureColors.notes,
+              ),
+              title: l.profileDarkTheme,
+              trailing: Switch(
+                value: isDark,
+                onChanged: (v) => ref.read(themeModeProvider.notifier).setDark(v),
+              ),
+              onTap: () => ref.read(themeModeProvider.notifier).setDark(!isDark),
             ),
             const SizedBox(height: 12),
             ListCard(

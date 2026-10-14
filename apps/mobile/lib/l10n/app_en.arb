@@ -73,6 +73,7 @@
   "profileTitle": "Profile",
   "profileNoUser": "No user profile available.",
   "profileSchool": "School",
+  "profileDarkTheme": "Dark theme",
   "profileLogout": "Log out",
   "profileLogoutConfirm": "Log out of Schoolinkd on this phone?",
   "dashboardGreeting": "Hi, {name}",

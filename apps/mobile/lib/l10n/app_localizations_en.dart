@@ -182,6 +182,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileSchool => 'School';
 
   @override
+  String get profileDarkTheme => 'Dark theme';
+
+  @override
   String get profileLogout => 'Log out';
 
   @override

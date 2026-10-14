@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_mode_controller.dart';
 import 'core/l10n/l10n.dart';
 import 'core/l10n/language_controller.dart';
 import 'features/dashboard/students_repository.dart';
@@ -23,8 +24,12 @@ void main() async {
   await Firebase.initializeApp();
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   final locale = await LanguageController.loadInitial();
+  final themeMode = await ThemeModeController.loadInitial();
   runApp(ProviderScope(
-    overrides: [initialLocaleProvider.overrideWithValue(locale)],
+    overrides: [
+      initialLocaleProvider.overrideWithValue(locale),
+      initialThemeModeProvider.overrideWithValue(themeMode),
+    ],
     child: const SlinkApp(),
   ));
 }
@@ -132,11 +137,13 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
     final router = ref.watch(appRouterProvider);
     final theme = ref.watch(appThemeProvider);
     final locale = ref.watch(languageControllerProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
       onGenerateTitle: (context) => context.l10n.appName,
       theme: theme.lightTheme,
       darkTheme: theme.darkTheme,
+      themeMode: themeMode,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
       // Changing language rebuilds from here down — no restart or re-login.
