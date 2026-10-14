@@ -1,5 +1,47 @@
 {
   "language": {
     "label": "भाषा"
+  },
+  "dashboard": {
+    "greetingMorning": "सुप्रभात, {name}",
+    "greetingAfternoon": "नमस्कार, {name}",
+    "greetingEvening": "शुभ संध्या, {name}",
+    "heroSubtitle": "आज स्कूल में क्या हो रहा है, यहाँ देखें।",
+    "sectionOverview": "एक नज़र में",
+    "sectionQuickAccess": "त्वरित पहुँच",
+    "notifyCaption": "चुनी गई कक्षाओं के अभिभावकों को सूचना भेजें।",
+    "attendancePct": "{pct}%",
+    "holidayShort": "छुट्टी",
+    "teacherCount": "{count, plural, =1 {1 शिक्षक} other {# शिक्षक}}",
+    "busiest": "सबसे व्यस्त: {name} · सप्ताह में {count} पीरियड",
+    "noWorkload": "अभी किसी शिक्षक को कक्षा नहीं दी गई है",
+    "latestPayment": "नवीनतम: {student} · {date}",
+    "allPayments": "सभी भुगतान",
+    "nextMonth": "अगला महीना",
+    "studentCount": "{count, plural, =1 {1 छात्र} other {# छात्र}}",
+    "periodsToday": "{count, plural, =0 {आज कोई पीरियड नहीं} =1 {आज 1 पीरियड} other {आज # पीरियड}}",
+    "periodsThisWeek": "{count, plural, =1 {इस सप्ताह 1 पीरियड} other {इस सप्ताह # पीरियड}}",
+    "classCount": "{count, plural, =1 {1 कक्षा} other {# कक्षाएँ}}",
+    "classesCaption": "छात्र: {students} · बिना पढ़ी रिपोर्ट: {unread}",
+    "today": "आज",
+    "notifyValue": "लिखें",
+    "sectionCharts": "चार्ट",
+    "viewCards": "कार्ड",
+    "viewCharts": "चार्ट",
+    "viewLabel": "डैशबोर्ड दृश्य",
+    "feeProgress": "शुल्क संग्रह",
+    "collectedShort": "संग्रहित",
+    "totalDue": "कुल देय",
+    "legendPresent": "उपस्थित",
+    "legendAbsent": "अनुपस्थित",
+    "legendNotMarked": "दर्ज नहीं",
+    "openDetails": "{title} खोलें"
+  },
+  "nav": {
+    "groupAcademics": "शैक्षणिक",
+    "groupFinance": "वित्त",
+    "groupSchool": "स्कूल",
+    "collapse": "मेनू छोटा करें",
+    "expand": "मेनू बड़ा करें"
   }
 }

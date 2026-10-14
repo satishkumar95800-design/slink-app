@@ -17,11 +17,11 @@ interface ClassOption {
 const classLabel = (c: ClassOption) => [c.name, c.section].filter(Boolean).join(' ');
 
 /**
- * Admin dashboard: push one notice to parents of the chosen classes. Sends one
+ * Admin dashboard panel: push one notice to parents of the chosen classes. Sends one
  * class-targeted notice per class (POST /notifications/broadcast), so each keeps
  * its own "seen by" count like any other notice.
  */
-export function NotifyClassesCard() {
+export function NotifyClassesForm() {
   const t = useTranslations('notifyClasses');
   const errorText = useErrorText();
   const { toast } = useToast();
@@ -90,12 +90,8 @@ export function NotifyClassesCard() {
   }
 
   return (
-    <div className="rounded-2xl bg-white shadow-sm border border-gray-100">
-      <div className="border-b px-6 py-4">
-        <h2 className="text-sm font-semibold text-gray-900">{t('title')}</h2>
-        <p className="mt-0.5 text-xs text-gray-500">{t('help')}</p>
-      </div>
-      <div className="space-y-4 px-6 py-4">
+    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
+      <div className="space-y-4 px-5 py-5">
         <div>
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-gray-800">{t('classes')}</p>

@@ -1,5 +1,47 @@
 {
   "language": {
     "label": "ಭಾಷೆ"
+  },
+  "dashboard": {
+    "greetingMorning": "ಶುಭೋದಯ, {name}",
+    "greetingAfternoon": "ಶುಭ ಮಧ್ಯಾಹ್ನ, {name}",
+    "greetingEvening": "ಶುಭ ಸಂಜೆ, {name}",
+    "heroSubtitle": "ಇಂದು ಶಾಲೆಯಲ್ಲಿ ಏನಾಗುತ್ತಿದೆ ಎಂಬುದು ಇಲ್ಲಿದೆ.",
+    "sectionOverview": "ಒಂದು ನೋಟದಲ್ಲಿ",
+    "sectionQuickAccess": "ತ್ವರಿತ ಪ್ರವೇಶ",
+    "notifyCaption": "ನೀವು ಆಯ್ಕೆ ಮಾಡಿದ ತರಗತಿಗಳ ಪೋಷಕರಿಗೆ ಸೂಚನೆ ಕಳುಹಿಸಿ.",
+    "attendancePct": "{pct}%",
+    "holidayShort": "ರಜೆ",
+    "teacherCount": "{count, plural, =1 {1 ಶಿಕ್ಷಕರು} other {# ಶಿಕ್ಷಕರು}}",
+    "busiest": "ಹೆಚ್ಚು ಕಾರ್ಯನಿರತರು: {name} · ವಾರಕ್ಕೆ {count} ಅವಧಿಗಳು",
+    "noWorkload": "ಇನ್ನೂ ತರಗತಿಗಳಿರುವ ಶಿಕ್ಷಕರಿಲ್ಲ",
+    "latestPayment": "ಇತ್ತೀಚಿನದು: {student} · {date}",
+    "allPayments": "ಎಲ್ಲಾ ಪಾವತಿಗಳು",
+    "nextMonth": "ಮುಂದಿನ ತಿಂಗಳು",
+    "studentCount": "{count, plural, =1 {1 ವಿದ್ಯಾರ್ಥಿ} other {# ವಿದ್ಯಾರ್ಥಿಗಳು}}",
+    "periodsToday": "{count, plural, =0 {ಇಂದು ಅವಧಿಗಳಿಲ್ಲ} =1 {ಇಂದು 1 ಅವಧಿ} other {ಇಂದು # ಅವಧಿಗಳು}}",
+    "periodsThisWeek": "{count, plural, =1 {ಈ ವಾರ 1 ಅವಧಿ} other {ಈ ವಾರ # ಅವಧಿಗಳು}}",
+    "classCount": "{count, plural, =1 {1 ತರಗತಿ} other {# ತರಗತಿಗಳು}}",
+    "classesCaption": "ವಿದ್ಯಾರ್ಥಿಗಳು: {students} · ಓದದ ವರದಿಗಳು: {unread}",
+    "today": "ಇಂದು",
+    "notifyValue": "ಬರೆಯಿರಿ",
+    "sectionCharts": "ಚಾರ್ಟ್‌ಗಳು",
+    "viewCards": "ಕಾರ್ಡ್‌ಗಳು",
+    "viewCharts": "ಚಾರ್ಟ್‌ಗಳು",
+    "viewLabel": "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ನೋಟ",
+    "feeProgress": "ಶುಲ್ಕ ಸಂಗ್ರಹ",
+    "collectedShort": "ಸಂಗ್ರಹಿಸಲಾಗಿದೆ",
+    "totalDue": "ಒಟ್ಟು ಬಾಕಿ",
+    "legendPresent": "ಹಾಜರು",
+    "legendAbsent": "ಗೈರು",
+    "legendNotMarked": "ಗುರುತಿಸಿಲ್ಲ",
+    "openDetails": "{title} ತೆರೆಯಿರಿ"
+  },
+  "nav": {
+    "groupAcademics": "ಶೈಕ್ಷಣಿಕ",
+    "groupFinance": "ಹಣಕಾಸು",
+    "groupSchool": "ಶಾಲೆ",
+    "collapse": "ಮೆನು ಮಡಚಿ",
+    "expand": "ಮೆನು ತೆರೆಯಿರಿ"
   }
 }

@@ -2,6 +2,27 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import {
+  CalendarCheck,
+  CalendarDays,
+  ChartColumn,
+  ChartLine,
+  ClipboardList,
+  CreditCard,
+  FolderOpen,
+  GraduationCap,
+  LayoutDashboard,
+  LucideIcon,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Presentation,
+  Receipt,
+  School,
+  Settings,
+  Upload,
+  Users,
+  Wallet,
+} from 'lucide-react';
 import { getSession } from '../../lib/auth';
 import { useTranslations } from 'next-intl';
 import { strings } from '../../lib/strings';
@@ -11,28 +32,49 @@ interface NavItem {
   /** Key into messages "nav". */
   label: 'dashboard' | 'users' | 'students' | 'classes' | 'teachers' | 'fees' | 'studentFees' | 'payments' | 'feeReports' | 'reports' | 'attendance' | 'documents' | 'timetable' | 'paymentClaims' | 'import' | 'settings';
   href: string;
-  icon: string;
+  icon: LucideIcon;
   /** Roles that should not see this item in the sidebar (still reachable by direct URL if the API allows it). */
   hiddenForRoles?: string[];
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { label: 'dashboard', href: '/admin', icon: '◼' },
-  { label: 'users', href: '/admin/users', icon: '👤', hiddenForRoles: ['teacher'] },
-  { label: 'students', href: '/admin/students', icon: '🎓' },
-  { label: 'classes', href: '/admin/classes', icon: '🏫' },
-  { label: 'teachers', href: '/admin/teachers', icon: '🧑‍🏫', hiddenForRoles: ['teacher'] },
-  { label: 'fees', href: '/admin/fees', icon: '📋', hiddenForRoles: ['teacher'] },
-  { label: 'studentFees', href: '/admin/student-fees', icon: '💰', hiddenForRoles: ['teacher'] },
-  { label: 'payments', href: '/admin/payments', icon: '💳', hiddenForRoles: ['teacher'] },
-  { label: 'feeReports', href: '/admin/fee-reports', icon: '📈', hiddenForRoles: ['teacher'] },
-  { label: 'reports', href: '/admin/reports', icon: '📊' },
-  { label: 'attendance', href: '/admin/attendance', icon: '✅', hiddenForRoles: ['teacher', 'accounts'] },
-  { label: 'documents', href: '/admin/documents', icon: '🗂️', hiddenForRoles: ['teacher'] },
-  { label: 'timetable', href: '/admin/timetable', icon: '🗓️', hiddenForRoles: ['teacher'] },
-  { label: 'paymentClaims', href: '/admin/payment-claims', icon: '🧾', hiddenForRoles: ['teacher'] },
-  { label: 'import', href: '/admin/import', icon: '📥', hiddenForRoles: ['teacher'] },
-  { label: 'settings', href: '/admin/settings', icon: '⚙️', hiddenForRoles: ['teacher'] },
+interface NavGroup {
+  /** Key into messages "nav"; no heading for the first group. */
+  title?: 'groupAcademics' | 'groupFinance' | 'groupSchool';
+  items: NavItem[];
+}
+
+const NAV_GROUPS: NavGroup[] = [
+  { items: [{ label: 'dashboard', href: '/admin', icon: LayoutDashboard }] },
+  {
+    title: 'groupAcademics',
+    items: [
+      { label: 'students', href: '/admin/students', icon: GraduationCap },
+      { label: 'classes', href: '/admin/classes', icon: School },
+      { label: 'teachers', href: '/admin/teachers', icon: Presentation, hiddenForRoles: ['teacher'] },
+      { label: 'attendance', href: '/admin/attendance', icon: CalendarCheck, hiddenForRoles: ['teacher', 'accounts'] },
+      { label: 'timetable', href: '/admin/timetable', icon: CalendarDays, hiddenForRoles: ['teacher'] },
+      { label: 'reports', href: '/admin/reports', icon: ChartColumn },
+      { label: 'documents', href: '/admin/documents', icon: FolderOpen, hiddenForRoles: ['teacher'] },
+    ],
+  },
+  {
+    title: 'groupFinance',
+    items: [
+      { label: 'fees', href: '/admin/fees', icon: ClipboardList, hiddenForRoles: ['teacher'] },
+      { label: 'studentFees', href: '/admin/student-fees', icon: Wallet, hiddenForRoles: ['teacher'] },
+      { label: 'payments', href: '/admin/payments', icon: CreditCard, hiddenForRoles: ['teacher'] },
+      { label: 'paymentClaims', href: '/admin/payment-claims', icon: Receipt, hiddenForRoles: ['teacher'] },
+      { label: 'feeReports', href: '/admin/fee-reports', icon: ChartLine, hiddenForRoles: ['teacher'] },
+    ],
+  },
+  {
+    title: 'groupSchool',
+    items: [
+      { label: 'users', href: '/admin/users', icon: Users, hiddenForRoles: ['teacher'] },
+      { label: 'import', href: '/admin/import', icon: Upload, hiddenForRoles: ['teacher'] },
+      { label: 'settings', href: '/admin/settings', icon: Settings, hiddenForRoles: ['teacher'] },
+    ],
+  },
 ];
 
 interface SidebarProps {
@@ -40,64 +82,106 @@ interface SidebarProps {
   /** Mobile/tablet drawer state — the sidebar is always visible at lg and up. */
   open?: boolean;
   onClose?: () => void;
+  /** lg and up: icons only. The phone drawer always shows labels. */
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
 }
 
-export function Sidebar({ tenant, open = false, onClose }: SidebarProps) {
+export function Sidebar({ tenant, open = false, onClose, collapsed = false, onToggleCollapsed }: SidebarProps) {
   const t = useTranslations('nav');
   const pathname = usePathname();
   const role = getSession()?.role;
-  const items = NAV_ITEMS.filter((item) => !role || !item.hiddenForRoles?.includes(role));
+  const groups = NAV_GROUPS.map((g) => ({
+    ...g,
+    items: g.items.filter((item) => !role || !item.hiddenForRoles?.includes(role)),
+  })).filter((g) => g.items.length > 0);
+  // Labels hide only on desktop when collapsed.
+  const hideWhenCollapsed = collapsed ? 'lg:hidden' : '';
 
   return (
     <>
       {open && (
-        <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={onClose} aria-hidden="true" />
+        <div className="fixed inset-0 z-30 bg-teal/40 backdrop-blur-sm lg:hidden" onClick={onClose} aria-hidden="true" />
       )}
-    <aside
-      className={`fixed inset-y-0 left-0 z-40 flex h-screen w-60 flex-shrink-0 flex-col bg-teal text-white transition-transform duration-200 lg:static lg:z-auto lg:translate-x-0 ${
-        open ? 'translate-x-0' : '-translate-x-full'
-      }`}
-    >
-      <div className="flex h-16 items-center gap-3 border-b border-white/10 px-4">
-        {tenant?.logoUrl ? (
-          <img src={tenant.logoUrl} alt={tenant.name} className="h-8 w-8 rounded-md object-cover ring-1 ring-white/20" />
-        ) : (
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-white p-1">
-            <img src="/schoolinkd-mark.svg" alt="" className="h-full w-full" />
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex h-screen w-64 flex-shrink-0 flex-col bg-teal text-white transition-[transform,width] duration-200 lg:static lg:z-auto lg:translate-x-0 ${
+          collapsed ? 'lg:w-[76px]' : 'lg:w-64'
+        } ${open ? 'translate-x-0' : '-translate-x-full'}`}
+      >
+        <div className={`flex h-16 flex-shrink-0 items-center gap-3 border-b border-white/10 px-4 ${collapsed ? 'lg:justify-center lg:px-0' : ''}`}>
+          {tenant?.logoUrl ? (
+            <img src={tenant.logoUrl} alt={tenant.name} className="h-9 w-9 flex-shrink-0 rounded-xl object-cover ring-1 ring-white/20" />
+          ) : (
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white p-1.5">
+              <img src="/schoolinkd-mark.svg" alt="" className="h-full w-full" />
+            </div>
+          )}
+          <span className={`truncate text-sm font-bold tracking-tight text-white ${hideWhenCollapsed}`}>
+            {tenant?.name ?? strings.product.name}
+          </span>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4">
+          {groups.map((group, gi) => (
+            <div key={group.title ?? 'main'} className={gi > 0 ? 'mt-5' : ''}>
+              {group.title && (
+                <>
+                  <p className={`mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-white/40 ${hideWhenCollapsed}`}>
+                    {t(group.title)}
+                  </p>
+                  {collapsed && <div className="mx-auto mb-2 hidden h-px w-8 bg-white/10 lg:block" />}
+                </>
+              )}
+              <ul className="space-y-0.5">
+                {group.items.map((item) => {
+                  const active = item.href === '/admin' ? pathname === '/admin' : pathname.startsWith(item.href);
+                  const Icon = item.icon;
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        onClick={onClose}
+                        title={collapsed ? t(item.label) : undefined}
+                        aria-current={active ? 'page' : undefined}
+                        className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
+                          collapsed ? 'lg:justify-center lg:px-0' : ''
+                        } ${
+                          active
+                            ? 'bg-coral text-white shadow-md shadow-black/10'
+                            : 'text-white/65 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <Icon className="h-[18px] w-[18px] flex-shrink-0" strokeWidth={2.2} />
+                        <span className={`truncate ${hideWhenCollapsed}`}>{t(item.label)}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </nav>
+
+        <div className="border-t border-white/10 p-4 sm:hidden">
+          <LanguageSwitcher signedIn />
+        </div>
+        {onToggleCollapsed && (
+          <div className="hidden border-t border-white/10 p-3 lg:block">
+            <button
+              type="button"
+              onClick={onToggleCollapsed}
+              title={collapsed ? t('expand') : t('collapse')}
+              aria-label={collapsed ? t('expand') : t('collapse')}
+              className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/65 transition-colors hover:bg-white/10 hover:text-white ${
+                collapsed ? 'justify-center px-0' : ''
+              }`}
+            >
+              {collapsed ? <PanelLeftOpen className="h-[18px] w-[18px]" /> : <PanelLeftClose className="h-[18px] w-[18px]" />}
+              {!collapsed && <span>{t('collapse')}</span>}
+            </button>
           </div>
         )}
-        <span className="truncate text-sm font-bold text-white tracking-tight">{tenant?.name ?? strings.product.name}</span>
-      </div>
-      <nav className="flex-1 overflow-y-auto py-4 px-3">
-        <ul className="space-y-0.5">
-          {items.map((item) => {
-            const active =
-              item.href === '/admin'
-                ? pathname === '/admin'
-                : pathname.startsWith(item.href);
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  onClick={onClose}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
-                    active
-                      ? 'bg-coral text-white'
-                      : 'text-white/70 hover:bg-white/10 hover:text-white'
-                  }`}
-                >
-                  <span className="text-base leading-none">{item.icon}</span>
-                  {t(item.label)}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-      <div className="border-t border-white/10 p-4 sm:hidden">
-        <LanguageSwitcher signedIn />
-      </div>
-    </aside>
+      </aside>
     </>
   );
 }

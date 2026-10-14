@@ -34,6 +34,18 @@ const ROUTE_TITLES = {
   '/admin/settings': 'settings',
 } as const;
 
+/** Desktop sidebar collapsed to icons — remembered in this browser. */
+const COLLAPSED_KEY = 'slink_sidebar_collapsed';
+
+function readCollapsed(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return localStorage.getItem(COLLAPSED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <ConsoleI18nProvider>
@@ -48,6 +60,7 @@ function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(readCollapsed);
   const [tenant, setTenant] = useState<TenantBrand | null>(null);
   const checked = useRef(false);
 
@@ -79,7 +92,19 @@ function AdminShell({ children }: { children: ReactNode }) {
   return (
     <ToastProvider>
       <div className="flex h-screen overflow-hidden bg-cream">
-        <Sidebar tenant={tenant} open={navOpen} onClose={() => setNavOpen(false)} />
+        <Sidebar
+          tenant={tenant}
+          open={navOpen}
+          onClose={() => setNavOpen(false)}
+          collapsed={collapsed}
+          onToggleCollapsed={() => {
+            const next = !collapsed;
+            setCollapsed(next);
+            try {
+              localStorage.setItem(COLLAPSED_KEY, next ? '1' : '0');
+            } catch {}
+          }}
+        />
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <header className="flex h-16 flex-shrink-0 items-center justify-between gap-2 border-b border-black/5 bg-cream/90 backdrop-blur px-3 shadow-sm sm:px-6">
             <div className="flex min-w-0 items-center gap-3">
