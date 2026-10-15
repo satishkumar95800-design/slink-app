@@ -14,6 +14,7 @@ import { Spinner } from '../../../../components/ui/spinner';
 import { Modal } from '../../../../components/ui/modal';
 import { useToast } from '../../../../components/ui/toast';
 import { ImportWorkflow } from '../../../../components/import/import-workflow';
+import { PaymentGatewayCard } from './payment-gateway-card';
 
 interface Tenant {
   id: string;
@@ -112,6 +113,7 @@ export default function TenantDetailPage() {
         <>
           <OverviewTab tenant={tenant} />
           <ModulesCard tenant={tenant} onSaved={fetchTenant} />
+          <PaymentGatewayCard tenantId={tenant.id} tenantName={tenant.name} />
         </>
       )}
       {tab === 'import' && <ImportWorkflow tenantOverride={tenant.slug} />}

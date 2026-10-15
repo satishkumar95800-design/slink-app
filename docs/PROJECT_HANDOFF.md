@@ -22,7 +22,7 @@ Repo: `github.com/satishkumar95800-design/slink-app`, branch `main`. pnpm only (
 2. Parents reach students only via `student_parents` (`parent_id = req.user.id`).
 3. Payment webhooks must verify HMAC signature, else 401.
 4. Refresh tokens stored as bcrypt hashes; raw token returned once.
-5. Per-tenant gateway credentials live in AWS Secrets Manager, not the DB.
+5. Per-tenant Razorpay keys live in `tenant_payment_gateways`, entered from the platform console (school page → Online payments). Secrets are encrypted with the API's `PAYMENT_SECRETS_KEY` env var; changing or losing that key makes every stored secret unreadable (schools then show "not set up" until keys are re-entered).
 6. Money: `NUMERIC(12,2)` in DB, integer paise in app code.
 Tech decisions (Flutter, NestJS, Prisma 5, REST, shared tables + tenant_id, Firebase phone OTP) are settled — don't revisit without asking.
 

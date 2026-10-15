@@ -1,10 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { FeeStatus, Role, PaymentOrderStatus } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { PaymentsService } from './payments.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { SecretsService } from '../../secrets/secrets.service';
+import {
+  PaymentGatewayService,
+  PaymentsNotConfiguredException,
+} from '../payment-gateway/payment-gateway.service';
 import { ReceiptsService } from '../receipts/receipts.service';
 import type { ActiveUser } from '../../common/types/active-user.type';
 
@@ -85,6 +92,7 @@ const mockPrisma = {
     findFirst: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    updateMany: jest.fn(),
     findMany: jest.fn(),
     count: jest.fn(),
   },
@@ -96,7 +104,7 @@ const mockPrisma = {
 
 /** tx surface used inside capturePayment's callback-form transaction */
 const mockTx = {
-  paymentOrder: { update: jest.fn() },
+  paymentOrder: { update: jest.fn(), updateMany: jest.fn() },
   paymentTransaction: { create: jest.fn() },
   studentFee: { update: jest.fn() },
   studentFeeComponent: { update: jest.fn() },
@@ -104,12 +112,14 @@ const mockTx = {
   auditLog: { create: jest.fn() },
 };
 
+const creds = {
+  keyId: 'rzp_test_key',
+  keySecret: 'rzp_test_secret',
+  webhookSecret: 'webhook_secret',
+};
 const mockSecrets = {
-  getRazorpayCredentials: jest.fn().mockResolvedValue({
-    keyId: 'rzp_test_key',
-    keySecret: 'rzp_test_secret',
-    webhookSecret: 'webhook_secret',
-  }),
+  getCredentials: jest.fn().mockResolvedValue(creds),
+  findCredentials: jest.fn().mockResolvedValue(creds),
 };
 
 const mockReceiptsService = {
@@ -125,7 +135,7 @@ describe('PaymentsService', () => {
       providers: [
         PaymentsService,
         { provide: PrismaService, useValue: mockPrisma },
-        { provide: SecretsService, useValue: mockSecrets },
+        { provide: PaymentGatewayService, useValue: mockSecrets },
         { provide: ReceiptsService, useValue: mockReceiptsService },
       ],
     }).compile();
@@ -134,11 +144,9 @@ describe('PaymentsService', () => {
     jest.clearAllMocks();
 
     // Restore Razorpay mock after clearAllMocks
-    mockSecrets.getRazorpayCredentials.mockResolvedValue({
-      keyId: 'rzp_test_key',
-      keySecret: 'rzp_test_secret',
-      webhookSecret: 'webhook_secret',
-    });
+    mockSecrets.getCredentials.mockResolvedValue(creds);
+    mockSecrets.findCredentials.mockResolvedValue(creds);
+    mockPrisma.paymentOrder.findFirst.mockResolvedValue(null);
   });
 
   describe('createOrder', () => {
@@ -157,24 +165,31 @@ describe('PaymentsService', () => {
       expect(mockPrisma.paymentOrder.create).toHaveBeenCalledTimes(1);
     });
 
-    it('returns existing order when same idempotency key and not failed', async () => {
+    it('reuses an unpaid order for the same amount (parent tapped Pay again)', async () => {
       mockPrisma.studentFee.findUnique.mockResolvedValue(makeFee());
       const existing = makeOrder({ status: PaymentOrderStatus.created });
-      mockPrisma.paymentOrder.findUnique.mockResolvedValue(existing);
+      mockPrisma.paymentOrder.findFirst.mockResolvedValue(existing);
 
       const result = await service.createOrder(
         'tenant-uuid',
         { studentFeeId: 'fee-uuid' },
         parentUser,
       );
+      expect(mockPrisma.paymentOrder.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: PaymentOrderStatus.created,
+            amount: new Prisma.Decimal('5000.00'),
+          }),
+        }),
+      );
       expect(result).toEqual({ ...existing, keyId: 'rzp_test_key' });
       expect(mockPrisma.paymentOrder.create).not.toHaveBeenCalled();
     });
 
-    it('creates a new order when existing order has failed status', async () => {
-      mockPrisma.studentFee.findUnique.mockResolvedValue(makeFee());
-      mockPrisma.paymentOrder.findUnique.mockResolvedValue(
-        makeOrder({ status: PaymentOrderStatus.failed }),
+    it('creates a fresh order with a new key after a failed attempt or a fee change', async () => {
+      mockPrisma.studentFee.findUnique.mockResolvedValue(
+        makeFee({ amountPaid: new Prisma.Decimal('1000.00') }),
       );
       mockPrisma.paymentOrder.create.mockResolvedValue(makeOrder());
 
@@ -183,7 +198,49 @@ describe('PaymentsService', () => {
         { studentFeeId: 'fee-uuid' },
         parentUser,
       );
-      expect(mockPrisma.paymentOrder.create).toHaveBeenCalledTimes(1);
+      await service.createOrder(
+        'tenant-uuid',
+        { studentFeeId: 'fee-uuid' },
+        parentUser,
+      );
+
+      const keys = mockPrisma.paymentOrder.create.mock.calls.map(
+        (c: [{ data: { idempotencyKey: string; amount: Prisma.Decimal } }]) =>
+          c[0].data,
+      );
+      expect(keys).toHaveLength(2);
+      expect(keys[0].idempotencyKey).not.toEqual(keys[1].idempotencyKey);
+      expect(keys[0].amount.toFixed(2)).toBe('4000.00');
+    });
+
+    it('refuses a client idempotency key reused for a different amount', async () => {
+      mockPrisma.studentFee.findUnique.mockResolvedValue(
+        makeFee({ amountPaid: new Prisma.Decimal('1000.00') }),
+      );
+      mockPrisma.paymentOrder.findUnique.mockResolvedValue(
+        makeOrder({ idempotencyKey: 'my-key' }),
+      );
+      await expect(
+        service.createOrder(
+          'tenant-uuid',
+          { studentFeeId: 'fee-uuid', idempotencyKey: 'my-key' },
+          parentUser,
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('says payment is not set up when the school has no keys', async () => {
+      mockPrisma.studentFee.findUnique.mockResolvedValue(makeFee());
+      mockSecrets.getCredentials.mockRejectedValue(
+        new PaymentsNotConfiguredException(),
+      );
+      await expect(
+        service.createOrder(
+          'tenant-uuid',
+          { studentFeeId: 'fee-uuid' },
+          parentUser,
+        ),
+      ).rejects.toThrow(PaymentsNotConfiguredException);
     });
 
     it('throws NotFoundException when fee does not belong to requesting parent', async () => {
@@ -305,7 +362,11 @@ describe('PaymentsService', () => {
         amountPaid: new Prisma.Decimal('0.00'),
         status: FeeStatus.pending,
         dueDate: new Date('2099-12-31'),
-        student: { id: 'student-uuid', name: 'Test Student', classId: 'class-uuid' },
+        student: {
+          id: 'student-uuid',
+          name: 'Test Student',
+          classId: 'class-uuid',
+        },
         components: [
           {
             id: 'component-uuid',
@@ -319,13 +380,15 @@ describe('PaymentsService', () => {
       mockPrisma.$transaction.mockImplementation((cb: unknown) =>
         typeof cb === 'function' ? cb(mockTx) : Promise.resolve(cb),
       );
-      mockTx.paymentOrder.update.mockResolvedValue({});
+      mockTx.paymentOrder.updateMany.mockResolvedValue({ count: 1 });
       mockTx.paymentTransaction.create.mockResolvedValue({});
       mockTx.studentFee.update.mockResolvedValue({});
       mockTx.studentFeeComponent.update.mockResolvedValue({});
       mockTx.receiptAllocation.create.mockResolvedValue({});
       mockTx.auditLog.create.mockResolvedValue({});
-      mockReceiptsService.createForPayment.mockResolvedValue({ id: 'receipt-uuid' });
+      mockReceiptsService.createForPayment.mockResolvedValue({
+        id: 'receipt-uuid',
+      });
 
       const paidAt = new Date();
       await service.capturePayment(
@@ -340,7 +403,10 @@ describe('PaymentsService', () => {
         paidAt,
       );
 
-      expect(mockTx.paymentOrder.update).toHaveBeenCalled();
+      expect(mockTx.paymentOrder.updateMany).toHaveBeenCalledWith({
+        where: { id: 'order-uuid', status: { not: PaymentOrderStatus.paid } },
+        data: { status: PaymentOrderStatus.paid },
+      });
       expect(mockTx.paymentTransaction.create).toHaveBeenCalled();
       expect(mockTx.studentFee.update).toHaveBeenCalled();
       expect(mockTx.auditLog.create).toHaveBeenCalled();
@@ -357,7 +423,9 @@ describe('PaymentsService', () => {
           paymentOrderId: 'order-uuid',
         }),
       );
-      expect(mockReceiptsService.deliverReceiptNotifications).toHaveBeenCalledWith(
+      expect(
+        mockReceiptsService.deliverReceiptNotifications,
+      ).toHaveBeenCalledWith(
         expect.objectContaining({
           tenantId: 'tenant-uuid',
           receiptId: 'receipt-uuid',
@@ -368,12 +436,86 @@ describe('PaymentsService', () => {
     });
   });
 
+  describe('capturePayment - repeats', () => {
+    it('does nothing when Razorpay repeats a webhook for an order already paid', async () => {
+      mockPrisma.studentFee.findUniqueOrThrow.mockResolvedValue({
+        id: 'fee-uuid',
+        amountDue: new Prisma.Decimal('5000.00'),
+        amountPaid: new Prisma.Decimal('5000.00'),
+        dueDate: new Date('2099-12-31'),
+        student: { id: 'student-uuid', name: 'Test', classId: 'class-uuid' },
+        components: [],
+      });
+      mockPrisma.$transaction.mockImplementation((cb: unknown) =>
+        typeof cb === 'function' ? cb(mockTx) : Promise.resolve(cb),
+      );
+      mockTx.paymentOrder.updateMany.mockResolvedValue({ count: 0 });
+
+      await service.capturePayment(
+        {
+          id: 'order-uuid',
+          tenantId: 'tenant-uuid',
+          studentFeeId: 'fee-uuid',
+          amount: new Prisma.Decimal('5000.00'),
+        },
+        'pay_gateway123',
+        '',
+        new Date(),
+        500000,
+      );
+
+      expect(mockTx.paymentTransaction.create).not.toHaveBeenCalled();
+      expect(mockTx.studentFee.update).not.toHaveBeenCalled();
+      expect(mockReceiptsService.createForPayment).not.toHaveBeenCalled();
+      expect(
+        mockReceiptsService.deliverReceiptNotifications,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('records what Razorpay actually captured', async () => {
+      mockPrisma.studentFee.findUniqueOrThrow.mockResolvedValue({
+        id: 'fee-uuid',
+        amountDue: new Prisma.Decimal('5000.00'),
+        amountPaid: new Prisma.Decimal('0.00'),
+        dueDate: new Date('2099-12-31'),
+        student: { id: 'student-uuid', name: 'Test', classId: 'class-uuid' },
+        components: [],
+      });
+      mockPrisma.$transaction.mockImplementation((cb: unknown) =>
+        typeof cb === 'function' ? cb(mockTx) : Promise.resolve(cb),
+      );
+      mockTx.paymentOrder.updateMany.mockResolvedValue({ count: 1 });
+      mockReceiptsService.createForPayment.mockResolvedValue({ id: 'r1' });
+
+      await service.capturePayment(
+        {
+          id: 'order-uuid',
+          tenantId: 'tenant-uuid',
+          studentFeeId: 'fee-uuid',
+          amount: new Prisma.Decimal('5000.00'),
+        },
+        'pay_gateway123',
+        '',
+        new Date(),
+        450000,
+      );
+
+      expect(mockTx.studentFee.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            amountPaid: new Prisma.Decimal('4500'),
+          }),
+        }),
+      );
+    });
+  });
+
   describe('markOrderFailed', () => {
-    it('sets order status to failed', async () => {
-      mockPrisma.paymentOrder.update.mockResolvedValue({});
+    it('marks only a still-open order failed, never a paid one', async () => {
+      mockPrisma.paymentOrder.updateMany.mockResolvedValue({ count: 1 });
       await service.markOrderFailed('order-uuid');
-      expect(mockPrisma.paymentOrder.update).toHaveBeenCalledWith({
-        where: { id: 'order-uuid' },
+      expect(mockPrisma.paymentOrder.updateMany).toHaveBeenCalledWith({
+        where: { id: 'order-uuid', status: PaymentOrderStatus.created },
         data: { status: PaymentOrderStatus.failed },
       });
     });

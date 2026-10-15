@@ -5,7 +5,7 @@ import { PaymentOrderStatus } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { WebhookService } from './webhook.service';
 import { PaymentsService } from './payments.service';
-import { SecretsService } from '../../secrets/secrets.service';
+import { PaymentGatewayService } from '../payment-gateway/payment-gateway.service';
 
 const WEBHOOK_SECRET = 'test_webhook_secret';
 
@@ -63,7 +63,7 @@ const mockPayments = {
 };
 
 const mockSecrets = {
-  getRazorpayCredentials: jest.fn().mockResolvedValue({
+  findCredentials: jest.fn().mockResolvedValue({
     keyId: 'rzp_test_key',
     keySecret: 'rzp_test_secret',
     webhookSecret: WEBHOOK_SECRET,
@@ -78,13 +78,13 @@ describe('WebhookService', () => {
       providers: [
         WebhookService,
         { provide: PaymentsService, useValue: mockPayments },
-        { provide: SecretsService, useValue: mockSecrets },
+        { provide: PaymentGatewayService, useValue: mockSecrets },
       ],
     }).compile();
 
     service = module.get<WebhookService>(WebhookService);
     jest.clearAllMocks();
-    mockSecrets.getRazorpayCredentials.mockResolvedValue({
+    mockSecrets.findCredentials.mockResolvedValue({
       keyId: 'rzp_test_key',
       keySecret: 'rzp_test_secret',
       webhookSecret: WEBHOOK_SECRET,
@@ -166,6 +166,39 @@ describe('WebhookService', () => {
       await expect(
         service.handle(Buffer.from('not-json'), 'sig'),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('handle - hardening', () => {
+    it('passes the captured amount through so the real amount is recorded', async () => {
+      const body = makePaymentCapturedBody();
+      mockPayments.findOrderByGatewayOrderId.mockResolvedValue(mockOrder);
+      await service.handle(Buffer.from(body), makeSignature(body));
+      expect(mockPayments.capturePayment).toHaveBeenCalledWith(
+        mockOrder,
+        'pay_rzp456',
+        '',
+        expect.any(Date),
+        500000,
+      );
+    });
+
+    it('rejects a webhook when the school has no keys any more', async () => {
+      const body = makePaymentCapturedBody();
+      mockPayments.findOrderByGatewayOrderId.mockResolvedValue(mockOrder);
+      mockSecrets.findCredentials.mockResolvedValue(null);
+      await expect(
+        service.handle(Buffer.from(body), makeSignature(body)),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(mockPayments.capturePayment).not.toHaveBeenCalled();
+    });
+
+    it('rejects a signature of the wrong length without throwing a crypto error', async () => {
+      const body = makePaymentCapturedBody();
+      mockPayments.findOrderByGatewayOrderId.mockResolvedValue(mockOrder);
+      await expect(service.handle(Buffer.from(body), 'short')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 });

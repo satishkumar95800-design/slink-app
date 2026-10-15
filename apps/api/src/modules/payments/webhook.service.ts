@@ -4,8 +4,8 @@ import {
   Logger,
   BadRequestException,
 } from '@nestjs/common';
-import { createHmac } from 'crypto';
-import { SecretsService } from '../../secrets/secrets.service';
+import { createHmac, timingSafeEqual } from 'crypto';
+import { PaymentGatewayService } from '../payment-gateway/payment-gateway.service';
 import { PaymentsService } from './payments.service';
 
 interface RazorpayWebhookPayment {
@@ -29,7 +29,7 @@ export class WebhookService {
 
   constructor(
     private readonly payments: PaymentsService,
-    private readonly secrets: SecretsService,
+    private readonly gateway: PaymentGatewayService,
   ) {}
 
   async handle(rawBody: Buffer, signature: string): Promise<void> {
@@ -57,17 +57,22 @@ export class WebhookService {
     }
 
     // Fetch tenant-specific webhook secret and verify HMAC (invariant #3)
-    const { webhookSecret } = await this.secrets.getRazorpayCredentials(
-      order.tenantId,
-    );
-    this.verifyHmac(rawBody, signature, webhookSecret);
+    const creds = await this.gateway.findCredentials(order.tenantId);
+    if (!creds) {
+      // Keys removed or unreadable: nothing to verify against, so never trust it.
+      throw new UnauthorizedException('Payment gateway not configured');
+    }
+    this.verifyHmac(rawBody, signature, creds.webhookSecret);
 
     await this.processEvent(body, order);
   }
 
   private verifyHmac(rawBody: Buffer, signature: string, secret: string): void {
-    const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
-    if (expected !== signature) {
+    const expected = Buffer.from(
+      createHmac('sha256', secret).update(rawBody).digest('hex'),
+    );
+    const given = Buffer.from(signature);
+    if (expected.length !== given.length || !timingSafeEqual(expected, given)) {
       throw new UnauthorizedException('Invalid webhook signature');
     }
   }
@@ -95,6 +100,7 @@ export class WebhookService {
           payment.id,
           '', // Razorpay signature is on the whole webhook, not per-payment
           new Date(payment.created_at * 1000),
+          payment.amount,
         );
         this.logger.log(
           `Payment captured: ${payment.id} for order ${order.id}`,

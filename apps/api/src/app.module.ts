@@ -14,7 +14,7 @@ import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { StudentsModule } from './modules/students/students.module';
 import { FeesModule } from './modules/fees/fees.module';
-import { SecretsModule } from './secrets/secrets.module';
+import { PaymentGatewayModule } from './modules/payment-gateway/payment-gateway.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -57,7 +57,7 @@ import { ClassRemindersModule } from './modules/class-reminders/class-reminders.
     }),
     PrismaModule,
     FirebaseAdminModule,
-    SecretsModule,
+    PaymentGatewayModule,
     HealthModule,
     AuthModule,
     StudentsModule,
@@ -108,6 +108,7 @@ export class AppModule implements NestModule {
         { path: 'tenants/:id/users/:userId', method: RequestMethod.ALL },
         { path: 'tenants/:id/purge', method: RequestMethod.ALL },
         { path: 'tenants/:id/features', method: RequestMethod.ALL },
+        { path: 'tenants/:id/payment-gateway', method: RequestMethod.ALL },
         { path: 'dev/audit-logs', method: RequestMethod.ALL },
         // Addendum 4 / A9 — unauthenticated receipt link: no X-Tenant-ID header
         // (opened straight from an SMS/push, not a logged-in session); the

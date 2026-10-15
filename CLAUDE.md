@@ -40,7 +40,7 @@ Health check: GET http://localhost:3000/v1/health
 2. Parent role NEVER queries students directly — always via `student_parents` joined on `parent_id = req.user.id`.
 3. Payment webhook handlers MUST verify the gateway HMAC signature before processing. Reject unverified requests with 401.
 4. Refresh tokens are stored as bcrypt hashes. The raw token is returned to the client once only.
-5. Payment gateway credentials per tenant are stored in AWS Secrets Manager — never in the `tenants` table.
+5. Payment gateway credentials per tenant live in `tenant_payment_gateways` (set from the platform console); the key secret and webhook secret are AES-256-GCM encrypted with the `PAYMENT_SECRETS_KEY` env var and are never returned by the API — never in the `tenants` table.
 6. All money values: `Decimal` / `NUMERIC(12,2)` in DB; integer paise/pence arithmetic in application code.
 
 ## Package manager

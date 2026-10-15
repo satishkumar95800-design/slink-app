@@ -220,6 +220,7 @@ model Tenant {
   periodTimings            PeriodTiming[]
   classPeriodTimings       ClassPeriodTiming[]
   classReminderSettings    ClassReminderSetting[]
+  paymentGateway           TenantPaymentGateway?
 
   @@map("tenants")
 }
@@ -1129,6 +1130,21 @@ model ClassReminderSetting {
 
   @@index([tenantId])
   @@map("class_reminder_settings")
+}
+
+/// A school's Razorpay account, set by the platform team. The two secrets are
+/// AES-256-GCM encrypted with PAYMENT_SECRETS_KEY (an env var, never in the DB);
+/// keyId is Razorpay's publishable key and is sent to the app as-is.
+model TenantPaymentGateway {
+  tenantId         String   @id @map("tenant_id") @db.Uuid
+  keyId            String   @map("key_id")
+  keySecretEnc     String   @map("key_secret_enc")
+  webhookSecretEnc String   @map("webhook_secret_enc")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_payment_gateways")
 }
 
 /// One row per timetable slot per school day once its reminder went out, so a

@@ -66,6 +66,7 @@ String? translateErrorCode(String? code) {
     'UNKNOWN' => l.errorGeneric,
     'PHONE_NOT_REGISTERED' => l.errorPhoneNotRegistered,
     'SCHOOL_NOT_FOUND' => l.errorSchoolNotFound,
+    'PAYMENTS_NOT_CONFIGURED' => l.checkoutNotSetUp,
     _ => null,
   };
 }
