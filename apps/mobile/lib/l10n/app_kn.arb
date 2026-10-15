@@ -342,5 +342,15 @@
   "askRecentNotices": "{count, plural, =0{ಕಳೆದ {days} ದಿನಗಳಲ್ಲಿ ಸೂಚನೆಗಳಿಲ್ಲ} =1{ಕಳೆದ {days} ದಿನಗಳಲ್ಲಿ 1 ಸೂಚನೆ} other{ಕಳೆದ {days} ದಿನಗಳಲ್ಲಿ {count} ಸೂಚನೆಗಳು}}",
   "askWhichChild": "ಯಾವ ಮಗು? {names}",
   "askCantAnswer": "ಇದಕ್ಕೆ ಸದ್ಯಕ್ಕೆ ಉತ್ತರಿಸಲಾಗದು.",
-  "askCantAnswerHelp": "ಹಾಜರಾತಿ, ಬಾಕಿ ಶುಲ್ಕ, ಮನೆಗೆಲಸ ಮತ್ತು ಸೂಚನೆಗಳ ಬಗ್ಗೆ ಹೇಳಬಲ್ಲೆ."
+  "askCantAnswerHelp": "ಹಾಜರಾತಿ, ಬಾಕಿ ಶುಲ್ಕ, ಮನೆಗೆಲಸ ಮತ್ತು ಸೂಚನೆಗಳ ಬಗ್ಗೆ ಹೇಳಬಲ್ಲೆ.",
+  "calendarTitle": "ಶಾಲಾ ಕ್ಯಾಲೆಂಡರ್",
+  "calendarToday": "ಇಂದು",
+  "calendarHoliday": "ರಜೆ",
+  "calendarEvent": "ಕಾರ್ಯಕ್ರಮ",
+  "calendarPtm": "ಪಿಟಿಎಂ",
+  "calendarPreviousMonth": "ಹಿಂದಿನ ತಿಂಗಳು",
+  "calendarNextMonth": "ಮುಂದಿನ ತಿಂಗಳು",
+  "calendarNothingOnDay": "ಈ ದಿನಕ್ಕೆ ಏನೂ ನಿಗದಿಯಾಗಿಲ್ಲ.",
+  "calendarCouldNotLoad": "ಕ್ಯಾಲೆಂಡರ್ ಲೋಡ್ ಮಾಡಲಾಗಲಿಲ್ಲ.",
+  "calendarDayHeading": "{weekday}, {date}"
 }

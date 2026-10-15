@@ -85,6 +85,7 @@ pnpm db:generate   # regenerates the Prisma client
 | reports | done | Teacher → student → parent progress reports, read receipts |
 | notifications | done | FCM push (multicast), Twilio SMS, broadcast, audit log, FCM token management |
 | files | done | S3 upload/download, presigned URLs, tenant-isolated key paths |
+| calendar | done | School calendar: admin-managed events + PTMs (`school_events`), unified `GET /calendar?from=&to=` feed with holidays for parents and teachers (mobile month-grid calendar) |
 | attendance | done | Daily class attendance (bulk upsert), absent/correction pushes, school holidays, summaries + CSV report |
 | parent | done | Parent home summary (fees/today/attendance in one call), per-child notices |
 | fee-reminders | done | Daily Bull job: fee-due pushes 3 days before and on the due date |

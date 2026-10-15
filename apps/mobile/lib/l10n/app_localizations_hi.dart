@@ -1233,4 +1233,36 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get askCantAnswerHelp =>
       'मैं उपस्थिति, बाकी शुल्क, होमवर्क और सूचनाओं के बारे में बता सकता हूँ।';
+
+  @override
+  String get calendarTitle => 'स्कूल कैलेंडर';
+
+  @override
+  String get calendarToday => 'आज';
+
+  @override
+  String get calendarHoliday => 'छुट्टी';
+
+  @override
+  String get calendarEvent => 'कार्यक्रम';
+
+  @override
+  String get calendarPtm => 'पीटीएम';
+
+  @override
+  String get calendarPreviousMonth => 'पिछला महीना';
+
+  @override
+  String get calendarNextMonth => 'अगला महीना';
+
+  @override
+  String get calendarNothingOnDay => 'इस दिन के लिए कुछ निर्धारित नहीं है।';
+
+  @override
+  String get calendarCouldNotLoad => 'कैलेंडर लोड नहीं हो सका।';
+
+  @override
+  String calendarDayHeading(String weekday, String date) {
+    return '$weekday, $date';
+  }
 }

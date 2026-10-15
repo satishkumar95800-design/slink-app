@@ -162,6 +162,12 @@ class _TeacherDashboardBody extends ConsumerWidget {
                       onTap: () => context.push('/dashboard/routine'),
                     ),
                     FeatureTile(
+                      icon: Icons.calendar_month_rounded,
+                      label: l.calendarTitle,
+                      color: FeatureColors.calendar,
+                      onTap: () => context.push('/calendar'),
+                    ),
+                    FeatureTile(
                       icon: Icons.groups_rounded,
                       label: l.teacherAboutMyClasses,
                       color: FeatureColors.classes,

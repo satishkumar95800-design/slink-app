@@ -342,5 +342,15 @@
   "askRecentNotices": "{count, plural, =0{पिछले {days} दिनों में कोई सूचना नहीं} =1{पिछले {days} दिनों में 1 सूचना} other{पिछले {days} दिनों में {count} सूचनाएँ}}",
   "askWhichChild": "कौन सा बच्चा? {names}",
   "askCantAnswer": "इसका जवाब अभी नहीं दे सकता।",
-  "askCantAnswerHelp": "मैं उपस्थिति, बाकी शुल्क, होमवर्क और सूचनाओं के बारे में बता सकता हूँ।"
+  "askCantAnswerHelp": "मैं उपस्थिति, बाकी शुल्क, होमवर्क और सूचनाओं के बारे में बता सकता हूँ।",
+  "calendarTitle": "स्कूल कैलेंडर",
+  "calendarToday": "आज",
+  "calendarHoliday": "छुट्टी",
+  "calendarEvent": "कार्यक्रम",
+  "calendarPtm": "पीटीएम",
+  "calendarPreviousMonth": "पिछला महीना",
+  "calendarNextMonth": "अगला महीना",
+  "calendarNothingOnDay": "इस दिन के लिए कुछ निर्धारित नहीं है।",
+  "calendarCouldNotLoad": "कैलेंडर लोड नहीं हो सका।",
+  "calendarDayHeading": "{weekday}, {date}"
 }

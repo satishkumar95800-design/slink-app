@@ -642,6 +642,26 @@
     "empty": "No holidays added yet",
     "confirmRemove": "Remove the holiday \"{name}\"?"
   },
+  "schoolEvents": {
+    "sectionTitle": "Events and PTMs",
+    "sectionHelp": "Events and parent-teacher meetings appear on the school calendar in the parent and teacher mobile apps, along with holidays.",
+    "type": "Type",
+    "typeEvent": "Event",
+    "typePtm": "PTM",
+    "titleLabel": "Title",
+    "startDate": "Start date",
+    "endDate": "End date (optional)",
+    "startTime": "Start time",
+    "endTime": "End time",
+    "venue": "Venue",
+    "description": "Description",
+    "add": "Add to calendar",
+    "added": "Added to the calendar",
+    "removed": "Removed from the calendar",
+    "remove": "Remove",
+    "empty": "No events or PTMs added yet",
+    "confirmRemove": "Remove \"{title}\" from the calendar?"
+  },
   "timetable": {
     "title": "Timetable",
     "intro": "Manage the weekly period grid — which teacher teaches which subject, and when.",

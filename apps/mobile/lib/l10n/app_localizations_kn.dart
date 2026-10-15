@@ -1232,4 +1232,36 @@ class AppLocalizationsKn extends AppLocalizations {
   @override
   String get askCantAnswerHelp =>
       'ಹಾಜರಾತಿ, ಬಾಕಿ ಶುಲ್ಕ, ಮನೆಗೆಲಸ ಮತ್ತು ಸೂಚನೆಗಳ ಬಗ್ಗೆ ಹೇಳಬಲ್ಲೆ.';
+
+  @override
+  String get calendarTitle => 'ಶಾಲಾ ಕ್ಯಾಲೆಂಡರ್';
+
+  @override
+  String get calendarToday => 'ಇಂದು';
+
+  @override
+  String get calendarHoliday => 'ರಜೆ';
+
+  @override
+  String get calendarEvent => 'ಕಾರ್ಯಕ್ರಮ';
+
+  @override
+  String get calendarPtm => 'ಪಿಟಿಎಂ';
+
+  @override
+  String get calendarPreviousMonth => 'ಹಿಂದಿನ ತಿಂಗಳು';
+
+  @override
+  String get calendarNextMonth => 'ಮುಂದಿನ ತಿಂಗಳು';
+
+  @override
+  String get calendarNothingOnDay => 'ಈ ದಿನಕ್ಕೆ ಏನೂ ನಿಗದಿಯಾಗಿಲ್ಲ.';
+
+  @override
+  String get calendarCouldNotLoad => 'ಕ್ಯಾಲೆಂಡರ್ ಲೋಡ್ ಮಾಡಲಾಗಲಿಲ್ಲ.';
+
+  @override
+  String calendarDayHeading(String weekday, String date) {
+    return '$weekday, $date';
+  }
 }

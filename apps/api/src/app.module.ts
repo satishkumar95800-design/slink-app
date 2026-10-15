@@ -39,6 +39,7 @@ import { TeacherDashboardModule } from './modules/teacher-dashboard/teacher-dash
 import { PaymentClaimsModule } from './modules/payment-claims/payment-claims.module';
 import { StudentNotesModule } from './modules/student-notes/student-notes.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
+import { CalendarModule } from './modules/calendar/calendar.module';
 import { ParentModule } from './modules/parent/parent.module';
 import { FeeRemindersModule } from './modules/fee-reminders/fee-reminders.module';
 import { BroadcastsModule } from './modules/broadcasts/broadcasts.module';
@@ -89,6 +90,7 @@ import { ClassRemindersModule } from './modules/class-reminders/class-reminders.
     PaymentClaimsModule,
     StudentNotesModule,
     AttendanceModule,
+    CalendarModule,
     ParentModule,
     FeeRemindersModule,
     BroadcastsModule,

@@ -835,5 +835,25 @@
     }
   },
   "askCantAnswer": "I can't answer that one yet.",
-  "askCantAnswerHelp": "I can tell you about attendance, fees due, homework and notices."
+  "askCantAnswerHelp": "I can tell you about attendance, fees due, homework and notices.",
+  "calendarTitle": "School Calendar",
+  "calendarToday": "Today",
+  "calendarHoliday": "Holiday",
+  "calendarEvent": "Event",
+  "calendarPtm": "PTM",
+  "calendarPreviousMonth": "Previous month",
+  "calendarNextMonth": "Next month",
+  "calendarNothingOnDay": "Nothing scheduled for this day.",
+  "calendarCouldNotLoad": "Could not load the calendar.",
+  "calendarDayHeading": "{weekday}, {date}",
+  "@calendarDayHeading": {
+    "placeholders": {
+      "weekday": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  }
 }

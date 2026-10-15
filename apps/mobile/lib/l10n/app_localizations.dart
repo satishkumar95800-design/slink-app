@@ -2158,6 +2158,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'I can tell you about attendance, fees due, homework and notices.'**
   String get askCantAnswerHelp;
+
+  /// No description provided for @calendarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'School Calendar'**
+  String get calendarTitle;
+
+  /// No description provided for @calendarToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get calendarToday;
+
+  /// No description provided for @calendarHoliday.
+  ///
+  /// In en, this message translates to:
+  /// **'Holiday'**
+  String get calendarHoliday;
+
+  /// No description provided for @calendarEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get calendarEvent;
+
+  /// No description provided for @calendarPtm.
+  ///
+  /// In en, this message translates to:
+  /// **'PTM'**
+  String get calendarPtm;
+
+  /// No description provided for @calendarPreviousMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous month'**
+  String get calendarPreviousMonth;
+
+  /// No description provided for @calendarNextMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Next month'**
+  String get calendarNextMonth;
+
+  /// No description provided for @calendarNothingOnDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing scheduled for this day.'**
+  String get calendarNothingOnDay;
+
+  /// No description provided for @calendarCouldNotLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the calendar.'**
+  String get calendarCouldNotLoad;
+
+  /// No description provided for @calendarDayHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'{weekday}, {date}'**
+  String calendarDayHeading(String weekday, String date);
 }
 
 class _AppLocalizationsDelegate

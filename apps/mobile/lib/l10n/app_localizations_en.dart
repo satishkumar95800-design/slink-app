@@ -1229,4 +1229,36 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get askCantAnswerHelp =>
       'I can tell you about attendance, fees due, homework and notices.';
+
+  @override
+  String get calendarTitle => 'School Calendar';
+
+  @override
+  String get calendarToday => 'Today';
+
+  @override
+  String get calendarHoliday => 'Holiday';
+
+  @override
+  String get calendarEvent => 'Event';
+
+  @override
+  String get calendarPtm => 'PTM';
+
+  @override
+  String get calendarPreviousMonth => 'Previous month';
+
+  @override
+  String get calendarNextMonth => 'Next month';
+
+  @override
+  String get calendarNothingOnDay => 'Nothing scheduled for this day.';
+
+  @override
+  String get calendarCouldNotLoad => 'Could not load the calendar.';
+
+  @override
+  String calendarDayHeading(String weekday, String date) {
+    return '$weekday, $date';
+  }
 }

@@ -216,6 +216,7 @@ model Tenant {
   studentNotes             StudentNote[]
   attendanceRecords        AttendanceRecord[]
   schoolHolidays           SchoolHoliday[]
+  schoolEvents             SchoolEvent[]
   broadcasts               Broadcast[]
   periodTimings            PeriodTiming[]
   classPeriodTimings       ClassPeriodTiming[]
@@ -1078,6 +1079,34 @@ model SchoolHoliday {
 
   @@unique([tenantId, date])
   @@map("school_holidays")
+}
+
+enum SchoolEventType {
+  EVENT
+  PTM
+}
+
+/// School events and parent-teacher meetings shown on the mobile calendar
+/// (holidays stay in SchoolHoliday). Dates are calendar days; end_date is null for one-day items.
+model SchoolEvent {
+  id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String          @map("tenant_id") @db.Uuid
+  type        SchoolEventType
+  title       String
+  description String?
+  startDate   DateTime        @map("start_date") @db.Date
+  endDate     DateTime?       @map("end_date") @db.Date
+  /// "HH:mm" 24-hour, school-local.
+  startTime   String?         @map("start_time")
+  endTime     String?         @map("end_time")
+  venue       String?
+  createdBy   String?         @map("created_by") @db.Uuid
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, startDate])
+  @@map("school_events")
 }
 
 /// One notice or homework message as sent (docs/SPEC-improvements.md §4.3);
