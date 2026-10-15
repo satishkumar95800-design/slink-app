@@ -3,5 +3,10 @@
   "@@x-note": "Stage 1: only the language picker is translated. Every other key falls back to English (see l10n_untranslated.json). Draft — needs native-speaker review.",
   "languageNativeName": "हिन्दी",
   "languageTitle": "भाषा",
-  "languageChoose": "अपनी भाषा चुनें"
+  "languageChoose": "अपनी भाषा चुनें",
+  "classReminderTitle": "कक्षा रिमाइंडर",
+  "classReminderChoose": "हर कक्षा से पहले याद दिलाएँ",
+  "classReminderOff": "बंद",
+  "classReminderMinutes": "{minutes, plural, =1{कक्षा से 1 मिनट पहले} other{कक्षा से {minutes} मिनट पहले}}",
+  "classReminderSaveFailed": "रिमाइंडर सहेजा नहीं जा सका। फिर से कोशिश करें।"
 }

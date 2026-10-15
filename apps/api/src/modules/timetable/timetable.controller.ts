@@ -19,7 +19,10 @@ import type { ActiveUser } from '../../common/types/active-user.type';
 import { TimetableService } from './timetable.service';
 import { TimetableQueryDto } from './dto/timetable-query.dto';
 import { UpsertTimetableSlotDto } from './dto/upsert-timetable-slot.dto';
-import { ReplacePeriodTimingsDto } from './dto/period-timings.dto';
+import {
+  ReplaceClassPeriodTimingsDto,
+  ReplacePeriodTimingsDto,
+} from './dto/period-timings.dto';
 
 /** Addendum 4 / A10 — admin-managed weekly timetable, read by the teacher dashboard. */
 @Controller('timetable')
@@ -41,6 +44,26 @@ export class TimetableController {
     @Body() dto: ReplacePeriodTimingsDto,
   ) {
     return this.timetableService.replacePeriodTimings(tenantId, dto.periods);
+  }
+
+  /** Classes with their own bell schedule (every other class uses the school's). */
+  @Get('class-period-timings')
+  @Roles(Role.admin, Role.accounts, Role.teacher, Role.super_admin)
+  classPeriodTimings(@TenantId() tenantId: string) {
+    return this.timetableService.listClassPeriodTimings(tenantId);
+  }
+
+  @Put('class-period-timings')
+  @Roles(Role.admin, Role.super_admin)
+  replaceClassPeriodTimings(
+    @TenantId() tenantId: string,
+    @Body() dto: ReplaceClassPeriodTimingsDto,
+  ) {
+    return this.timetableService.replaceClassPeriodTimings(
+      tenantId,
+      dto.classIds,
+      dto.periods,
+    );
   }
 
   @Get('mine')

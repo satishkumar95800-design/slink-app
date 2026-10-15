@@ -11,6 +11,7 @@ import { Input } from '../../../components/ui/input';
 import { Select } from '../../../components/ui/select';
 import { useToast } from '../../../components/ui/toast';
 import { getSession } from '../../../lib/auth';
+import { BellSchedulesSection } from './bell-schedules';
 
 interface TenantSelf {
   id: string;
@@ -103,6 +104,7 @@ export default function SettingsPage() {
 
       {getSession()?.role === 'admin' && <CustomFieldsSection />}
       {getSession()?.role === 'admin' && <HolidaysSection />}
+      {getSession()?.role === 'admin' && <BellSchedulesSection />}
     </div>
   );
 }

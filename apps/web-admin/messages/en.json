@@ -248,7 +248,9 @@
     "resetTitle": "Reset Password",
     "resetTitleNamed": "Reset Password — {name}",
     "resetExplainer": "Sets a new password for this user without needing their current one. Share it with them securely — they can change it themselves afterwards from their account menu.",
-    "newPassword": "New Password"
+    "newPassword": "New Password",
+    "searchPlaceholder": "Search by name, email or phone",
+    "noMatches": "No users match your search."
   },
   "caste": {
     "General": "General",
@@ -658,7 +660,28 @@
     "endOf": "Period {n} ends",
     "save": "Save timings",
     "saved": "Period timings saved",
-    "incomplete": "Period {n} needs both a start and an end time"
+    "incomplete": "Period {n} needs both a start and an end time",
+    "schoolTitle": "School timings",
+    "schoolHelp": "Used by every class that doesn't have its own timings below.",
+    "classTitle": "Timings for chosen classes",
+    "classHelp": "Give some classes different times — for example, primary classes that start earlier.",
+    "addClassSchedule": "+ Timings for classes",
+    "editTitle": "Timings for classes",
+    "chooseClasses": "Classes",
+    "selectAll": "Select all",
+    "clearAll": "Clear",
+    "pickClass": "Select at least one class",
+    "needOnePeriod": "Enter the times for at least one period",
+    "classSaved": "Class timings saved",
+    "removeSchedule": "Use school timings",
+    "confirmRemove": "These classes will go back to the school timings. Continue?",
+    "noClassSchedules": "All classes use the school timings.",
+    "movedHint": "A class has one set of timings. Choosing it here moves it out of any other set.",
+    "periodRange": "P{n} {start}–{end}",
+    "edit": "Edit",
+    "cancel": "Cancel",
+    "movedToSettings": "Period timings are now in Settings.",
+    "openSettings": "Open Settings"
   },
   "reportStatus": {
     "draft": "Draft",
@@ -694,7 +717,15 @@
     "academicYearPlaceholder": "e.g. 2026-27",
     "pdf": "Report Card (PDF)",
     "publishNow": "Publish now (parent can see it immediately)",
-    "uploadSubmit": "Upload"
+    "uploadSubmit": "Upload",
+    "filterClass": "Class",
+    "allClasses": "All classes",
+    "filterType": "Type",
+    "allTypes": "All types",
+    "colClass": "Class",
+    "colFile": "File",
+    "viewPdf": "View PDF",
+    "emptyFiltered": "No reports match these filters."
   },
   "documents": {
     "categoryRequired": "Category is required",

@@ -117,27 +117,9 @@ export class TimetableService {
     });
   }
 
-  /** Replaces the school's whole bell schedule. "HH:MM" strings compare correctly as text. */
+  /** Replaces the school's whole bell schedule. */
   async replacePeriodTimings(tenantId: string, periods: PeriodTimingDto[]) {
-    const sorted = [...periods].sort((a, b) => a.periodNumber - b.periodNumber);
-    for (let i = 0; i < sorted.length; i++) {
-      const p = sorted[i];
-      if (p.startTime >= p.endTime) {
-        throw new BadRequestException(
-          `Period ${p.periodNumber} must end after it starts`,
-        );
-      }
-      if (i > 0 && sorted[i - 1].periodNumber === p.periodNumber) {
-        throw new BadRequestException(
-          `Period ${p.periodNumber} is listed twice`,
-        );
-      }
-      if (i > 0 && sorted[i - 1].endTime > p.startTime) {
-        throw new BadRequestException(
-          `Period ${p.periodNumber} starts before period ${sorted[i - 1].periodNumber} ends`,
-        );
-      }
-    }
+    const sorted = checkedSchedule(periods);
 
     await this.prisma.$transaction([
       this.prisma.periodTiming.deleteMany({ where: { tenantId } }),
@@ -147,4 +129,65 @@ export class TimetableService {
     ]);
     return this.listPeriodTimings(tenantId);
   }
+
+  listClassPeriodTimings(tenantId: string) {
+    return this.prisma.classPeriodTiming.findMany({
+      where: { tenantId },
+      select: {
+        classId: true,
+        periodNumber: true,
+        startTime: true,
+        endTime: true,
+      },
+      orderBy: [{ classId: 'asc' }, { periodNumber: 'asc' }],
+    });
+  }
+
+  /** Gives each of these classes the same bell schedule; no periods = back to the school's. */
+  async replaceClassPeriodTimings(
+    tenantId: string,
+    classIds: string[],
+    periods: PeriodTimingDto[],
+  ) {
+    const sorted = checkedSchedule(periods);
+    const ids = [...new Set(classIds)];
+    const found = await this.prisma.class.count({
+      where: { tenantId, id: { in: ids } },
+    });
+    if (found !== ids.length) throw new NotFoundException('Class not found');
+
+    await this.prisma.$transaction([
+      this.prisma.classPeriodTiming.deleteMany({
+        where: { tenantId, classId: { in: ids } },
+      }),
+      this.prisma.classPeriodTiming.createMany({
+        data: ids.flatMap((classId) =>
+          sorted.map((p) => ({ tenantId, classId, ...p })),
+        ),
+      }),
+    ]);
+    return this.listClassPeriodTimings(tenantId);
+  }
+}
+
+/** Sorted by period; rejects overlaps and repeats. "HH:MM" strings compare correctly as text. */
+function checkedSchedule(periods: PeriodTimingDto[]): PeriodTimingDto[] {
+  const sorted = [...periods].sort((a, b) => a.periodNumber - b.periodNumber);
+  for (let i = 0; i < sorted.length; i++) {
+    const p = sorted[i];
+    if (p.startTime >= p.endTime) {
+      throw new BadRequestException(
+        `Period ${p.periodNumber} must end after it starts`,
+      );
+    }
+    if (i > 0 && sorted[i - 1].periodNumber === p.periodNumber) {
+      throw new BadRequestException(`Period ${p.periodNumber} is listed twice`);
+    }
+    if (i > 0 && sorted[i - 1].endTime > p.startTime) {
+      throw new BadRequestException(
+        `Period ${p.periodNumber} starts before period ${sorted[i - 1].periodNumber} ends`,
+      );
+    }
+  }
+  return sorted;
 }

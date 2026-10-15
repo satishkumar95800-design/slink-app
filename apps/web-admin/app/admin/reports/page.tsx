@@ -15,8 +15,6 @@ import { Modal } from '../../../components/ui/modal';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
-import { useTenantFeatures } from '../../../lib/tenant-features';
-import { TransferCertificateReport } from './transfer-certificates';
 
 type ReportStatus = 'draft' | 'published';
 
@@ -28,8 +26,10 @@ interface Report {
   academicYear: string;
   publishedAt: string | null;
   createdAt: string;
+  pdfKey?: string | null;
   teacher?: { id: string; name: string };
   student?: { name: string; admissionNo: string };
+  class?: { id: string; name: string } | null;
 }
 
 interface StudentOption {
@@ -37,6 +37,17 @@ interface StudentOption {
   name: string;
   admissionNo: string;
 }
+
+interface ClassOption {
+  id: string;
+  name: string;
+  section: string | null;
+}
+
+const REPORT_TYPES = ['report_card', 'academic', 'behavior', 'attendance', 'homework'] as const;
+const PAGE_SIZE = 50;
+
+const classLabel = (c: ClassOption) => [c.name, c.section].filter(Boolean).join(' ');
 
 const statusVariant = (s: ReportStatus): 'green' | 'gray' => {
   return s === 'published' ? 'green' : 'gray';
@@ -53,8 +64,10 @@ const typeVariant = (t: string): 'blue' | 'orange' | 'yellow' | 'gray' | 'red' =
   return m[t] ?? 'gray';
 };
 
+/** Report cards and progress reports teachers have uploaded, for every student, filtered by class and type. */
 export default function ReportsPage() {
   const t = useTranslations('reports');
+  const tCommon = useTranslations('common');
   const tType = useTranslations('reportType');
   const tStatus = useTranslations('reportStatus');
   const errorText = useErrorText();
@@ -64,17 +77,29 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [classes, setClasses] = useState<ClassOption[]>([]);
+  const [classId, setClassId] = useState('');
+  const [type, setType] = useState<string>('report_card');
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const session = getSession();
   const isTeacher = session?.role === 'teacher';
-  const showTc = useTenantFeatures().transferCertificate && !isTeacher;
+
+  useEffect(() => {
+    api.get<ClassOption[]>('/classes').then(setClasses).catch(() => {});
+  }, []);
 
   async function fetchReports() {
     try {
       setLoading(true);
-      const res = await api.get<{ data: Report[]; total: number }>('/reports?limit=100');
+      const params = new URLSearchParams({ limit: String(PAGE_SIZE), page: String(page) });
+      if (classId) params.set('classId', classId);
+      if (type) params.set('type', type);
+      const res = await api.get<{ data: Report[]; total: number }>(`/reports?${params}`);
       setReports(res.data);
       setTotal(res.total);
+      setError(null);
     } catch (e) {
       setError(errorText(e));
     } finally {
@@ -84,7 +109,8 @@ export default function ReportsPage() {
 
   useEffect(() => {
     fetchReports();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [classId, type, page]);
 
   async function onPublish(id: string) {
     try {
@@ -96,17 +122,52 @@ export default function ReportsPage() {
     }
   }
 
+  async function viewPdf(key: string) {
+    // Open the tab first so the pop-up blocker allows it, then point it at the signed link.
+    const tab = window.open('', '_blank');
+    try {
+      const { url } = await api.get<{ url: string }>(`/files/signed-url?key=${encodeURIComponent(key)}`);
+      if (tab) tab.location.href = url;
+    } catch (e) {
+      tab?.close();
+      toast(errorText(e), 'error');
+    }
+  }
+
   return (
     <div className="space-y-4">
-      {showTc && <TransferCertificateReport />}
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-gray-500">{t('count', { count: total })}</p>
-        {isTeacher && (
-          <Button type="button" onClick={() => setUploadOpen(true)}>
-            {t('upload')}
-          </Button>
-        )}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-wrap items-end gap-3">
+          <Select
+            label={t('filterClass')}
+            value={classId}
+            onChange={(e) => {
+              setClassId(e.target.value);
+              setPage(1);
+            }}
+            options={[{ value: '', label: t('allClasses') }, ...classes.map((c) => ({ value: c.id, label: classLabel(c) }))]}
+          />
+          <Select
+            label={t('filterType')}
+            value={type}
+            onChange={(e) => {
+              setType(e.target.value);
+              setPage(1);
+            }}
+            options={[
+              { value: '', label: t('allTypes') },
+              ...REPORT_TYPES.map((v) => ({ value: v, label: reportTypeLabel(tType, v) })),
+            ]}
+          />
+        </div>
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-gray-500">{t('count', { count: total })}</p>
+          {isTeacher && (
+            <Button type="button" onClick={() => setUploadOpen(true)}>
+              {t('upload')}
+            </Button>
+          )}
+        </div>
       </div>
 
       {loading ? (
@@ -118,15 +179,15 @@ export default function ReportsPage() {
       ) : reports.length === 0 ? (
         <EmptyState
           title={t('emptyTitle')}
-          description={t('emptyDescription')}
+          description={classId || type ? t('emptyFiltered') : t('emptyDescription')}
         />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-cream/60">
               <tr>
-                {[t('colTerm'), t('colYear'), t('colStudent'), t('colType'), t('colAuthor'), t('colStatus'), t('colPublished'), t('colCreated'), ''].map((h, i) => (
-                  <th key={i} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
+                {[t('colStudent'), t('colClass'), t('colType'), t('colTerm'), t('colAuthor'), t('colStatus'), t('colPublished'), t('colFile'), ''].map((h, i) => (
+                  <th key={i} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
                     {h}
                   </th>
                 ))}
@@ -135,26 +196,39 @@ export default function ReportsPage() {
             <tbody className="divide-y divide-gray-100">
               {reports.map((r) => (
                 <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{r.term}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{r.academicYear}</td>
-                  <td className="px-6 py-4">
-                    <p className="text-sm text-gray-900">{r.student?.name ?? '—'}</p>
+                  <td className="px-5 py-3.5">
+                    <p className="text-sm font-medium text-gray-900">{r.student?.name ?? '—'}</p>
                     <p className="text-xs text-gray-500">{r.student?.admissionNo ?? ''}</p>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-5 py-3.5 text-sm text-gray-600">{r.class?.name ?? '—'}</td>
+                  <td className="px-5 py-3.5">
                     <Badge variant={typeVariant(r.type)}>{reportTypeLabel(tType, r.type)}</Badge>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{r.teacher?.name ?? '—'}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-5 py-3.5">
+                    <p className="text-sm text-gray-900">{r.term}</p>
+                    <p className="text-xs text-gray-500">{r.academicYear}</p>
+                  </td>
+                  <td className="px-5 py-3.5 text-sm text-gray-600">{r.teacher?.name ?? '—'}</td>
+                  <td className="px-5 py-3.5">
                     <Badge variant={statusVariant(r.status)}>{reportStatusLabel(tStatus, r.status)}</Badge>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
+                  <td className="px-5 py-3.5 text-sm text-gray-500">
                     {r.publishedAt ? formatDate(r.publishedAt) : '—'}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {formatDate(r.createdAt)}
+                  <td className="px-5 py-3.5 text-sm">
+                    {r.pdfKey ? (
+                      <button
+                        type="button"
+                        onClick={() => viewPdf(r.pdfKey!)}
+                        className="cursor-pointer font-semibold text-teal hover:text-coral-dark"
+                      >
+                        {t('viewPdf')}
+                      </button>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
                   </td>
-                  <td className="px-6 py-4 text-sm">
+                  <td className="px-5 py-3.5 text-sm">
                     {isTeacher && r.status === 'draft' && r.teacher?.id === session?.id && (
                       <button
                         type="button"
@@ -169,6 +243,18 @@ export default function ReportsPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {!loading && !error && totalPages > 1 && (
+        <div className="flex items-center justify-between gap-3">
+          <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+            {tCommon('previous')}
+          </Button>
+          <span className="text-sm text-gray-500">{tCommon('pageOf', { page, total: totalPages })}</span>
+          <Button variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+            {tCommon('next')}
+          </Button>
         </div>
       )}
 

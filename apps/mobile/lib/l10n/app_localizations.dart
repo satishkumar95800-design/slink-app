@@ -1875,6 +1875,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fees, homework, attendance and reports — all in one app.'**
   String get authTagline;
+
+  /// No description provided for @classReminderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Class reminder'**
+  String get classReminderTitle;
+
+  /// No description provided for @classReminderChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me before each class'**
+  String get classReminderChoose;
+
+  /// No description provided for @classReminderOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get classReminderOff;
+
+  /// No description provided for @classReminderMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =1{1 minute before class} other{{minutes} minutes before class}}'**
+  String classReminderMinutes(int minutes);
+
+  /// No description provided for @classReminderSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the reminder. Try again.'**
+  String get classReminderSaveFailed;
 }
 
 class _AppLocalizationsDelegate

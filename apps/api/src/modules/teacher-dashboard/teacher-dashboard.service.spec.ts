@@ -17,6 +17,7 @@ describe('TeacherDashboardService', () => {
         count: jest.fn().mockResolvedValue(8),
       },
       periodTiming: { findMany: jest.fn().mockResolvedValue([]) },
+      classPeriodTiming: { findMany: jest.fn().mockResolvedValue([]) },
       user: { findMany: jest.fn() },
       classTeacher: { count: jest.fn().mockResolvedValue(2) },
       teacherSubject: { findMany: jest.fn().mockResolvedValue([]) },
@@ -69,6 +70,37 @@ describe('TeacherDashboardService', () => {
         endTime: '11:15',
         subject: 'Maths',
       });
+    });
+
+    it("uses a class's own bell schedule over the school's", async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-10-08T05:15:00.000Z'));
+      prisma.timetableSlot.findMany.mockResolvedValue([
+        {
+          periodNumber: 1,
+          class: { id: 'c1', name: 'Class 1', section: 'A' },
+          subject: { name: 'English' },
+        },
+        {
+          periodNumber: 1,
+          class: { id: 'c8', name: 'Class 8', section: 'A' },
+          subject: { name: 'Science' },
+        },
+      ]);
+      prisma.periodTiming.findMany.mockResolvedValue([
+        { periodNumber: 1, startTime: '09:00', endTime: '09:45' },
+      ]);
+      prisma.classPeriodTiming.findMany.mockResolvedValue([
+        {
+          classId: 'c1',
+          periodNumber: 1,
+          startTime: '08:30',
+          endTime: '09:05',
+        },
+      ]);
+
+      const today = await service.getToday('tenant-a', 'teacher-1');
+
+      expect(today.periods.map((p) => p.startTime)).toEqual(['08:30', '09:00']);
     });
 
     it('is an off day on Sundays and holidays', async () => {

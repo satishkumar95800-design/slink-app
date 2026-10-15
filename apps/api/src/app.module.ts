@@ -42,6 +42,7 @@ import { BroadcastsModule } from './modules/broadcasts/broadcasts.module';
 import { PublicSiteModule } from './modules/public-site/public-site.module';
 import { TransferCertificatesModule } from './modules/transfer-certificates/transfer-certificates.module';
 import { FeeConcessionsModule } from './modules/fee-concessions/fee-concessions.module';
+import { ClassRemindersModule } from './modules/class-reminders/class-reminders.module';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { FeeConcessionsModule } from './modules/fee-concessions/fee-concessions.
     PublicSiteModule,
     TransferCertificatesModule,
     FeeConcessionsModule,
+    ClassRemindersModule,
   ],
 })
 export class AppModule implements NestModule {

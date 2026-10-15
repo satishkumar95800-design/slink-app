@@ -10,6 +10,7 @@ import '../auth/session_controller.dart';
 import '../../core/l10n/l10n.dart';
 import '../../core/l10n/language_controller.dart';
 import '../../shared/widgets/language_picker.dart';
+import 'class_reminder.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -97,6 +98,7 @@ class ProfilePage extends ConsumerWidget {
               ),
               onTap: () => ref.read(themeModeProvider.notifier).setDark(!isDark),
             ),
+            if (user.role == UserRole.teacher) const ClassReminderTile(),
             const SizedBox(height: 12),
             ListCard(
               leading: const IconBadge(icon: Icons.logout_rounded, color: Color(0xFFDC2626)),

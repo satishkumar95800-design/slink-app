@@ -3,5 +3,10 @@
   "@@x-note": "Stage 1: only the language picker is translated. Every other key falls back to English (see l10n_untranslated.json). Draft — needs native-speaker review.",
   "languageNativeName": "ಕನ್ನಡ",
   "languageTitle": "ಭಾಷೆ",
-  "languageChoose": "ನಿಮ್ಮ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ"
+  "languageChoose": "ನಿಮ್ಮ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+  "classReminderTitle": "ತರಗತಿ ಜ್ಞಾಪನೆ",
+  "classReminderChoose": "ಪ್ರತಿ ತರಗತಿಗೆ ಮೊದಲು ನೆನಪಿಸಿ",
+  "classReminderOff": "ಆಫ್",
+  "classReminderMinutes": "{minutes, plural, =1{ತರಗತಿಗೆ 1 ನಿಮಿಷ ಮೊದಲು} other{ತರಗತಿಗೆ {minutes} ನಿಮಿಷ ಮೊದಲು}}",
+  "classReminderSaveFailed": "ಜ್ಞಾಪನೆ ಉಳಿಸಲಾಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
 }

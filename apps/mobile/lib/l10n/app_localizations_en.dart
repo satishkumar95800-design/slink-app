@@ -1034,4 +1034,28 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get authTagline =>
       'Fees, homework, attendance and reports — all in one app.';
+
+  @override
+  String get classReminderTitle => 'Class reminder';
+
+  @override
+  String get classReminderChoose => 'Remind me before each class';
+
+  @override
+  String get classReminderOff => 'Off';
+
+  @override
+  String classReminderMinutes(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minutes before class',
+      one: '1 minute before class',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get classReminderSaveFailed =>
+      'Could not save the reminder. Try again.';
 }

@@ -218,6 +218,8 @@ model Tenant {
   schoolHolidays           SchoolHoliday[]
   broadcasts               Broadcast[]
   periodTimings            PeriodTiming[]
+  classPeriodTimings       ClassPeriodTiming[]
+  classReminderSettings    ClassReminderSetting[]
 
   @@map("tenants")
 }
@@ -254,6 +256,7 @@ model User {
   markedAttendance AttendanceRecord[] @relation("AttendanceMarkedBy")
   sentBroadcasts   Broadcast[]        @relation("BroadcastSender")
   authoredStudentNotes StudentNote[]
+  classReminderSetting ClassReminderSetting?
 
   @@unique([tenantId, phone])
   @@unique([tenantId, email])
@@ -355,6 +358,7 @@ model Class {
   timetableSlots     TimetableSlot[]
   attendanceRecords  AttendanceRecord[]
   broadcasts         Broadcast[]
+  periodTimings      ClassPeriodTiming[]
 
   @@unique([tenantId, name, section, academicYear])
   @@index([tenantId])
@@ -1090,6 +1094,52 @@ model PeriodTiming {
 
   @@unique([tenantId, periodNumber])
   @@map("period_timings")
+}
+
+/// A class's own bell schedule. A class with any rows here uses only these;
+/// every other class uses the school's period_timings.
+model ClassPeriodTiming {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  classId      String   @map("class_id") @db.Uuid
+  periodNumber Int      @map("period_number")
+  /// "HH:MM", 24-hour, in the school's timezone.
+  startTime    String   @map("start_time")
+  endTime      String   @map("end_time")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  class  Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, periodNumber])
+  @@index([tenantId])
+  @@map("class_period_timings")
+}
+
+/// A teacher's "next class" push. No row means the default (5 minutes before);
+/// minutesBefore null means switched off.
+model ClassReminderSetting {
+  userId        String   @id @map("user_id") @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  minutesBefore Int?     @map("minutes_before")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@map("class_reminder_settings")
+}
+
+/// One row per timetable slot per school day once its reminder went out, so a
+/// restart or a second API instance never sends it twice.
+model ClassReminderSent {
+  slotId    String   @map("slot_id") @db.Uuid
+  date      DateTime @db.Date
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@id([slotId, date])
+  @@map("class_reminders_sent")
 }
 
 /// Demo requests from the marketing site's contact form (docs/SPEC-improvements.md §5.9).

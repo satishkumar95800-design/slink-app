@@ -372,9 +372,14 @@ export class ReportsService {
         where: { tenantId, teachers: { some: { teacherId: user.id } } },
         select: { id: true },
       });
-      where.classId = { in: teacherClasses.map((c) => c.id) };
+      const allowed = teacherClasses.map((c) => c.id);
+      // A class filter narrows the teacher's own classes; it never widens them.
+      where.classId = {
+        in: query.classId
+          ? allowed.filter((id) => id === query.classId)
+          : allowed,
+      };
       if (query.studentId) where.studentId = query.studentId;
-      if (query.classId) where.classId = query.classId;
       if (query.status) where.status = query.status;
     } else {
       // admin / accounts — see everything

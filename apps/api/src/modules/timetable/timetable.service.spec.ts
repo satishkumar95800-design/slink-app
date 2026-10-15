@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { TimetableService } from './timetable.service';
 
 describe('TimetableService period timings', () => {
@@ -8,6 +8,12 @@ describe('TimetableService period timings', () => {
       createMany: jest.fn(),
       findMany: jest.fn().mockResolvedValue([]),
     },
+    classPeriodTiming: {
+      deleteMany: jest.fn(),
+      createMany: jest.fn(),
+      findMany: jest.fn().mockResolvedValue([]),
+    },
+    class: { count: jest.fn() },
     $transaction: jest.fn((ops: unknown[]) => Promise.all(ops)),
   };
   const service = new TimetableService(prisma as never);
@@ -67,5 +73,47 @@ describe('TimetableService period timings', () => {
       service.replacePeriodTimings('tenant-a', periods),
     ).rejects.toThrow(message);
     expect(prisma.periodTiming.deleteMany).not.toHaveBeenCalled();
+  });
+
+  describe('class schedules', () => {
+    const periods = [{ periodNumber: 1, startTime: '08:30', endTime: '09:10' }];
+
+    it('gives every chosen class the same schedule, replacing their old one', async () => {
+      prisma.class.count.mockResolvedValue(2);
+      await service.replaceClassPeriodTimings(
+        'tenant-a',
+        ['c1', 'c2', 'c1'],
+        periods,
+      );
+      expect(prisma.classPeriodTiming.deleteMany).toHaveBeenCalledWith({
+        where: { tenantId: 'tenant-a', classId: { in: ['c1', 'c2'] } },
+      });
+      expect(prisma.classPeriodTiming.createMany).toHaveBeenCalledWith({
+        data: [
+          { tenantId: 'tenant-a', classId: 'c1', ...periods[0] },
+          { tenantId: 'tenant-a', classId: 'c2', ...periods[0] },
+        ],
+      });
+      expect(prisma.periodTiming.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('rejects a class from another school', async () => {
+      prisma.class.count.mockResolvedValue(1);
+      await expect(
+        service.replaceClassPeriodTimings('tenant-a', ['c1', 'c9'], periods),
+      ).rejects.toThrow(NotFoundException);
+      expect(prisma.classPeriodTiming.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('validates class schedules like the school one', async () => {
+      prisma.class.count.mockResolvedValue(1);
+      await expect(
+        service.replaceClassPeriodTimings(
+          'tenant-a',
+          ['c1'],
+          [{ periodNumber: 1, startTime: '10:00', endTime: '09:00' }],
+        ),
+      ).rejects.toThrow(/end after it starts/);
+    });
   });
 });

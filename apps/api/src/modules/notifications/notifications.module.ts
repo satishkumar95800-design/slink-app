@@ -9,6 +9,6 @@ import { FilesModule } from '../files/files.module';
   imports: [FilesModule],
   controllers: [NotificationsController],
   providers: [NotificationsService, FcmService, SmsService],
-  exports: [NotificationsService],
+  exports: [NotificationsService, FcmService],
 })
 export class NotificationsModule {}

@@ -1,7 +1,9 @@
 import {
   ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
   IsInt,
+  IsUUID,
   Matches,
   Max,
   Min,
@@ -31,4 +33,16 @@ export class ReplacePeriodTimingsDto {
   @ValidateNested({ each: true })
   @Type(() => PeriodTimingDto)
   periods: PeriodTimingDto[];
+}
+
+/**
+ * One bell schedule for the chosen classes, replacing whatever they had.
+ * Empty periods puts those classes back on the school's schedule.
+ */
+export class ReplaceClassPeriodTimingsDto extends ReplacePeriodTimingsDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(200)
+  @IsUUID('all', { each: true })
+  classIds: string[];
 }

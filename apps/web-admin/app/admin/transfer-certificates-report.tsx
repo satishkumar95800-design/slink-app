@@ -3,11 +3,11 @@
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { api } from '../../../lib/api-client';
-import { useErrorText } from '../../../lib/i18n/errors';
-import { formatDateOnly } from '../../../lib/format';
-import { Select } from '../../../components/ui/select';
-import { Spinner } from '../../../components/ui/spinner';
+import { api } from '../../lib/api-client';
+import { useErrorText } from '../../lib/i18n/errors';
+import { formatDateOnly } from '../../lib/format';
+import { Select } from '../../components/ui/select';
+import { Spinner } from '../../components/ui/spinner';
 
 interface ClassOption {
   id: string;
@@ -31,7 +31,10 @@ interface Result {
 
 const className = (c: ClassOption | null) => (c ? [c.name, c.section].filter(Boolean).join(' ') : '—');
 
-/** "Which students have no TC on file?" — schools with features.transferCertificate only. */
+/**
+ * "Which students have no TC on file?" — schools with features.transferCertificate only.
+ * Shown in the dashboard's side panel, which carries the title.
+ */
 export function TransferCertificateReport() {
   const t = useTranslations('transferCertificate');
   const errorText = useErrorText();
@@ -62,12 +65,10 @@ export function TransferCertificateReport() {
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
-      <div className="flex flex-wrap items-end justify-between gap-3 border-b px-6 py-4">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b px-5 py-4">
         <div>
-          <h2 className="text-sm font-semibold text-gray-900">{t('reportTitle')}</h2>
-          <p className="mt-0.5 text-xs text-gray-500">{t('reportHelp')}</p>
           {result && (
-            <p className="mt-2 text-sm">
+            <p className="text-sm">
               <span className="font-semibold text-coral-dark">{t('missingCount', { count: result.counts.missing })}</span>
               <span className="mx-2 text-gray-300">{'|'}</span>
               <span className="text-gray-600">{t('attachedCount', { count: result.counts.attached })}</span>
@@ -105,13 +106,13 @@ export function TransferCertificateReport() {
       ) : !result || result.data.length === 0 ? (
         <p className="px-6 py-8 text-center text-sm text-gray-500">{t('empty')}</p>
       ) : (
-        <div className="max-h-96 overflow-auto">
+        <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-100">
             <thead className="sticky top-0 bg-cream">
               <tr>
                 {[t('colStudent'), t('colAdmissionNo'), t('colClass'), ...(status === 'attached' ? [t('colUploaded')] : [])].map(
                   (h) => (
-                    <th key={h} className="px-6 py-2 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
+                    <th key={h} className="px-5 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
                       {h}
                     </th>
                   ),
@@ -121,15 +122,15 @@ export function TransferCertificateReport() {
             <tbody className="divide-y divide-gray-100">
               {result.data.map((s) => (
                 <tr key={s.id}>
-                  <td className="px-6 py-2 text-sm">
+                  <td className="px-5 py-2.5 text-sm">
                     <Link href={`/admin/students/${s.id}`} className="text-teal hover:underline">
                       {s.name}
                     </Link>
                   </td>
-                  <td className="px-6 py-2 font-mono text-sm text-gray-700">{s.admissionNo}</td>
-                  <td className="px-6 py-2 text-sm text-gray-600">{className(s.class)}</td>
+                  <td className="px-5 py-2.5 font-mono text-sm text-gray-700">{s.admissionNo}</td>
+                  <td className="px-5 py-2.5 text-sm text-gray-600">{className(s.class)}</td>
                   {status === 'attached' && (
-                    <td className="px-6 py-2 text-sm text-gray-600">
+                    <td className="px-5 py-2.5 text-sm text-gray-600">
                       {s.tcUploadedAt ? formatDateOnly(s.tcUploadedAt) : '—'}
                     </td>
                   )}

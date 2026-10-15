@@ -1034,4 +1034,28 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get authTagline =>
       'Fees, homework, attendance and reports — all in one app.';
+
+  @override
+  String get classReminderTitle => 'कक्षा रिमाइंडर';
+
+  @override
+  String get classReminderChoose => 'हर कक्षा से पहले याद दिलाएँ';
+
+  @override
+  String get classReminderOff => 'बंद';
+
+  @override
+  String classReminderMinutes(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'कक्षा से $minutes मिनट पहले',
+      one: 'कक्षा से 1 मिनट पहले',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get classReminderSaveFailed =>
+      'रिमाइंडर सहेजा नहीं जा सका। फिर से कोशिश करें।';
 }

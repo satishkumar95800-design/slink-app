@@ -6,6 +6,7 @@ import {
   ArrowUpRight,
   BadgeCheck,
   BadgePercent,
+  FileX2,
   CalendarDays,
   ChartPie,
   ClipboardCheck,
@@ -29,6 +30,7 @@ import { useErrorText } from '../../lib/i18n/errors';
 import { reportTypeLabel } from '../../lib/i18n/labels';
 import { useTenantFeatures } from '../../lib/tenant-features';
 import { NotifyClassesForm } from './notify-classes';
+import { TransferCertificateReport } from './transfer-certificates-report';
 import { AttendanceSplit, ChartCard, FeeDonut, HBarChart, Ring, TrendChart } from './dashboard-charts';
 
 interface Stats {
@@ -109,7 +111,7 @@ function readView(): DashboardView {
   }
 }
 
-type PanelKey = 'notify' | 'attendance' | 'workload' | 'forecast' | 'payments' | 'routine' | 'classes';
+type PanelKey = 'notify' | 'attendance' | 'workload' | 'forecast' | 'payments' | 'routine' | 'classes' | 'tc';
 
 /** Colours per section: icon square, and the soft glow in the card's corner. */
 const ACCENTS = {
@@ -120,6 +122,7 @@ const ACCENTS = {
   amber: { chip: 'bg-amber-100 text-amber-700', glow: 'from-amber-200/60' },
   sky: { chip: 'bg-sky-100 text-sky-700', glow: 'from-sky-200/60' },
   indigo: { chip: 'bg-indigo-100 text-indigo-700', glow: 'from-indigo-200/60' },
+  rose: { chip: 'bg-rose-100 text-rose-700', glow: 'from-rose-200/60' },
 } as const;
 type Accent = keyof typeof ACCENTS;
 
@@ -248,6 +251,7 @@ export default function DashboardPage() {
   const tCommon = useTranslations('common');
   const tNotify = useTranslations('notifyClasses');
   const tConcession = useTranslations('concession');
+  const tTc = useTranslations('transferCertificate');
   const locale = useLocale();
   const errorText = useErrorText();
   const [stats, setStats] = useState<Partial<Stats>>({});
@@ -265,7 +269,9 @@ export default function DashboardPage() {
   const isTeacher = session?.role === 'teacher';
   const isAdmin = session?.role === 'admin';
   const isAccounts = session?.role === 'accounts';
-  const { feeConcession } = useTenantFeatures();
+  const { feeConcession, transferCertificate } = useTenantFeatures();
+  // Students without a TC on file — schools with features.transferCertificate only.
+  const [tc, setTc] = useState<{ missing: number; attached: number } | null | undefined>(undefined);
   const [concessionToday, setConcessionToday] = useState<{ total: number; count: number } | null>(null);
 
   useEffect(() => {
@@ -353,6 +359,14 @@ export default function DashboardPage() {
         // Non-critical widget — fail silently, keep the rest of the dashboard usable.
       });
   }, [feeConcession, isAdmin, isAccounts]);
+
+  useEffect(() => {
+    if (!transferCertificate || !(isAdmin || isAccounts)) return;
+    api
+      .get<{ counts: { missing: number; attached: number } }>('/transfer-certificates?status=missing&limit=1')
+      .then((r) => setTc(r.counts))
+      .catch(() => setTc(null));
+  }, [transferCertificate, isAdmin, isAccounts]);
 
   useEffect(() => {
     if (isTeacher) return;
@@ -545,6 +559,35 @@ export default function DashboardPage() {
                 />
               </ChartCard>
             )}
+            {transferCertificate && tc && (
+              <ChartCard
+                title={tTc('reportTitle')}
+                subtitle={tTc('reportHelp')}
+                icon={<FileX2 className="h-5 w-5" />}
+                accent={ACCENTS.rose.chip}
+                onOpen={() => setPanel('tc')}
+              >
+                <div className="flex flex-col items-center gap-6 sm:flex-row">
+                  <Ring
+                    pct={tc.attached + tc.missing > 0 ? Math.round((tc.attached / (tc.attached + tc.missing)) * 100) : 0}
+                    trackClass="stroke-rose-100"
+                    barClass="stroke-emerald-500"
+                    size="h-32 w-32"
+                    center={
+                      <span className="text-2xl font-extrabold text-gray-900">
+                        {t('attendancePct', {
+                          pct: tc.attached + tc.missing > 0 ? Math.round((tc.attached / (tc.attached + tc.missing)) * 100) : 0,
+                        })}
+                      </span>
+                    }
+                  />
+                  <div className="space-y-2 text-sm">
+                    <p className="font-semibold text-rose-700">{tTc('missingCount', { count: tc.missing })}</p>
+                    <p className="text-gray-600">{tTc('attachedCount', { count: tc.attached })}</p>
+                  </div>
+                </div>
+              </ChartCard>
+            )}
           </div>
         </section>
       )}
@@ -611,6 +654,17 @@ export default function DashboardPage() {
               caption={recent[0] ? t('latestPayment', { student: recent[0].studentName, date: formatDateOnly(recent[0].paidOn) }) : t('noPayments')}
               accent="amber"
               onClick={() => setPanel('payments')}
+            />
+          )}
+          {transferCertificate && !isTeacher && tc !== null && (
+            <FeatureCard
+              icon={<FileX2 className="h-5 w-5" />}
+              title={tTc('reportTitle')}
+              value={tc ? tTc('missingCount', { count: tc.missing }) : undefined}
+              caption={tc ? tTc('attachedCount', { count: tc.attached }) : undefined}
+              accent="rose"
+              loading={tc === undefined}
+              onClick={() => setPanel('tc')}
             />
           )}
           {isTeacher && (
@@ -686,6 +740,19 @@ export default function DashboardPage() {
           accent={ACCENTS.teal.chip}
         >
           <ForecastPanel forecast={forecast} />
+        </Drawer>
+      )}
+
+      {transferCertificate && !isTeacher && (
+        <Drawer
+          open={panel === 'tc'}
+          onClose={close}
+          title={tTc('reportTitle')}
+          subtitle={tTc('reportHelp')}
+          icon={<FileX2 className="h-5 w-5" />}
+          accent={ACCENTS.rose.chip}
+        >
+          <TransferCertificateReport />
         </Drawer>
       )}
 

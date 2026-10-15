@@ -1034,4 +1034,28 @@ class AppLocalizationsKn extends AppLocalizations {
   @override
   String get authTagline =>
       'Fees, homework, attendance and reports — all in one app.';
+
+  @override
+  String get classReminderTitle => 'ತರಗತಿ ಜ್ಞಾಪನೆ';
+
+  @override
+  String get classReminderChoose => 'ಪ್ರತಿ ತರಗತಿಗೆ ಮೊದಲು ನೆನಪಿಸಿ';
+
+  @override
+  String get classReminderOff => 'ಆಫ್';
+
+  @override
+  String classReminderMinutes(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'ತರಗತಿಗೆ $minutes ನಿಮಿಷ ಮೊದಲು',
+      one: 'ತರಗತಿಗೆ 1 ನಿಮಿಷ ಮೊದಲು',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get classReminderSaveFailed =>
+      'ಜ್ಞಾಪನೆ ಉಳಿಸಲಾಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
 }

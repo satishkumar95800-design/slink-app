@@ -59,6 +59,9 @@ type EditFormData = z.infer<Schemas['edit']>;
 type ResetPasswordFormData = z.infer<Schemas['resetPassword']>;
 
 const STAFF_ROLES = ['teacher', 'admin', 'accounts'] as const;
+/** Role filter on the list: everyone, or one role. */
+const FILTER_ROLES = ['parent', 'teacher', 'admin', 'accounts'] as const;
+const PAGE_SIZE = 50;
 
 // The role field can only ever change between these three — parent (and any
 // platform role like developer/super_admin) isn't reassignable from this form.
@@ -94,6 +97,12 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [resettingUser, setResettingUser] = useState<User | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState<(typeof FILTER_ROLES)[number] | ''>('');
+  const [page, setPage] = useState(1);
+  const filtered = search !== '' || roleFilter !== '';
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const {
     register,
@@ -123,7 +132,10 @@ export default function UsersPage() {
   async function fetchUsers() {
     try {
       setLoading(true);
-      const res = await api.get<{ data: User[]; meta: { total: number } }>('/users?limit=50');
+      const params = new URLSearchParams({ limit: String(PAGE_SIZE), page: String(page) });
+      if (search) params.set('search', search);
+      if (roleFilter) params.set('role', roleFilter);
+      const res = await api.get<{ data: User[]; meta: { total: number } }>(`/users?${params}`);
       setUsers(res.data);
       setTotal(res.meta.total);
       setError(null);
@@ -136,7 +148,19 @@ export default function UsersPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, roleFilter, page]);
+
+  // Search as you type, once typing pauses.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      const next = searchInput.trim();
+      if (next === search) return;
+      setSearch(next);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(id);
+  }, [searchInput, search]);
 
   async function onSubmit(data: FormData) {
     try {
@@ -208,8 +232,50 @@ export default function UsersPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-gray-500">{t('count', { count: total })}</p>
-        {isAdmin && <Button onClick={() => setShowModal(true)}>{t('add')}</Button>}
+        <div className="relative w-full sm:w-80">
+          <svg
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" />
+          </svg>
+          <input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder={t('searchPlaceholder')}
+            aria-label={t('searchPlaceholder')}
+            className="w-full rounded-full border border-gray-300 bg-white py-2 pl-9 pr-4 text-sm shadow-sm outline-none transition focus:border-coral focus:ring-2 focus:ring-coral/30"
+          />
+        </div>
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-gray-500">{t('count', { count: total })}</p>
+          {isAdmin && <Button onClick={() => setShowModal(true)}>{t('add')}</Button>}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2" role="group" aria-label={t('colRole')}>
+        {(['', ...FILTER_ROLES] as const).map((r) => {
+          const on = roleFilter === r;
+          return (
+            <button
+              key={r || 'all'}
+              type="button"
+              aria-pressed={on}
+              onClick={() => {
+                setRoleFilter(r);
+                setPage(1);
+              }}
+              className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                on ? 'border-teal bg-teal text-white' : 'border-gray-300 bg-white text-gray-600 hover:border-teal'
+              }`}
+            >
+              {r ? tRoles(r) : tCommon('all')}
+            </button>
+          );
+        })}
       </div>
 
       {loading ? (
@@ -218,6 +284,10 @@ export default function UsersPage() {
         </div>
       ) : error ? (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
+      ) : users.length === 0 && filtered ? (
+        <p className="rounded-2xl border border-gray-100 bg-white px-6 py-10 text-center text-sm text-gray-500 shadow-sm">
+          {t('noMatches')}
+        </p>
       ) : users.length === 0 ? (
         <EmptyState
           title={t('emptyTitle')}
@@ -283,6 +353,18 @@ export default function UsersPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {!loading && !error && totalPages > 1 && (
+        <div className="flex items-center justify-between gap-3">
+          <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+            {tCommon('previous')}
+          </Button>
+          <span className="text-sm text-gray-500">{tCommon('pageOf', { page, total: totalPages })}</span>
+          <Button variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+            {tCommon('next')}
+          </Button>
         </div>
       )}
 

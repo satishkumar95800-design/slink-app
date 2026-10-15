@@ -658,5 +658,17 @@
   "reportTeacherRemark": "Teacher's remark",
   "reportOpenPdf": "Open report card",
   "reportPdfFailed": "Could not open the report card.",
-  "authTagline": "Fees, homework, attendance and reports — all in one app."
+  "authTagline": "Fees, homework, attendance and reports — all in one app.",
+  "classReminderTitle": "Class reminder",
+  "classReminderChoose": "Remind me before each class",
+  "classReminderOff": "Off",
+  "classReminderMinutes": "{minutes, plural, =1{1 minute before class} other{{minutes} minutes before class}}",
+  "@classReminderMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "classReminderSaveFailed": "Could not save the reminder. Try again."
 }

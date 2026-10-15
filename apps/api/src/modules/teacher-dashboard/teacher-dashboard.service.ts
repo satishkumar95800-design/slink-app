@@ -3,6 +3,7 @@ import { Gender, ReportType, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BroadcastsService } from '../broadcasts/broadcasts.service';
 import { toDbDate, todayIn } from '../attendance/attendance-dates';
+import { loadPeriodSchedule } from '../timetable/period-schedule';
 
 const WEEKDAY_NUMBER: Record<string, number> = {
   Mon: 1,
@@ -63,22 +64,18 @@ export class TeacherDashboardService {
       };
     }
 
-    const [slots, timings] = await Promise.all([
-      this.prisma.timetableSlot.findMany({
-        where: { tenantId, teacherId, dayOfWeek: weekday },
-        select: {
-          periodNumber: true,
-          class: { select: { id: true, name: true, section: true } },
-          subject: { select: { name: true } },
-        },
-        orderBy: { periodNumber: 'asc' },
-      }),
-      this.prisma.periodTiming.findMany({
-        where: { tenantId },
-        select: { periodNumber: true, startTime: true, endTime: true },
-      }),
+    const slots = await this.prisma.timetableSlot.findMany({
+      where: { tenantId, teacherId, dayOfWeek: weekday },
+      select: {
+        periodNumber: true,
+        class: { select: { id: true, name: true, section: true } },
+        subject: { select: { name: true } },
+      },
+      orderBy: { periodNumber: 'asc' },
+    });
+    const schedule = await loadPeriodSchedule(this.prisma, tenantId, [
+      ...new Set(slots.map((s) => s.class.id)),
     ]);
-    const timingByPeriod = new Map(timings.map((t) => [t.periodNumber, t]));
 
     return {
       date,
@@ -86,11 +83,12 @@ export class TeacherDashboardService {
       nowTime,
       offDay: false,
       holiday: null,
-      timingsConfigured: timings.length > 0,
+      timingsConfigured: schedule.configured,
       periods: slots.map((s) => ({
         periodNumber: s.periodNumber,
-        startTime: timingByPeriod.get(s.periodNumber)?.startTime ?? null,
-        endTime: timingByPeriod.get(s.periodNumber)?.endTime ?? null,
+        startTime:
+          schedule.timeFor(s.class.id, s.periodNumber)?.startTime ?? null,
+        endTime: schedule.timeFor(s.class.id, s.periodNumber)?.endTime ?? null,
         class: s.class,
         subject: s.subject.name,
       })),

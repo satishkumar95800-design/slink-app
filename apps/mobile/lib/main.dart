@@ -119,6 +119,8 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
         return (route: '/dashboard/fees', extra: null);
       case 'dashboard':
         return (route: '/dashboard', extra: null);
+      case 'class_reminder':
+        return (route: '/dashboard/routine', extra: null);
     }
 
     if (feeId != null && feeId is String && feeId.isNotEmpty) {

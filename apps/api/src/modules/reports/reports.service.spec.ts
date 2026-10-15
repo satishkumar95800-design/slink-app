@@ -179,6 +179,20 @@ describe('ReportsService', () => {
       const result = await service.findAll('tenant-uuid', teacherUser, {});
       expect(result.data).toHaveLength(1);
     });
+
+    it("never lets a teacher's class filter reach another class", async () => {
+      mockPrisma.class.findMany.mockResolvedValue([{ id: 'class-uuid' }]);
+      mockPrisma.$transaction.mockResolvedValue([[], 0]);
+      mockPrisma.report.findMany.mockClear();
+      await service.findAll('tenant-uuid', teacherUser, {
+        classId: 'other-class',
+      });
+      expect(mockPrisma.report.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ classId: { in: [] } }),
+        }),
+      );
+    });
   });
 
   // ── findOne ─────────────────────────────────────────────────────────────────
