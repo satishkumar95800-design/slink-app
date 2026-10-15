@@ -17,6 +17,9 @@ import { TenantId } from '../../common/decorators/tenant.decorator';
 import { ImportsService } from './imports.service';
 import { TemplateGeneratorService } from './template-generator.service';
 import type { ActiveUser } from '../../common/types/active-user.type';
+import { ImportCleanupService } from './import-cleanup.service';
+import { PrismaService } from '../../prisma/prisma.service';
+import { assertFeatureEnabled } from '../../common/tenant-features';
 import type { Express, Response } from 'express';
 
 const XLSX_MIME_TYPE =
@@ -33,6 +36,8 @@ export class ImportsController {
   constructor(
     private readonly importsService: ImportsService,
     private readonly templateGenerator: TemplateGeneratorService,
+    private readonly cleanup: ImportCleanupService,
+    private readonly prisma: PrismaService,
   ) {}
 
   /** Downloads a ready-to-fill .xlsx template with all 5 tabs, headers, and one example row each. */
@@ -55,6 +60,20 @@ export class ImportsController {
   @UseInterceptors(uploadInterceptor)
   async validate(@UploadedFile() file: Express.Multer.File) {
     return this.importsService.validate(this.requireXlsx(file));
+  }
+
+  /**
+   * Premium (docs/SPEC-ai.md 3.3): returns a cleaned copy of the file (base64)
+   * and the list of changes. Nothing is written; the client validates the copy.
+   */
+  @Post('fix')
+  @UseInterceptors(uploadInterceptor)
+  async fix(
+    @UploadedFile() file: Express.Multer.File,
+    @TenantId() tenantId: string,
+  ) {
+    await assertFeatureEnabled(this.prisma, tenantId, 'aiInsights');
+    return this.cleanup.fix(tenantId, this.requireXlsx(file));
   }
 
   /**

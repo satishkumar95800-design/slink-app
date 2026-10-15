@@ -1146,4 +1146,90 @@ class AppLocalizationsKn extends AppLocalizations {
   String insightReasonComplaints(int count, int days) {
     return 'ಕಳೆದ $days ದಿನಗಳಲ್ಲಿ $count ದೂರುಗಳು';
   }
+
+  @override
+  String get askTitle => 'ಶಾಲಾ ಆ್ಯಪ್‌ಗೆ ಕೇಳಿ';
+
+  @override
+  String get askTile => 'ಕೇಳಿ';
+
+  @override
+  String get askIntro =>
+      'ಹಾಜರಾತಿ, ಶುಲ್ಕ, ಮನೆಗೆಲಸ ಅಥವಾ ಸೂಚನೆಗಳ ಬಗ್ಗೆ ಕೇಳಿ — English, ಕನ್ನಡ ಅಥವಾ हिन्दी ಯಲ್ಲಿ.';
+
+  @override
+  String get askPlaceholder => 'ನಿಮ್ಮ ಪ್ರಶ್ನೆ ಬರೆಯಿರಿ…';
+
+  @override
+  String get askSend => 'ಕೇಳಿ';
+
+  @override
+  String get askThinking => 'ಹುಡುಕಲಾಗುತ್ತಿದೆ…';
+
+  @override
+  String get askFootnote => 'ಉತ್ತರಗಳು ಶಾಲೆಯ ದಾಖಲೆಗಳಿಂದ ಬರುತ್ತವೆ.';
+
+  @override
+  String get askExampleAttendance => 'ಈ ವಾರ ನನ್ನ ಮಗು ಹಾಜರಿತ್ತೇ?';
+
+  @override
+  String get askExampleFees => 'ಎಷ್ಟು ಶುಲ್ಕ ಬಾಕಿ ಇದೆ?';
+
+  @override
+  String get askExampleHomework => 'ಈ ವಾರ ಮನೆಗೆಲಸ ಇದೆಯೇ?';
+
+  @override
+  String get askExampleNotices => 'ಶಾಲೆಯಿಂದ ಏನಾದರೂ ಸೂಚನೆ ಇದೆಯೇ?';
+
+  @override
+  String askChildAttendance(
+      String name, int present, int marked, int pct, String from, String to) {
+    return '$name: $marked ದಿನಗಳಲ್ಲಿ $present ದಿನ ಹಾಜರು ($pct%), $from ರಿಂದ $to';
+  }
+
+  @override
+  String askChildFees(String name, String amount) {
+    return '$name: $amount ಬಾಕಿ';
+  }
+
+  @override
+  String askChildNoFees(String name) {
+    return '$name ಅವರಿಗೆ ಯಾವುದೇ ಶುಲ್ಕ ಬಾಕಿ ಇಲ್ಲ.';
+  }
+
+  @override
+  String askChildHomework(String name, int count, int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ಕಳೆದ $days ದಿನಗಳಲ್ಲಿ $name ಗೆ $count ಮನೆಗೆಲಸ',
+      one: 'ಕಳೆದ $days ದಿನಗಳಲ್ಲಿ $name ಗೆ 1 ಮನೆಗೆಲಸ',
+      zero: 'ಕಳೆದ $days ದಿನಗಳಲ್ಲಿ $name ಗೆ ಮನೆಗೆಲಸ ಇಲ್ಲ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String askRecentNotices(int count, int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ಕಳೆದ $days ದಿನಗಳಲ್ಲಿ $count ಸೂಚನೆಗಳು',
+      one: 'ಕಳೆದ $days ದಿನಗಳಲ್ಲಿ 1 ಸೂಚನೆ',
+      zero: 'ಕಳೆದ $days ದಿನಗಳಲ್ಲಿ ಸೂಚನೆಗಳಿಲ್ಲ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String askWhichChild(String names) {
+    return 'ಯಾವ ಮಗು? $names';
+  }
+
+  @override
+  String get askCantAnswer => 'ಇದಕ್ಕೆ ಸದ್ಯಕ್ಕೆ ಉತ್ತರಿಸಲಾಗದು.';
+
+  @override
+  String get askCantAnswerHelp =>
+      'ಹಾಜರಾತಿ, ಬಾಕಿ ಶುಲ್ಕ, ಮನೆಗೆಲಸ ಮತ್ತು ಸೂಚನೆಗಳ ಬಗ್ಗೆ ಹೇಳಬಲ್ಲೆ.';
 }

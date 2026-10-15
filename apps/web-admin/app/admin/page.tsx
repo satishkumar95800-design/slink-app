@@ -33,6 +33,7 @@ import { useTenantFeatures } from '../../lib/tenant-features';
 import { NotifyClassesForm } from './notify-classes';
 import { TransferCertificateReport } from './transfer-certificates-report';
 import { AlertReason, AlertsBanner, AlertsList, useAlerts } from './alerts-panel';
+import { AskBox, AssistantThread } from './assistant-panel';
 import { AttendanceSplit, ChartCard, FeeDonut, HBarChart, Ring, TrendChart } from './dashboard-charts';
 
 interface Stats {
@@ -113,7 +114,7 @@ function readView(): DashboardView {
   }
 }
 
-type PanelKey = 'notify' | 'attendance' | 'workload' | 'forecast' | 'payments' | 'routine' | 'classes' | 'tc' | 'insights';
+type PanelKey = 'notify' | 'attendance' | 'workload' | 'forecast' | 'payments' | 'routine' | 'classes' | 'tc' | 'insights' | 'ask';
 
 /** Colours per section: icon square, and the soft glow in the card's corner. */
 const ACCENTS = {
@@ -255,6 +256,7 @@ export default function DashboardPage() {
   const tConcession = useTranslations('concession');
   const tTc = useTranslations('transferCertificate');
   const tAlerts = useTranslations('alerts');
+  const tAssistant = useTranslations('assistant');
   const locale = useLocale();
   const errorText = useErrorText();
   const [stats, setStats] = useState<Partial<Stats>>({});
@@ -275,6 +277,9 @@ export default function DashboardPage() {
   const { feeConcession, transferCertificate, aiInsights } = useTenantFeatures();
   // Premium pattern warnings (docs/SPEC-ai.md phase 2) and the Monday summary.
   const { alerts, setAlerts } = useAlerts(!!aiInsights);
+  // Premium: plain-language questions (docs/SPEC-ai.md 3.1); the first one comes from the header box.
+  const [question, setQuestion] = useState<string | null>(null);
+  const canAsk = !!aiInsights && (isAdmin || isAccounts);
   const [summary, setSummary] = useState<{ reasons: AlertReason[]; createdAt: string } | null>(null);
   // Students without a TC on file — schools with features.transferCertificate only.
   const [tc, setTc] = useState<{ missing: number; attached: number } | null | undefined>(undefined);
@@ -430,6 +435,16 @@ export default function DashboardPage() {
         greeting={t(greetingKey, { name: firstName })}
         subtitle={t('heroSubtitle')}
         date={`${weekdayName(today, locale)} · ${formatDate(new Date())}`}
+        ask={
+          canAsk ? (
+            <AskBox
+              onAsk={(q) => {
+                setQuestion(q);
+                setPanel('ask');
+              }}
+            />
+          ) : undefined
+        }
         action={
           // In card view the notification card is the action; charts view has no card for it.
           isAdmin && showCharts ? (
@@ -761,6 +776,28 @@ export default function DashboardPage() {
         </Drawer>
       )}
 
+      {canAsk && panel === 'ask' && (
+        <Drawer
+          open
+          onClose={() => {
+            close();
+            setQuestion(null);
+          }}
+          title={tAssistant('title')}
+          subtitle={tAssistant('subtitle')}
+          icon={<Sparkles className="h-5 w-5" />}
+          accent="bg-violet-100 text-violet-700"
+        >
+          <AssistantThread
+            key={question ?? 'blank'}
+            first={question}
+            examples={(isAdmin ? ['ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6'] as const : ['ex4', 'ex5', 'ex6'] as const).map((k) =>
+              tAssistant(k),
+            )}
+          />
+        </Drawer>
+      )}
+
       {alerts && (
         <Drawer
           open={panel === 'insights'}
@@ -826,7 +863,19 @@ export default function DashboardPage() {
   );
 }
 
-function Hero({ greeting, subtitle, date, action }: { greeting: string; subtitle: string; date: string; action?: ReactNode }) {
+function Hero({
+  greeting,
+  subtitle,
+  date,
+  action,
+  ask,
+}: {
+  greeting: string;
+  subtitle: string;
+  date: string;
+  action?: ReactNode;
+  ask?: ReactNode;
+}) {
   return (
     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal via-teal-light to-[#21605b] px-6 py-7 text-white shadow-lg shadow-teal/10 sm:px-8">
       <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-coral/30 blur-3xl" />
@@ -834,6 +883,7 @@ function Hero({ greeting, subtitle, date, action }: { greeting: string; subtitle
       <p className="relative text-xs font-semibold uppercase tracking-widest text-white/60">{date}</p>
       <h2 className="relative mt-2 text-2xl font-extrabold tracking-tight sm:text-3xl">{greeting}</h2>
       <p className="relative mt-1 text-sm text-white/75">{subtitle}</p>
+      {ask && <div className="relative mt-5">{ask}</div>}
       {action && <div className="relative mt-5">{action}</div>}
     </div>
   );

@@ -71,14 +71,26 @@ interface ImportWorkflowProps {
    * (the admin console case) — pass it explicitly from the platform console, where
    * a super_admin is acting on a tenant other than the one they belong to. */
   tenantOverride?: string;
+  /** Premium: offer "Fix with AI" (docs/SPEC-ai.md 3.3). */
+  aiFix?: boolean;
 }
+
+/** One change the clean-up made (from POST /imports/fix). */
+type CleanupChange =
+  | { kind: 'renamed_tab'; from: string; to: string }
+  | { kind: 'renamed_column'; tab: string; from: string; to: string; byAi: boolean }
+  | { kind: 'fixed_name_case'; tab: string; column: string; count: number; example: string }
+  | { kind: 'trimmed_spaces'; tab: string; count: number }
+  | { kind: 'class_name'; tab: string; from: string; to: string; count: number };
+
+const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 /** True when the server actually answered (a real problem with the file), not a network failure. */
 function isServerError(err: unknown): err is ApiError {
   return err instanceof ApiError && err.code !== 'NETWORK_ERROR';
 }
 
-export function ImportWorkflow({ tenantOverride }: ImportWorkflowProps) {
+export function ImportWorkflow({ tenantOverride, aiFix }: ImportWorkflowProps) {
   const t = useTranslations('import');
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -99,6 +111,9 @@ export function ImportWorkflow({ tenantOverride }: ImportWorkflowProps) {
   // with the file. Rendered separately so we never blame the file for a server/network
   // problem, which just sends someone down the wrong troubleshooting path.
   const [networkError, setNetworkError] = useState<string | null>(null);
+  const [fixing, setFixing] = useState(false);
+  const [fixChanges, setFixChanges] = useState<CleanupChange[] | null>(null);
+  const [fixedUrl, setFixedUrl] = useState<string | null>(null);
 
   const UNREACHABLE_MESSAGE = t('unreachable');
   const UNREACHABLE_DETAIL = t('unreachableDetail');
@@ -128,15 +143,38 @@ export function ImportWorkflow({ tenantOverride }: ImportWorkflowProps) {
     setStructuralError(null);
     setNetworkError(null);
     setFile(e.target.files?.[0] ?? null);
+    setFixChanges(null);
   }
 
-  async function handleValidate() {
+  /** Premium: clean the file, show what changed, then validate the cleaned copy. */
+  async function handleFix() {
     if (!file) return;
+    setFixing(true);
+    try {
+      const res = await apiUpload<{ file: string; changes: CleanupChange[] }>('/imports/fix', file, undefined, tenantOverride);
+      const bytes = Uint8Array.from(atob(res.file), (c) => c.charCodeAt(0));
+      const cleaned = new File([bytes], file.name.replace(/\.xlsx$/i, '') + '-cleaned.xlsx', { type: XLSX_TYPE });
+      if (fixedUrl) URL.revokeObjectURL(fixedUrl);
+      setFixedUrl(URL.createObjectURL(cleaned));
+      setFixChanges(res.changes);
+      setFile(cleaned);
+      setReport(null);
+      await handleValidate(cleaned);
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : t('fixFailed'), 'error');
+    } finally {
+      setFixing(false);
+    }
+  }
+
+  async function handleValidate(override?: File) {
+    const target = override ?? file;
+    if (!target) return;
     setStage('validating');
     setStructuralError(null);
     setNetworkError(null);
     try {
-      const result = await apiUpload<ValidationReport>('/imports/validate', file, undefined, tenantOverride);
+      const result = await apiUpload<ValidationReport>('/imports/validate', target, undefined, tenantOverride);
       setReport(result);
       setStage('validated');
     } catch (err) {
@@ -226,6 +264,20 @@ export function ImportWorkflow({ tenantOverride }: ImportWorkflowProps) {
         <StructuralErrorBanner message={structuralError} />
       )}
 
+      {fixChanges && <FixSummary changes={fixChanges} downloadUrl={fixedUrl} fileName={file?.name ?? ''} />}
+
+      {aiFix &&
+        file &&
+        !fixChanges &&
+        (structuralError || (stage === 'validated' && report && (report.totalErrors > 0 || report.totalWarnings > 0))) && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-violet-200 bg-violet-50 p-4">
+            <p className="text-sm text-violet-900">{t('fixOffer')}</p>
+            <Button onClick={handleFix} loading={fixing}>
+              {t('fixWithAi')}
+            </Button>
+          </div>
+        )}
+
       {(stage === 'idle' || stage === 'validating') && (
         <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
           <label className="mb-2 block text-sm font-medium text-gray-700">{t('workbook')}</label>
@@ -237,7 +289,7 @@ export function ImportWorkflow({ tenantOverride }: ImportWorkflowProps) {
             className="block w-full text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-teal/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-teal hover:file:bg-teal/20"
           />
           <div className="mt-4 flex justify-end">
-            <Button onClick={handleValidate} disabled={!file} loading={stage === 'validating'}>
+            <Button onClick={() => void handleValidate()} disabled={!file} loading={stage === 'validating'}>
               {t('validate')}
             </Button>
           </div>
@@ -297,6 +349,45 @@ const MISSING_COLUMNS_PATTERN = /^Tab "([^"]+)" is missing required column\(s\):
  * message. Parsed into a checklist when it matches the known "missing column(s)"
  * shape from workbook-parser.service.ts; otherwise shown verbatim.
  */
+/** What "Fix with AI" changed, and the cleaned file to keep. */
+function FixSummary({ changes, downloadUrl, fileName }: { changes: CleanupChange[]; downloadUrl: string | null; fileName: string }) {
+  const t = useTranslations('import');
+  const line = (c: CleanupChange) => {
+    switch (c.kind) {
+      case 'renamed_tab':
+        return t('fixRenamedTab', { from: c.from, to: c.to });
+      case 'renamed_column':
+        return t(c.byAi ? 'fixRenamedColumnAi' : 'fixRenamedColumn', { tab: c.tab, from: c.from, to: c.to });
+      case 'fixed_name_case':
+        return t('fixNameCase', { tab: c.tab, column: c.column, count: c.count, example: c.example });
+      case 'trimmed_spaces':
+        return t('fixTrimmed', { tab: c.tab, count: c.count });
+      case 'class_name':
+        return t('fixClassName', { tab: c.tab, from: c.from, to: c.to, count: c.count });
+    }
+  };
+  return (
+    <div className="rounded-2xl border border-violet-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-bold text-gray-900">{changes.length ? t('fixedTitle', { count: changes.length }) : t('fixNothing')}</p>
+        {downloadUrl && changes.length > 0 && (
+          <a href={downloadUrl} download={fileName} className="text-sm font-semibold text-teal hover:underline">
+            {t('downloadCleaned')}
+          </a>
+        )}
+      </div>
+      {changes.length > 0 && (
+        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-gray-700">
+          {changes.map((c, i) => (
+            <li key={i}>{line(c)}</li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-3 text-xs text-gray-500">{t('fixNote')}</p>
+    </div>
+  );
+}
+
 function StructuralErrorBanner({ message }: { message: string }) {
   const t = useTranslations('import');
   const match = message.match(MISSING_COLUMNS_PATTERN);

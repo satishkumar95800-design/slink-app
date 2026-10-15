@@ -17,6 +17,7 @@ import { FeesModule } from './modules/fees/fees.module';
 import { PaymentGatewayModule } from './modules/payment-gateway/payment-gateway.module';
 import { AiModule } from './modules/ai/ai.module';
 import { AlertsModule } from './modules/alerts/alerts.module';
+import { AssistantModule } from './modules/assistant/assistant.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -62,6 +63,7 @@ import { ClassRemindersModule } from './modules/class-reminders/class-reminders.
     PaymentGatewayModule,
     AiModule,
     AlertsModule,
+    AssistantModule,
     HealthModule,
     AuthModule,
     StudentsModule,

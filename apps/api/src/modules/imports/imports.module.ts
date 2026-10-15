@@ -5,6 +5,7 @@ import { ImportsService } from './imports.service';
 import { ImportsProcessor } from './imports.processor';
 import { WorkbookParserService } from './workbook-parser.service';
 import { TemplateGeneratorService } from './template-generator.service';
+import { ImportCleanupService } from './import-cleanup.service';
 
 @Module({
   imports: [BullModule.registerQueue({ name: 'imports' })],
@@ -14,6 +15,7 @@ import { TemplateGeneratorService } from './template-generator.service';
     ImportsProcessor,
     WorkbookParserService,
     TemplateGeneratorService,
+    ImportCleanupService,
   ],
 })
 export class ImportsModule {}

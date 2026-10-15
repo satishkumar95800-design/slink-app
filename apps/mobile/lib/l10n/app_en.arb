@@ -747,5 +747,93 @@
         "type": "int"
       }
     }
-  }
+  },
+  "askTitle": "Ask the school app",
+  "askTile": "Ask",
+  "askIntro": "Ask about attendance, fees, homework or notices — in English, ಕನ್ನಡ or हिन्दी.",
+  "askPlaceholder": "Type your question…",
+  "askSend": "Ask",
+  "askThinking": "Looking it up…",
+  "askFootnote": "Answers come from the school's records.",
+  "askExampleAttendance": "Was my child present this week?",
+  "askExampleFees": "How much fee is due?",
+  "askExampleHomework": "Any homework this week?",
+  "askExampleNotices": "Any notices from school?",
+  "askChildAttendance": "{name}: present {present} of {marked} days ({pct}%), {from} to {to}",
+  "@askChildAttendance": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "present": {
+        "type": "int"
+      },
+      "marked": {
+        "type": "int"
+      },
+      "pct": {
+        "type": "int"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "askChildFees": "{name}: {amount} due",
+  "@askChildFees": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "askChildNoFees": "{name} has no fees due.",
+  "@askChildNoFees": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "askChildHomework": "{count, plural, =0{No homework for {name} in the last {days} days} =1{1 homework for {name} in the last {days} days} other{{count} homework for {name} in the last {days} days}}",
+  "@askChildHomework": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "askRecentNotices": "{count, plural, =0{No notices in the last {days} days} =1{1 notice in the last {days} days} other{{count} notices in the last {days} days}}",
+  "@askRecentNotices": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "askWhichChild": "Which child? {names}",
+  "@askWhichChild": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "askCantAnswer": "I can't answer that one yet.",
+  "askCantAnswerHelp": "I can tell you about attendance, fees due, homework and notices."
 }

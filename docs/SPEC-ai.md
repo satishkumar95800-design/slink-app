@@ -67,8 +67,8 @@ Prerequisite for good mark trends: structured marks entry (subject, max, scored,
 | 2.1 Student at risk, 2.2 attendance patterns, 2.3 late-fee risk + expected collections, 2.4 parent drifting, 2.5 money anomalies, 2.6 teacher overload | done (rules, nightly, `/alerts`); console banner + panel for all roles; teacher app list |
 | 2.x mark-trend warnings | needs structured marks entry first |
 | 2.3 learned (non-rule) fee model | after a term of payment history |
-| 3.1 Admin questions in plain language | planned |
-| 3.2 Parent assistant | planned |
-| 3.3 Import clean-up | planned |
+| 3.1 Admin/accounts questions in plain language (`POST /assistant/ask`; console header box + panel) | done — the model only picks one of 7 read-only queries and its arguments; answers are built from data and rendered in the user's language; no student data sent to the model |
+| 3.2 Parent assistant (teacher-free; 4 queries over the parent's own children; app "Ask" tile) | done — asks "which child?" when it isn't clear |
+| 3.3 Import clean-up (`POST /imports/fix`; "Fix with AI" on the import page) | done — tabs/columns renamed (exact/alias, AI for the rest from header names only), spaces trimmed, ALL-CAPS names fixed, class-name variants matched to existing classes |
 
 Server settings: `SARVAM_API_KEY` and/or `ANTHROPIC_API_KEY` (generative features need at least one; screenshots need Anthropic), optional `AI_PROVIDER`, `SARVAM_MODEL`, `AI_MONTHLY_TOKEN_LIMIT`, `AI_MODEL_FAST`, `AI_MODEL_SMART`, `ALERTS_DISABLED`.

@@ -13,6 +13,7 @@ import '../dashboard/home_header.dart';
 import '../dashboard/students_repository.dart';
 import 'parent_home_models.dart';
 import 'parent_home_repository.dart';
+import '../../shared/services/ai_repository.dart';
 
 const _overlap = 36.0;
 
@@ -91,6 +92,14 @@ class _ParentHomeBodyState extends ConsumerState<ParentHomeBody> {
                   const SizedBox(height: 24),
                   SectionHeader(title: l.homeQuickAccess),
                   FeatureGrid(tiles: [
+                    // Premium: ask in plain language (docs/SPEC-ai.md 3.2).
+                    if (ref.watch(aiAvailableProvider).valueOrNull ?? false)
+                      FeatureTile(
+                        icon: Icons.auto_awesome_rounded,
+                        label: l.askTile,
+                        color: FeatureColors.reports,
+                        onTap: () => context.push('/ask'),
+                      ),
                     FeatureTile(
                       icon: Icons.account_balance_wallet_rounded,
                       label: l.menuFees,

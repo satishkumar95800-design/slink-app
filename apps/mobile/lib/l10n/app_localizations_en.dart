@@ -1143,4 +1143,90 @@ class AppLocalizationsEn extends AppLocalizations {
   String insightReasonComplaints(int count, int days) {
     return '$count complaints in the last $days days';
   }
+
+  @override
+  String get askTitle => 'Ask the school app';
+
+  @override
+  String get askTile => 'Ask';
+
+  @override
+  String get askIntro =>
+      'Ask about attendance, fees, homework or notices — in English, ಕನ್ನಡ or हिन्दी.';
+
+  @override
+  String get askPlaceholder => 'Type your question…';
+
+  @override
+  String get askSend => 'Ask';
+
+  @override
+  String get askThinking => 'Looking it up…';
+
+  @override
+  String get askFootnote => 'Answers come from the school\'s records.';
+
+  @override
+  String get askExampleAttendance => 'Was my child present this week?';
+
+  @override
+  String get askExampleFees => 'How much fee is due?';
+
+  @override
+  String get askExampleHomework => 'Any homework this week?';
+
+  @override
+  String get askExampleNotices => 'Any notices from school?';
+
+  @override
+  String askChildAttendance(
+      String name, int present, int marked, int pct, String from, String to) {
+    return '$name: present $present of $marked days ($pct%), $from to $to';
+  }
+
+  @override
+  String askChildFees(String name, String amount) {
+    return '$name: $amount due';
+  }
+
+  @override
+  String askChildNoFees(String name) {
+    return '$name has no fees due.';
+  }
+
+  @override
+  String askChildHomework(String name, int count, int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count homework for $name in the last $days days',
+      one: '1 homework for $name in the last $days days',
+      zero: 'No homework for $name in the last $days days',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String askRecentNotices(int count, int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count notices in the last $days days',
+      one: '1 notice in the last $days days',
+      zero: 'No notices in the last $days days',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String askWhichChild(String names) {
+    return 'Which child? $names';
+  }
+
+  @override
+  String get askCantAnswer => 'I can\'t answer that one yet.';
+
+  @override
+  String get askCantAnswerHelp =>
+      'I can tell you about attendance, fees due, homework and notices.';
 }

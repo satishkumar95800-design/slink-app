@@ -27,7 +27,7 @@ export class AiController {
 
   /** Whether this school's AI features can run right now (for showing AI buttons). */
   @Get('status')
-  @Roles(Role.admin, Role.accounts, Role.teacher)
+  @Roles(Role.admin, Role.accounts, Role.teacher, Role.parent)
   async status(@TenantId() tenantId: string) {
     return { available: await this.ai.isAvailable(tenantId) };
   }

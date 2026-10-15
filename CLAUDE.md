@@ -93,6 +93,7 @@ pnpm db:generate   # regenerates the Prisma client
 | class-reminders | done | Teacher "next class" push 1–5 min before each period (in-process, once per slot per day) |
 | payment-gateway | done | Per-school Razorpay keys, encrypted (platform console) |
 | ai | done | Premium (`aiInsights`): Claude client with per-school cap + usage log, notice translation, report remark drafts — docs/SPEC-ai.md |
+| assistant | done | Premium plain-language questions: the model picks one fixed read-only query (staff: attendance, absentees, fees, collections, strength, workload; parents: own child's attendance, fees, homework, notices) — docs/SPEC-ai.md |
 | alerts | done | Premium pattern warnings (attendance, risk, fees, money anomalies, workload) + Monday summary, nightly — docs/SPEC-ai.md |
 
 ## Tech decisions (do not revisit without discussion)

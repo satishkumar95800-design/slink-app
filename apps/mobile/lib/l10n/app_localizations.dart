@@ -2043,6 +2043,121 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} complaints in the last {days} days'**
   String insightReasonComplaints(int count, int days);
+
+  /// No description provided for @askTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask the school app'**
+  String get askTitle;
+
+  /// No description provided for @askTile.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask'**
+  String get askTile;
+
+  /// No description provided for @askIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about attendance, fees, homework or notices — in English, ಕನ್ನಡ or हिन्दी.'**
+  String get askIntro;
+
+  /// No description provided for @askPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your question…'**
+  String get askPlaceholder;
+
+  /// No description provided for @askSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask'**
+  String get askSend;
+
+  /// No description provided for @askThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking it up…'**
+  String get askThinking;
+
+  /// No description provided for @askFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Answers come from the school\'s records.'**
+  String get askFootnote;
+
+  /// No description provided for @askExampleAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'Was my child present this week?'**
+  String get askExampleAttendance;
+
+  /// No description provided for @askExampleFees.
+  ///
+  /// In en, this message translates to:
+  /// **'How much fee is due?'**
+  String get askExampleFees;
+
+  /// No description provided for @askExampleHomework.
+  ///
+  /// In en, this message translates to:
+  /// **'Any homework this week?'**
+  String get askExampleHomework;
+
+  /// No description provided for @askExampleNotices.
+  ///
+  /// In en, this message translates to:
+  /// **'Any notices from school?'**
+  String get askExampleNotices;
+
+  /// No description provided for @askChildAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: present {present} of {marked} days ({pct}%), {from} to {to}'**
+  String askChildAttendance(
+      String name, int present, int marked, int pct, String from, String to);
+
+  /// No description provided for @askChildFees.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: {amount} due'**
+  String askChildFees(String name, String amount);
+
+  /// No description provided for @askChildNoFees.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} has no fees due.'**
+  String askChildNoFees(String name);
+
+  /// No description provided for @askChildHomework.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No homework for {name} in the last {days} days} =1{1 homework for {name} in the last {days} days} other{{count} homework for {name} in the last {days} days}}'**
+  String askChildHomework(String name, int count, int days);
+
+  /// No description provided for @askRecentNotices.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No notices in the last {days} days} =1{1 notice in the last {days} days} other{{count} notices in the last {days} days}}'**
+  String askRecentNotices(int count, int days);
+
+  /// No description provided for @askWhichChild.
+  ///
+  /// In en, this message translates to:
+  /// **'Which child? {names}'**
+  String askWhichChild(String names);
+
+  /// No description provided for @askCantAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'I can\'t answer that one yet.'**
+  String get askCantAnswer;
+
+  /// No description provided for @askCantAnswerHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'I can tell you about attendance, fees due, homework and notices.'**
+  String get askCantAnswerHelp;
 }
 
 class _AppLocalizationsDelegate
