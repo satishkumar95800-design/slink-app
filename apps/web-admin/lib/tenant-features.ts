@@ -7,6 +7,7 @@ import { api } from './api-client';
 export interface TenantFeatures {
   transferCertificate?: boolean;
   feeConcession?: boolean;
+  aiInsights?: boolean;
 }
 
 // Keyed by school so signing in to another school in the same tab refetches.

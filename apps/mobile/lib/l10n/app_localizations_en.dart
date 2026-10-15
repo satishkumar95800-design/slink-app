@@ -1058,4 +1058,89 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get classReminderSaveFailed =>
       'Could not save the reminder. Try again.';
+
+  @override
+  String get uploadRemarkLabel => 'Teacher\'s remark (optional)';
+
+  @override
+  String get uploadRemarkHint => 'Parents see this with the report card';
+
+  @override
+  String get uploadRemarkHintAi =>
+      'A few points (e.g. good at maths, should read more), or leave blank';
+
+  @override
+  String get aiDraftWithAi => 'Draft with AI';
+
+  @override
+  String get aiDrafting => 'Drafting…';
+
+  @override
+  String get aiPickStudentFirst => 'Choose the student first.';
+
+  @override
+  String get aiUnavailable =>
+      'The AI assistant isn\'t available right now. Please write it yourself or try again later.';
+
+  @override
+  String get insightsTitle => 'Insights';
+
+  @override
+  String get insightsExplainer =>
+      'Patterns from attendance and notes, refreshed every morning. Suggestions only — dismiss once handled.';
+
+  @override
+  String get insightsEmpty => 'Nothing needs attention right now.';
+
+  @override
+  String get insightsCouldNotLoad =>
+      'Could not load insights. Pull down to retry.';
+
+  @override
+  String get insightsDismiss => 'Dismiss';
+
+  @override
+  String get insightKindAbsenceStreak => 'Absent several days in a row';
+
+  @override
+  String get insightKindWeekdayAbsence => 'Absent on the same weekday';
+
+  @override
+  String get insightKindAttendanceDrop => 'Attendance falling';
+
+  @override
+  String get insightKindParentDisengaged => 'Parent not reading notices';
+
+  @override
+  String get insightKindStudentAtRisk => 'May need support';
+
+  @override
+  String insightReasonAbsentInARow(int days) {
+    return '$days school days absent in a row';
+  }
+
+  @override
+  String insightReasonSameWeekday(int count, int total, String weekday) {
+    return '$count of $total absences were on a $weekday';
+  }
+
+  @override
+  String insightReasonAttendanceFell(int before, int now) {
+    return 'Attendance fell from $before% to $now%';
+  }
+
+  @override
+  String insightReasonParentNotReading(int unread) {
+    return 'Parent hasn\'t opened the last $unread notices';
+  }
+
+  @override
+  String insightReasonLowAttendance(int pct) {
+    return 'Attendance $pct% recently';
+  }
+
+  @override
+  String insightReasonComplaints(int count, int days) {
+    return '$count complaints in the last $days days';
+  }
 }

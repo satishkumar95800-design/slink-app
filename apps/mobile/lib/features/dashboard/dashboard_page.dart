@@ -14,6 +14,7 @@ import '../home/parent_home_body.dart';
 import '../../core/l10n/l10n.dart';
 import '../attendance/attendance_outbox.dart';
 import '../attendance/attendance_repository.dart';
+import '../../shared/services/ai_repository.dart';
 
 const _overlap = 36.0;
 
@@ -88,6 +89,7 @@ class _TeacherDashboardBody extends ConsumerWidget {
     final classesAsync = ref.watch(myClassesProvider);
     final isClassTeacherOfAny = classesAsync.valueOrNull?.any((c) => c.isClassTeacherFor(user.id)) ?? false;
     final hasAnyClass = classesAsync.valueOrNull?.isNotEmpty ?? false;
+    final aiAvailable = ref.watch(aiAvailableProvider).valueOrNull ?? false;
     final l = context.l10n;
 
     return RefreshIndicator(
@@ -112,6 +114,14 @@ class _TeacherDashboardBody extends ConsumerWidget {
                 children: [
                   const _MarkAttendanceCard(),
                   FeatureGrid(tiles: [
+                    // Premium: pattern warnings for the teacher's own students.
+                    if (aiAvailable)
+                      FeatureTile(
+                        icon: Icons.auto_awesome_rounded,
+                        label: l.insightsTitle,
+                        color: FeatureColors.reports,
+                        onTap: () => context.push('/dashboard/insights'),
+                      ),
                     if (hasAnyClass)
                       FeatureTile(
                         icon: Icons.photo_camera_rounded,

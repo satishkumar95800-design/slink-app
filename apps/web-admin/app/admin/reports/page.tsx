@@ -15,6 +15,8 @@ import { Modal } from '../../../components/ui/modal';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
+import { useTenantFeatures } from '../../../lib/tenant-features';
+import { Sparkles } from 'lucide-react';
 
 type ReportStatus = 'draft' | 'published';
 
@@ -283,6 +285,29 @@ function UploadReportCardModal({ onClose, onUploaded }: { onClose: () => void; o
   const [file, setFile] = useState<File | null>(null);
   const [publishNow, setPublishNow] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [remark, setRemark] = useState('');
+  const [drafting, setDrafting] = useState(false);
+  const { aiInsights } = useTenantFeatures();
+
+  /** Premium: the AI drafts from the child's record, building on what's typed. */
+  async function draftRemark() {
+    if (!studentId) {
+      toast(t('pickStudentFirst'), 'error');
+      return;
+    }
+    setDrafting(true);
+    try {
+      const res = await api.post<{ remark: string }>('/ai/report-remark', {
+        studentId,
+        points: remark.trim() || undefined,
+      });
+      setRemark(res.remark);
+    } catch (e) {
+      toast(errorText(e), 'error');
+    } finally {
+      setDrafting(false);
+    }
+  }
 
   useEffect(() => {
     async function fetchStudents() {
@@ -313,7 +338,7 @@ function UploadReportCardModal({ onClose, onUploaded }: { onClose: () => void; o
         type: 'report_card',
         term,
         academicYear,
-        content: {},
+        content: remark.trim() ? { remark: remark.trim() } : {},
       });
       const uploaded = await apiUpload<{ key: string }>('/files/upload', file, {
         category: 'report_pdf',
@@ -357,6 +382,34 @@ function UploadReportCardModal({ onClose, onUploaded }: { onClose: () => void; o
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="text-sm"
           />
+        </div>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between gap-2">
+            <label htmlFor="report-remark" className="text-sm font-medium text-gray-700">
+              {t('remark')}
+            </label>
+            {aiInsights && (
+              <button
+                type="button"
+                onClick={draftRemark}
+                disabled={drafting}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100 disabled:opacity-60"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                {drafting ? t('drafting') : t('draftWithAi')}
+              </button>
+            )}
+          </div>
+          <textarea
+            id="report-remark"
+            rows={4}
+            maxLength={1000}
+            value={remark}
+            onChange={(e) => setRemark(e.target.value)}
+            placeholder={aiInsights ? t('remarkPlaceholderAi') : t('remarkPlaceholder')}
+            className="w-full rounded-xl border border-gray-300 px-3.5 py-2.5 text-sm shadow-sm outline-none transition focus:border-coral focus:ring-2 focus:ring-coral/30"
+          />
+          {aiInsights && <p className="text-xs text-gray-500">{t('remarkAiHint')}</p>}
         </div>
         <label className="flex items-center gap-2 text-sm text-gray-700">
           <input type="checkbox" checked={publishNow} onChange={(e) => setPublishNow(e.target.checked)} />

@@ -20,6 +20,7 @@ import { CreatePaymentClaimDto } from './dto/create-payment-claim.dto';
 import { ApprovePaymentClaimDto } from './dto/approve-payment-claim.dto';
 import { RejectPaymentClaimDto } from './dto/reject-payment-claim.dto';
 import { OFFLINE_PAYMENT_METHODS } from '../fees/dto/record-offline-payment.dto';
+import { PaymentClaimCheckService } from './payment-claim-check.service';
 
 type OfflinePaymentMethod = (typeof OFFLINE_PAYMENT_METHODS)[number];
 
@@ -48,6 +49,7 @@ export class PaymentClaimsService {
     private readonly studentFeesService: StudentFeesService,
     private readonly notifications: NotificationsService,
     private readonly files: FilesService,
+    private readonly proofCheck: PaymentClaimCheckService,
   ) {}
 
   /**
@@ -68,7 +70,7 @@ export class PaymentClaimsService {
     if (!link)
       throw new ForbiddenException('You do not have access to this fee');
 
-    return this.prisma.paymentClaim.create({
+    const claim = await this.prisma.paymentClaim.create({
       data: {
         tenantId,
         studentId: fee.studentId,
@@ -82,6 +84,9 @@ export class PaymentClaimsService {
       },
       include: claimInclude,
     });
+    // Premium: read the proof in the background; the parent doesn't wait for it.
+    void this.proofCheck.run(tenantId, claim.id);
+    return claim;
   }
 
   async findMine(tenantId: string, parentId: string) {
@@ -94,11 +99,53 @@ export class PaymentClaimsService {
 
   /** Accountant/admin review queue — defaults to the pending backlog. */
   async findAll(tenantId: string, status?: PaymentClaimStatus) {
-    return this.prisma.paymentClaim.findMany({
+    const claims = await this.prisma.paymentClaim.findMany({
       where: { tenantId, status: status ?? PaymentClaimStatus.pending },
       include: claimInclude,
       orderBy: { createdAt: 'asc' },
     });
+    return this.withChecks(tenantId, claims);
+  }
+
+  /** Runs (or re-runs) the AI proof check now and returns the claim with it. */
+  async recheck(tenantId: string, id: string) {
+    const claim = await this.prisma.paymentClaim.findUnique({
+      where: { id, tenantId },
+      include: claimInclude,
+    });
+    if (!claim) throw new NotFoundException('Payment claim not found');
+    await this.proofCheck.run(tenantId, id);
+    const [withCheck] = await this.withChecks(tenantId, [claim]);
+    return withCheck;
+  }
+
+  /**
+   * Attaches each claim's AI proof check (premium). Read separately so the
+   * review queue still loads if that table isn't there yet.
+   */
+  private async withChecks<T extends { id: string }>(
+    tenantId: string,
+    claims: T[],
+  ) {
+    let checks: { claimId: string }[] = [];
+    try {
+      checks = await this.prisma.paymentClaimCheck.findMany({
+        where: { tenantId, claimId: { in: claims.map((c) => c.id) } },
+        select: {
+          claimId: true,
+          status: true,
+          amount: true,
+          paidOn: true,
+          reference: true,
+          payee: true,
+          flags: true,
+        },
+      });
+    } catch {
+      // No checks to show.
+    }
+    const byClaim = new Map(checks.map((c) => [c.claimId, c]));
+    return claims.map((c) => ({ ...c, check: byClaim.get(c.id) ?? null }));
   }
 
   async getProofUrl(

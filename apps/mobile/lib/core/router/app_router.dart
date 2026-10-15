@@ -22,6 +22,7 @@ import '../../features/reports/report_detail_page.dart';
 import '../../features/reports/reports_list_page.dart';
 import '../../features/reports/upload_report_card_page.dart';
 import '../../features/timetable/weekly_routine_page.dart';
+import '../../features/insights/insights_page.dart';
 import '../../shared/services/secure_storage_service.dart';
 import '../../features/attendance/attendance_calendar_page.dart';
 import '../l10n/l10n.dart';
@@ -78,6 +79,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/dashboard/reports', builder: (_, __) => const ReportsListPage()),
       GoRoute(path: '/dashboard/notifications', builder: (_, __) => const NotificationHistoryPage()),
       GoRoute(path: '/dashboard/routine', builder: (_, __) => const WeeklyRoutinePage()),
+      GoRoute(path: '/dashboard/insights', builder: (_, __) => const InsightsPage()),
       GoRoute(path: '/dashboard/my-classes', builder: (_, __) => const MyClassesPage()),
       GoRoute(
         path: '/fees/:feeId/pay',

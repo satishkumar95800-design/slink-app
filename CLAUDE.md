@@ -90,6 +90,10 @@ pnpm db:generate   # regenerates the Prisma client
 | fee-reminders | done | Daily Bull job: fee-due pushes 3 days before and on the due date |
 | broadcasts | done | Notice/homework sent items, per-parent "seen" tracking, unseen-parent lists |
 | public-site | done | Marketing-site contact form (stored + SMTP email) and cookie-free daily event counts; Platform "Leads" views |
+| class-reminders | done | Teacher "next class" push 1–5 min before each period (in-process, once per slot per day) |
+| payment-gateway | done | Per-school Razorpay keys, encrypted (platform console) |
+| ai | done | Premium (`aiInsights`): Claude client with per-school cap + usage log, notice translation, report remark drafts — docs/SPEC-ai.md |
+| alerts | done | Premium pattern warnings (attendance, risk, fees, money anomalies, workload) + Monday summary, nightly — docs/SPEC-ai.md |
 
 ## Tech decisions (do not revisit without discussion)
 

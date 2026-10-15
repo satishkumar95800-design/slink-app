@@ -14,6 +14,8 @@ import { EmptyState } from '../../../components/ui/empty-state';
 import { Badge } from '../../../components/ui/badge';
 import { useToast } from '../../../components/ui/toast';
 import { formatDate, formatDateOnly, formatRupees } from '../../../lib/format';
+import { useTenantFeatures } from '../../../lib/tenant-features';
+import { ClaimCheck, ProofCheck } from './proof-check';
 
 type ClaimStatus = 'pending' | 'approved' | 'rejected';
 type ClaimMode = 'cash' | 'cheque' | 'bank_transfer' | 'upi';
@@ -32,6 +34,8 @@ interface PaymentClaim {
   studentFee: { id: string; amountDue: string; amountPaid: string; status: string };
   submitter: { id: string; name: string; phone: string | null };
   reviewer: { id: string; name: string } | null;
+  /** Premium AI read of the proof; absent without the module. */
+  check?: ClaimCheck | null;
 }
 
 const STATUS_VARIANT: Record<ClaimStatus, 'yellow' | 'green' | 'red'> = {
@@ -51,6 +55,7 @@ export default function PaymentClaimsPage() {
     { value: 'all', label: t('filterAll') },
   ];
   const { toast } = useToast();
+  const { aiInsights } = useTenantFeatures();
   const [statusFilter, setStatusFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
   const [claims, setClaims] = useState<PaymentClaim[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +99,8 @@ export default function PaymentClaimsPage() {
 
   function openApprove(claim: PaymentClaim) {
     setApproveTarget(claim);
-    setApproveAmount(claim.claimedAmount ?? '');
+    // No amount from the parent: start from what the AI read on the proof.
+    setApproveAmount(claim.claimedAmount ?? claim.check?.amount ?? '');
   }
 
   function closeApprove() {
@@ -229,6 +235,11 @@ export default function PaymentClaimsPage() {
                   {claim.reviewer && (
                     <p className="text-xs text-gray-400">{t('reviewedBy', { name: claim.reviewer.name })}</p>
                   )}
+                  <ProofCheck
+                    claim={claim}
+                    canRun={!!aiInsights && claim.status === 'pending'}
+                    onChecked={(updated) => setClaims((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))}
+                  />
                 </div>
                 <div className="flex flex-shrink-0 flex-col items-end gap-2">
                   <Button variant="secondary" size="sm" onClick={() => onViewProof(claim)}>

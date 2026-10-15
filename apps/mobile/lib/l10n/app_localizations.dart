@@ -1905,6 +1905,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not save the reminder. Try again.'**
   String get classReminderSaveFailed;
+
+  /// No description provided for @uploadRemarkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Teacher\'s remark (optional)'**
+  String get uploadRemarkLabel;
+
+  /// No description provided for @uploadRemarkHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Parents see this with the report card'**
+  String get uploadRemarkHint;
+
+  /// No description provided for @uploadRemarkHintAi.
+  ///
+  /// In en, this message translates to:
+  /// **'A few points (e.g. good at maths, should read more), or leave blank'**
+  String get uploadRemarkHintAi;
+
+  /// No description provided for @aiDraftWithAi.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft with AI'**
+  String get aiDraftWithAi;
+
+  /// No description provided for @aiDrafting.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafting…'**
+  String get aiDrafting;
+
+  /// No description provided for @aiPickStudentFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the student first.'**
+  String get aiPickStudentFirst;
+
+  /// No description provided for @aiUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The AI assistant isn\'t available right now. Please write it yourself or try again later.'**
+  String get aiUnavailable;
+
+  /// No description provided for @insightsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Insights'**
+  String get insightsTitle;
+
+  /// No description provided for @insightsExplainer.
+  ///
+  /// In en, this message translates to:
+  /// **'Patterns from attendance and notes, refreshed every morning. Suggestions only — dismiss once handled.'**
+  String get insightsExplainer;
+
+  /// No description provided for @insightsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing needs attention right now.'**
+  String get insightsEmpty;
+
+  /// No description provided for @insightsCouldNotLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load insights. Pull down to retry.'**
+  String get insightsCouldNotLoad;
+
+  /// No description provided for @insightsDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get insightsDismiss;
+
+  /// No description provided for @insightKindAbsenceStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Absent several days in a row'**
+  String get insightKindAbsenceStreak;
+
+  /// No description provided for @insightKindWeekdayAbsence.
+  ///
+  /// In en, this message translates to:
+  /// **'Absent on the same weekday'**
+  String get insightKindWeekdayAbsence;
+
+  /// No description provided for @insightKindAttendanceDrop.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance falling'**
+  String get insightKindAttendanceDrop;
+
+  /// No description provided for @insightKindParentDisengaged.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent not reading notices'**
+  String get insightKindParentDisengaged;
+
+  /// No description provided for @insightKindStudentAtRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'May need support'**
+  String get insightKindStudentAtRisk;
+
+  /// No description provided for @insightReasonAbsentInARow.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} school days absent in a row'**
+  String insightReasonAbsentInARow(int days);
+
+  /// No description provided for @insightReasonSameWeekday.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {total} absences were on a {weekday}'**
+  String insightReasonSameWeekday(int count, int total, String weekday);
+
+  /// No description provided for @insightReasonAttendanceFell.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance fell from {before}% to {now}%'**
+  String insightReasonAttendanceFell(int before, int now);
+
+  /// No description provided for @insightReasonParentNotReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent hasn\'t opened the last {unread} notices'**
+  String insightReasonParentNotReading(int unread);
+
+  /// No description provided for @insightReasonLowAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance {pct}% recently'**
+  String insightReasonLowAttendance(int pct);
+
+  /// No description provided for @insightReasonComplaints.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} complaints in the last {days} days'**
+  String insightReasonComplaints(int count, int days);
 }
 
 class _AppLocalizationsDelegate

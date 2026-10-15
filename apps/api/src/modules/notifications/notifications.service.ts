@@ -24,6 +24,9 @@ import {
 } from './dto/broadcast-notification.dto';
 import { NotificationQueryDto } from './dto/notification-query.dto';
 import type { ActiveUser } from '../../common/types/active-user.type';
+import { TranslationService } from '../ai/translation.service';
+import { effectiveLanguage } from '../../common/i18n/languages';
+import type { Language } from '../../common/i18n/languages';
 
 /** Push notifications may sit unread in a device's tray a while — longer-lived than the files module's 15-min default */
 const ATTACHMENT_SIGNED_URL_TTL_SECONDS = 24 * 60 * 60;
@@ -82,6 +85,14 @@ export interface SendOptions {
   data?: Record<string, string>;
 }
 
+/** Recipient fields a broadcast needs, including language for translation. */
+const TARGET_USER_SELECT = {
+  id: true,
+  phone: true,
+  fcmTokens: true,
+  preferredLanguage: true,
+} as const;
+
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
@@ -91,6 +102,7 @@ export class NotificationsService {
     private readonly fcm: FcmService,
     private readonly sms: SmsService,
     private readonly files: FilesService,
+    private readonly translation: TranslationService,
   ) {}
 
   // ── FCM token management ────────────────────────────────────────────────────
@@ -181,7 +193,17 @@ export class NotificationsService {
     const data = this.resolveDataPayload(dto, plan, broadcast.id, signedUrls);
 
     if (dto.channel === NotificationChannel.fcm) {
-      await this.broadcastFcm(tenantId, users, dto, data, broadcast.id);
+      // Premium: each parent gets the notice in their own language; anything
+      // else (or any AI failure) sends the original text to everyone.
+      for (const group of await this.byLanguage(tenantId, users, dto)) {
+        await this.broadcastFcm(
+          tenantId,
+          group.users,
+          { ...dto, title: group.title ?? undefined, body: group.body },
+          data,
+          broadcast.id,
+        );
+      }
     } else {
       await this.broadcastSms(tenantId, users, dto, broadcast.id);
     }
@@ -406,7 +428,7 @@ export class NotificationsService {
         throw new NotFoundException('targetId is required for user target');
       const user = await this.prisma.user.findUnique({
         where: { id: dto.targetId, tenantId },
-        select: { id: true, phone: true, fcmTokens: true },
+        select: TARGET_USER_SELECT,
       });
       return user ? [user] : [];
     }
@@ -418,7 +440,7 @@ export class NotificationsService {
       const links = await this.prisma.studentParent.findMany({
         where: { student: { classId: dto.targetId, tenantId } },
         select: {
-          parent: { select: { id: true, phone: true, fcmTokens: true } },
+          parent: { select: TARGET_USER_SELECT },
         },
       });
       return deduplicateById(links.map((l) => l.parent));
@@ -427,7 +449,53 @@ export class NotificationsService {
     // all_parents in tenant
     return this.prisma.user.findMany({
       where: { tenantId, role: Role.parent },
-      select: { id: true, phone: true, fcmTokens: true },
+      select: TARGET_USER_SELECT,
+    });
+  }
+
+  /**
+   * Splits recipients by their language and translates the notice once for all
+   * of them (docs/SPEC-ai.md 1.1). Without the premium module, or if the model
+   * fails, it is one group with the original text.
+   */
+  private async byLanguage<
+    U extends {
+      id: string;
+      fcmTokens: string[];
+      preferredLanguage: string | null;
+    },
+  >(
+    tenantId: string,
+    users: U[],
+    dto: { title?: string; body: string },
+  ): Promise<{ users: U[]; title: string | null; body: string }[]> {
+    const original = [{ users, title: dto.title ?? null, body: dto.body }];
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { defaultLanguage: true },
+    });
+    const groups = new Map<Language, U[]>();
+    for (const u of users) {
+      const lang = effectiveLanguage(
+        u.preferredLanguage,
+        tenant?.defaultLanguage,
+      );
+      groups.set(lang, [...(groups.get(lang) ?? []), u]);
+    }
+    const translated = await this.translation.translateNotice(
+      tenantId,
+      { title: dto.title, body: dto.body },
+      [...groups.keys()],
+    );
+    if (!translated) return original;
+
+    return [...groups].map(([lang, members]) => {
+      const t = translated.get(lang);
+      return {
+        users: members,
+        title: t ? (t.title ?? null) : (dto.title ?? null),
+        body: t ? t.body : dto.body,
+      };
     });
   }
 

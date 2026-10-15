@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -37,6 +45,16 @@ export class PaymentClaimsController {
   @Roles(Role.admin, Role.accounts)
   findAll(@TenantId() tenantId: string, @Query() query: PaymentClaimQueryDto) {
     return this.paymentClaimsService.findAll(tenantId, query.status);
+  }
+
+  /** Premium: read the proof with AI now (e.g. for claims sent before it was on). */
+  @Post(':id/check')
+  @Roles(Role.admin, Role.accounts)
+  recheck(
+    @TenantId() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.paymentClaimsService.recheck(tenantId, id);
   }
 
   @Get(':id/proof-url')

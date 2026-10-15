@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PaymentClaimsService } from './payment-claims.service';
 import { PaymentClaimsController } from './payment-claims.controller';
+import { PaymentClaimCheckService } from './payment-claim-check.service';
 import { FeesModule } from '../fees/fees.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { FilesModule } from '../files/files.module';
@@ -8,6 +9,6 @@ import { FilesModule } from '../files/files.module';
 @Module({
   imports: [FeesModule, NotificationsModule, FilesModule],
   controllers: [PaymentClaimsController],
-  providers: [PaymentClaimsService],
+  providers: [PaymentClaimsService, PaymentClaimCheckService],
 })
 export class PaymentClaimsModule {}

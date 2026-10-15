@@ -37,6 +37,11 @@ const OPTIONAL_MODULES = [
     help: 'TC upload on the student page, and a "TC not attached" report.',
   },
   {
+    key: 'aiInsights',
+    name: 'AI features (premium)',
+    help: 'Notices translated into each parent’s language, report remark drafts, payment-proof reading, weekly summary and early warnings.',
+  },
+  {
     key: 'feeConcession',
     name: 'Fee concessions',
     help: "Percentage concession on a student's unpaid fees, and today's concession total on the dashboard.",

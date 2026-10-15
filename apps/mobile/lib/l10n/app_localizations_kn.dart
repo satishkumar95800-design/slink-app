@@ -1061,4 +1061,89 @@ class AppLocalizationsKn extends AppLocalizations {
   @override
   String get classReminderSaveFailed =>
       'ಜ್ಞಾಪನೆ ಉಳಿಸಲಾಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
+  String get uploadRemarkLabel => 'ಶಿಕ್ಷಕರ ಅಭಿಪ್ರಾಯ (ಐಚ್ಛಿಕ)';
+
+  @override
+  String get uploadRemarkHint => 'ಪ್ರಗತಿ ಪತ್ರದೊಂದಿಗೆ ಪೋಷಕರಿಗೆ ಕಾಣಿಸುತ್ತದೆ';
+
+  @override
+  String get uploadRemarkHintAi =>
+      'ಕೆಲವು ಅಂಶಗಳು (ಉದಾ. ಗಣಿತದಲ್ಲಿ ಉತ್ತಮ, ಹೆಚ್ಚು ಓದಬೇಕು), ಅಥವಾ ಖಾಲಿ ಬಿಡಿ';
+
+  @override
+  String get aiDraftWithAi => 'AI ಮೂಲಕ ಕರಡು';
+
+  @override
+  String get aiDrafting => 'ಕರಡು ರಚಿಸಲಾಗುತ್ತಿದೆ…';
+
+  @override
+  String get aiPickStudentFirst => 'ಮೊದಲು ವಿದ್ಯಾರ್ಥಿಯನ್ನು ಆಯ್ಕೆಮಾಡಿ.';
+
+  @override
+  String get aiUnavailable =>
+      'AI ಸಹಾಯಕ ಸದ್ಯಕ್ಕೆ ಲಭ್ಯವಿಲ್ಲ. ದಯವಿಟ್ಟು ನೀವೇ ಬರೆಯಿರಿ ಅಥವಾ ನಂತರ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
+  String get insightsTitle => 'ಒಳನೋಟಗಳು';
+
+  @override
+  String get insightsExplainer =>
+      'ಹಾಜರಾತಿ ಮತ್ತು ಟಿಪ್ಪಣಿಗಳಿಂದ ಕಂಡ ಮಾದರಿಗಳು, ಪ್ರತಿ ಬೆಳಿಗ್ಗೆ ನವೀಕರಣ. ಇವು ಸಲಹೆಗಳು ಮಾತ್ರ — ನಿಭಾಯಿಸಿದ ನಂತರ ತೆಗೆದುಹಾಕಿ.';
+
+  @override
+  String get insightsEmpty => 'ಸದ್ಯಕ್ಕೆ ಗಮನಿಸಬೇಕಾದದ್ದು ಏನೂ ಇಲ್ಲ.';
+
+  @override
+  String get insightsCouldNotLoad =>
+      'ಒಳನೋಟಗಳು ಲೋಡ್ ಆಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಲು ಕೆಳಗೆ ಎಳೆಯಿರಿ.';
+
+  @override
+  String get insightsDismiss => 'ತೆಗೆದುಹಾಕಿ';
+
+  @override
+  String get insightKindAbsenceStreak => 'ಸತತ ಹಲವು ದಿನ ಗೈರು';
+
+  @override
+  String get insightKindWeekdayAbsence => 'ಒಂದೇ ವಾರದ ದಿನ ಗೈರು';
+
+  @override
+  String get insightKindAttendanceDrop => 'ಹಾಜರಾತಿ ಕುಸಿಯುತ್ತಿದೆ';
+
+  @override
+  String get insightKindParentDisengaged => 'ಪೋಷಕರು ಸೂಚನೆಗಳನ್ನು ಓದುತ್ತಿಲ್ಲ';
+
+  @override
+  String get insightKindStudentAtRisk => 'ಬೆಂಬಲ ಬೇಕಾಗಬಹುದು';
+
+  @override
+  String insightReasonAbsentInARow(int days) {
+    return 'ಸತತ $days ಶಾಲಾ ದಿನ ಗೈರು';
+  }
+
+  @override
+  String insightReasonSameWeekday(int count, int total, String weekday) {
+    return '$total ಗೈರುಗಳಲ್ಲಿ $count $weekday ದಂದು';
+  }
+
+  @override
+  String insightReasonAttendanceFell(int before, int now) {
+    return 'ಹಾಜರಾತಿ $before% ರಿಂದ $now% ಗೆ ಇಳಿದಿದೆ';
+  }
+
+  @override
+  String insightReasonParentNotReading(int unread) {
+    return 'ಪೋಷಕರು ಕೊನೆಯ $unread ಸೂಚನೆಗಳನ್ನು ತೆರೆದಿಲ್ಲ';
+  }
+
+  @override
+  String insightReasonLowAttendance(int pct) {
+    return 'ಇತ್ತೀಚಿನ ಹಾಜರಾತಿ $pct%';
+  }
+
+  @override
+  String insightReasonComplaints(int count, int days) {
+    return 'ಕಳೆದ $days ದಿನಗಳಲ್ಲಿ $count ದೂರುಗಳು';
+  }
 }

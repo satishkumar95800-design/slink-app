@@ -39,13 +39,16 @@ class ReportsRepository {
     required String studentId,
     required String term,
     required String academicYear,
+    String? remark,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>('/reports', data: {
       'studentId': studentId,
       'type': 'report_card',
       'term': term,
       'academicYear': academicYear,
-      'content': <String, dynamic>{},
+      'content': <String, dynamic>{
+        if (remark != null && remark.trim().isNotEmpty) 'remark': remark.trim(),
+      },
     });
     return Report.fromJson(response.data!);
   }

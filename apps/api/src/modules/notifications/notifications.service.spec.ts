@@ -7,6 +7,7 @@ import { FcmService } from './fcm.service';
 import { SmsService } from './sms.service';
 import { FilesService } from '../files/files.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { TranslationService } from '../ai/translation.service';
 import { BroadcastTarget } from './dto/broadcast-notification.dto';
 import { planBroadcast } from './notifications.service';
 import type { ActiveUser } from '../../common/types/active-user.type';
@@ -42,6 +43,9 @@ const mockPrisma = {
     update: jest.fn(),
   },
   class: { findUnique: jest.fn() },
+  tenant: {
+    findUnique: jest.fn().mockResolvedValue({ defaultLanguage: 'en' }),
+  },
   studentParent: { findMany: jest.fn() },
   report: { createMany: jest.fn() },
   subject: { findFirst: jest.fn() },
@@ -72,6 +76,8 @@ const mockFiles = {
     .mockResolvedValue('https://signed.example.com/attachment.pdf'),
 };
 
+const mockTranslation = { translateNotice: jest.fn().mockResolvedValue(null) };
+
 describe('NotificationsService', () => {
   let service: NotificationsService;
 
@@ -83,6 +89,7 @@ describe('NotificationsService', () => {
         { provide: FcmService, useValue: mockFcm },
         { provide: SmsService, useValue: mockSms },
         { provide: FilesService, useValue: mockFiles },
+        { provide: TranslationService, useValue: mockTranslation },
       ],
     }).compile();
 
@@ -153,6 +160,74 @@ describe('NotificationsService', () => {
   });
 
   // ── broadcast ────────────────────────────────────────────────────────────────
+
+  describe('broadcast — translation (premium)', () => {
+    const parents = [
+      makeUser({ id: 'p-en', fcmTokens: ['t-en'], preferredLanguage: 'en' }),
+      makeUser({ id: 'p-kn', fcmTokens: ['t-kn'], preferredLanguage: 'kn' }),
+    ];
+    const dto = {
+      channel: NotificationChannel.fcm,
+      title: 'School closed',
+      body: 'School is closed tomorrow.',
+      targetType: BroadcastTarget.ALL_PARENTS,
+    };
+
+    beforeEach(() => {
+      mockPrisma.tenant.findUnique.mockResolvedValue({ defaultLanguage: 'en' });
+      mockPrisma.user.findMany.mockResolvedValue(parents);
+      mockPrisma.$transaction.mockImplementation((ops: unknown[]) =>
+        Promise.resolve(ops.map((_, i) => ({ id: `n${i}` }))),
+      );
+      mockPrisma.notification.update.mockResolvedValue({});
+    });
+
+    it("sends each language group the notice in that group's language", async () => {
+      mockTranslation.translateNotice.mockResolvedValueOnce(
+        new Map([
+          [
+            'en',
+            { title: 'School closed', body: 'School is closed tomorrow.' },
+          ],
+          ['kn', { title: 'ಶಾಲೆ ಮುಚ್ಚಿದೆ', body: 'ನಾಳೆ ಶಾಲೆ ಮುಚ್ಚಿರುತ್ತದೆ.' }],
+        ]),
+      );
+
+      await service.broadcast('tenant-uuid', dto as never, adminActor);
+
+      expect(mockTranslation.translateNotice).toHaveBeenCalledWith(
+        'tenant-uuid',
+        { title: 'School closed', body: 'School is closed tomorrow.' },
+        ['en', 'kn'],
+      );
+      expect(mockFcm.sendMulticast).toHaveBeenCalledWith(
+        ['t-kn'],
+        'ಶಾಲೆ ಮುಚ್ಚಿದೆ',
+        'ನಾಳೆ ಶಾಲೆ ಮುಚ್ಚಿರುತ್ತದೆ.',
+        expect.anything(),
+      );
+      expect(mockFcm.sendMulticast).toHaveBeenCalledWith(
+        ['t-en'],
+        'School closed',
+        'School is closed tomorrow.',
+        expect.anything(),
+      );
+    });
+
+    it('sends the original to everyone when translation is unavailable', async () => {
+      mockTranslation.translateNotice.mockResolvedValueOnce(null);
+
+      await service.broadcast('tenant-uuid', dto as never, adminActor);
+
+      expect(mockFcm.sendMulticast).toHaveBeenCalledTimes(1);
+      expect(mockFcm.sendMulticast).toHaveBeenCalledWith(
+        ['t-en', 't-kn'],
+        'School closed',
+        'School is closed tomorrow.',
+        expect.anything(),
+      );
+    });
+  });
 
   describe('broadcast — FCM to a specific user', () => {
     it('sends FCM and returns queued count', async () => {

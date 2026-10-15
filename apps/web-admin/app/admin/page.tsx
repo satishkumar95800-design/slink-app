@@ -7,6 +7,7 @@ import {
   BadgeCheck,
   BadgePercent,
   FileX2,
+  Sparkles,
   CalendarDays,
   ChartPie,
   ClipboardCheck,
@@ -31,6 +32,7 @@ import { reportTypeLabel } from '../../lib/i18n/labels';
 import { useTenantFeatures } from '../../lib/tenant-features';
 import { NotifyClassesForm } from './notify-classes';
 import { TransferCertificateReport } from './transfer-certificates-report';
+import { AlertReason, AlertsBanner, AlertsList, useAlerts } from './alerts-panel';
 import { AttendanceSplit, ChartCard, FeeDonut, HBarChart, Ring, TrendChart } from './dashboard-charts';
 
 interface Stats {
@@ -111,7 +113,7 @@ function readView(): DashboardView {
   }
 }
 
-type PanelKey = 'notify' | 'attendance' | 'workload' | 'forecast' | 'payments' | 'routine' | 'classes' | 'tc';
+type PanelKey = 'notify' | 'attendance' | 'workload' | 'forecast' | 'payments' | 'routine' | 'classes' | 'tc' | 'insights';
 
 /** Colours per section: icon square, and the soft glow in the card's corner. */
 const ACCENTS = {
@@ -252,6 +254,7 @@ export default function DashboardPage() {
   const tNotify = useTranslations('notifyClasses');
   const tConcession = useTranslations('concession');
   const tTc = useTranslations('transferCertificate');
+  const tAlerts = useTranslations('alerts');
   const locale = useLocale();
   const errorText = useErrorText();
   const [stats, setStats] = useState<Partial<Stats>>({});
@@ -269,7 +272,10 @@ export default function DashboardPage() {
   const isTeacher = session?.role === 'teacher';
   const isAdmin = session?.role === 'admin';
   const isAccounts = session?.role === 'accounts';
-  const { feeConcession, transferCertificate } = useTenantFeatures();
+  const { feeConcession, transferCertificate, aiInsights } = useTenantFeatures();
+  // Premium pattern warnings (docs/SPEC-ai.md phase 2) and the Monday summary.
+  const { alerts, setAlerts } = useAlerts(!!aiInsights);
+  const [summary, setSummary] = useState<{ reasons: AlertReason[]; createdAt: string } | null>(null);
   // Students without a TC on file — schools with features.transferCertificate only.
   const [tc, setTc] = useState<{ missing: number; attached: number } | null | undefined>(undefined);
   const [concessionToday, setConcessionToday] = useState<{ total: number; count: number } | null>(null);
@@ -361,6 +367,14 @@ export default function DashboardPage() {
   }, [feeConcession, isAdmin, isAccounts]);
 
   useEffect(() => {
+    if (!aiInsights || !isAdmin) return;
+    api
+      .get<{ summary: { reasons: AlertReason[]; createdAt: string } | null }>('/alerts/summary')
+      .then((r) => setSummary(r.summary))
+      .catch(() => setSummary(null));
+  }, [aiInsights, isAdmin]);
+
+  useEffect(() => {
     if (!transferCertificate || !(isAdmin || isAccounts)) return;
     api
       .get<{ counts: { missing: number; attached: number } }>('/transfer-certificates?status=missing&limit=1')
@@ -430,6 +444,10 @@ export default function DashboardPage() {
           ) : undefined
         }
       />
+
+      {alerts && (alerts.length > 0 || summary) && (
+        <AlertsBanner alerts={alerts} hasSummary={!!summary} onOpen={() => setPanel('insights')} />
+      )}
 
       {/* Addendum 4 / A10 — no fee-related widget may ever appear on the Teacher
           Dashboard, so the stat cards and payments below are admin/accounts only. */}
@@ -740,6 +758,19 @@ export default function DashboardPage() {
           accent={ACCENTS.teal.chip}
         >
           <ForecastPanel forecast={forecast} />
+        </Drawer>
+      )}
+
+      {alerts && (
+        <Drawer
+          open={panel === 'insights'}
+          onClose={close}
+          title={tAlerts('title')}
+          subtitle={tAlerts('subtitle')}
+          icon={<Sparkles className="h-5 w-5" />}
+          accent="bg-violet-100 text-violet-700"
+        >
+          <AlertsList alerts={alerts} onChange={setAlerts} canRun={isAdmin} summary={isAdmin ? summary : null} />
         </Drawer>
       )}
 

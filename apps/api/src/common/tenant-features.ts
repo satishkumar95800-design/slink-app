@@ -6,7 +6,8 @@ import type { PrismaService } from '../prisma/prisma.service';
  * off, so new flags never need a data migration. Only the platform
  * (super_admin) can switch these, via PATCH /tenants/:id/features.
  */
-export type OptionalFeature = 'transferCertificate' | 'feeConcession';
+export type OptionalFeature =
+  'transferCertificate' | 'feeConcession' | 'aiInsights';
 
 export async function isFeatureEnabled(
   prisma: PrismaService,

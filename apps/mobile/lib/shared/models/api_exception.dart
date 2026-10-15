@@ -67,6 +67,7 @@ String? translateErrorCode(String? code) {
     'PHONE_NOT_REGISTERED' => l.errorPhoneNotRegistered,
     'SCHOOL_NOT_FOUND' => l.errorSchoolNotFound,
     'PAYMENTS_NOT_CONFIGURED' => l.checkoutNotSetUp,
+    'AI_UNAVAILABLE' => l.aiUnavailable,
     _ => null,
   };
 }

@@ -670,5 +670,82 @@
       }
     }
   },
-  "classReminderSaveFailed": "Could not save the reminder. Try again."
+  "classReminderSaveFailed": "Could not save the reminder. Try again.",
+  "uploadRemarkLabel": "Teacher's remark (optional)",
+  "uploadRemarkHint": "Parents see this with the report card",
+  "uploadRemarkHintAi": "A few points (e.g. good at maths, should read more), or leave blank",
+  "aiDraftWithAi": "Draft with AI",
+  "aiDrafting": "Drafting…",
+  "aiPickStudentFirst": "Choose the student first.",
+  "aiUnavailable": "The AI assistant isn't available right now. Please write it yourself or try again later.",
+  "insightsTitle": "Insights",
+  "insightsExplainer": "Patterns from attendance and notes, refreshed every morning. Suggestions only — dismiss once handled.",
+  "insightsEmpty": "Nothing needs attention right now.",
+  "insightsCouldNotLoad": "Could not load insights. Pull down to retry.",
+  "insightsDismiss": "Dismiss",
+  "insightKindAbsenceStreak": "Absent several days in a row",
+  "insightKindWeekdayAbsence": "Absent on the same weekday",
+  "insightKindAttendanceDrop": "Attendance falling",
+  "insightKindParentDisengaged": "Parent not reading notices",
+  "insightKindStudentAtRisk": "May need support",
+  "insightReasonAbsentInARow": "{days} school days absent in a row",
+  "@insightReasonAbsentInARow": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "insightReasonSameWeekday": "{count} of {total} absences were on a {weekday}",
+  "@insightReasonSameWeekday": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "weekday": {
+        "type": "String"
+      }
+    }
+  },
+  "insightReasonAttendanceFell": "Attendance fell from {before}% to {now}%",
+  "@insightReasonAttendanceFell": {
+    "placeholders": {
+      "before": {
+        "type": "int"
+      },
+      "now": {
+        "type": "int"
+      }
+    }
+  },
+  "insightReasonParentNotReading": "Parent hasn't opened the last {unread} notices",
+  "@insightReasonParentNotReading": {
+    "placeholders": {
+      "unread": {
+        "type": "int"
+      }
+    }
+  },
+  "insightReasonLowAttendance": "Attendance {pct}% recently",
+  "@insightReasonLowAttendance": {
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "insightReasonComplaints": "{count} complaints in the last {days} days",
+  "@insightReasonComplaints": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  }
 }

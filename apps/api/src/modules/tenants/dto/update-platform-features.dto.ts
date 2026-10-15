@@ -12,4 +12,9 @@ export class UpdatePlatformFeaturesDto extends UpdateFeaturesDto {
   @IsBoolean()
   @IsOptional()
   feeConcession?: boolean;
+
+  /** Premium AI features (docs/SPEC-ai.md): translation, drafts, warnings. */
+  @IsBoolean()
+  @IsOptional()
+  aiInsights?: boolean;
 }

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/l10n/l10n.dart';
 import '../../shared/models/student.dart';
+import '../../shared/models/api_exception.dart';
+import '../../shared/services/ai_repository.dart';
 import '../../shared/services/files_repository.dart';
 import '../../shared/widgets/error_banner.dart';
 import '../../shared/widgets/primary_button.dart';
@@ -25,6 +27,8 @@ class UploadReportCardPage extends ConsumerStatefulWidget {
 class _UploadReportCardPageState extends ConsumerState<UploadReportCardPage> {
   final _termController = TextEditingController();
   final _academicYearController = TextEditingController();
+  final _remarkController = TextEditingController();
+  bool _drafting = false;
   String? _selectedClassId;
   String? _selectedStudentId;
   List<Student> _students = [];
@@ -38,7 +42,31 @@ class _UploadReportCardPageState extends ConsumerState<UploadReportCardPage> {
   void dispose() {
     _termController.dispose();
     _academicYearController.dispose();
+    _remarkController.dispose();
     super.dispose();
+  }
+
+  /// Premium: draft the remark from the child's record, building on what's typed.
+  Future<void> _draftRemark() async {
+    final studentId = _selectedStudentId;
+    if (studentId == null) {
+      setState(() => _error = context.l10n.aiPickStudentFirst);
+      return;
+    }
+    setState(() {
+      _drafting = true;
+      _error = null;
+    });
+    try {
+      final draft = await ref
+          .read(aiRepositoryProvider)
+          .draftRemark(studentId: studentId, points: _remarkController.text);
+      if (mounted && draft.isNotEmpty) _remarkController.text = draft;
+    } catch (e) {
+      if (mounted) setState(() => _error = describeError(e));
+    } finally {
+      if (mounted) setState(() => _drafting = false);
+    }
   }
 
   Future<void> _onClassChanged(String? classId) async {
@@ -98,6 +126,7 @@ class _UploadReportCardPageState extends ConsumerState<UploadReportCardPage> {
         studentId: studentId,
         term: term,
         academicYear: academicYear,
+        remark: _remarkController.text,
       );
       final key = await ref.read(filesRepositoryProvider).upload(
             _pdf!,
@@ -125,6 +154,7 @@ class _UploadReportCardPageState extends ConsumerState<UploadReportCardPage> {
   @override
   Widget build(BuildContext context) {
     final classesAsync = ref.watch(myClassesProvider);
+    final aiAvailable = ref.watch(aiAvailableProvider).valueOrNull ?? false;
     final l = context.l10n;
 
     return Scaffold(
@@ -188,6 +218,30 @@ class _UploadReportCardPageState extends ConsumerState<UploadReportCardPage> {
                   icon: const Icon(Icons.picture_as_pdf_outlined),
                   label: Text(_pdf == null ? l.uploadChoosePdf : _pdf!.path.split('/').last),
                 ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _remarkController,
+                  minLines: 3,
+                  maxLines: 6,
+                  maxLength: 1000,
+                  decoration: InputDecoration(
+                    labelText: l.uploadRemarkLabel,
+                    hintText: aiAvailable ? l.uploadRemarkHintAi : l.uploadRemarkHint,
+                    border: const OutlineInputBorder(),
+                    alignLabelWithHint: true,
+                  ),
+                ),
+                if (aiAvailable)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: _drafting ? null : _draftRemark,
+                      icon: _drafting
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.auto_awesome_rounded),
+                      label: Text(_drafting ? l.aiDrafting : l.aiDraftWithAi),
+                    ),
+                  ),
                 const SizedBox(height: 8),
                 CheckboxListTile(
                   value: _publishNow,

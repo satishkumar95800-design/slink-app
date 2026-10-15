@@ -13,6 +13,7 @@ const KNOWN_CODES = [
   'SCHOOL_NOT_FOUND',
   'FEATURE_DISABLED',
   'NOTHING_OUTSTANDING',
+  'AI_UNAVAILABLE',
 ] as const;
 type KnownCode = (typeof KNOWN_CODES)[number];
 

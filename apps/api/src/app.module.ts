@@ -15,6 +15,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { StudentsModule } from './modules/students/students.module';
 import { FeesModule } from './modules/fees/fees.module';
 import { PaymentGatewayModule } from './modules/payment-gateway/payment-gateway.module';
+import { AiModule } from './modules/ai/ai.module';
+import { AlertsModule } from './modules/alerts/alerts.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -58,6 +60,8 @@ import { ClassRemindersModule } from './modules/class-reminders/class-reminders.
     PrismaModule,
     FirebaseAdminModule,
     PaymentGatewayModule,
+    AiModule,
+    AlertsModule,
     HealthModule,
     AuthModule,
     StudentsModule,
