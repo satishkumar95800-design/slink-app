@@ -22,47 +22,46 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get languageSaveFailed =>
-      'Language changed on this phone. We couldn\'t save it to your account — it will be saved next time you change it.';
+      'इस फ़ोन पर भाषा बदल गई। आपके खाते में सहेजी नहीं जा सकी — अगली बार बदलने पर सहेज ली जाएगी।';
 
   @override
-  String get commonCancel => 'Cancel';
+  String get commonCancel => 'रद्द करें';
 
   @override
-  String get commonConfirm => 'Confirm';
+  String get commonConfirm => 'पुष्टि करें';
 
   @override
-  String get commonSubmit => 'Submit';
+  String get commonSubmit => 'जमा करें';
 
   @override
-  String get commonUpdate => 'Update';
+  String get commonUpdate => 'अपडेट करें';
 
   @override
-  String get commonRetry => 'Retry now';
+  String get commonRetry => 'फिर से कोशिश करें';
 
   @override
-  String get commonContinue => 'Continue';
+  String get commonContinue => 'जारी रखें';
 
   @override
-  String get commonRemove => 'Remove';
+  String get commonRemove => 'हटाएँ';
 
   @override
-  String get commonClass => 'Class';
+  String get commonClass => 'कक्षा';
 
   @override
-  String get commonStudent => 'Student';
+  String get commonStudent => 'छात्र';
 
   @override
-  String get commonSendToClass => 'Send to class';
+  String get commonSendToClass => 'कक्षा को भेजें';
 
   @override
-  String get commonCouldNotLoadClasses => 'Could not load your classes.';
+  String get commonCouldNotLoadClasses => 'आपकी कक्षाएँ लोड नहीं हो सकीं।';
 
   @override
-  String get commonNotAssignedToClass =>
-      'You aren\'t assigned to any class yet.';
+  String get commonNotAssignedToClass => 'आपको अभी कोई कक्षा नहीं दी गई है।';
 
   @override
-  String get commonPullToRetry => 'Pull down to retry.';
+  String get commonPullToRetry => 'फिर से कोशिश करने के लिए नीचे खींचें।';
 
   @override
   String commonListItem(String first, String second) {
@@ -71,209 +70,212 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get errorNetworkTimeout =>
-      'Network timeout — check your connection and try again.';
+      'नेटवर्क टाइमआउट — अपना कनेक्शन जाँचें और फिर से कोशिश करें।';
 
   @override
-  String get errorNoInternet => 'No internet connection.';
+  String get errorNoInternet => 'इंटरनेट कनेक्शन नहीं है।';
 
   @override
-  String get errorGeneric => 'Something went wrong. Please try again.';
+  String get errorGeneric => 'कुछ गलत हो गया। कृपया फिर से कोशिश करें।';
 
   @override
-  String get errorTryAgain => 'Please try again.';
+  String get errorTryAgain => 'कृपया फिर से कोशिश करें।';
 
   @override
   String get errorPhoneNotRegistered =>
-      'This number isn\'t registered. Please contact your school admin to add it.';
+      'यह नंबर पंजीकृत नहीं है। इसे जुड़वाने के लिए अपने स्कूल एडमिन से संपर्क करें।';
 
   @override
   String get errorSchoolNotFound =>
-      'We couldn\'t find a school with this code. Check the code and try again.';
+      'इस कोड वाला स्कूल नहीं मिला। कोड जाँचें और फिर से कोशिश करें।';
 
   @override
   String get authSchoolCodeIntro =>
-      'Enter the school code your school gave you to get started.';
+      'शुरू करने के लिए अपने स्कूल का दिया हुआ स्कूल कोड दर्ज करें।';
 
   @override
-  String get authSchoolCodeLabel => 'School code';
+  String get authSchoolCodeLabel => 'स्कूल कोड';
 
   @override
-  String get authSchoolCodeHint => 'e.g. greenfield-school';
+  String get authSchoolCodeHint => 'जैसे greenfield-school';
 
   @override
-  String get authSchoolCodeRequired => 'Enter your school code to continue.';
+  String get authSchoolCodeRequired =>
+      'आगे बढ़ने के लिए अपना स्कूल कोड दर्ज करें।';
 
   @override
-  String get authSignIn => 'Sign in';
+  String get authSignIn => 'साइन इन';
 
   @override
-  String get authEnterMobile => 'Enter your mobile number';
+  String get authEnterMobile => 'अपना मोबाइल नंबर दर्ज करें';
 
   @override
   String get authOtpExplainer =>
-      'We\'ll send a one-time code to verify it\'s you.';
+      'आपकी पहचान की पुष्टि के लिए हम एक बार का कोड भेजेंगे।';
 
   @override
-  String get authInvalidMobile => 'Enter a valid 10-digit mobile number.';
+  String get authInvalidMobile => 'सही 10 अंकों का मोबाइल नंबर दर्ज करें।';
 
   @override
-  String get authMobileLabel => 'Mobile number';
+  String get authMobileLabel => 'मोबाइल नंबर';
 
   @override
-  String get authSendCode => 'Send code';
+  String get authSendCode => 'कोड भेजें';
 
   @override
   String get authCouldNotVerifyNumber =>
-      'Could not verify your number. Please try again.';
+      'आपका नंबर सत्यापित नहीं हो सका। कृपया फिर से कोशिश करें।';
 
   @override
-  String get authCouldNotSendCode => 'Could not send verification code.';
+  String get authCouldNotSendCode => 'सत्यापन कोड नहीं भेजा जा सका।';
 
   @override
   String get authCouldNotSendCodeRetry =>
-      'Could not send verification code. Please try again.';
+      'सत्यापन कोड नहीं भेजा जा सका। कृपया फिर से कोशिश करें।';
 
   @override
-  String get authVerifyCodeTitle => 'Verify code';
+  String get authVerifyCodeTitle => 'कोड सत्यापित करें';
 
   @override
-  String get authEnterSixDigit => 'Enter the 6-digit code';
+  String get authEnterSixDigit => '6 अंकों का कोड दर्ज करें';
 
   @override
   String authSentTo(String phone) {
-    return 'Sent to $phone';
+    return '$phone पर भेजा गया';
   }
 
   @override
-  String get authVerify => 'Verify';
+  String get authVerify => 'सत्यापित करें';
 
   @override
-  String get authResendCode => 'Resend code';
+  String get authResendCode => 'कोड फिर से भेजें';
 
   @override
-  String get authInvalidCode => 'Invalid code. Please try again.';
+  String get authInvalidCode => 'कोड गलत है। कृपया फिर से कोशिश करें।';
 
   @override
   String get authCodeExpired =>
-      'This code has expired. Please request a new one.';
+      'इस कोड की समय-सीमा खत्म हो गई है। नया कोड मँगाएँ।';
 
   @override
-  String get roleParent => 'Parent';
+  String get roleParent => 'अभिभावक';
 
   @override
-  String get roleTeacher => 'Teacher';
+  String get roleTeacher => 'शिक्षक';
 
   @override
-  String get roleAdmin => 'Admin';
+  String get roleAdmin => 'एडमिन';
 
   @override
-  String get roleAccounts => 'Accounts';
+  String get roleAccounts => 'लेखा';
 
   @override
-  String get roleSuperAdmin => 'Super admin';
+  String get roleSuperAdmin => 'सुपर एडमिन';
 
   @override
-  String get profileTitle => 'Profile';
+  String get profileTitle => 'प्रोफ़ाइल';
 
   @override
-  String get profileNoUser => 'No user profile available.';
+  String get profileNoUser => 'उपयोगकर्ता प्रोफ़ाइल उपलब्ध नहीं है।';
 
   @override
-  String get profileSchool => 'School';
+  String get profileSchool => 'स्कूल';
 
   @override
-  String get profileDarkTheme => 'Dark theme';
+  String get profileDarkTheme => 'डार्क थीम';
 
   @override
-  String get profileLogout => 'Log out';
+  String get profileLogout => 'लॉग आउट';
 
   @override
-  String get profileLogoutConfirm => 'Log out of Schoolinkd on this phone?';
+  String get profileLogoutConfirm => 'इस फ़ोन पर Schoolinkd से लॉग आउट करें?';
 
   @override
   String dashboardGreeting(String name) {
-    return 'Hi, $name';
+    return 'नमस्ते, $name';
   }
 
   @override
   String get dashboardNoChildren =>
-      'No children are linked to your account yet. Please contact the school office.';
+      'आपके खाते से अभी कोई बच्चा नहीं जुड़ा है। कृपया स्कूल कार्यालय से संपर्क करें।';
 
   @override
-  String get dashboardCouldNotLoadChildren => 'Could not load your children.';
+  String get dashboardCouldNotLoadChildren =>
+      'आपके बच्चों की जानकारी लोड नहीं हो सकी।';
 
   @override
-  String get teacherDashboardTitle => 'Teacher dashboard';
+  String get teacherDashboardTitle => 'शिक्षक डैशबोर्ड';
 
   @override
   String teacherSignedInAs(String name) {
-    return 'Signed in as $name';
+    return '$name के रूप में साइन इन';
   }
 
   @override
-  String get teacherSendHomework => 'Send Homework';
+  String get teacherSendHomework => 'होमवर्क भेजें';
 
   @override
-  String get teacherSendHomeworkSubtitle => 'Photos and a note for a class';
+  String get teacherSendHomeworkSubtitle => 'कक्षा के लिए फ़ोटो और नोट';
 
   @override
-  String get teacherSendNotice => 'Send Notice';
+  String get teacherSendNotice => 'सूचना भेजें';
 
   @override
-  String get teacherSendNoticeSubtitle => 'Message all parents in your class';
+  String get teacherSendNoticeSubtitle =>
+      'अपनी कक्षा के सभी अभिभावकों को संदेश';
 
   @override
-  String get teacherReports => 'Reports';
+  String get teacherReports => 'रिपोर्ट';
 
   @override
-  String get teacherReportsSubtitle => 'Progress reports and report cards';
+  String get teacherReportsSubtitle => 'प्रगति रिपोर्ट और रिपोर्ट कार्ड';
 
   @override
-  String get teacherAddStudentNote => 'Add Student Note';
+  String get teacherAddStudentNote => 'छात्र नोट जोड़ें';
 
   @override
   String get teacherAddStudentNoteSubtitle =>
-      'Internal note, MOM, complaint or parent discussion';
+      'आंतरिक नोट, बैठक विवरण, शिकायत या अभिभावक से चर्चा';
 
   @override
-  String get teacherWeeklyRoutine => 'Weekly Routine';
+  String get teacherWeeklyRoutine => 'साप्ताहिक समय-सारणी';
 
   @override
   String get teacherWeeklyRoutineSubtitle =>
-      'Your own class timetable for the week';
+      'हफ़्ते भर की आपकी कक्षाओं की समय-सारणी';
 
   @override
-  String get teacherAboutMyClasses => 'About My Class(es)';
+  String get teacherAboutMyClasses => 'मेरी कक्षाओं के बारे में';
 
   @override
   String get teacherAboutMyClassesSubtitle =>
-      'Strength, subjects, and recent reports for your classes';
+      'आपकी कक्षाओं की संख्या, विषय और हाल की रिपोर्ट';
 
   @override
   String todayNow(String className, String subject) {
-    return 'Now: $className · $subject';
+    return 'अभी: $className · $subject';
   }
 
   @override
   String todayNowWithTime(String className, String subject, String time) {
-    return 'Now: $className · $subject ($time)';
+    return 'अभी: $className · $subject ($time)';
   }
 
   @override
   String todayNext(String className, String subject) {
-    return 'Next: $className · $subject';
+    return 'अगला: $className · $subject';
   }
 
   @override
   String todayNextWithTime(String className, String subject, String time) {
-    return 'Next: $className · $subject ($time)';
+    return 'अगला: $className · $subject ($time)';
   }
 
   @override
-  String get todayNoMorePeriods => 'No more periods today';
+  String get todayNoMorePeriods => 'आज और कोई पीरियड नहीं';
 
   @override
-  String get todayNoPeriods => 'No periods today';
+  String get todayNoPeriods => 'आज कोई पीरियड नहीं';
 
   @override
   String todayPeriodLabel(int period, String className, String subject) {
@@ -281,148 +283,147 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
-  String get myClassesEmpty => 'You are not linked to any classes yet.';
+  String get myClassesEmpty => 'आप अभी किसी कक्षा से नहीं जुड़े हैं।';
 
   @override
   String get myClassesCouldNotLoad =>
-      'Could not load your classes. Pull down to retry.';
+      'आपकी कक्षाएँ लोड नहीं हो सकीं। फिर से कोशिश करने के लिए नीचे खींचें।';
 
   @override
   String myClassesStrength(int boys, int girls, int total) {
-    return 'Boys: $boys · Girls: $girls · Total: $total';
+    return 'लड़के: $boys · लड़कियाँ: $girls · कुल: $total';
   }
 
   @override
-  String get myClassesRecentReports => 'Recent reports';
+  String get myClassesRecentReports => 'हाल की रिपोर्ट';
 
   @override
-  String get myClassesRead => 'Read';
+  String get myClassesRead => 'पढ़ी गई';
 
   @override
-  String get myClassesUnread => 'Unread';
+  String get myClassesUnread => 'नहीं पढ़ी';
 
   @override
-  String get attendanceTitle => 'Attendance';
+  String get attendanceTitle => 'उपस्थिति';
 
   @override
-  String get attendanceMark => 'Mark Attendance';
+  String get attendanceMark => 'उपस्थिति दर्ज करें';
 
   @override
-  String get attendanceMarkSubtitle =>
-      'Take today\'s attendance for your class';
+  String get attendanceMarkSubtitle => 'अपनी कक्षा की आज की उपस्थिति लें';
 
   @override
-  String get attendanceDoneForToday => 'Done for today';
+  String get attendanceDoneForToday => 'आज का काम पूरा';
 
   @override
   String attendanceDoneForClasses(int done, int total) {
-    return '$done of $total classes done today';
+    return 'आज $total में से $done कक्षाएँ पूरी';
   }
 
   @override
-  String get attendancePickClass => 'Pick a class';
+  String get attendancePickClass => 'कक्षा चुनें';
 
   @override
   String attendanceStudentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count students',
-      one: '1 student',
+      other: '$count छात्र',
+      one: '1 छात्र',
     );
     return '$_temp0';
   }
 
   @override
-  String get attendancePresent => 'Present';
+  String get attendancePresent => 'उपस्थित';
 
   @override
-  String get attendanceAbsent => 'Absent';
+  String get attendanceAbsent => 'अनुपस्थित';
 
   @override
-  String get attendanceLate => 'Late';
+  String get attendanceLate => 'देर से';
 
   @override
-  String get attendanceLeave => 'Leave';
+  String get attendanceLeave => 'छुट्टी';
 
   @override
-  String get attendanceNotMarkedYet => 'Not marked yet';
+  String get attendanceNotMarkedYet => 'अभी दर्ज नहीं';
 
   @override
-  String get attendanceHoliday => 'Holiday';
+  String get attendanceHoliday => 'छुट्टी';
 
   @override
   String attendanceHolidayToday(String name) {
-    return 'Today is a holiday: $name';
+    return 'आज छुट्टी है: $name';
   }
 
   @override
   String get attendanceTapHint =>
-      'Tap to mark absent · long-press for Late or Leave';
+      'अनुपस्थित करने के लिए टैप करें · देर से या छुट्टी के लिए देर तक दबाएँ';
 
   @override
   String attendanceCounts(int present, int absent) {
-    return '$present present · $absent absent';
+    return '$present उपस्थित · $absent अनुपस्थित';
   }
 
   @override
   String attendanceCountsWithOther(int present, int absent, int other) {
-    return '$present present · $absent absent · $other late/leave';
+    return '$present उपस्थित · $absent अनुपस्थित · $other देर से/छुट्टी';
   }
 
   @override
   String attendanceConfirmSubmit(int present, int absent) {
-    return 'Submit attendance: $present present, $absent absent?';
+    return 'उपस्थिति जमा करें: $present उपस्थित, $absent अनुपस्थित?';
   }
 
   @override
-  String get attendanceSubmitted => 'Attendance submitted';
+  String get attendanceSubmitted => 'उपस्थिति जमा हो गई';
 
   @override
   String get attendanceQueuedOffline =>
-      'No connection — saved on this phone. It will be sent automatically.';
+      'कनेक्शन नहीं है — इस फ़ोन पर सहेजी गई। यह अपने आप भेज दी जाएगी।';
 
   @override
-  String get attendancePendingSend => 'Waiting to send…';
+  String get attendancePendingSend => 'भेजने का इंतज़ार…';
 
   @override
-  String get attendanceSendingNow => 'Sending…';
+  String get attendanceSendingNow => 'भेजी जा रही है…';
 
   @override
   String get attendanceAlreadySubmitted =>
-      'Already submitted today — you can still change it until midnight.';
+      'आज पहले ही जमा हो चुकी है — आधी रात तक बदल सकते हैं।';
 
   @override
   String get attendanceReadOnlyDay =>
-      'Attendance for this day can only be changed by an admin.';
+      'इस दिन की उपस्थिति केवल एडमिन बदल सकते हैं।';
 
   @override
-  String get attendanceNoStudents => 'No students in this class yet.';
+  String get attendanceNoStudents => 'इस कक्षा में अभी कोई छात्र नहीं है।';
 
   @override
   String get attendanceNoClassesToMark =>
-      'You\'re not the class teacher of any class yet.';
+      'आप अभी किसी कक्षा के कक्षा शिक्षक नहीं हैं।';
 
   @override
-  String get attendanceCouldNotLoad => 'Could not load attendance.';
+  String get attendanceCouldNotLoad => 'उपस्थिति लोड नहीं हो सकी।';
 
   @override
   String attendanceThisMonth(int present, int marked) {
-    return 'This month: $present/$marked days';
+    return 'इस महीने: $present/$marked दिन';
   }
 
   @override
   String attendanceYearPercentage(String year, String percent) {
-    return 'Academic year $year: $percent';
+    return 'शैक्षणिक वर्ष $year: $percent';
   }
 
   @override
   String attendanceToday(String status) {
-    return 'Today: $status';
+    return 'आज: $status';
   }
 
   @override
-  String get attendanceChooseStatus => 'Mark as';
+  String get attendanceChooseStatus => 'इस रूप में दर्ज करें';
 
   @override
   String homeChildWithClass(String name, String className) {
@@ -430,377 +431,380 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
-  String get homeSwitchChild => 'Switch child';
+  String get homeSwitchChild => 'बच्चा बदलें';
 
   @override
   String homeDueBy(String amount, String date) {
-    return '$amount due by $date';
+    return '$date तक $amount देय';
   }
 
   @override
-  String get homeOverdue => 'Overdue';
+  String get homeOverdue => 'देय तिथि निकल गई';
 
   @override
   String homeMoreDues(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '+ $count more fees pending',
-      one: '+ 1 more fee pending',
+      other: '+ $count और शुल्क बकाया',
+      one: '+ 1 और शुल्क बकाया',
     );
     return '$_temp0';
   }
 
   @override
-  String get homeAllFeesPaid => 'All fees paid';
+  String get homeAllFeesPaid => 'सभी शुल्क जमा';
 
   @override
-  String get homeClaimUnderReview => 'Payment claim under review';
+  String get homeClaimUnderReview => 'भुगतान दावा समीक्षा में है';
 
   @override
   String homeClaimAmountUnderReview(String amount) {
-    return '$amount claim under review';
+    return '$amount का दावा समीक्षा में है';
   }
 
   @override
-  String get homePayNow => 'Pay Now';
+  String get homePayNow => 'अभी भुगतान करें';
 
   @override
-  String get homeViewFees => 'View fees';
+  String get homeViewFees => 'शुल्क देखें';
 
   @override
-  String get homeTodayTitle => 'Today';
+  String get homeTodayTitle => 'आज';
 
   @override
-  String get homeNoHomeworkToday => 'No homework today';
+  String get homeNoHomeworkToday => 'आज कोई होमवर्क नहीं';
 
   @override
-  String get homeLatestNotice => 'Latest notice';
+  String get homeLatestNotice => 'नवीनतम सूचना';
 
   @override
-  String get homeCouldNotLoad => 'Couldn\'t load this child\'s summary.';
+  String get homeCouldNotLoad => 'इस बच्चे का सारांश लोड नहीं हो सका।';
 
   @override
-  String get menuFees => 'Fees';
+  String get menuFees => 'शुल्क';
 
   @override
-  String get menuFeesSubtitle => 'Dues, online payment, upload proof, receipts';
+  String get menuFeesSubtitle => 'बकाया, ऑनलाइन भुगतान, प्रमाण अपलोड, रसीदें';
 
   @override
-  String get menuHomework => 'Homework';
+  String get menuHomework => 'होमवर्क';
 
   @override
-  String get menuHomeworkSubtitle => 'All homework sent to this child\'s class';
+  String get menuHomeworkSubtitle =>
+      'इस बच्चे की कक्षा को भेजा गया सारा होमवर्क';
 
   @override
-  String get menuNotices => 'Notices';
+  String get menuNotices => 'सूचनाएँ';
 
   @override
-  String get menuNoticesSubtitle => 'Class and school notices';
+  String get menuNoticesSubtitle => 'कक्षा और स्कूल की सूचनाएँ';
 
   @override
-  String get menuReports => 'Report Cards & Reports';
+  String get menuReports => 'रिपोर्ट कार्ड और रिपोर्ट';
 
   @override
-  String get menuReportsSubtitle => 'Report cards and progress reports';
+  String get menuReportsSubtitle => 'रिपोर्ट कार्ड और प्रगति रिपोर्ट';
 
   @override
-  String get menuAttendanceSubtitle => 'Monthly calendar';
+  String get menuAttendanceSubtitle => 'मासिक कैलेंडर';
 
   @override
-  String get feesPayOnline => 'Pay Online';
+  String get feesPayOnline => 'ऑनलाइन भुगतान करें';
 
   @override
-  String get feesPaidByCashOrCheque => 'I paid by cash/cheque – upload proof';
+  String get feesPaidByCashOrCheque =>
+      'मैंने नकद/चेक से भुगतान किया – प्रमाण अपलोड करें';
 
   @override
-  String get feesReceipts => 'Receipts';
+  String get feesReceipts => 'रसीदें';
 
   @override
-  String get feesPaidInFull => 'Paid in full';
+  String get feesPaidInFull => 'पूरा भुगतान';
 
   @override
   String feesDueOn(String date) {
-    return 'Due $date';
+    return 'अंतिम तिथि $date';
   }
 
   @override
   String feesAmountDue(String amount) {
-    return '$amount due';
+    return '$amount देय';
   }
 
   @override
-  String get feesEmpty => 'No fees found.';
+  String get feesEmpty => 'कोई शुल्क नहीं मिला।';
 
   @override
-  String get feesMyClaims => 'Payment proofs you uploaded';
+  String get feesMyClaims => 'आपके अपलोड किए भुगतान प्रमाण';
 
   @override
-  String get feesCouldNotLoad => 'Could not load fees. Pull down to retry.';
+  String get feesCouldNotLoad =>
+      'शुल्क लोड नहीं हो सका। फिर से कोशिश करने के लिए नीचे खींचें।';
 
   @override
-  String get feeStatusPaid => 'Paid';
+  String get feeStatusPaid => 'भुगतान हुआ';
 
   @override
-  String get feeStatusPending => 'Pending';
+  String get feeStatusPending => 'बकाया';
 
   @override
-  String get feeStatusOverdue => 'Overdue';
+  String get feeStatusOverdue => 'देय तिथि निकल गई';
 
   @override
-  String get feeStatusPartial => 'Partly paid';
+  String get feeStatusPartial => 'आंशिक भुगतान';
 
   @override
-  String get feeStatusWaived => 'Waived';
+  String get feeStatusWaived => 'माफ़';
 
   @override
-  String get paymentModeCash => 'Cash';
+  String get paymentModeCash => 'नकद';
 
   @override
-  String get paymentModeCheque => 'Cheque';
+  String get paymentModeCheque => 'चेक';
 
   @override
-  String get paymentModeBankTransfer => 'Bank Transfer';
+  String get paymentModeBankTransfer => 'बैंक ट्रांसफ़र';
 
   @override
   String get paymentModeUpi => 'UPI';
 
   @override
-  String get paymentModeDemandDraft => 'Demand Draft';
+  String get paymentModeDemandDraft => 'डिमांड ड्राफ़्ट';
 
   @override
-  String get paymentModeOnline => 'Online Payment';
+  String get paymentModeOnline => 'ऑनलाइन भुगतान';
 
   @override
-  String get claimStatusPending => 'Under review';
+  String get claimStatusPending => 'समीक्षा में';
 
   @override
-  String get claimStatusApproved => 'Approved';
+  String get claimStatusApproved => 'स्वीकृत';
 
   @override
-  String get claimStatusRejected => 'Rejected';
+  String get claimStatusRejected => 'अस्वीकृत';
 
   @override
   String claimSubmittedOn(String date) {
-    return 'Submitted $date';
+    return '$date को भेजा गया';
   }
 
   @override
   String claimClaimedAmount(String amount) {
-    return 'Claimed amount: $amount';
+    return 'दावा की गई राशि: $amount';
   }
 
   @override
   String claimMode(String mode) {
-    return 'Mode: $mode';
+    return 'तरीका: $mode';
   }
 
   @override
   String claimRejectedReason(String reason) {
-    return 'Reason: $reason';
+    return 'कारण: $reason';
   }
 
   @override
-  String get claimsTitle => 'My Payment Claims';
+  String get claimsTitle => 'मेरे भुगतान दावे';
 
   @override
-  String get claimsEmpty => 'No payment claims submitted yet.';
+  String get claimsEmpty => 'अभी तक कोई भुगतान दावा नहीं भेजा गया।';
 
   @override
   String get claimsCouldNotLoad =>
-      'Could not load your payment claims. Pull down to retry.';
+      'आपके भुगतान दावे लोड नहीं हो सके। फिर से कोशिश करने के लिए नीचे खींचें।';
 
   @override
-  String get claimFormTitle => 'Already Paid?';
+  String get claimFormTitle => 'पहले ही भुगतान कर दिया?';
 
   @override
   String get claimFormIntro =>
-      'Attach a photo or screenshot of your payment (bank transfer, cash receipt, cheque, etc.). The school will review it before it is recorded.';
+      'अपने भुगतान की फ़ोटो या स्क्रीनशॉट लगाएँ (बैंक ट्रांसफ़र, नकद रसीद, चेक आदि)। दर्ज करने से पहले स्कूल इसकी जाँच करेगा।';
 
   @override
-  String get claimTakePhoto => 'Take photo';
+  String get claimTakePhoto => 'फ़ोटो लें';
 
   @override
-  String get claimRetakePhoto => 'Retake photo';
+  String get claimRetakePhoto => 'फिर से फ़ोटो लें';
 
   @override
-  String get claimChooseFromGallery => 'Choose from gallery';
+  String get claimChooseFromGallery => 'गैलरी से चुनें';
 
   @override
-  String get claimAmountLabel => 'Amount paid (optional)';
+  String get claimAmountLabel => 'भुगतान की गई राशि (वैकल्पिक)';
 
   @override
-  String get claimDateLabel => 'Date paid (optional)';
+  String get claimDateLabel => 'भुगतान की तिथि (वैकल्पिक)';
 
   @override
-  String get claimSelectDate => 'Select a date';
+  String get claimSelectDate => 'तिथि चुनें';
 
   @override
-  String get claimModeLabel => 'Payment mode (optional)';
+  String get claimModeLabel => 'भुगतान का तरीका (वैकल्पिक)';
 
   @override
-  String get claimNoteLabel => 'Note (optional)';
+  String get claimNoteLabel => 'नोट (वैकल्पिक)';
 
   @override
-  String get claimSubmitForReview => 'Submit for review';
+  String get claimSubmitForReview => 'समीक्षा के लिए भेजें';
 
   @override
   String get claimAttachProofFirst =>
-      'Attach a photo or screenshot of the payment proof first.';
+      'पहले भुगतान प्रमाण की फ़ोटो या स्क्रीनशॉट लगाएँ।';
 
   @override
   String get claimSubmittedToast =>
-      'Submitted — your school will review it shortly';
+      'भेज दिया गया — आपका स्कूल जल्द ही इसकी जाँच करेगा';
 
   @override
   String claimCouldNotSubmit(String reason) {
-    return 'Could not submit your claim. $reason';
+    return 'आपका दावा नहीं भेजा जा सका। $reason';
   }
 
   @override
-  String get checkoutTitle => 'Pay fee';
+  String get checkoutTitle => 'शुल्क भुगतान';
 
   @override
-  String get checkoutCouldNotLoad => 'Could not load this fee.';
+  String get checkoutCouldNotLoad => 'यह शुल्क लोड नहीं हो सका।';
 
   @override
-  String get checkoutAmountDue => 'Amount due';
+  String get checkoutAmountDue => 'देय राशि';
 
   @override
   String checkoutPayAmount(String amount) {
-    return 'Pay $amount';
+    return '$amount का भुगतान करें';
   }
 
   @override
   String get checkoutConfirmingWithBank =>
-      'Payment received — confirming with the bank. Check back on this fee shortly.';
+      'भुगतान प्राप्त हुआ — बैंक से पुष्टि हो रही है। थोड़ी देर बाद यह शुल्क फिर से देखें।';
 
   @override
-  String get checkoutConfirming => 'Confirming your payment…';
+  String get checkoutConfirming => 'आपके भुगतान की पुष्टि हो रही है…';
 
   @override
-  String get checkoutSuccess => 'Payment successful';
+  String get checkoutSuccess => 'भुगतान सफल रहा';
 
   @override
-  String get checkoutBackToFees => 'Back to fees';
+  String get checkoutBackToFees => 'शुल्क पर वापस जाएँ';
 
   @override
   String get checkoutNotSetUp =>
-      'Payment is not set up for this school yet. Please contact the school office.';
+      'इस स्कूल के लिए अभी ऑनलाइन भुगतान की व्यवस्था नहीं है। कृपया स्कूल कार्यालय से संपर्क करें।';
 
   @override
   String get checkoutCouldNotStart =>
-      'Could not start payment. Please try again.';
+      'भुगतान शुरू नहीं हो सका। कृपया फिर से कोशिश करें।';
 
   @override
-  String get checkoutNotCompleted => 'Payment was not completed.';
+  String get checkoutNotCompleted => 'भुगतान पूरा नहीं हुआ।';
 
   @override
   String get checkoutCouldNotConfirm =>
-      'The payment could not be confirmed. Please try again.';
+      'भुगतान की पुष्टि नहीं हो सकी। कृपया फिर से कोशिश करें।';
 
   @override
   String checkoutDescription(String studentName) {
-    return 'Fee payment — $studentName';
+    return 'शुल्क भुगतान — $studentName';
   }
 
   @override
-  String get receiptTitle => 'Receipt';
+  String get receiptTitle => 'रसीद';
 
   @override
-  String get receiptCouldNotLoad => 'Could not load this receipt.';
+  String get receiptCouldNotLoad => 'यह रसीद लोड नहीं हो सकी।';
 
   @override
-  String get receiptAmountReceived => 'Amount Received';
+  String get receiptAmountReceived => 'प्राप्त राशि';
 
   @override
-  String get receiptDiscountApplied => 'Discount applied';
+  String get receiptDiscountApplied => 'छूट लागू की गई';
 
   @override
   String receiptDiscountAppliedNamed(String name) {
-    return 'Discount applied: $name';
+    return 'छूट लागू की गई: $name';
   }
 
   @override
   String receiptMethod(String method) {
-    return 'Method: $method';
+    return 'तरीका: $method';
   }
 
   @override
   String receiptPaidOn(String date) {
-    return 'Paid on: $date';
+    return 'भुगतान तिथि: $date';
   }
 
   @override
   String receiptReference(String reference) {
-    return 'Reference: $reference';
+    return 'संदर्भ: $reference';
   }
 
   @override
-  String get receiptNotes => 'Notes';
+  String get receiptNotes => 'नोट';
 
   @override
-  String get receiptDownload => 'Download receipt';
+  String get receiptDownload => 'रसीद डाउनलोड करें';
 
   @override
-  String get receiptOpening => 'Opening…';
+  String get receiptOpening => 'खुल रही है…';
 
   @override
   String get receiptCouldNotOpen =>
-      'Could not open the receipt. Please try again.';
+      'रसीद नहीं खुल सकी। कृपया फिर से कोशिश करें।';
 
   @override
-  String get receiptsCouldNotLoad => 'Could not load receipts.';
+  String get receiptsCouldNotLoad => 'रसीदें लोड नहीं हो सकीं।';
 
   @override
-  String get receiptsEmpty => 'No receipts yet for this fee.';
+  String get receiptsEmpty => 'इस शुल्क की अभी कोई रसीद नहीं।';
 
   @override
   String receiptsRowWithDiscount(String date) {
-    return '$date · Discount applied';
+    return '$date · छूट लागू की गई';
   }
 
   @override
-  String get noticeKind => 'Notice';
+  String get noticeKind => 'सूचना';
 
   @override
-  String get homeworkKind => 'Homework';
+  String get homeworkKind => 'होमवर्क';
 
   @override
-  String get noticesEmpty => 'No notices yet';
+  String get noticesEmpty => 'अभी कोई सूचना नहीं';
 
   @override
-  String get noticesCouldNotLoad => 'Could not load notices.';
+  String get noticesCouldNotLoad => 'सूचनाएँ लोड नहीं हो सकीं।';
 
   @override
-  String get noticeOpenPdf => 'Open PDF';
+  String get noticeOpenPdf => 'PDF खोलें';
 
   @override
-  String get noticeEnterMessage => 'Enter a message.';
+  String get noticeEnterMessage => 'संदेश दर्ज करें।';
 
   @override
-  String get noticeSent => 'Notice sent';
+  String get noticeSent => 'सूचना भेजी गई';
 
   @override
   String noticeCouldNotSend(String reason) {
-    return 'Could not send the notice. $reason';
+    return 'सूचना नहीं भेजी जा सकी। $reason';
   }
 
   @override
   String get noticeNotClassTeacher =>
-      'You aren\'t set as the class teacher for any class yet.';
+      'आपको अभी किसी कक्षा का कक्षा शिक्षक नहीं बनाया गया है।';
 
   @override
-  String get noticeTitleLabel => 'Title (optional)';
+  String get noticeTitleLabel => 'शीर्षक (वैकल्पिक)';
 
   @override
-  String get noticeMessageLabel => 'Message';
+  String get noticeMessageLabel => 'संदेश';
 
   @override
-  String get homeworkEmpty => 'No homework yet';
+  String get homeworkEmpty => 'अभी कोई होमवर्क नहीं';
 
   @override
-  String get homeworkCouldNotLoad => 'Could not load homework.';
+  String get homeworkCouldNotLoad => 'होमवर्क लोड नहीं हो सका।';
 
   @override
   String homeworkBy(String teacher, String subject) {
@@ -808,232 +812,232 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
-  String get homeworkAddPhotoFirst => 'Add at least one photo.';
+  String get homeworkAddPhotoFirst => 'कम से कम एक फ़ोटो जोड़ें।';
 
   @override
-  String get homeworkDefaultBody => 'New homework has been posted.';
+  String get homeworkDefaultBody => 'नया होमवर्क दिया गया है।';
 
   @override
-  String get homeworkSent => 'Homework sent';
+  String get homeworkSent => 'होमवर्क भेजा गया';
 
   @override
   String homeworkCouldNotSend(String reason) {
-    return 'Could not send the homework. $reason';
+    return 'होमवर्क नहीं भेजा जा सका। $reason';
   }
 
   @override
-  String get homeworkCaptionLabel => 'Caption (optional)';
+  String get homeworkCaptionLabel => 'विवरण (वैकल्पिक)';
 
   @override
-  String get homeworkSubjectOptional => 'Subject (optional)';
+  String get homeworkSubjectOptional => 'विषय (वैकल्पिक)';
 
   @override
-  String get homeworkNoSubject => 'No subject';
+  String get homeworkNoSubject => 'कोई विषय नहीं';
 
   @override
-  String get attachCamera => 'Camera';
+  String get attachCamera => 'कैमरा';
 
   @override
-  String get attachGallery => 'Gallery';
+  String get attachGallery => 'गैलरी';
 
   @override
-  String get attachPdf => 'Attach PDF';
+  String get attachPdf => 'PDF लगाएँ';
 
   @override
-  String get attachHintPhotos => 'Up to 3 photos';
+  String get attachHintPhotos => 'अधिकतम 3 फ़ोटो';
 
   @override
-  String get attachHintPhotosOrPdf => 'Up to 3 photos, or 1 PDF';
+  String get attachHintPhotosOrPdf => 'अधिकतम 3 फ़ोटो, या 1 PDF';
 
   @override
-  String get sentTitle => 'Sent';
+  String get sentTitle => 'भेजे गए';
 
   @override
   String sentSeenBy(int seen, int total) {
     String _temp0 = intl.Intl.pluralLogic(
       total,
       locale: localeName,
-      other: 'Seen by $seen/$total parents',
-      one: 'Seen by $seen/1 parent',
+      other: '$seen/$total अभिभावकों ने देखा',
+      one: '$seen/1 अभिभावक ने देखा',
     );
     return '$_temp0';
   }
 
   @override
-  String get sentNotSeenYet => 'Haven\'t opened it yet';
+  String get sentNotSeenYet => 'अभी तक नहीं खोला';
 
   @override
-  String get sentEveryoneSeen => 'Every parent has opened it';
+  String get sentEveryoneSeen => 'सभी अभिभावकों ने खोल लिया';
 
   @override
-  String get sentEmpty => 'Nothing sent yet';
+  String get sentEmpty => 'अभी कुछ नहीं भेजा गया';
 
   @override
-  String get sentCouldNotLoad => 'Could not load sent items.';
+  String get sentCouldNotLoad => 'भेजे गए आइटम लोड नहीं हो सके।';
 
   @override
-  String get noteTypeLabel => 'Type';
+  String get noteTypeLabel => 'प्रकार';
 
   @override
-  String get noteTextLabel => 'Note';
+  String get noteTextLabel => 'नोट';
 
   @override
-  String get noteTypeNote => 'Note';
+  String get noteTypeNote => 'नोट';
 
   @override
-  String get noteTypeMom => 'MOM';
+  String get noteTypeMom => 'बैठक का विवरण';
 
   @override
-  String get noteTypeComplaint => 'Complaint';
+  String get noteTypeComplaint => 'शिकायत';
 
   @override
-  String get noteTypeParentDiscussion => 'Parent Discussion';
+  String get noteTypeParentDiscussion => 'अभिभावक से चर्चा';
 
   @override
   String get noteInternalHint =>
-      'Only school staff can see this. Parents never see student notes.';
+      'इसे केवल स्कूल के कर्मचारी देख सकते हैं। अभिभावकों को छात्र नोट कभी नहीं दिखते।';
 
   @override
-  String get noteSave => 'Save note';
+  String get noteSave => 'नोट सहेजें';
 
   @override
-  String get noteSaved => 'Note saved';
+  String get noteSaved => 'नोट सहेजा गया';
 
   @override
-  String get noteEnterFirst => 'Type the note first.';
+  String get noteEnterFirst => 'पहले नोट लिखें।';
 
   @override
-  String get noteRecent => 'Recent notes';
+  String get noteRecent => 'हाल के नोट';
 
   @override
-  String get noteCouldNotLoad => 'Could not load notes.';
+  String get noteCouldNotLoad => 'नोट लोड नहीं हो सके।';
 
   @override
-  String get reportsEmptyTeacher => 'No reports yet.';
+  String get reportsEmptyTeacher => 'अभी कोई रिपोर्ट नहीं।';
 
   @override
-  String get reportsEmptyParent => 'No report cards or reports yet';
+  String get reportsEmptyParent => 'अभी कोई रिपोर्ट कार्ड या रिपोर्ट नहीं';
 
   @override
   String get reportsCouldNotLoad =>
-      'Could not load reports. Pull down to retry.';
+      'रिपोर्ट लोड नहीं हो सकीं। फिर से कोशिश करने के लिए नीचे खींचें।';
 
   @override
-  String get reportsUploadTooltip => 'Upload Report Card';
+  String get reportsUploadTooltip => 'रिपोर्ट कार्ड अपलोड करें';
 
   @override
-  String get reportTitle => 'Report';
+  String get reportTitle => 'रिपोर्ट';
 
   @override
-  String get reportCouldNotLoad => 'Could not load this report.';
+  String get reportCouldNotLoad => 'यह रिपोर्ट लोड नहीं हो सकी।';
 
   @override
   String reportBy(String name) {
-    return 'By $name';
+    return '$name द्वारा';
   }
 
   @override
-  String get reportTypeAcademic => 'Academic';
+  String get reportTypeAcademic => 'शैक्षणिक';
 
   @override
-  String get reportTypeAttendance => 'Attendance';
+  String get reportTypeAttendance => 'उपस्थिति';
 
   @override
-  String get reportTypeBehavior => 'Behaviour';
+  String get reportTypeBehavior => 'व्यवहार';
 
   @override
-  String get reportTypeHomework => 'Homework';
+  String get reportTypeHomework => 'होमवर्क';
 
   @override
-  String get reportTypeReportCard => 'Report card';
+  String get reportTypeReportCard => 'रिपोर्ट कार्ड';
 
   @override
-  String get uploadTitle => 'Upload Report Card';
+  String get uploadTitle => 'रिपोर्ट कार्ड अपलोड करें';
 
   @override
-  String get uploadCouldNotLoadStudents => 'Could not load students.';
+  String get uploadCouldNotLoadStudents => 'छात्र लोड नहीं हो सके।';
 
   @override
-  String get uploadFillAll => 'Fill in all fields and choose a PDF.';
+  String get uploadFillAll => 'सभी जानकारी भरें और PDF चुनें।';
 
   @override
   String get uploadYearFormat =>
-      'Academic year must be in format YYYY-YY, e.g. 2026-27.';
+      'शैक्षणिक वर्ष YYYY-YY रूप में होना चाहिए, जैसे 2026-27।';
 
   @override
-  String get uploadSuccess => 'Report card uploaded';
+  String get uploadSuccess => 'रिपोर्ट कार्ड अपलोड हुआ';
 
   @override
-  String get uploadFailed => 'Could not upload the report card.';
+  String get uploadFailed => 'रिपोर्ट कार्ड अपलोड नहीं हो सका।';
 
   @override
-  String get uploadTermLabel => 'Term';
+  String get uploadTermLabel => 'सत्र';
 
   @override
-  String get uploadTermHint => 'e.g. Term 1';
+  String get uploadTermHint => 'जैसे सत्र 1';
 
   @override
-  String get uploadYearLabel => 'Academic Year';
+  String get uploadYearLabel => 'शैक्षणिक वर्ष';
 
   @override
-  String get uploadYearHint => 'e.g. 2026-27';
+  String get uploadYearHint => 'जैसे 2026-27';
 
   @override
-  String get uploadChoosePdf => 'Choose PDF';
+  String get uploadChoosePdf => 'PDF चुनें';
 
   @override
-  String get uploadPublishNow => 'Publish now (parent can see it immediately)';
+  String get uploadPublishNow => 'अभी प्रकाशित करें (अभिभावक तुरंत देख सकेंगे)';
 
   @override
-  String get uploadButton => 'Upload';
+  String get uploadButton => 'अपलोड करें';
 
   @override
-  String get timetableEmpty => 'No timetable has been set up for you yet.';
+  String get timetableEmpty => 'आपके लिए अभी कोई समय-सारणी नहीं बनाई गई है।';
 
   @override
   String get timetableCouldNotLoad =>
-      'Could not load your routine. Pull down to retry.';
+      'आपकी समय-सारणी लोड नहीं हो सकी। फिर से कोशिश करने के लिए नीचे खींचें।';
 
   @override
-  String get notificationsTitle => 'Notifications';
+  String get notificationsTitle => 'सूचनाएँ';
 
   @override
-  String get notificationsEmpty => 'No notifications yet.';
+  String get notificationsEmpty => 'अभी कोई सूचना नहीं।';
 
   @override
   String get notificationsCouldNotLoad =>
-      'Could not load notifications. Pull down to retry.';
+      'सूचनाएँ लोड नहीं हो सकीं। फिर से कोशिश करने के लिए नीचे खींचें।';
 
   @override
-  String get homeQuickAccess => 'Quick access';
+  String get homeQuickAccess => 'त्वरित पहुँच';
 
   @override
-  String get homeAmountDue => 'Amount due';
+  String get homeAmountDue => 'देय राशि';
 
   @override
-  String get homeAttendanceRate => 'Attendance this month';
+  String get homeAttendanceRate => 'इस महीने की उपस्थिति';
 
   @override
-  String get teacherQuickActions => 'Quick actions';
+  String get teacherQuickActions => 'त्वरित कार्य';
 
   @override
-  String get teacherTodayClasses => 'Today\'s classes';
+  String get teacherTodayClasses => 'आज की कक्षाएँ';
 
   @override
-  String get reportSubjects => 'Subjects';
+  String get reportSubjects => 'विषय';
 
   @override
-  String get reportTeacherRemark => 'Teacher\'s remark';
+  String get reportTeacherRemark => 'शिक्षक की टिप्पणी';
 
   @override
-  String get reportOpenPdf => 'Open report card';
+  String get reportOpenPdf => 'रिपोर्ट कार्ड खोलें';
 
   @override
-  String get reportPdfFailed => 'Could not open the report card.';
+  String get reportPdfFailed => 'रिपोर्ट कार्ड नहीं खुल सका।';
 
   @override
   String get authTagline =>
-      'Fees, homework, attendance and reports — all in one app.';
+      'शुल्क, होमवर्क, उपस्थिति और रिपोर्ट — सब एक ही ऐप में।';
 
   @override
   String get classReminderTitle => 'कक्षा रिमाइंडर';

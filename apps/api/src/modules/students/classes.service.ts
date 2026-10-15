@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -165,15 +166,46 @@ export class ClassesService {
     });
   }
 
-  async remove(tenantId: string, classId: string) {
+  /**
+   * Deletes a class. With `moveTo`, its students and their history (reports,
+   * receipts, attendance, notices) move to that class first, in one
+   * transaction; without it, a class with any of those is refused.
+   */
+  async remove(tenantId: string, classId: string, moveTo?: string) {
     const cls = await this.requireClass(tenantId, classId);
 
-    const studentCount = await this.prisma.student.count({
-      where: { classId, tenantId },
-    });
-    if (studentCount > 0) {
+    if (moveTo) {
+      if (moveTo === classId) {
+        throw new BadRequestException('Choose a different class to move to');
+      }
+      await this.requireClass(tenantId, moveTo);
+      const where = { tenantId, classId };
+      const data = { classId: moveTo };
+      await this.prisma.$transaction([
+        this.prisma.student.updateMany({ where, data }),
+        this.prisma.report.updateMany({ where, data }),
+        this.prisma.receipt.updateMany({ where, data }),
+        this.prisma.attendanceRecord.updateMany({ where, data }),
+        this.prisma.broadcast.updateMany({ where, data }),
+        this.prisma.class.delete({ where: { id: cls.id } }),
+      ]);
+      return;
+    }
+
+    const where = { classId, tenantId };
+    const [students, reports, receipts] = await Promise.all([
+      this.prisma.student.count({ where }),
+      this.prisma.report.count({ where }),
+      this.prisma.receipt.count({ where }),
+    ]);
+    if (students > 0) {
       throw new ConflictException(
-        `Cannot delete class: ${studentCount} student(s) still assigned`,
+        `Cannot delete class: ${students} student(s) still assigned`,
+      );
+    }
+    if (reports + receipts > 0) {
+      throw new ConflictException(
+        'Cannot delete class: it still has reports or receipts. Choose a class to move them to.',
       );
     }
 

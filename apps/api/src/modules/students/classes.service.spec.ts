@@ -43,7 +43,12 @@ const mockPrisma = {
   },
   student: {
     count: jest.fn(),
+    updateMany: jest.fn(),
   },
+  report: { count: jest.fn().mockResolvedValue(0), updateMany: jest.fn() },
+  receipt: { count: jest.fn().mockResolvedValue(0), updateMany: jest.fn() },
+  attendanceRecord: { updateMany: jest.fn() },
+  broadcast: { updateMany: jest.fn() },
   user: {
     findUnique: jest.fn(),
   },
@@ -360,6 +365,45 @@ describe('ClassesService', () => {
 
       await expect(service.remove(TENANT, 'bad-id')).rejects.toThrow(
         NotFoundException,
+      );
+    });
+
+    it('refuses a class that still has reports or receipts', async () => {
+      mockPrisma.class.findUnique.mockResolvedValue(baseClass);
+      mockPrisma.student.count.mockResolvedValue(0);
+      mockPrisma.report.count.mockResolvedValueOnce(2);
+
+      await expect(service.remove(TENANT, CLASS_ID)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(mockPrisma.class.delete).not.toHaveBeenCalled();
+    });
+
+    it('moves students and their history to another class, then deletes', async () => {
+      mockPrisma.class.findUnique.mockResolvedValue(baseClass);
+      mockPrisma.$transaction.mockImplementationOnce((ops: unknown[]) =>
+        Promise.all(ops),
+      );
+
+      await service.remove(TENANT, CLASS_ID, 'class-target');
+
+      const move = {
+        where: { tenantId: TENANT, classId: CLASS_ID },
+        data: { classId: 'class-target' },
+      };
+      expect(mockPrisma.student.updateMany).toHaveBeenCalledWith(move);
+      expect(mockPrisma.report.updateMany).toHaveBeenCalledWith(move);
+      expect(mockPrisma.receipt.updateMany).toHaveBeenCalledWith(move);
+      expect(mockPrisma.attendanceRecord.updateMany).toHaveBeenCalledWith(move);
+      expect(mockPrisma.class.delete).toHaveBeenCalledWith({
+        where: { id: CLASS_ID },
+      });
+    });
+
+    it('will not move a class into itself', async () => {
+      mockPrisma.class.findUnique.mockResolvedValue(baseClass);
+      await expect(service.remove(TENANT, CLASS_ID, CLASS_ID)).rejects.toThrow(
+        'different class',
       );
     });
   });

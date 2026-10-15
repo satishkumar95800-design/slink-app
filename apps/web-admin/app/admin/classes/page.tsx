@@ -14,6 +14,8 @@ import { Modal } from '../../../components/ui/modal';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
+import { getSession } from '../../../lib/auth';
+import { DeleteClassModal, EditClassModal } from './class-actions';
 
 interface Class {
   id: string;
@@ -56,6 +58,10 @@ export default function ClassesPage() {
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [assigningClass, setAssigningClass] = useState<Class | null>(null);
+  const [editingClass, setEditingClass] = useState<Class | null>(null);
+  const [deletingClass, setDeletingClass] = useState<Class | null>(null);
+  // Renaming and deleting classes are admin-only on the API.
+  const isAdmin = getSession()?.role === 'admin';
 
   const {
     register,
@@ -175,12 +181,21 @@ export default function ClassesPage() {
                   <td className="px-6 py-4 text-sm text-gray-600">{classTeacherNames(c)}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{c._count?.students ?? 0}</td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={() => openAssign(c)}
-                      className="text-xs text-teal hover:underline"
-                    >
-                      {t('assignTeacher')}
-                    </button>
+                    <div className="flex justify-end gap-3 whitespace-nowrap text-xs">
+                      <button onClick={() => openAssign(c)} className="cursor-pointer text-teal hover:underline">
+                        {t('assignTeacher')}
+                      </button>
+                      {isAdmin && (
+                        <>
+                          <button onClick={() => setEditingClass(c)} className="cursor-pointer text-teal hover:underline">
+                            {tCommon('edit')}
+                          </button>
+                          <button onClick={() => setDeletingClass(c)} className="cursor-pointer text-red-600 hover:underline">
+                            {tCommon('delete')}
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -232,6 +247,28 @@ export default function ClassesPage() {
           </div>
         </form>
       </Modal>
+
+      {editingClass && (
+        <EditClassModal
+          cls={editingClass}
+          onClose={() => setEditingClass(null)}
+          onSaved={() => {
+            setEditingClass(null);
+            fetchClasses();
+          }}
+        />
+      )}
+      {deletingClass && (
+        <DeleteClassModal
+          cls={deletingClass}
+          classes={classes}
+          onClose={() => setDeletingClass(null)}
+          onDeleted={() => {
+            setDeletingClass(null);
+            fetchClasses();
+          }}
+        />
+      )}
     </div>
   );
 }

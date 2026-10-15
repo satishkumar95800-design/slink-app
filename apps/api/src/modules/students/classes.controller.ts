@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { ClassesService } from './classes.service';
@@ -60,8 +61,12 @@ export class ClassesController {
   @Roles(Role.admin, Role.super_admin)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@TenantId() tenantId: string, @Param('id', ParseUUIDPipe) id: string) {
-    await this.classesService.remove(tenantId, id);
+  async remove(
+    @TenantId() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('moveTo', new ParseUUIDPipe({ optional: true })) moveTo?: string,
+  ) {
+    await this.classesService.remove(tenantId, id, moveTo);
   }
 
   // ─── Co-teacher assignment (a class may have more than one teacher) ──────────

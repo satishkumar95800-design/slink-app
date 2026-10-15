@@ -371,7 +371,18 @@
     "create": "Create Class",
     "assignTitle": "Assign Class Teacher — {name}",
     "teacher": "Teacher",
-    "assign": "Assign"
+    "assign": "Assign",
+    "updated": "Class updated",
+    "editTitle": "Edit class — {name}",
+    "deleteTitle": "Delete class — {name}",
+    "deleteEmpty": "This class has no students.",
+    "deleteHasStudents": "{count, plural, =1 {This class has 1 student. Choose a class to move them to before deleting.} other {This class has # students. Choose a class to move them to before deleting.}}",
+    "moveStudentsTo": "Move its students and records to",
+    "pickTargetClass": "Choose a class",
+    "moveAndDelete": "Move and delete",
+    "deleted": "{name} deleted",
+    "noMove": "Don't move anything",
+    "moveHelp": "Students move with their reports, receipts and attendance. The class's timetable, teachers and timings are deleted."
   },
   "teachers": {
     "selectSubject": "Select a subject",
