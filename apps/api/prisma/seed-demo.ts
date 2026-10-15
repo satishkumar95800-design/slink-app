@@ -38,6 +38,7 @@ import {
   StudentNoteType,
 } from '@prisma/client';
 import { explodeFeeItem } from '../src/modules/fees/fee-component-explosion.util';
+import { buildDemoPettyCash } from '../src/modules/petty-cash/demo-seed';
 
 export const DEMO_SLUG = 'gvps-demo';
 export const DEMO_SCHOOL_NAME = 'Green Valley Public School';
@@ -488,6 +489,9 @@ export async function seedDemo(prisma: PrismaClient) {
         transportFeeModule: true,
         photoGallery: false,
         isDemo: true,
+        // Optional modules, so the demo shows them (all off by default elsewhere).
+        pettyCash: true,
+        calendar: true,
       },
     },
   });
@@ -1537,6 +1541,28 @@ export async function seedDemo(prisma: PrismaClient) {
       }),
   });
 
+  // ── Petty cash: about five months of cash history, so the forecast can be seen ──
+  // Only ever for this flagged demo school (the `pettyCash` flag is set above).
+  const petty = buildDemoPettyCash(
+    {
+      tenantId,
+      adminId: admin.id,
+      accountantId: accountant.id,
+      // Demo teacher first; the third teacher is the one who settles advances late.
+      teacherIds: [teachers[6].id, teachers[1].id, teachers[2].id],
+    },
+    todayYmd,
+  );
+  await prisma.pettyCashSetting.create({ data: petty.settings });
+  await prisma.pettyCashCategory.createMany({ data: petty.categories });
+  await prisma.pettyCashPayee.createMany({ data: petty.payees });
+  await files.put(
+    petty.receiptKey,
+    placeholderPng(480, 640, [252, 250, 245], [70, 90, 140]),
+    'image/png',
+  );
+  await prisma.pettyCashEntry.createMany({ data: petty.entries });
+
   await prisma.tenant.update({
     where: { id: tenantId },
     data: { receiptSequence: receiptSeq },
@@ -1557,6 +1583,7 @@ export async function seedDemo(prisma: PrismaClient) {
       `Demo school ready: ${DEMO_SCHOOL_NAME} (school code: ${DEMO_SLUG}, ${ACADEMIC_YEAR})`,
       `  ${CLASSES.length} classes · ${students.length} students · ${parents.length} parents · ${teachers.length} teachers · ${SIBLING_PAIRS.length} sibling pairs`,
       `  Fees: ${lakh(collected)} collected · ${lakh(due - collected)} outstanding (of ${lakh(due)})`,
+      `  Petty cash: ${petty.entries.length} entries over ~5 months (flag on for this school)`,
       `  ${receipts.length} receipts · ${claims.length} payment claims · ${broadcasts.length} homework/notices · ${reports.length} reports`,
       `  Attendance: ${((present / marked) * 100).toFixed(1)}% over ${schoolDays.length} school days${todayIsSchoolDay ? `; ${unmarkedToday.size} classes not yet marked today` : ''}`,
       `  Files: ${files.uploaded} uploaded, ${files.skipped} skipped`,

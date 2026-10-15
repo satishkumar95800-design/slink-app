@@ -50,6 +50,7 @@ To use a different password, set `DEMO_SEED_PASSWORD` before running.
   - Class and school notices, one with a PDF circular.
   - Seen-by counts for both.
 - **Reports and notes:** report-card PDFs (including the demo parent's children), progress reports with read receipts, and internal student notes.
+- **Petty cash** (module switched on for this school only): about five months of cash history so the forecast and savings advice show up. Top-ups, advances to staff and ground staff that are settled (one teacher settles late, one advance is overdue), a pending approval, one rejected and one voided entry, and a spread of small purchases. Admin sees the approval queue; the accountant enters the rest.
 - **Holidays:** Independence Day, Gandhi Jayanti, Kannada Rajyotsava, Christmas, Republic Day.
 
 ## Remove it

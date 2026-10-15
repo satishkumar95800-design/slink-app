@@ -11,6 +11,7 @@ import { Input } from '../../../components/ui/input';
 import { Select } from '../../../components/ui/select';
 import { useToast } from '../../../components/ui/toast';
 import { getSession } from '../../../lib/auth';
+import { useTenantFeatures } from '../../../lib/tenant-features';
 import { BellSchedulesSection } from './bell-schedules';
 import { EventsSection } from './events-section';
 
@@ -33,6 +34,7 @@ export default function SettingsPage() {
   const errorText = useErrorText();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { calendar } = useTenantFeatures();
 
   const [tenant, setTenant] = useState<TenantSelf | null>(null);
   const [stage, setStage] = useState<Stage>('idle');
@@ -105,7 +107,7 @@ export default function SettingsPage() {
 
       {getSession()?.role === 'admin' && <CustomFieldsSection />}
       {getSession()?.role === 'admin' && <HolidaysSection />}
-      {getSession()?.role === 'admin' && <EventsSection />}
+      {calendar && getSession()?.role === 'admin' && <EventsSection />}
       {getSession()?.role === 'admin' && <BellSchedulesSection />}
     </div>
   );

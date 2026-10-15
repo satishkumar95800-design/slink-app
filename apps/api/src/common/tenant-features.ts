@@ -7,7 +7,11 @@ import type { PrismaService } from '../prisma/prisma.service';
  * (super_admin) can switch these, via PATCH /tenants/:id/features.
  */
 export type OptionalFeature =
-  'transferCertificate' | 'feeConcession' | 'aiInsights';
+  | 'transferCertificate'
+  | 'feeConcession'
+  | 'aiInsights'
+  | 'pettyCash'
+  | 'calendar';
 
 export async function isFeatureEnabled(
   prisma: PrismaService,

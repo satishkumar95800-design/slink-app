@@ -15,6 +15,7 @@ import '../../core/l10n/l10n.dart';
 import '../attendance/attendance_outbox.dart';
 import '../attendance/attendance_repository.dart';
 import '../../shared/services/ai_repository.dart';
+import '../../shared/services/branding_repository.dart';
 
 const _overlap = 36.0;
 
@@ -161,12 +162,13 @@ class _TeacherDashboardBody extends ConsumerWidget {
                       color: FeatureColors.timetable,
                       onTap: () => context.push('/dashboard/routine'),
                     ),
-                    FeatureTile(
-                      icon: Icons.calendar_month_rounded,
-                      label: l.calendarTitle,
-                      color: FeatureColors.calendar,
-                      onTap: () => context.push('/calendar'),
-                    ),
+                    if (ref.watch(calendarEnabledProvider))
+                      FeatureTile(
+                        icon: Icons.calendar_month_rounded,
+                        label: l.calendarTitle,
+                        color: FeatureColors.calendar,
+                        onTap: () => context.push('/calendar'),
+                      ),
                     FeatureTile(
                       icon: Icons.groups_rounded,
                       label: l.teacherAboutMyClasses,

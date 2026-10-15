@@ -19,6 +19,10 @@ import { extname } from 'path';
 import type { Express } from 'express';
 import { FileCategory, ALLOWED_MIME, MAX_BYTES } from './dto/upload-file.dto';
 
+/** Petty cash receipts (private/{tenant}/petty-cash/...) are reachable only through the petty-cash module. */
+export const isPettyCashKey = (key: string): boolean =>
+  key.split('/')[2] === 'petty-cash';
+
 export interface UploadResult {
   key: string;
   /** Direct public URL for public/ objects; null for private objects */
@@ -206,6 +210,8 @@ export class FilesService {
         return `private/${tenantId}/payment-claims/${uuid}${ext}`;
       case FileCategory.TRANSFER_CERTIFICATE:
         return `private/${tenantId}/students/${entityId ?? uuid}/tc/${uuid}${ext}`;
+      case FileCategory.PETTY_CASH_RECEIPT:
+        return `private/${tenantId}/petty-cash/${uuid}${ext}`;
     }
   }
 

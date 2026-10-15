@@ -17,4 +17,14 @@ export class UpdatePlatformFeaturesDto extends UpdateFeaturesDto {
   @IsBoolean()
   @IsOptional()
   aiInsights?: boolean;
+
+  /** Petty cash ledger, advances, approvals and forecast (admin console; admin + accounts only). */
+  @IsBoolean()
+  @IsOptional()
+  pettyCash?: boolean;
+
+  /** School calendar (holidays, events, PTMs) in the mobile apps and the events section in settings. */
+  @IsBoolean()
+  @IsOptional()
+  calendar?: boolean;
 }

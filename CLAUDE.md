@@ -85,7 +85,7 @@ pnpm db:generate   # regenerates the Prisma client
 | reports | done | Teacher → student → parent progress reports, read receipts |
 | notifications | done | FCM push (multicast), Twilio SMS, broadcast, audit log, FCM token management |
 | files | done | S3 upload/download, presigned URLs, tenant-isolated key paths |
-| calendar | done | School calendar: admin-managed events + PTMs (`school_events`), unified `GET /calendar?from=&to=` feed with holidays for parents and teachers (mobile month-grid calendar) |
+| calendar | done | School calendar: admin-managed events + PTMs (`school_events`), unified `GET /calendar?from=&to=` feed with holidays for parents and teachers (mobile month-grid calendar). Optional: `calendar` flag, off by default; every endpoint answers `FEATURE_DISABLED` without it and the mobile tiles hide (flag read from `GET /tenant` `features`) |
 | attendance | done | Daily class attendance (bulk upsert), absent/correction pushes, school holidays, summaries + CSV report |
 | parent | done | Parent home summary (fees/today/attendance in one call), per-child notices |
 | fee-reminders | done | Daily Bull job: fee-due pushes 3 days before and on the due date |
@@ -95,7 +95,21 @@ pnpm db:generate   # regenerates the Prisma client
 | payment-gateway | done | Per-school Razorpay keys, encrypted (platform console) |
 | ai | done | Premium (`aiInsights`): Claude client with per-school cap + usage log, notice translation, report remark drafts — docs/SPEC-ai.md |
 | assistant | done | Premium plain-language questions: the model picks one fixed read-only query (staff: attendance, absentees, fees, collections, strength, workload; parents: own child's attendance, fees, homework, notices) — docs/SPEC-ai.md |
+| petty-cash | done | Optional (`pettyCash` flag). Admin-console-only cash ledger for the accountant: float top-ups, advances to staff/registered payees, expenses, settlements/returns, admin approval above a threshold, categories/payees/settings, CSV export, deterministic forecast + savings rules (needs >= 3 months of approved expenses; optional AI phrasing under `aiInsights`) |
 | alerts | done | Premium pattern warnings (attendance, risk, fees, money anomalies, workload) + Monday summary, nightly — docs/SPEC-ai.md |
+
+## Optional per-school modules (feature flags)
+
+`tenants.features` flags are off unless set; only the platform `super_admin` switches them (`PATCH /tenants/:id/features`, `UpdatePlatformFeaturesDto`, toggles in the platform console tenant page). Add one by extending `OptionalFeature` in `apps/api/src/common/tenant-features.ts`, the DTO, and `OPTIONAL_MODULES` in the platform tenant page; endpoints call `assertFeatureEnabled` (403 `FEATURE_DISABLED`), the web-admin hides the nav item via `useTenantFeatures`. Current flags: `transferCertificate`, `feeConcession`, `aiInsights`, `pettyCash`, `calendar`.
+
+## Petty cash invariants (apps/api/src/modules/petty-cash)
+
+- Admin console only. Every route is `@Roles(admin, accounts, super_admin)` (super_admin follows the other finance controllers: admin-equivalent) behind `PettyCashFeatureGuard`; parents/teachers never reach it, and petty-cash receipt keys (`private/{tenant}/petty-cash/`) are refused by the generic `/files` upload, signed-url and delete endpoints.
+- Ledger is append-only: no edit, no hard delete. Corrections are a void (with reason) plus a new entry. Float and open advances are derived from APPROVED rows only, never stored.
+- Entries above `approvalThreshold` start PENDING and affect nothing until an admin approves. An admin entering one above the threshold self-approves (recorded in the audit log); an accountant never approves, and nobody approves their own pending entry. Approval and voiding re-check that the float stays >= 0 and no disbursement is over-settled.
+- Recipients are exactly one of a staff user (teacher/admin/accounts of the same school) or a registered `PettyCashPayee`; no free-text names. Payees are deactivated, never deleted.
+- Money: NUMERIC(12,2) in the DB, integer paise inside the service (`petty-cash.math.ts`), rupee strings at the API boundary. Float-changing writes take a per-school advisory lock. Every mutation writes an `AuditLog` row.
+- Forecast and savings rules are deterministic code (`petty-cash.forecast.ts`); the model may only rephrase rule-computed findings, and the reply is discarded unless every number in it came from those findings.
 
 ## Tech decisions (do not revisit without discussion)
 

@@ -8,6 +8,8 @@ export interface TenantFeatures {
   transferCertificate?: boolean;
   feeConcession?: boolean;
   aiInsights?: boolean;
+  pettyCash?: boolean;
+  calendar?: boolean;
 }
 
 // Keyed by school so signing in to another school in the same tab refetches.
@@ -27,15 +29,20 @@ function load(): Promise<TenantFeatures> {
   return features;
 }
 
-/** Features for the signed-in school; empty (everything off) until loaded. */
-export function useTenantFeatures(): TenantFeatures {
-  const [features, setFeatures] = useState<TenantFeatures>({});
+/** Features plus whether they have loaded yet (to tell "still loading" from "switched off"). */
+export function useTenantFeaturesState(): { features: TenantFeatures; loaded: boolean } {
+  const [state, setState] = useState<{ features: TenantFeatures; loaded: boolean }>({ features: {}, loaded: false });
   useEffect(() => {
     let live = true;
-    load().then((f) => live && setFeatures(f));
+    load().then((f) => live && setState({ features: f, loaded: true }));
     return () => {
       live = false;
     };
   }, []);
-  return features;
+  return state;
+}
+
+/** Features for the signed-in school; empty (everything off) until loaded. */
+export function useTenantFeatures(): TenantFeatures {
+  return useTenantFeaturesState().features;
 }

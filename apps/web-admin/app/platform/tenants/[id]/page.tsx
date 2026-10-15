@@ -46,6 +46,16 @@ const OPTIONAL_MODULES = [
     name: 'Fee concessions',
     help: "Percentage concession on a student's unpaid fees, and today's concession total on the dashboard.",
   },
+  {
+    key: 'pettyCash',
+    name: 'Petty cash',
+    help: 'Cash float ledger for the accountant: advances, approvals above a limit, forecast and savings advice. Admin and accounts only.',
+  },
+  {
+    key: 'calendar',
+    name: 'School calendar',
+    help: 'Holidays, events and parent-teacher meetings in the parent and teacher mobile apps, with events managed in Settings.',
+  },
 ] as const;
 
 type Tab = 'overview' | 'import' | 'users' | 'settings';

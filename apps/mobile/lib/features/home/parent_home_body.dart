@@ -14,6 +14,7 @@ import '../dashboard/students_repository.dart';
 import 'parent_home_models.dart';
 import 'parent_home_repository.dart';
 import '../../shared/services/ai_repository.dart';
+import '../../shared/services/branding_repository.dart';
 
 const _overlap = 36.0;
 
@@ -136,12 +137,13 @@ class _ParentHomeBodyState extends ConsumerState<ParentHomeBody> {
                       color: FeatureColors.reports,
                       onTap: () => context.push('/dashboard/reports'),
                     ),
-                    FeatureTile(
-                      icon: Icons.calendar_month_rounded,
-                      label: l.calendarTitle,
-                      color: FeatureColors.calendar,
-                      onTap: () => context.push('/calendar'),
-                    ),
+                    if (ref.watch(calendarEnabledProvider))
+                      FeatureTile(
+                        icon: Icons.calendar_month_rounded,
+                        label: l.calendarTitle,
+                        color: FeatureColors.calendar,
+                        onTap: () => context.push('/calendar'),
+                      ),
                     FeatureTile(
                       icon: Icons.notifications_rounded,
                       label: l.notificationsTitle,

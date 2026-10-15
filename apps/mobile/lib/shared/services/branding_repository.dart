@@ -26,3 +26,9 @@ final brandingProvider = FutureProvider<TenantBranding?>((ref) async {
   if (session.status != SessionStatus.loggedIn) return null;
   return ref.read(brandingRepositoryProvider).getBranding();
 });
+
+/// Whether the school has the calendar module on. False while branding loads
+/// or fails, so the calendar tile never flashes for a school that doesn't have it.
+final calendarEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(brandingProvider).valueOrNull?.calendarEnabled ?? false;
+});

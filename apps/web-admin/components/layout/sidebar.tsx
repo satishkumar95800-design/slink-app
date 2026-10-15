@@ -15,6 +15,7 @@ import {
   LucideIcon,
   PanelLeftClose,
   PanelLeftOpen,
+  PiggyBank,
   Presentation,
   Receipt,
   School,
@@ -24,17 +25,22 @@ import {
   Wallet,
 } from 'lucide-react';
 import { getSession } from '../../lib/auth';
+import { TenantFeatures, useTenantFeatures } from '../../lib/tenant-features';
 import { useTranslations } from 'next-intl';
 import { strings } from '../../lib/strings';
 import { LanguageSwitcher } from './language-switcher';
 
 interface NavItem {
   /** Key into messages "nav". */
-  label: 'dashboard' | 'users' | 'students' | 'classes' | 'teachers' | 'fees' | 'studentFees' | 'payments' | 'feeReports' | 'reports' | 'attendance' | 'documents' | 'timetable' | 'paymentClaims' | 'import' | 'settings';
+  label: 'dashboard' | 'users' | 'students' | 'classes' | 'teachers' | 'fees' | 'studentFees' | 'payments' | 'feeReports' | 'reports' | 'attendance' | 'documents' | 'timetable' | 'paymentClaims' | 'pettyCash' | 'import' | 'settings';
   href: string;
   icon: LucideIcon;
   /** Roles that should not see this item in the sidebar (still reachable by direct URL if the API allows it). */
   hiddenForRoles?: string[];
+  /** Only these roles see the item (still subject to the API's own checks). */
+  onlyRoles?: string[];
+  /** Optional per-school module that must be switched on (tenants.features). */
+  feature?: keyof TenantFeatures;
 }
 
 interface NavGroup {
@@ -65,6 +71,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'payments', href: '/admin/payments', icon: CreditCard, hiddenForRoles: ['teacher'] },
       { label: 'paymentClaims', href: '/admin/payment-claims', icon: Receipt, hiddenForRoles: ['teacher'] },
       { label: 'feeReports', href: '/admin/fee-reports', icon: ChartLine, hiddenForRoles: ['teacher'] },
+      { label: 'pettyCash', href: '/admin/petty-cash', icon: PiggyBank, onlyRoles: ['admin', 'accounts'], feature: 'pettyCash' },
     ],
   },
   {
@@ -91,9 +98,15 @@ export function Sidebar({ tenant, open = false, onClose, collapsed = false, onTo
   const t = useTranslations('nav');
   const pathname = usePathname();
   const role = getSession()?.role;
+  const features = useTenantFeatures();
   const groups = NAV_GROUPS.map((g) => ({
     ...g,
-    items: g.items.filter((item) => !role || !item.hiddenForRoles?.includes(role)),
+    items: g.items.filter(
+      (item) =>
+        (!role || !item.hiddenForRoles?.includes(role)) &&
+        (!item.onlyRoles || (!!role && item.onlyRoles.includes(role))) &&
+        (!item.feature || features[item.feature] === true),
+    ),
   })).filter((g) => g.items.length > 0);
   // Labels hide only on desktop when collapsed.
   const hideWhenCollapsed = collapsed ? 'lg:hidden' : '';
