@@ -315,6 +315,7 @@ export function createDb(seed: Record<string, Row[]> = {}) {
     'hrSetting',
     'schoolHoliday',
     'auditLog',
+    'pettyCashPayee',
     'notification',
   ];
   const prisma: Row = {

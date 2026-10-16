@@ -5,7 +5,7 @@ import { OPTIONAL_TAB_HEADERS, REQUIRED_TABS, TAB_HEADERS } from './tab-schema';
 
 @Injectable()
 export class WorkbookParserService {
-  async parse(buffer: Buffer): Promise<ParsedWorkbook> {
+  private async load(buffer: Buffer): Promise<ExcelJS.Workbook> {
     const workbook = new ExcelJS.Workbook();
     try {
       // exceljs's .d.ts targets the pre-@types/node-24 non-generic Buffer type
@@ -17,6 +17,45 @@ export class WorkbookParserService {
         'File could not be read — make sure it is a valid .xlsx file',
       );
     }
+    return workbook;
+  }
+
+  /**
+   * Generic reader for the separate (non-onboarding) templates: checks the named
+   * tabs exist and that each carries its expected headers, returning rows by tab.
+   */
+  async parseTabs(
+    buffer: Buffer,
+    tabs: Array<{
+      name: string;
+      headers: string[];
+      optionalHeaders?: string[];
+    }>,
+  ): Promise<Record<string, ParsedTab>> {
+    const workbook = await this.load(buffer);
+    const sheetNames = workbook.worksheets.map((ws) => ws.name);
+    const missingTabs = tabs
+      .map((t) => t.name)
+      .filter((name) => !sheetNames.includes(name));
+    if (missingTabs.length > 0) {
+      throw new BadRequestException(
+        `Missing required tab(s): ${missingTabs.join(', ')}`,
+      );
+    }
+    const out: Record<string, ParsedTab> = {};
+    for (const t of tabs) {
+      out[t.name] = this.parseTab(
+        workbook,
+        t.name,
+        t.headers,
+        t.optionalHeaders,
+      );
+    }
+    return out;
+  }
+
+  async parse(buffer: Buffer): Promise<ParsedWorkbook> {
+    const workbook = await this.load(buffer);
 
     const sheetNames = workbook.worksheets.map((ws) => ws.name);
     const missingTabs = REQUIRED_TABS.filter(

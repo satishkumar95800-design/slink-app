@@ -136,7 +136,7 @@ export default function TenantDetailPage() {
           <PaymentGatewayCard tenantId={tenant.id} tenantName={tenant.name} />
         </>
       )}
-      {tab === 'import' && <ImportWorkflow tenantOverride={tenant.slug} />}
+      {tab === 'import' && <ImportWorkflow tenantOverride={tenant.slug} pettyCash={tenant.features?.pettyCash === true} payeeHintWhenOff />}
       {tab === 'users' && <UsersTab tenant={tenant} onChanged={fetchTenant} />}
       {tab === 'settings' && <SettingsTab tenant={tenant} onSaved={fetchTenant} />}
     </div>

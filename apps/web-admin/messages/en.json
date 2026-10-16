@@ -900,7 +900,15 @@
     "fixRenamedColumnAi": "{tab}: column \"{from}\" → \"{to}\" (matched by AI)",
     "fixNameCase": "{tab}: fixed capitals in {count} \"{column}\" values (e.g. {example})",
     "fixTrimmed": "{tab}: removed extra spaces in {count} cells",
-    "fixClassName": "{tab}: \"{from}\" → \"{to}\" ({count, plural, =1 {1 row} other {# rows}})"
+    "fixClassName": "{tab}: \"{from}\" → \"{to}\" ({count, plural, =1 {1 row} other {# rows}})",
+    "payeeTitle": "Vendors & Ground Staff",
+    "payeeIntro": "A separate template for people you pay in cash, such as gardeners and peons, and vendors such as bus operators. They are added to the Petty Cash payee list and are visible only to admin and accounts. Nothing is saved until validation passes and you click Import.",
+    "payeeDownloadTemplate": "Download vendors & ground staff template",
+    "payeeHintOff": "Enable Petty Cash for this school to import vendors and ground staff.",
+    "entityGroundStaff": "Ground staff",
+    "entityVendors": "Vendors",
+    "colSkipped": "Skipped (already registered)",
+    "payeeSkippedNote": "Rows that match someone already in the payee list are skipped, not changed."
   },
   "customFields": {
     "sectionTitle": "Extra student fields",

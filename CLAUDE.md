@@ -122,6 +122,11 @@ pnpm db:generate   # regenerates the Prisma client
 - **Payroll:** money is NUMERIC(12,2) in the DB and integer paise in `payroll.math.ts`. Statutory PF/ESI/PT use per-school configurable rates, ceilings and slabs (Karnataka PT slabs seed as an editable default the school's accountant must verify); TDS is a manual deduction; there is no filing, Form 16 or challan. Pay run lines are snapshots (earnings, deductions, LOP, bank details), so later structure/employee edits never rewrite history; corrections go in the next run as adjustments. One non-cancelled run per school per month (advisory lock + partial unique index). A LOCKED run is immutable; only mark-paid (once, with a bank reference) is allowed afterwards. The accountant prepares, an admin approves; accounts can never approve, and an admin approving a run they prepared is recorded as `selfApproved` in the audit log. Every mutation and sensitive reveal writes an `AuditLog` row.
 - Leave balances are derived (allowance + capped carry-in from the previous leave year - approved use; pending is held back), never stored. Approved leave writes `ON_LEAVE`/`HALF_DAY` rows into staff attendance (linked by `leave_request_id`); unpaid leave types and absences become loss-of-pay days in payroll.
 
+## Imports
+
+- Onboarding import (`/imports/template|validate|commit`, admin + super_admin): Classes/Users/Teachers/Students/Fee Structures only.
+- Vendors & ground staff import is a SEPARATE template (`/imports/payees/template|validate|commit`; admin + accounts + super_admin). It writes `PettyCashPayee` rows (VENDOR / GROUND_STAFF), is gated by the `pettyCash` feature flag (403 FEATURE_DISABLED when off), and is shown in `ImportWorkflow` (tenant admin + platform tenant page) only when the flag is on. Never add these records to the onboarding template.
+
 ## Tech decisions (do not revisit without discussion)
 
 - **Flutter** over React Native (native rendering, Flutter Flavors for tenant theming)
