@@ -97,7 +97,10 @@
     "INVALID_ESINUMBER": "ESI number must be 10 to 17 digits.",
     "ALREADY_EXITED": "This employee has already exited.",
     "NOT_EXITED": "This employee has not exited.",
-    "EXIT_BEFORE_JOIN": "The exit date cannot be before the joining date."
+    "EXIT_BEFORE_JOIN": "The exit date cannot be before the joining date.",
+    "FOLDER_EXISTS": "A folder with this name already exists.",
+    "FOLDER_NOT_EMPTY": "Delete the files in this folder first.",
+    "NOT_OWNER": "Only the person who added this, or an admin, can change it."
   },
   "language": {
     "label": "Language",
@@ -129,7 +132,9 @@
     "expand": "Expand menu",
     "pettyCash": "Petty Cash",
     "hr": "HR & Payroll",
-    "absence": "Absence"
+    "absence": "Absence",
+    "payslips": "My Payslips",
+    "sharedDocs": "Shared Documents"
   },
   "header": {
     "changePassword": "Change Password",
@@ -1669,5 +1674,55 @@
     "slabMonthly": "Tax per month (₹)",
     "slabFebruary": "February (₹)",
     "addSlab": "Add slab"
+  },
+  "payslips": {
+    "title": "My Payslips",
+    "intro": "Your payslip for each month the school has finalised payroll. Download any month as a PDF.",
+    "colMonth": "Month",
+    "colGross": "Gross",
+    "colDeductions": "Deductions",
+    "colNet": "Net pay",
+    "colStatus": "Status",
+    "paidOn": "Paid {date}",
+    "unpaid": "Not paid yet",
+    "download": "Download",
+    "emptyTitle": "No payslips yet",
+    "emptyBody": "Payslips appear here once the school locks a month's payroll.",
+    "noRecord": "Your login is not linked to an HR record yet. Ask the school office to link it, then your payslips will show here.",
+    "off": "HR & Payroll is not turned on for your school.",
+    "loadFailed": "Could not load your payslips. Please try again."
+  },
+  "sharedDocs": {
+    "title": "Shared Documents",
+    "intro": "Folders and files every teacher and staff member of the school can see and download.",
+    "newFolder": "+ New folder",
+    "newFolderTitle": "New folder",
+    "renameTitle": "Rename folder",
+    "folderName": "Folder name",
+    "folderNamePlaceholder": "e.g. Lesson plans",
+    "folderCreated": "Folder created.",
+    "folderRenamed": "Folder renamed.",
+    "folderDeleted": "Folder deleted.",
+    "allFolders": "All folders",
+    "rename": "Rename",
+    "deleteFolder": "Delete folder",
+    "confirmDeleteFolder": "Delete the folder \"{name}\"?",
+    "upload": "Upload files",
+    "uploaded": "{count, plural, =1 {1 file uploaded.} other {# files uploaded.}}",
+    "tooBig": "{name} is larger than 20 MB.",
+    "fileCount": "{count, plural, =0 {No files} =1 {1 file} other {# files}}",
+    "createdBy": "Created by {name}",
+    "noFoldersTitle": "No folders yet",
+    "noFoldersBody": "Create a folder, then upload files into it for all staff to see.",
+    "noFilesTitle": "This folder is empty",
+    "noFilesBody": "Upload PDFs, images, Word, Excel or PowerPoint files (up to 20 MB each).",
+    "colFile": "File",
+    "colSize": "Size",
+    "colUploadedBy": "Uploaded by",
+    "colUploaded": "Uploaded",
+    "download": "Download",
+    "deleteFile": "Delete file",
+    "fileDeleted": "File deleted.",
+    "confirmDeleteFile": "Delete \"{name}\"? Other staff will no longer see it."
   }
 }

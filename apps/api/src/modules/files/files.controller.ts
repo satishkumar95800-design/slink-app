@@ -54,10 +54,11 @@ export class FilesController {
     @Body() dto: UploadFileDto,
   ) {
     if (!file) throw new BadRequestException('No file provided');
-    // Petty cash receipts and HR documents go through their own modules (admin/accounts + feature flag).
+    // Petty cash receipts, HR documents and shared staff documents go through their own modules.
     if (
       dto.category === FileCategory.PETTY_CASH_RECEIPT ||
-      dto.category === FileCategory.HR_DOCUMENT
+      dto.category === FileCategory.HR_DOCUMENT ||
+      dto.category === FileCategory.STAFF_DOCUMENT
     )
       throw new ForbiddenException('Access denied to this file');
     return this.filesService.upload(tenantId, file, dto.category, dto.entityId);
@@ -75,7 +76,11 @@ export class FilesController {
   ) {
     if (isModuleOwnedKey(query.key))
       throw new ForbiddenException('Access denied to this file');
-    const url = await this.filesService.getSignedUrl(query.key, tenantId, query.expiresIn);
+    const url = await this.filesService.getSignedUrl(
+      query.key,
+      tenantId,
+      query.expiresIn,
+    );
     return { url, expiresIn: query.expiresIn ?? 900 };
   }
 
@@ -85,10 +90,7 @@ export class FilesController {
   @Delete()
   @Roles(Role.admin, Role.accounts)
   @HttpCode(HttpStatus.NO_CONTENT)
-  delete(
-    @TenantId() tenantId: string,
-    @Query('key') key: string,
-  ) {
+  delete(@TenantId() tenantId: string, @Query('key') key: string) {
     if (!key) throw new BadRequestException('key query param is required');
     if (isModuleOwnedKey(key))
       throw new ForbiddenException('Access denied to this file');

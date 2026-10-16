@@ -231,6 +231,8 @@ model Tenant {
   hrSetting                HrSetting?
   employees                Employee[]
   employeeDocuments        EmployeeDocument[]
+  staffFolders             StaffFolder[]
+  staffFiles               StaffFile[]
   staffAttendance          StaffAttendance[]
   leaveTypes               LeaveType[]
   leaveRequests            LeaveRequest[]
@@ -1573,6 +1575,43 @@ model EmployeeDocument {
 
   @@index([tenantId, employeeId])
   @@map("employee_documents")
+}
+
+/// Shared staff documents: folders any teacher/admin/accounts user of the school
+/// can create, and files every staff member of the school can see and download.
+model StaffFolder {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  name      String
+  createdBy String   @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  files  StaffFile[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("staff_folders")
+}
+
+model StaffFile {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  folderId    String   @map("folder_id") @db.Uuid
+  /// S3 key (private/{tenantId}/staff-docs/{folderId}/...), never a URL.
+  fileKey     String   @map("file_key")
+  fileName    String   @map("file_name")
+  contentType String   @map("content_type")
+  size        Int
+  uploadedBy  String   @map("uploaded_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  folder StaffFolder @relation(fields: [folderId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, folderId])
+  @@map("staff_files")
 }
 
 /// One row per employee per day. Rows written by an approved leave carry leaveRequestId.

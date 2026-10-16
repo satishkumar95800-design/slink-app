@@ -10,7 +10,9 @@ import {
   ChartLine,
   ClipboardList,
   CreditCard,
+  FileText,
   FolderOpen,
+  Folders,
   GraduationCap,
   LayoutDashboard,
   LucideIcon,
@@ -34,7 +36,7 @@ import { LanguageSwitcher } from './language-switcher';
 
 interface NavItem {
   /** Key into messages "nav". */
-  label: 'dashboard' | 'users' | 'students' | 'classes' | 'teachers' | 'fees' | 'studentFees' | 'payments' | 'feeReports' | 'reports' | 'attendance' | 'documents' | 'timetable' | 'paymentClaims' | 'pettyCash' | 'hr' | 'absence' | 'import' | 'settings';
+  label: 'dashboard' | 'users' | 'students' | 'classes' | 'teachers' | 'fees' | 'studentFees' | 'payments' | 'feeReports' | 'reports' | 'attendance' | 'documents' | 'timetable' | 'paymentClaims' | 'pettyCash' | 'hr' | 'absence' | 'payslips' | 'sharedDocs' | 'import' | 'settings';
   href: string;
   icon: LucideIcon;
   /** Roles that should not see this item in the sidebar (still reachable by direct URL if the API allows it). */
@@ -64,6 +66,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'timetable', href: '/admin/timetable', icon: CalendarDays, hiddenForRoles: ['teacher'] },
       { label: 'reports', href: '/admin/reports', icon: ChartColumn },
       { label: 'documents', href: '/admin/documents', icon: FolderOpen, hiddenForRoles: ['teacher'] },
+      { label: 'sharedDocs', href: '/admin/shared-documents', icon: Folders, onlyRoles: ['teacher', 'admin', 'accounts'] },
     ],
   },
   {
@@ -76,6 +79,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'feeReports', href: '/admin/fee-reports', icon: ChartLine, hiddenForRoles: ['teacher'] },
       { label: 'pettyCash', href: '/admin/petty-cash', icon: PiggyBank, onlyRoles: ['admin', 'accounts'], feature: 'pettyCash' },
       { label: 'hr', href: '/admin/hr', icon: Briefcase, onlyRoles: ['admin', 'accounts'], feature: 'hrms' },
+      { label: 'payslips', href: '/admin/payslips', icon: FileText, onlyRoles: ['teacher'], feature: 'hrms' },
     ],
   },
   {

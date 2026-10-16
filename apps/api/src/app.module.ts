@@ -34,6 +34,7 @@ import { TransportModule } from './modules/transport/transport.module';
 import { SubjectsModule } from './modules/subjects/subjects.module';
 import { TeachersModule } from './modules/teachers/teachers.module';
 import { AccountantDocumentsModule } from './modules/accountant-documents/accountant-documents.module';
+import { StaffDocumentsModule } from './modules/staff-documents/staff-documents.module';
 import { TimetableModule } from './modules/timetable/timetable.module';
 import { TeacherDashboardModule } from './modules/teacher-dashboard/teacher-dashboard.module';
 import { PaymentClaimsModule } from './modules/payment-claims/payment-claims.module';
@@ -87,6 +88,7 @@ import { ClassRemindersModule } from './modules/class-reminders/class-reminders.
     SubjectsModule,
     TeachersModule,
     AccountantDocumentsModule,
+    StaffDocumentsModule,
     TimetableModule,
     TeacherDashboardModule,
     PaymentClaimsModule,

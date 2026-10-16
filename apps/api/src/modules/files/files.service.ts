@@ -26,9 +26,13 @@ export const isPettyCashKey = (key: string): boolean =>
 /** HR documents (private/{tenant}/hr/...) are reachable only through the hrms module. */
 export const isHrKey = (key: string): boolean => key.split('/')[2] === 'hr';
 
+/** Shared staff documents (private/{tenant}/staff-docs/...) are reachable only through the staff-documents module. */
+export const isStaffDocKey = (key: string): boolean =>
+  key.split('/')[2] === 'staff-docs';
+
 /** Keys the generic /files routes must never serve, sign or delete. */
 export const isModuleOwnedKey = (key: string): boolean =>
-  isPettyCashKey(key) || isHrKey(key);
+  isPettyCashKey(key) || isHrKey(key) || isStaffDocKey(key);
 
 /**
  * The S3 key of one of this school's student photos, from either the stored
@@ -151,7 +155,10 @@ export class FilesService {
     key: string,
     tenantId: string,
     expiresIn = 900,
-    { verifyExists = true }: { verifyExists?: boolean } = {},
+    {
+      verifyExists = true,
+      downloadName,
+    }: { verifyExists?: boolean; downloadName?: string } = {},
   ): Promise<string> {
     this.assertTenantOwnsKey(key, tenantId);
 
@@ -173,7 +180,16 @@ export class FilesService {
 
     return getSignedUrl(
       this.s3,
-      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        // Saves under the original name instead of the uuid key.
+        ...(downloadName
+          ? {
+              ResponseContentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(downloadName)}`,
+            }
+          : {}),
+      }),
       { expiresIn },
     );
   }
@@ -256,6 +272,8 @@ export class FilesService {
         return `private/${tenantId}/petty-cash/${uuid}${ext}`;
       case FileCategory.HR_DOCUMENT:
         return `private/${tenantId}/hr/${entityId ?? uuid}/${uuid}${ext}`;
+      case FileCategory.STAFF_DOCUMENT:
+        return `private/${tenantId}/staff-docs/${entityId ?? uuid}/${uuid}${ext}`;
     }
   }
 
