@@ -22,6 +22,7 @@ function makeMockTx() {
     },
     classTeacher: {
       upsert: jest.fn(),
+      updateMany: jest.fn(),
     },
     feeStructure: {
       findFirst: jest.fn(),
@@ -37,6 +38,8 @@ function makeMockTx() {
     },
     student: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
     studentParent: { findUnique: jest.fn(), create: jest.fn() },
+    subject: { findUnique: jest.fn(), create: jest.fn() },
+    teacherSubject: { findUnique: jest.fn(), create: jest.fn() },
   };
 }
 
@@ -366,12 +369,74 @@ describe('ImportsService.commit', () => {
 
     await service.commit(TENANT, ACTOR, 'onboarding.xlsx', buffer);
 
-    // Additive upsert, not deleteMany+create — an existing co-teacher (not
-    // touched by this mock) would survive a real transaction untouched.
+    // The new class teacher replaces the old one: the previous class teacher is
+    // demoted to co-teacher (never deleted), then this one is upserted.
+    expect(mockTx.classTeacher.updateMany).toHaveBeenCalledWith({
+      where: {
+        classId: 'class-1',
+        isClassTeacher: true,
+        teacherId: { not: 'teacher-2' },
+      },
+      data: { isClassTeacher: false },
+    });
     expect(mockTx.classTeacher.upsert).toHaveBeenCalledWith({
       where: { classId_teacherId: { classId: 'class-1', teacherId: 'teacher-2' } },
       create: { classId: 'class-1', teacherId: 'teacher-2', isClassTeacher: true },
       update: { isClassTeacher: true },
+    });
+  });
+
+  it('Teachers tab: "Yes" makes the teacher the class teacher (old one demoted); "No" only links', async () => {
+    const buffer = await buildFixtureWorkbook({
+      Classes: [
+        { 'Class Name': 'Grade 5', Section: 'A', 'Academic Year': '2025-26' },
+      ],
+      Teachers: [
+        {
+          'Teacher Name': 'Asha Rao',
+          'Phone Number': '+919800000001',
+          Email: 'asha@school.edu',
+          'Class Name': 'Grade 5',
+          Section: 'A',
+          'Subject Name': 'Maths',
+          'Is Class Teacher': 'Yes',
+        },
+        {
+          'Teacher Name': 'Ravi Kumar',
+          'Phone Number': '+919800000002',
+          Email: 'ravi@school.edu',
+          'Class Name': 'Grade 5',
+          Section: 'A',
+          'Subject Name': 'Science',
+          'Is Class Teacher': 'No',
+        },
+      ],
+    });
+
+    mockTx.class.findFirst.mockResolvedValue({ id: 'class-1' });
+    mockTx.user.findUnique.mockResolvedValue(null);
+    mockTx.user.create
+      .mockResolvedValueOnce({ id: 'asha', role: 'teacher' })
+      .mockResolvedValueOnce({ id: 'ravi', role: 'teacher' });
+    mockTx.subject.findUnique.mockResolvedValue({ id: 'subj' });
+    mockTx.teacherSubject.findUnique.mockResolvedValue(null);
+    mockTx.classTeacher.upsert.mockResolvedValue({});
+
+    await service.commit(TENANT, ACTOR, 'onboarding.xlsx', buffer);
+
+    expect(mockTx.classTeacher.updateMany).toHaveBeenCalledTimes(1);
+    expect(mockTx.classTeacher.updateMany).toHaveBeenCalledWith({
+      where: {
+        classId: 'class-1',
+        isClassTeacher: true,
+        teacherId: { not: 'asha' },
+      },
+      data: { isClassTeacher: false },
+    });
+    expect(mockTx.classTeacher.upsert).toHaveBeenCalledWith({
+      where: { classId_teacherId: { classId: 'class-1', teacherId: 'ravi' } },
+      create: { classId: 'class-1', teacherId: 'ravi', isClassTeacher: false },
+      update: {},
     });
   });
 

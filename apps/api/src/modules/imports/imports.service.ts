@@ -484,18 +484,12 @@ export class ImportsService {
         summary.created++;
       }
 
-      // A missing Class Teacher Email leaves the class's existing teacher
-      // assignment(s) untouched; a provided one is added as a co-teacher rather
-      // than replacing whoever is already assigned (classes support more than
-      // one teacher — re-importing must never silently drop an existing one).
-      // "Class Teacher Email" designates the class's homeroom/in-charge teacher —
-      // isClassTeacher: true, same as the web-admin "Assign class teacher" action.
+      // A missing Class Teacher Email leaves the class's teachers untouched. A
+      // provided one becomes THE class teacher, same as the web-admin "Assign
+      // class teacher" action: any previous class teacher is kept linked as a
+      // co-teacher (never dropped), so a class has exactly one class teacher.
       if (teacherId) {
-        await tx.classTeacher.upsert({
-          where: { classId_teacherId: { classId, teacherId } },
-          create: { classId, teacherId, isClassTeacher: true },
-          update: { isClassTeacher: true },
-        });
+        await setClassTeacher(tx, classId, teacherId);
       }
 
       classKeyToId.set(classKey(row.name, row.section, row.academicYear), {
@@ -812,23 +806,48 @@ export class ImportsService {
         summary.created++;
       }
 
-      // A "No" never demotes an existing class-teacher designation — only an
-      // explicit "Yes" promotes, mirroring the Classes tab's Class Teacher Email.
-      await tx.classTeacher.upsert({
-        where: {
-          classId_teacherId: { classId: classInfo.id, teacherId: teacher.id },
-        },
-        create: {
-          classId: classInfo.id,
-          teacherId: teacher.id,
-          isClassTeacher: row.isClassTeacher,
-        },
-        update: row.isClassTeacher ? { isClassTeacher: true } : {},
-      });
+      // A "No" never demotes an existing class-teacher designation; a "Yes"
+      // makes this teacher the class teacher and the previous one a co-teacher,
+      // mirroring the Classes tab's Class Teacher Email.
+      if (row.isClassTeacher) {
+        await setClassTeacher(tx, classInfo.id, teacher.id);
+      } else {
+        await tx.classTeacher.upsert({
+          where: {
+            classId_teacherId: { classId: classInfo.id, teacherId: teacher.id },
+          },
+          create: {
+            classId: classInfo.id,
+            teacherId: teacher.id,
+            isClassTeacher: false,
+          },
+          update: {},
+        });
+      }
     }
 
     return summary;
   }
+}
+
+/**
+ * Makes this teacher the class's one class teacher: any other class teacher of
+ * the class is demoted to co-teacher (still linked to the class).
+ */
+async function setClassTeacher(
+  tx: Prisma.TransactionClient,
+  classId: string,
+  teacherId: string,
+) {
+  await tx.classTeacher.updateMany({
+    where: { classId, isClassTeacher: true, teacherId: { not: teacherId } },
+    data: { isClassTeacher: false },
+  });
+  await tx.classTeacher.upsert({
+    where: { classId_teacherId: { classId, teacherId } },
+    create: { classId, teacherId, isClassTeacher: true },
+    update: { isClassTeacher: true },
+  });
 }
 
 function generateTempPassword(): string {

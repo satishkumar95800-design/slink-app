@@ -27,6 +27,8 @@ export function validateTeachersTab(
   const warnings: TabValidation<ValidTeacherRow>['warnings'] = [];
   const validRows: ValidTeacherRow[] = [];
   const seenAssignments = new Set<string>();
+  /** classKey -> { phone, row } of the teacher marked "Is Class Teacher: Yes". */
+  const classTeacherOf = new Map<string, { phone: string; row: number }>();
 
   for (const row of tab.rows) {
     const name = cleanName(row.cells['Teacher Name']);
@@ -123,6 +125,23 @@ export function validateTeachersTab(
     }
     seenAssignments.add(dedupeKey);
 
+    // A class has one class teacher; with two different "Yes" rows the last wins.
+    const isClassTeacher = parseIsClassTeacher(isClassTeacherRaw ?? '');
+    if (isClassTeacher) {
+      const earlier = classTeacherOf.get(classKey);
+      if (earlier && earlier.phone !== phone) {
+        warnings.push(
+          issue(
+            TAB,
+            row.rowNumber,
+            'Is Class Teacher',
+            `another teacher (row ${earlier.row}) is already marked class teacher of ${className} ${section} — this row will replace them; the other stays a co-teacher`,
+          ),
+        );
+      }
+      classTeacherOf.set(classKey, { phone, row: row.rowNumber });
+    }
+
     validRows.push({
       row: row.rowNumber,
       name,
@@ -130,7 +149,7 @@ export function validateTeachersTab(
       email: email || undefined,
       classKey,
       subjectName,
-      isClassTeacher: parseIsClassTeacher(isClassTeacherRaw ?? ''),
+      isClassTeacher,
     });
   }
 
