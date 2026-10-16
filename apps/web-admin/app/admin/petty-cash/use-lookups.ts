@@ -9,9 +9,17 @@ export function usePettyLookups() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [payees, setPayees] = useState<Payee[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
+  /** The category list failed to load (shown in the forms instead of an empty list). */
+  const [categoriesFailed, setCategoriesFailed] = useState(false);
 
   const reload = useCallback(() => {
-    api.get<Category[]>('/petty-cash/categories?includeInactive=true').then(setCategories).catch(() => {});
+    api
+      .get<Category[]>('/petty-cash/categories?includeInactive=true')
+      .then((rows) => {
+        setCategories(rows);
+        setCategoriesFailed(false);
+      })
+      .catch(() => setCategoriesFailed(true));
     api.get<Payee[]>('/petty-cash/payees?includeInactive=true').then(setPayees).catch(() => {});
     api.get<Staff[]>('/petty-cash/staff').then(setStaff).catch(() => {});
   }, []);
@@ -20,7 +28,7 @@ export function usePettyLookups() {
     reload();
   }, [reload]);
 
-  return { categories, payees, staff, reload };
+  return { categories, categoriesFailed, payees, staff, reload };
 }
 
 export type PettyLookups = ReturnType<typeof usePettyLookups>;

@@ -214,6 +214,14 @@ export function EntryModal({ request, lookups, settings, onClose, onSaved }: Pro
             options={activeCategories.map((c) => ({ value: c.id, label: c.name }))}
           />
         )}
+        {(type === 'EXPENSE' || type === 'DISBURSEMENT') && activeCategories.length === 0 && (
+          <p className="-mt-2 text-xs text-red-600">
+            {lookups.categoriesFailed ? t('categoriesLoadFailed') : t('noCategoriesYet')}{' '}
+            <button type="button" onClick={lookups.reload} className="font-semibold text-teal underline">
+              {t('retry')}
+            </button>
+          </p>
+        )}
 
         <Input
           label={type === 'DISBURSEMENT' ? t('purpose') : t('description')}

@@ -764,6 +764,16 @@ export class PettyCashService {
 
   async listCategories(tenantId: string, includeInactive = false) {
     await this.getSettings(tenantId);
+    // Categories are only ever deactivated, never deleted, so a school with
+    // none at all is missing its defaults even if they were marked as created.
+    if (
+      (await this.prisma.pettyCashCategory.count({ where: { tenantId } })) === 0
+    ) {
+      await this.prisma.pettyCashCategory.createMany({
+        data: DEFAULT_CATEGORIES.map((name) => ({ tenantId, name })),
+        skipDuplicates: true,
+      });
+    }
     const rows = await this.prisma.pettyCashCategory.findMany({
       where: { tenantId, ...(includeInactive ? {} : { isActive: true }) },
       orderBy: { name: 'asc' },
