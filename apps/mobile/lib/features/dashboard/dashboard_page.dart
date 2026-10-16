@@ -169,6 +169,20 @@ class _TeacherDashboardBody extends ConsumerWidget {
                         color: FeatureColors.calendar,
                         onTap: () => context.push('/calendar'),
                       ),
+                    if (ref.watch(hrmsEnabledProvider)) ...[
+                      FeatureTile(
+                        icon: Icons.receipt_long_rounded,
+                        label: l.hrmsPayslipsTitle,
+                        color: FeatureColors.payroll,
+                        onTap: () => context.push('/hrms/payslips'),
+                      ),
+                      FeatureTile(
+                        icon: Icons.beach_access_rounded,
+                        label: l.hrmsLeaveTitle,
+                        color: FeatureColors.attendance,
+                        onTap: () => context.push('/hrms/leave'),
+                      ),
+                    ],
                     FeatureTile(
                       icon: Icons.groups_rounded,
                       label: l.teacherAboutMyClasses,

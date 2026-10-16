@@ -68,6 +68,12 @@ String? translateErrorCode(String? code) {
     'SCHOOL_NOT_FOUND' => l.errorSchoolNotFound,
     'PAYMENTS_NOT_CONFIGURED' => l.checkoutNotSetUp,
     'AI_UNAVAILABLE' => l.aiUnavailable,
+    'INSUFFICIENT_BALANCE' => l.hrmsErrInsufficientBalance,
+    'LEAVE_OVERLAP' => l.hrmsErrOverlap,
+    'NO_WORKING_DAYS' => l.hrmsErrNoWorkingDays,
+    'NO_EMPLOYEE_RECORD' => l.hrmsErrNoRecord,
+    'LEAVE_STARTED' => l.hrmsErrLeaveStarted,
+    'FEATURE_DISABLED' => l.hrmsErrFeatureOff,
     _ => null,
   };
 }

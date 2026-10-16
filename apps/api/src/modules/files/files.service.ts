@@ -23,6 +23,13 @@ import { FileCategory, ALLOWED_MIME, MAX_BYTES } from './dto/upload-file.dto';
 export const isPettyCashKey = (key: string): boolean =>
   key.split('/')[2] === 'petty-cash';
 
+/** HR documents (private/{tenant}/hr/...) are reachable only through the hrms module. */
+export const isHrKey = (key: string): boolean => key.split('/')[2] === 'hr';
+
+/** Keys the generic /files routes must never serve, sign or delete. */
+export const isModuleOwnedKey = (key: string): boolean =>
+  isPettyCashKey(key) || isHrKey(key);
+
 export interface UploadResult {
   key: string;
   /** Direct public URL for public/ objects; null for private objects */
@@ -212,6 +219,8 @@ export class FilesService {
         return `private/${tenantId}/students/${entityId ?? uuid}/tc/${uuid}${ext}`;
       case FileCategory.PETTY_CASH_RECEIPT:
         return `private/${tenantId}/petty-cash/${uuid}${ext}`;
+      case FileCategory.HR_DOCUMENT:
+        return `private/${tenantId}/hr/${entityId ?? uuid}/${uuid}${ext}`;
     }
   }
 

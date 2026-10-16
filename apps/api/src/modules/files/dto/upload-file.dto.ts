@@ -10,6 +10,7 @@ export enum FileCategory {
   PAYMENT_CLAIM_PROOF = 'payment_claim_proof', // private/{tenantId}/payment-claims/ — Addendum 4 A12
   TRANSFER_CERTIFICATE = 'transfer_certificate', // private/{tenantId}/students/{studentId}/tc/
   PETTY_CASH_RECEIPT = 'petty_cash_receipt', // private/{tenantId}/petty-cash/ — admin/accounts only, via /petty-cash/receipts
+  HR_DOCUMENT = 'hr_document', // private/{tenantId}/hr/{employeeId}/ — admin/accounts only, via /hrms/employees/:id/documents
 }
 
 export const ALLOWED_MIME: Record<FileCategory, string[]> = {
@@ -28,6 +29,7 @@ export const ALLOWED_MIME: Record<FileCategory, string[]> = {
   [FileCategory.PAYMENT_CLAIM_PROOF]: ['image/jpeg', 'image/png', 'application/pdf'],
   [FileCategory.TRANSFER_CERTIFICATE]: ['image/jpeg', 'image/png', 'application/pdf'],
   [FileCategory.PETTY_CASH_RECEIPT]: ['image/jpeg', 'image/png', 'application/pdf'],
+  [FileCategory.HR_DOCUMENT]: ['image/jpeg', 'image/png', 'application/pdf'],
 };
 
 /** Max file size in bytes per category */
@@ -41,6 +43,7 @@ export const MAX_BYTES: Record<FileCategory, number> = {
   [FileCategory.PAYMENT_CLAIM_PROOF]: 10 * 1024 * 1024, // 10 MB
   [FileCategory.TRANSFER_CERTIFICATE]: 10 * 1024 * 1024, // 10 MB
   [FileCategory.PETTY_CASH_RECEIPT]: 10 * 1024 * 1024, // 10 MB
+  [FileCategory.HR_DOCUMENT]: 10 * 1024 * 1024, // 10 MB
 };
 
 export class UploadFileDto {

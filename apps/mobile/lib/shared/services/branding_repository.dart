@@ -32,3 +32,9 @@ final brandingProvider = FutureProvider<TenantBranding?>((ref) async {
 final calendarEnabledProvider = Provider<bool>((ref) {
   return ref.watch(brandingProvider).valueOrNull?.calendarEnabled ?? false;
 });
+
+/// Whether the school has the HR & payroll module on (staff payslips and leave).
+/// False while branding loads or fails, so the tiles never flash for other schools.
+final hrmsEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(brandingProvider).valueOrNull?.hrmsEnabled ?? false;
+});

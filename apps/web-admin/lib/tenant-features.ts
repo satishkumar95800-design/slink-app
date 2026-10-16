@@ -10,6 +10,7 @@ export interface TenantFeatures {
   aiInsights?: boolean;
   pettyCash?: boolean;
   calendar?: boolean;
+  hrms?: boolean;
 }
 
 // Keyed by school so signing in to another school in the same tab refetches.

@@ -51,6 +51,7 @@ To use a different password, set `DEMO_SEED_PASSWORD` before running.
   - Seen-by counts for both.
 - **Reports and notes:** report-card PDFs (including the demo parent's children), progress reports with read receipts, and internal student notes.
 - **Petty cash** (module switched on for this school only): about five months of cash history so the forecast and savings advice show up. Top-ups, advances to staff and ground staff that are settled (one teacher settles late, one advance is overdue), a pending approval, one rejected and one voided entry, and a spread of small purchases. Admin sees the approval queue; the accountant enters the rest.
+- **HR & payroll** (module switched on for this school only): twelve employees (admin, accountant, six teachers and four ground staff with no login), three months of staff attendance and leave (approved, pending, rejected and cancelled requests), salary structures with PF, ESI and professional tax at the editable default rates, two locked pay runs (the older one paid) and one run waiting for admin approval. The demo teacher can open their payslips and leave in the app; the admin approves the pending run and the accountant prepares new ones. Bank details and PAN are fake and are only stored when `PAYMENT_SECRETS_KEY` is set while seeding. Statutory figures are demo values, not advice.
 - **Holidays:** Independence Day, Gandhi Jayanti, Kannada Rajyotsava, Christmas, Republic Day.
 
 ## Remove it

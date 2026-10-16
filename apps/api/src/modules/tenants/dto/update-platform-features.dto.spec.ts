@@ -10,7 +10,7 @@ const check = <T extends object>(cls: new () => T, body: object) =>
   });
 
 describe('platform feature flags', () => {
-  it.each(['pettyCash', 'calendar'])(
+  it.each(['pettyCash', 'calendar', 'hrms'])(
     '%s can be switched by the platform team',
     async (flag) => {
       expect(
@@ -22,13 +22,13 @@ describe('platform feature flags', () => {
     },
   );
 
-  it.each(['pettyCash', 'calendar'])('%s must be a boolean', async (flag) => {
+  it.each(['pettyCash', 'calendar', 'hrms'])('%s must be a boolean', async (flag) => {
     expect(
       await check(UpdatePlatformFeaturesDto, { [flag]: 'yes' }),
     ).not.toHaveLength(0);
   });
 
-  it.each(['pettyCash', 'calendar'])(
+  it.each(['pettyCash', 'calendar', 'hrms'])(
     '%s cannot be switched by a school itself',
     async (flag) => {
       expect(await check(UpdateFeaturesDto, { [flag]: true })).not.toHaveLength(

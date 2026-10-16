@@ -1264,4 +1264,163 @@ class AppLocalizationsKn extends AppLocalizations {
   String calendarDayHeading(String weekday, String date) {
     return '$weekday, $date';
   }
+
+  @override
+  String get hrmsPayslipsTitle => 'ನನ್ನ ವೇತನ ಚೀಟಿಗಳು';
+
+  @override
+  String get hrmsLeaveTitle => 'ರಜೆ';
+
+  @override
+  String get hrmsNoRecord =>
+      'ನಿಮ್ಮ ಖಾತೆಗೆ ಇನ್ನೂ ಯಾವುದೇ ಎಚ್‌ಆರ್ ದಾಖಲೆ ಜೋಡಿಸಿಲ್ಲ. ದಯವಿಟ್ಟು ಶಾಲಾ ಆಡಳಿತಾಧಿಕಾರಿಯನ್ನು ಕೇಳಿ.';
+
+  @override
+  String get hrmsPayslipsEmpty =>
+      'ಇನ್ನೂ ವೇತನ ಚೀಟಿಗಳಿಲ್ಲ. ಶಾಲೆ ತಿಂಗಳ ವೇತನವನ್ನು ಅಂತಿಮಗೊಳಿಸಿದ ನಂತರ ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.';
+
+  @override
+  String get hrmsCouldNotLoad =>
+      'ಇದನ್ನು ಲೋಡ್ ಮಾಡಲಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
+  String get hrmsNetPay => 'ನಿವ್ವಳ ವೇತನ';
+
+  @override
+  String get hrmsGross => 'ಒಟ್ಟು';
+
+  @override
+  String get hrmsDeductions => 'ಕಡಿತಗಳು';
+
+  @override
+  String hrmsPaidOn(String date) {
+    return '$date ರಂದು ಪಾವತಿಸಲಾಗಿದೆ';
+  }
+
+  @override
+  String get hrmsNotPaidYet => 'ಪಾವತಿ ಬಾಕಿ';
+
+  @override
+  String get hrmsPayslipOpenFailed => 'ವೇತನ ಚೀಟಿಯನ್ನು ತೆರೆಯಲಾಗಲಿಲ್ಲ.';
+
+  @override
+  String hrmsPayslipViewerTitle(String month) {
+    return 'ವೇತನ ಚೀಟಿ $month';
+  }
+
+  @override
+  String get hrmsBalances => 'ರಜೆಯ ಬಾಕಿ';
+
+  @override
+  String hrmsAvailable(String days) {
+    return '$days ಲಭ್ಯ';
+  }
+
+  @override
+  String hrmsBalanceDetail(
+      String allowance, String carried, String used, String pending) {
+    return 'ಅನುಮತಿ $allowance · ತಂದದ್ದು $carried · ಬಳಸಿದ್ದು $used · ಬಾಕಿ $pending';
+  }
+
+  @override
+  String get hrmsUnpaidLeave => 'ವೇತನರಹಿತ';
+
+  @override
+  String get hrmsRequests => 'ನನ್ನ ಕೋರಿಕೆಗಳು';
+
+  @override
+  String get hrmsNoRequests => 'ನೀವು ಇನ್ನೂ ರಜೆಗೆ ಅರ್ಜಿ ಸಲ್ಲಿಸಿಲ್ಲ.';
+
+  @override
+  String get hrmsApplyLeave => 'ರಜೆಗೆ ಅರ್ಜಿ';
+
+  @override
+  String get hrmsStatusPending => 'ಬಾಕಿ';
+
+  @override
+  String get hrmsStatusApproved => 'ಅನುಮೋದಿಸಲಾಗಿದೆ';
+
+  @override
+  String get hrmsStatusRejected => 'ತಿರಸ್ಕರಿಸಲಾಗಿದೆ';
+
+  @override
+  String get hrmsStatusCancelled => 'ರದ್ದುಗೊಳಿಸಲಾಗಿದೆ';
+
+  @override
+  String hrmsDaysCount(String days) {
+    return '$days ದಿನಗಳು';
+  }
+
+  @override
+  String get hrmsHalfDayLabel => 'ಅರ್ಧ ದಿನ';
+
+  @override
+  String get hrmsCancelRequest => 'ಕೋರಿಕೆ ರದ್ದುಮಾಡಿ';
+
+  @override
+  String get hrmsCancelConfirm => 'ಈ ರಜೆ ಕೋರಿಕೆಯನ್ನು ರದ್ದುಮಾಡಬೇಕೇ?';
+
+  @override
+  String get hrmsKeepRequest => 'ಇರಲಿ';
+
+  @override
+  String hrmsDecisionNote(String note) {
+    return 'ಟಿಪ್ಪಣಿ: $note';
+  }
+
+  @override
+  String get hrmsLeaveType => 'ರಜೆಯ ವಿಧ';
+
+  @override
+  String get hrmsFromDate => 'ಇಂದ';
+
+  @override
+  String get hrmsToDate => 'ವರೆಗೆ';
+
+  @override
+  String get hrmsPickDate => 'ದಿನಾಂಕ ಆಯ್ಕೆಮಾಡಿ';
+
+  @override
+  String get hrmsHalfDayToggle => 'ಅರ್ಧ ದಿನ';
+
+  @override
+  String get hrmsReason => 'ಕಾರಣ';
+
+  @override
+  String get hrmsReasonRequired => 'ದಯವಿಟ್ಟು ಕಾರಣ ತಿಳಿಸಿ.';
+
+  @override
+  String get hrmsChooseTypeAndDates => 'ರಜೆಯ ವಿಧ ಮತ್ತು ದಿನಾಂಕಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ.';
+
+  @override
+  String get hrmsEndBeforeStart => 'ಅಂತಿಮ ದಿನಾಂಕ ಆರಂಭ ದಿನಾಂಕಕ್ಕಿಂತ ಮೊದಲಿದೆ.';
+
+  @override
+  String get hrmsSubmitRequest => 'ಕೋರಿಕೆ ಸಲ್ಲಿಸಿ';
+
+  @override
+  String get hrmsRequestSent => 'ರಜೆ ಕೋರಿಕೆ ಕಳುಹಿಸಲಾಗಿದೆ.';
+
+  @override
+  String get hrmsErrInsufficientBalance =>
+      'ಈ ಕೋರಿಕೆಗೆ ನಿಮ್ಮ ರಜೆ ಬಾಕಿ ಸಾಕಾಗುವುದಿಲ್ಲ.';
+
+  @override
+  String get hrmsErrOverlap =>
+      'ಈ ದಿನಗಳಲ್ಲಿ ಕೆಲವನ್ನು ಬೇರೊಂದು ರಜೆ ಕೋರಿಕೆ ಈಗಾಗಲೇ ಒಳಗೊಂಡಿದೆ.';
+
+  @override
+  String get hrmsErrNoWorkingDays =>
+      'ಈ ದಿನಾಂಕಗಳಲ್ಲಿ ಕೆಲಸದ ದಿನಗಳಿಲ್ಲ (ವಾರದ ರಜೆ ಅಥವಾ ಹಬ್ಬದ ರಜೆ).';
+
+  @override
+  String get hrmsErrNoRecord =>
+      'ನಿಮ್ಮ ಖಾತೆಗೆ ಎಚ್‌ಆರ್ ದಾಖಲೆ ಜೋಡಿಸಿಲ್ಲ. ಶಾಲಾ ಆಡಳಿತಾಧಿಕಾರಿಯನ್ನು ಕೇಳಿ.';
+
+  @override
+  String get hrmsErrLeaveStarted =>
+      'ಆರಂಭವಾದ ರಜೆಯನ್ನು ಆಡಳಿತಾಧಿಕಾರಿ ಮಾತ್ರ ರದ್ದುಮಾಡಬಹುದು.';
+
+  @override
+  String get hrmsErrFeatureOff => 'ಈ ಸೌಲಭ್ಯ ನಿಮ್ಮ ಶಾಲೆಗೆ ಸಕ್ರಿಯಗೊಂಡಿಲ್ಲ.';
 }

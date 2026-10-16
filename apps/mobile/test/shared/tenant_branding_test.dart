@@ -22,4 +22,12 @@ void main() {
   test('ignores a malformed features value', () {
     expect(TenantBranding.fromJson(json('nope')).features, isEmpty);
   });
+
+  test('hrms is on only for an explicit true and is independent of calendar', () {
+    expect(TenantBranding.fromJson(json(null)).hrmsEnabled, isFalse);
+    expect(TenantBranding.fromJson(json({'hrms': false})).hrmsEnabled, isFalse);
+    expect(TenantBranding.fromJson(json({'hrms': true})).hrmsEnabled, isTrue);
+    expect(TenantBranding.fromJson(json({'hrms': true})).calendarEnabled, isFalse);
+    expect(TenantBranding.fromJson(json({'hrms': 'true'})).hrmsEnabled, isFalse);
+  });
 }

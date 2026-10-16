@@ -2218,6 +2218,283 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{weekday}, {date}'**
   String calendarDayHeading(String weekday, String date);
+
+  /// No description provided for @hrmsPayslipsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My payslips'**
+  String get hrmsPayslipsTitle;
+
+  /// No description provided for @hrmsLeaveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get hrmsLeaveTitle;
+
+  /// No description provided for @hrmsNoRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'No HR record is linked to your account yet. Please ask your school admin.'**
+  String get hrmsNoRecord;
+
+  /// No description provided for @hrmsPayslipsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No payslips yet. They appear here after your school finalises the month\'s payroll.'**
+  String get hrmsPayslipsEmpty;
+
+  /// No description provided for @hrmsCouldNotLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this. Please try again.'**
+  String get hrmsCouldNotLoad;
+
+  /// No description provided for @hrmsNetPay.
+  ///
+  /// In en, this message translates to:
+  /// **'Net pay'**
+  String get hrmsNetPay;
+
+  /// No description provided for @hrmsGross.
+  ///
+  /// In en, this message translates to:
+  /// **'Gross'**
+  String get hrmsGross;
+
+  /// No description provided for @hrmsDeductions.
+  ///
+  /// In en, this message translates to:
+  /// **'Deductions'**
+  String get hrmsDeductions;
+
+  /// No description provided for @hrmsPaidOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid on {date}'**
+  String hrmsPaidOn(String date);
+
+  /// No description provided for @hrmsNotPaidYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment pending'**
+  String get hrmsNotPaidYet;
+
+  /// No description provided for @hrmsPayslipOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the payslip.'**
+  String get hrmsPayslipOpenFailed;
+
+  /// No description provided for @hrmsPayslipViewerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Payslip {month}'**
+  String hrmsPayslipViewerTitle(String month);
+
+  /// No description provided for @hrmsBalances.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave balance'**
+  String get hrmsBalances;
+
+  /// No description provided for @hrmsAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} available'**
+  String hrmsAvailable(String days);
+
+  /// No description provided for @hrmsBalanceDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowance {allowance} · Carried in {carried} · Used {used} · Pending {pending}'**
+  String hrmsBalanceDetail(
+      String allowance, String carried, String used, String pending);
+
+  /// No description provided for @hrmsUnpaidLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpaid'**
+  String get hrmsUnpaidLeave;
+
+  /// No description provided for @hrmsRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'My requests'**
+  String get hrmsRequests;
+
+  /// No description provided for @hrmsNoRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'You have not applied for any leave yet.'**
+  String get hrmsNoRequests;
+
+  /// No description provided for @hrmsApplyLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply for leave'**
+  String get hrmsApplyLeave;
+
+  /// No description provided for @hrmsStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get hrmsStatusPending;
+
+  /// No description provided for @hrmsStatusApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get hrmsStatusApproved;
+
+  /// No description provided for @hrmsStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get hrmsStatusRejected;
+
+  /// No description provided for @hrmsStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get hrmsStatusCancelled;
+
+  /// No description provided for @hrmsDaysCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{days} days'**
+  String hrmsDaysCount(String days);
+
+  /// No description provided for @hrmsHalfDayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Half day'**
+  String get hrmsHalfDayLabel;
+
+  /// No description provided for @hrmsCancelRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel request'**
+  String get hrmsCancelRequest;
+
+  /// No description provided for @hrmsCancelConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this leave request?'**
+  String get hrmsCancelConfirm;
+
+  /// No description provided for @hrmsKeepRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it'**
+  String get hrmsKeepRequest;
+
+  /// No description provided for @hrmsDecisionNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note: {note}'**
+  String hrmsDecisionNote(String note);
+
+  /// No description provided for @hrmsLeaveType.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave type'**
+  String get hrmsLeaveType;
+
+  /// No description provided for @hrmsFromDate.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get hrmsFromDate;
+
+  /// No description provided for @hrmsToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get hrmsToDate;
+
+  /// No description provided for @hrmsPickDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a date'**
+  String get hrmsPickDate;
+
+  /// No description provided for @hrmsHalfDayToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Half day'**
+  String get hrmsHalfDayToggle;
+
+  /// No description provided for @hrmsReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get hrmsReason;
+
+  /// No description provided for @hrmsReasonRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please give a reason.'**
+  String get hrmsReasonRequired;
+
+  /// No description provided for @hrmsChooseTypeAndDates.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the leave type and dates.'**
+  String get hrmsChooseTypeAndDates;
+
+  /// No description provided for @hrmsEndBeforeStart.
+  ///
+  /// In en, this message translates to:
+  /// **'The end date is before the start date.'**
+  String get hrmsEndBeforeStart;
+
+  /// No description provided for @hrmsSubmitRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit request'**
+  String get hrmsSubmitRequest;
+
+  /// No description provided for @hrmsRequestSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave request sent.'**
+  String get hrmsRequestSent;
+
+  /// No description provided for @hrmsErrInsufficientBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not have enough leave balance for this request.'**
+  String get hrmsErrInsufficientBalance;
+
+  /// No description provided for @hrmsErrOverlap.
+  ///
+  /// In en, this message translates to:
+  /// **'Another leave request already covers some of these days.'**
+  String get hrmsErrOverlap;
+
+  /// No description provided for @hrmsErrNoWorkingDays.
+  ///
+  /// In en, this message translates to:
+  /// **'These dates have no working days (weekly offs or holidays).'**
+  String get hrmsErrNoWorkingDays;
+
+  /// No description provided for @hrmsErrNoRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'No HR record is linked to your account. Ask your school admin.'**
+  String get hrmsErrNoRecord;
+
+  /// No description provided for @hrmsErrLeaveStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave that has started can only be cancelled by an admin.'**
+  String get hrmsErrLeaveStarted;
+
+  /// No description provided for @hrmsErrFeatureOff.
+  ///
+  /// In en, this message translates to:
+  /// **'This feature is not enabled for your school.'**
+  String get hrmsErrFeatureOff;
 }
 
 class _AppLocalizationsDelegate

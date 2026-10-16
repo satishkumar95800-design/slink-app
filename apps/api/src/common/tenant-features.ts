@@ -11,7 +11,8 @@ export type OptionalFeature =
   | 'feeConcession'
   | 'aiInsights'
   | 'pettyCash'
-  | 'calendar';
+  | 'calendar'
+  | 'hrms';
 
 export async function isFeatureEnabled(
   prisma: PrismaService,

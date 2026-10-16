@@ -1,0 +1,193 @@
+/** User-facing HR & payroll errors and text templates kept in one place for later translation. */
+export const hrmsStrings = {
+  employeeNotFound: 'Employee not found',
+  employeeCodeTaken: 'This employee code is already used',
+  userNotStaff: 'Only a teacher, admin or accounts user can be linked',
+  userNotFound: 'User not found in this school',
+  userAlreadyLinked: 'This user is already linked to an employee',
+  invalidDate: 'Not a valid calendar date',
+  exitBeforeJoin: 'The exit date cannot be before the joining date',
+  alreadyExited: 'This employee has already exited',
+  notExited: 'This employee is not exited',
+  invalidField: 'That value is not valid',
+  invalidPan: 'PAN must look like ABCDE1234F',
+  invalidAadhaar: 'Aadhaar must be 12 digits',
+  invalidIfsc: 'IFSC must look like ABCD0123456',
+  invalidAccount: 'Bank account number must be 6 to 20 digits',
+  secretKeyMissing:
+    'The server has no PAYMENT_SECRETS_KEY (32+ characters) set, so sensitive details cannot be stored safely.',
+  documentNotFound: 'Document not found',
+  documentKeyInvalid: 'That document does not belong to this school',
+  importNoFile: 'Upload an .xlsx or .csv file',
+  importUnreadable: 'The file could not be read. Use the template.',
+  importEmpty: 'The file has no employee rows',
+  importTooMany: 'Too many rows in one import (limit 500)',
+  importHasErrors: 'Fix the errors in the file before importing',
+  attendanceDate: 'Not a valid date',
+  attendanceFuture: 'Attendance cannot be marked for a future date',
+  attendanceEmployee: 'One or more employees were not found or are not active',
+  attendanceDuplicate: 'An employee appears twice in the sheet',
+  monthInvalid: 'Month must be YYYY-MM',
+  leaveTypeNotFound: 'Leave type not found or inactive',
+  leaveTypeExists: 'A leave type with this name already exists',
+  leaveRequestNotFound: 'Leave request not found',
+  leaveRangeReversed: 'The end date is before the start date',
+  leaveHalfDayRange: 'A half day must be a single day',
+  leaveNoWorkingDays: 'The dates chosen contain no working days',
+  leaveOverlap: 'Another leave request already covers some of these days',
+  leaveInsufficient: 'Not enough leave balance for this request',
+  leaveNotPending: 'Only a pending request can be approved or rejected',
+  leaveNotCancellable: 'Only a pending or approved request can be cancelled',
+  leaveNoteRequired: 'Give a reason for rejecting',
+  leaveStarted: 'Leave that has started can only be cancelled by an admin',
+  leaveSelfDecision: 'You cannot decide your own leave request',
+  leaveEmployeeInactive: 'This employee is no longer active',
+  noEmployeeRecord:
+    'No HR record is linked to your account. Ask your school admin.',
+  structureNotFound: 'Salary structure not found',
+  structureDuplicate: 'This employee already has a structure from that date',
+  structureComponentInvalid:
+    'A component needs a name and a valid amount or percentage',
+  settingsInvalid: 'Setting out of range',
+  slabsInvalid:
+    'Professional tax slabs must start at 0, not overlap and stay in order',
+  payRunNotFound: 'Pay run not found',
+  payRunMonthExists: 'A pay run already exists for this month',
+  payRunNotDraft: 'Only a draft pay run can be changed',
+  payRunBadState: 'This pay run cannot move to that status from where it is',
+  payRunLocked: 'A locked pay run cannot be changed',
+  payRunNotLocked: 'The pay run must be locked first',
+  payRunAdminOnly: 'Only an admin can approve or lock a pay run',
+  payRunEmpty:
+    'There are no active employees with a salary structure for this month',
+  payRunAlreadyPaid: 'This pay run is already marked paid',
+  payRunCancelReason: 'Give a reason for cancelling',
+  lineNotFound: 'Pay run line not found',
+  adjustmentNotFound: 'Adjustment not found',
+  adjustmentNegative: 'This adjustment would take the net pay below zero',
+  adjustmentReason: 'Give a reason for the adjustment',
+  payslipNotAvailable: 'This payslip is not available yet',
+  futureMonth: 'You cannot run payroll for a month that has not started',
+} as const;
+
+export const DEFAULT_LEAVE_TYPES = [
+  {
+    name: 'Casual Leave',
+    yearlyAllowance: 12,
+    carryForwardCap: 0,
+    isPaid: true,
+  },
+  { name: 'Sick Leave', yearlyAllowance: 10, carryForwardCap: 0, isPaid: true },
+  {
+    name: 'Earned Leave',
+    yearlyAllowance: 15,
+    carryForwardCap: 15,
+    isPaid: true,
+  },
+  {
+    name: 'Loss of Pay',
+    yearlyAllowance: 0,
+    carryForwardCap: 0,
+    isPaid: false,
+  },
+] as const;
+
+/** Push text for a leave decision, in the applicant's language. */
+export const leaveDecisionPush = {
+  en: {
+    approvedTitle: 'Leave approved',
+    rejectedTitle: 'Leave not approved',
+    approvedBody: (range: string) => `Your leave for ${range} was approved.`,
+    rejectedBody: (range: string, note?: string | null) =>
+      `Your leave for ${range} was not approved.${note ? ` ${note}` : ''}`,
+  },
+  kn: {
+    approvedTitle: 'ರಜೆ ಮಂಜೂರಾಗಿದೆ',
+    rejectedTitle: 'ರಜೆ ಮಂಜೂರಾಗಿಲ್ಲ',
+    approvedBody: (range: string) => `${range} ರ ನಿಮ್ಮ ರಜೆ ಮಂಜೂರಾಗಿದೆ.`,
+    rejectedBody: (range: string, note?: string | null) =>
+      `${range} ರ ನಿಮ್ಮ ರಜೆ ಮಂಜೂರಾಗಿಲ್ಲ.${note ? ` ${note}` : ''}`,
+  },
+  hi: {
+    approvedTitle: 'छुट्टी स्वीकृत',
+    rejectedTitle: 'छुट्टी स्वीकृत नहीं',
+    approvedBody: (range: string) =>
+      `${range} की आपकी छुट्टी स्वीकृत हो गई है।`,
+    rejectedBody: (range: string, note?: string | null) =>
+      `${range} की आपकी छुट्टी स्वीकृत नहीं हुई।${note ? ` ${note}` : ''}`,
+  },
+} as const;
+
+export const EMPLOYEE_CSV_HEADERS = [
+  'Employee Code',
+  'Name',
+  'Phone',
+  'Email',
+  'Designation',
+  'Department',
+  'Employment Type',
+  'Join Date',
+  'PAN',
+  'Aadhaar',
+  'UAN',
+  'ESI Number',
+  'Bank Account',
+  'IFSC',
+  'Account Holder',
+] as const;
+
+export const BANK_CSV_HEADERS = [
+  'Employee Code',
+  'Name',
+  'Account Holder',
+  'Account Number',
+  'IFSC',
+  'Amount',
+  'Narration',
+] as const;
+
+export const REGISTER_CSV_HEADERS = [
+  'Employee Code',
+  'Name',
+  'Designation',
+  'Department',
+  'Period Days',
+  'LOP Days',
+  'Paid Days',
+  'Gross',
+  'PF',
+  'ESI',
+  'PT',
+  'Other Deductions',
+  'Total Deductions',
+  'Net Pay',
+  'Employer PF',
+  'Employer ESI',
+  'Flags',
+] as const;
+
+export const PAYSLIP_TEXT = {
+  title: 'Payslip',
+  forMonth: 'Pay period',
+  employeeCode: 'Employee code',
+  name: 'Name',
+  designation: 'Designation',
+  department: 'Department',
+  joinDate: 'Date of joining',
+  pan: 'PAN',
+  bankAccount: 'Bank account',
+  periodDays: 'Days in period',
+  lopDays: 'Loss of pay days',
+  paidDays: 'Paid days',
+  earnings: 'Earnings',
+  deductions: 'Deductions',
+  grossEarnings: 'Gross earnings',
+  totalDeductions: 'Total deductions',
+  netPay: 'Net pay',
+  adjustment: 'Adjustment',
+  note: 'This is a computer-generated payslip. Statutory deductions follow the rates configured by your school.',
+  englishOnly: 'Payslips are issued in English.',
+  draft: 'DRAFT - not final',
+  paidOn: 'Paid on',
+  reference: 'Ref',
+} as const;

@@ -18,7 +18,7 @@ import { Role } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { TenantId } from '../../common/decorators/tenant.decorator';
-import { FilesService, isPettyCashKey } from './files.service';
+import { FilesService, isModuleOwnedKey } from './files.service';
 import { FileCategory, UploadFileDto } from './dto/upload-file.dto';
 import { SignedUrlQueryDto } from './dto/signed-url-query.dto';
 import type { ActiveUser } from '../../common/types/active-user.type';
@@ -54,8 +54,11 @@ export class FilesController {
     @Body() dto: UploadFileDto,
   ) {
     if (!file) throw new BadRequestException('No file provided');
-    // Petty cash receipts go through POST /petty-cash/receipts (admin/accounts + feature flag).
-    if (dto.category === FileCategory.PETTY_CASH_RECEIPT)
+    // Petty cash receipts and HR documents go through their own modules (admin/accounts + feature flag).
+    if (
+      dto.category === FileCategory.PETTY_CASH_RECEIPT ||
+      dto.category === FileCategory.HR_DOCUMENT
+    )
       throw new ForbiddenException('Access denied to this file');
     return this.filesService.upload(tenantId, file, dto.category, dto.entityId);
   }
@@ -70,7 +73,7 @@ export class FilesController {
     @TenantId() tenantId: string,
     @Query() query: SignedUrlQueryDto,
   ) {
-    if (isPettyCashKey(query.key))
+    if (isModuleOwnedKey(query.key))
       throw new ForbiddenException('Access denied to this file');
     const url = await this.filesService.getSignedUrl(query.key, tenantId, query.expiresIn);
     return { url, expiresIn: query.expiresIn ?? 900 };
@@ -87,7 +90,7 @@ export class FilesController {
     @Query('key') key: string,
   ) {
     if (!key) throw new BadRequestException('key query param is required');
-    if (isPettyCashKey(key))
+    if (isModuleOwnedKey(key))
       throw new ForbiddenException('Access denied to this file');
     return this.filesService.delete(key, tenantId);
   }

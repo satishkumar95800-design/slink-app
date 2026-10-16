@@ -18,6 +18,9 @@ class TenantBranding {
   /// The school calendar is an optional module the platform team switches on.
   bool get calendarEnabled => features['calendar'] == true;
 
+  /// HR & payroll (My payslips, Leave for staff) is an optional module the platform team switches on.
+  bool get hrmsEnabled => features['hrms'] == true;
+
   factory TenantBranding.fromJson(Map<String, dynamic> json) => TenantBranding(
         id: json['id'] as String,
         name: json['name'] as String,

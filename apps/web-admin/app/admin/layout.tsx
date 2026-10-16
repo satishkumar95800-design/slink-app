@@ -29,6 +29,7 @@ const ROUTE_TITLES = {
   '/admin/student-fees': 'studentFees',
   '/admin/payments': 'payments',
   '/admin/petty-cash': 'pettyCash',
+  '/admin/hr': 'hr',
   '/admin/fee-reports': 'feeReports',
   '/admin/reports': 'reports',
   '/admin/import': 'import',

@@ -1265,4 +1265,162 @@ class AppLocalizationsHi extends AppLocalizations {
   String calendarDayHeading(String weekday, String date) {
     return '$weekday, $date';
   }
+
+  @override
+  String get hrmsPayslipsTitle => 'मेरी पेस्लिप';
+
+  @override
+  String get hrmsLeaveTitle => 'छुट्टी';
+
+  @override
+  String get hrmsNoRecord =>
+      'आपके खाते से अभी कोई एचआर रिकॉर्ड जुड़ा नहीं है। कृपया अपने स्कूल एडमिन से पूछें।';
+
+  @override
+  String get hrmsPayslipsEmpty =>
+      'अभी कोई पेस्लिप नहीं है। स्कूल द्वारा महीने का वेतन अंतिम करने के बाद यहाँ दिखेगी।';
+
+  @override
+  String get hrmsCouldNotLoad => 'यह लोड नहीं हो सका। कृपया फिर कोशिश करें।';
+
+  @override
+  String get hrmsNetPay => 'शुद्ध वेतन';
+
+  @override
+  String get hrmsGross => 'सकल';
+
+  @override
+  String get hrmsDeductions => 'कटौतियाँ';
+
+  @override
+  String hrmsPaidOn(String date) {
+    return '$date को भुगतान हुआ';
+  }
+
+  @override
+  String get hrmsNotPaidYet => 'भुगतान लंबित';
+
+  @override
+  String get hrmsPayslipOpenFailed => 'पेस्लिप नहीं खुल सकी।';
+
+  @override
+  String hrmsPayslipViewerTitle(String month) {
+    return 'पेस्लिप $month';
+  }
+
+  @override
+  String get hrmsBalances => 'छुट्टी शेष';
+
+  @override
+  String hrmsAvailable(String days) {
+    return '$days उपलब्ध';
+  }
+
+  @override
+  String hrmsBalanceDetail(
+      String allowance, String carried, String used, String pending) {
+    return 'सीमा $allowance · आगे लाया $carried · उपयोग $used · लंबित $pending';
+  }
+
+  @override
+  String get hrmsUnpaidLeave => 'बिना वेतन';
+
+  @override
+  String get hrmsRequests => 'मेरे अनुरोध';
+
+  @override
+  String get hrmsNoRequests => 'आपने अभी तक छुट्टी के लिए आवेदन नहीं किया है।';
+
+  @override
+  String get hrmsApplyLeave => 'छुट्टी के लिए आवेदन';
+
+  @override
+  String get hrmsStatusPending => 'लंबित';
+
+  @override
+  String get hrmsStatusApproved => 'स्वीकृत';
+
+  @override
+  String get hrmsStatusRejected => 'अस्वीकृत';
+
+  @override
+  String get hrmsStatusCancelled => 'रद्द';
+
+  @override
+  String hrmsDaysCount(String days) {
+    return '$days दिन';
+  }
+
+  @override
+  String get hrmsHalfDayLabel => 'आधा दिन';
+
+  @override
+  String get hrmsCancelRequest => 'अनुरोध रद्द करें';
+
+  @override
+  String get hrmsCancelConfirm => 'क्या यह छुट्टी अनुरोध रद्द करें?';
+
+  @override
+  String get hrmsKeepRequest => 'रहने दें';
+
+  @override
+  String hrmsDecisionNote(String note) {
+    return 'टिप्पणी: $note';
+  }
+
+  @override
+  String get hrmsLeaveType => 'छुट्टी का प्रकार';
+
+  @override
+  String get hrmsFromDate => 'से';
+
+  @override
+  String get hrmsToDate => 'तक';
+
+  @override
+  String get hrmsPickDate => 'तारीख चुनें';
+
+  @override
+  String get hrmsHalfDayToggle => 'आधा दिन';
+
+  @override
+  String get hrmsReason => 'कारण';
+
+  @override
+  String get hrmsReasonRequired => 'कृपया कारण बताएं।';
+
+  @override
+  String get hrmsChooseTypeAndDates => 'छुट्टी का प्रकार और तारीखें चुनें।';
+
+  @override
+  String get hrmsEndBeforeStart => 'अंतिम तारीख शुरुआती तारीख से पहले है।';
+
+  @override
+  String get hrmsSubmitRequest => 'अनुरोध भेजें';
+
+  @override
+  String get hrmsRequestSent => 'छुट्टी का अनुरोध भेज दिया गया।';
+
+  @override
+  String get hrmsErrInsufficientBalance =>
+      'इस अनुरोध के लिए आपकी छुट्टी शेष पर्याप्त नहीं है।';
+
+  @override
+  String get hrmsErrOverlap =>
+      'इनमें से कुछ दिन पहले से किसी अन्य छुट्टी अनुरोध में शामिल हैं।';
+
+  @override
+  String get hrmsErrNoWorkingDays =>
+      'इन तारीखों में कोई कार्यदिवस नहीं है (साप्ताहिक अवकाश या छुट्टियाँ)।';
+
+  @override
+  String get hrmsErrNoRecord =>
+      'आपके खाते से कोई एचआर रिकॉर्ड जुड़ा नहीं है। स्कूल एडमिन से पूछें।';
+
+  @override
+  String get hrmsErrLeaveStarted =>
+      'शुरू हो चुकी छुट्टी केवल एडमिन रद्द कर सकता है।';
+
+  @override
+  String get hrmsErrFeatureOff => 'यह सुविधा आपके स्कूल के लिए चालू नहीं है।';
 }

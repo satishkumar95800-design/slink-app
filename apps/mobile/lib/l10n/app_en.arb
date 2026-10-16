@@ -855,5 +855,102 @@
         "type": "String"
       }
     }
-  }
+  },
+  "hrmsPayslipsTitle": "My payslips",
+  "hrmsLeaveTitle": "Leave",
+  "hrmsNoRecord": "No HR record is linked to your account yet. Please ask your school admin.",
+  "hrmsPayslipsEmpty": "No payslips yet. They appear here after your school finalises the month's payroll.",
+  "hrmsCouldNotLoad": "Could not load this. Please try again.",
+  "hrmsNetPay": "Net pay",
+  "hrmsGross": "Gross",
+  "hrmsDeductions": "Deductions",
+  "hrmsPaidOn": "Paid on {date}",
+  "@hrmsPaidOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "hrmsNotPaidYet": "Payment pending",
+  "hrmsPayslipOpenFailed": "Could not open the payslip.",
+  "hrmsPayslipViewerTitle": "Payslip {month}",
+  "@hrmsPayslipViewerTitle": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "hrmsBalances": "Leave balance",
+  "hrmsAvailable": "{days} available",
+  "@hrmsAvailable": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "hrmsBalanceDetail": "Allowance {allowance} · Carried in {carried} · Used {used} · Pending {pending}",
+  "@hrmsBalanceDetail": {
+    "placeholders": {
+      "allowance": {
+        "type": "String"
+      },
+      "carried": {
+        "type": "String"
+      },
+      "used": {
+        "type": "String"
+      },
+      "pending": {
+        "type": "String"
+      }
+    }
+  },
+  "hrmsUnpaidLeave": "Unpaid",
+  "hrmsRequests": "My requests",
+  "hrmsNoRequests": "You have not applied for any leave yet.",
+  "hrmsApplyLeave": "Apply for leave",
+  "hrmsStatusPending": "Pending",
+  "hrmsStatusApproved": "Approved",
+  "hrmsStatusRejected": "Rejected",
+  "hrmsStatusCancelled": "Cancelled",
+  "hrmsDaysCount": "{days} days",
+  "@hrmsDaysCount": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "hrmsHalfDayLabel": "Half day",
+  "hrmsCancelRequest": "Cancel request",
+  "hrmsCancelConfirm": "Cancel this leave request?",
+  "hrmsKeepRequest": "Keep it",
+  "hrmsDecisionNote": "Note: {note}",
+  "@hrmsDecisionNote": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "hrmsLeaveType": "Leave type",
+  "hrmsFromDate": "From",
+  "hrmsToDate": "To",
+  "hrmsPickDate": "Choose a date",
+  "hrmsHalfDayToggle": "Half day",
+  "hrmsReason": "Reason",
+  "hrmsReasonRequired": "Please give a reason.",
+  "hrmsChooseTypeAndDates": "Choose the leave type and dates.",
+  "hrmsEndBeforeStart": "The end date is before the start date.",
+  "hrmsSubmitRequest": "Submit request",
+  "hrmsRequestSent": "Leave request sent.",
+  "hrmsErrInsufficientBalance": "You do not have enough leave balance for this request.",
+  "hrmsErrOverlap": "Another leave request already covers some of these days.",
+  "hrmsErrNoWorkingDays": "These dates have no working days (weekly offs or holidays).",
+  "hrmsErrNoRecord": "No HR record is linked to your account. Ask your school admin.",
+  "hrmsErrLeaveStarted": "Leave that has started can only be cancelled by an admin.",
+  "hrmsErrFeatureOff": "This feature is not enabled for your school."
 }

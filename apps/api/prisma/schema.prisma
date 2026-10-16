@@ -228,6 +228,16 @@ model Tenant {
   pettyCashCategories      PettyCashCategory[]
   pettyCashPayees          PettyCashPayee[]
   pettyCashEntries         PettyCashEntry[]
+  hrSetting                HrSetting?
+  employees                Employee[]
+  employeeDocuments        EmployeeDocument[]
+  staffAttendance          StaffAttendance[]
+  leaveTypes               LeaveType[]
+  leaveRequests            LeaveRequest[]
+  salaryStructures         SalaryStructure[]
+  payRuns                  PayRun[]
+  payRunLines              PayRunLine[]
+  payRunLineItems          PayRunLineItem[]
 
   @@map("tenants")
 }
@@ -266,6 +276,7 @@ model User {
   authoredStudentNotes StudentNote[]
   classReminderSetting ClassReminderSetting?
   pettyCashReceived    PettyCashEntry[] @relation("PettyCashRecipient")
+  employee             Employee?
 
   @@unique([tenantId, phone])
   @@unique([tenantId, email])
@@ -1411,4 +1422,343 @@ model PettyCashEntry {
   @@index([tenantId, type, status])
   @@index([settlesEntryId])
   @@map("petty_cash_entries")
+}
+
+
+// ─── HR & Payroll (admin console + staff mobile; feature flag `hrms`) ─────────
+// Money is NUMERIC(12,2) here and integer paise in application code. Sensitive
+// identifiers (PAN, Aadhaar, UAN, ESI no., bank details) are AES-256-GCM
+// ciphertext ("v1:iv:tag:data", same scheme/key as the payment-gateway secrets);
+// the *_hints JSON holds only masked display values.
+
+enum EmploymentType {
+  PERMANENT
+  CONTRACT
+  PART_TIME
+  DAILY_WAGE
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  EXITED
+}
+
+enum StaffAttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  ON_LEAVE
+  HOLIDAY
+}
+
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum WorkingDaysRule {
+  CALENDAR
+  FIXED_30
+  WORKING_DAYS
+}
+
+enum PayRunStatus {
+  DRAFT
+  REVIEW
+  APPROVED
+  LOCKED
+  CANCELLED
+}
+
+enum PayItemKind {
+  EARNING
+  DEDUCTION
+}
+
+enum PayItemSource {
+  STRUCTURE
+  STATUTORY
+  ADJUSTMENT
+}
+
+/// Per-school HR and payroll configuration (created with defaults on first use).
+/// Statutory values are DEFAULTS to be verified by the school's accountant.
+model HrSetting {
+  tenantId              String          @id @map("tenant_id") @db.Uuid
+  /// 0 = Sunday .. 6 = Saturday
+  weeklyOffDays         Int[]           @default([0]) @map("weekly_off_days")
+  workingDaysRule       WorkingDaysRule @default(CALENDAR) @map("working_days_rule")
+  treatUnmarkedAsAbsent Boolean         @default(false) @map("treat_unmarked_as_absent")
+  /// Month (1-12) the leave year starts in; 4 = April.
+  leaveYearStartMonth   Int             @default(4) @map("leave_year_start_month")
+  pfEnabled             Boolean         @default(true) @map("pf_enabled")
+  pfEmployeeRate        Decimal         @default(12) @map("pf_employee_rate") @db.Decimal(5, 2)
+  pfEmployerRate        Decimal         @default(12) @map("pf_employer_rate") @db.Decimal(5, 2)
+  pfWageCeiling         Decimal         @default(15000) @map("pf_wage_ceiling") @db.Decimal(12, 2)
+  esiEnabled            Boolean         @default(true) @map("esi_enabled")
+  esiEmployeeRate       Decimal         @default(0.75) @map("esi_employee_rate") @db.Decimal(5, 2)
+  esiEmployerRate       Decimal         @default(3.25) @map("esi_employer_rate") @db.Decimal(5, 2)
+  esiWageCeiling        Decimal         @default(21000) @map("esi_wage_ceiling") @db.Decimal(12, 2)
+  ptEnabled             Boolean         @default(true) @map("pt_enabled")
+  /// [{ fromPaise, toPaise|null, monthlyPaise, februaryPaise? }] on monthly gross.
+  ptSlabs               Json            @default("[]") @map("pt_slabs")
+  slabsSeeded           Boolean         @default(false) @map("slabs_seeded")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("hr_settings")
+}
+
+model Employee {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String         @map("tenant_id") @db.Uuid
+  /// Login account of this person, when they have one (teachers, admin, accounts). Ground staff have none.
+  userId         String?        @unique @map("user_id") @db.Uuid
+  employeeCode   String         @map("employee_code")
+  name           String
+  phone          String?
+  email          String?
+  designation    String
+  department     String?
+  employmentType EmploymentType @default(PERMANENT) @map("employment_type")
+  joinDate       DateTime       @map("join_date") @db.Date
+  exitDate       DateTime?      @map("exit_date") @db.Date
+  exitReason     String?        @map("exit_reason")
+  status         EmployeeStatus @default(ACTIVE)
+  panEnc         String?        @map("pan_enc")
+  aadhaarEnc     String?        @map("aadhaar_enc")
+  uanEnc         String?        @map("uan_enc")
+  esiNumberEnc   String?        @map("esi_number_enc")
+  bankAccountEnc String?        @map("bank_account_enc")
+  bankIfscEnc    String?        @map("bank_ifsc_enc")
+  bankHolderEnc  String?        @map("bank_holder_enc")
+  /// Masked display values only, e.g. { pan: "XXXXX1234X", bankAccount: "XXXXXX7890" }.
+  sensitiveHints Json           @default("{}") @map("sensitive_hints")
+  createdBy      String         @map("created_by") @db.Uuid
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  tenant     Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user       User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  documents  EmployeeDocument[]
+  attendance StaffAttendance[]
+  leaves     LeaveRequest[]
+  structures SalaryStructure[]
+  payLines   PayRunLine[]
+
+  @@unique([tenantId, employeeCode])
+  @@index([tenantId, status])
+  @@map("employees")
+}
+
+model EmployeeDocument {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  employeeId  String   @map("employee_id") @db.Uuid
+  /// Free label: Offer letter, ID proof, Contract ...
+  label       String
+  /// S3 key (private/{tenantId}/hr/{employeeId}/...), never a URL.
+  fileKey     String   @map("file_key")
+  fileName    String   @map("file_name")
+  contentType String   @map("content_type")
+  size        Int
+  uploadedBy  String   @map("uploaded_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, employeeId])
+  @@map("employee_documents")
+}
+
+/// One row per employee per day. Rows written by an approved leave carry leaveRequestId.
+model StaffAttendance {
+  id             String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String                @map("tenant_id") @db.Uuid
+  employeeId     String                @map("employee_id") @db.Uuid
+  date           DateTime              @db.Date
+  status         StaffAttendanceStatus
+  note           String?
+  leaveRequestId String?               @map("leave_request_id") @db.Uuid
+  markedBy       String                @map("marked_by") @db.Uuid
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee     Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveRequest LeaveRequest? @relation(fields: [leaveRequestId], references: [id], onDelete: SetNull)
+
+  @@unique([employeeId, date])
+  @@index([tenantId, date])
+  @@map("staff_attendance")
+}
+
+model LeaveType {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  name            String
+  /// Days per leave year (half days allowed).
+  yearlyAllowance Decimal  @map("yearly_allowance") @db.Decimal(5, 1)
+  /// Most unused days carried into the next leave year.
+  carryForwardCap Decimal  @default(0) @map("carry_forward_cap") @db.Decimal(5, 1)
+  isPaid          Boolean  @default(true) @map("is_paid")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  requests LeaveRequest[]
+
+  @@unique([tenantId, name])
+  @@map("leave_types")
+}
+
+model LeaveRequest {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String             @map("tenant_id") @db.Uuid
+  employeeId   String             @map("employee_id") @db.Uuid
+  leaveTypeId  String             @map("leave_type_id") @db.Uuid
+  fromDate     DateTime           @map("from_date") @db.Date
+  toDate       DateTime           @map("to_date") @db.Date
+  halfDay      Boolean            @default(false) @map("half_day")
+  /// Leave days counted (weekly offs and school holidays excluded) when the request was made.
+  days         Decimal            @db.Decimal(5, 1)
+  reason       String
+  status       LeaveRequestStatus @default(PENDING)
+  requestedBy  String             @map("requested_by") @db.Uuid
+  decidedBy    String?            @map("decided_by") @db.Uuid
+  decidedAt    DateTime?          @map("decided_at")
+  decisionNote String?            @map("decision_note")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+
+  tenant     Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee   Employee          @relation(fields: [employeeId], references: [id], onDelete: NoAction)
+  leaveType  LeaveType         @relation(fields: [leaveTypeId], references: [id], onDelete: NoAction)
+  attendance StaffAttendance[]
+
+  @@index([tenantId, status])
+  @@index([employeeId, fromDate])
+  @@map("leave_requests")
+}
+
+/// Effective-dated and immutable: a change is a new row with a later effective_from.
+model SalaryStructure {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  employeeId    String   @map("employee_id") @db.Uuid
+  effectiveFrom DateTime @map("effective_from") @db.Date
+  basic         Decimal  @db.Decimal(12, 2)
+  /// [{ name, kind: EARNING|DEDUCTION, calc: FIXED|PERCENT_OF_BASIC, amountPaise?, percentBp? }]
+  components    Json     @default("[]")
+  pfApplicable  Boolean  @default(false) @map("pf_applicable")
+  esiApplicable Boolean  @default(false) @map("esi_applicable")
+  ptApplicable  Boolean  @default(false) @map("pt_applicable")
+  createdBy     String   @map("created_by") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: NoAction)
+
+  @@unique([employeeId, effectiveFrom])
+  @@index([tenantId, employeeId])
+  @@map("salary_structures")
+}
+
+/// One non-cancelled run per school per month (partial unique index in the migration).
+model PayRun {
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String       @map("tenant_id") @db.Uuid
+  /// YYYY-MM
+  month            String       @db.VarChar(7)
+  status           PayRunStatus @default(DRAFT)
+  /// Settings in force when the run was generated, so later changes never rewrite it.
+  settingsSnapshot Json         @map("settings_snapshot")
+  preparedBy       String       @map("prepared_by") @db.Uuid
+  submittedAt      DateTime?    @map("submitted_at")
+  approvedBy       String?      @map("approved_by") @db.Uuid
+  approvedAt       DateTime?    @map("approved_at")
+  selfApproved     Boolean      @default(false) @map("self_approved")
+  lockedBy         String?      @map("locked_by") @db.Uuid
+  lockedAt         DateTime?    @map("locked_at")
+  cancelledBy      String?      @map("cancelled_by") @db.Uuid
+  cancelledAt      DateTime?    @map("cancelled_at")
+  cancelReason     String?      @map("cancel_reason")
+  paidAt           DateTime?    @map("paid_at")
+  paidBy           String?      @map("paid_by") @db.Uuid
+  paymentReference String?      @map("payment_reference")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lines  PayRunLine[]
+
+  @@index([tenantId, month])
+  @@map("pay_runs")
+}
+
+/// Per-employee snapshot: later edits to the employee or structure never change it.
+model PayRunLine {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  payRunId        String   @map("pay_run_id") @db.Uuid
+  employeeId      String   @map("employee_id") @db.Uuid
+  employeeCode    String   @map("employee_code")
+  employeeName    String   @map("employee_name")
+  designation     String
+  department      String?
+  /// Salary structure used (null when the employee had none: the line is zero and flagged).
+  structureId     String?  @map("structure_id") @db.Uuid
+  /// Divisor used for proration (days in month, 30, or working days).
+  periodDays      Int      @map("period_days")
+  lopDays         Decimal  @default(0) @map("lop_days") @db.Decimal(5, 1)
+  paidDays        Decimal  @default(0) @map("paid_days") @db.Decimal(5, 1)
+  unmarkedDays    Int      @default(0) @map("unmarked_days")
+  grossEarnings   Decimal  @default(0) @map("gross_earnings") @db.Decimal(12, 2)
+  totalDeductions Decimal  @default(0) @map("total_deductions") @db.Decimal(12, 2)
+  netPay          Decimal  @default(0) @map("net_pay") @db.Decimal(12, 2)
+  employerPf      Decimal  @default(0) @map("employer_pf") @db.Decimal(12, 2)
+  employerEsi     Decimal  @default(0) @map("employer_esi") @db.Decimal(12, 2)
+  /// Warnings found while generating (no structure, unmarked days, missing bank details).
+  flags           String[] @default([])
+  /// Encrypted bank snapshot used for the transfer file.
+  bankAccountEnc  String?  @map("bank_account_enc")
+  bankIfscEnc     String?  @map("bank_ifsc_enc")
+  bankHolderEnc   String?  @map("bank_holder_enc")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  payRun   PayRun           @relation(fields: [payRunId], references: [id], onDelete: Cascade)
+  employee Employee         @relation(fields: [employeeId], references: [id], onDelete: NoAction)
+  items    PayRunLineItem[]
+
+  @@unique([payRunId, employeeId])
+  @@index([tenantId, employeeId])
+  @@map("pay_run_lines")
+}
+
+model PayRunLineItem {
+  id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String        @map("tenant_id") @db.Uuid
+  lineId    String        @map("line_id") @db.Uuid
+  kind      PayItemKind
+  source    PayItemSource
+  /// BASIC, PF, ESI, PT, or null for custom components and adjustments.
+  code      String?
+  name      String
+  amount    Decimal       @db.Decimal(12, 2)
+  /// Required for adjustments.
+  reason    String?
+  createdBy String?       @map("created_by") @db.Uuid
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  tenant Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  line   PayRunLine @relation(fields: [lineId], references: [id], onDelete: Cascade)
+
+  @@index([lineId])
+  @@map("pay_run_line_items")
 }

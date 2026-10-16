@@ -39,6 +39,8 @@ import {
 } from '@prisma/client';
 import { explodeFeeItem } from '../src/modules/fees/fee-component-explosion.util';
 import { buildDemoPettyCash } from '../src/modules/petty-cash/demo-seed';
+import { buildDemoHrms } from '../src/modules/hrms/demo-seed';
+import { encryptSecret } from '../src/common/secret-box';
 
 export const DEMO_SLUG = 'gvps-demo';
 export const DEMO_SCHOOL_NAME = 'Green Valley Public School';
@@ -492,6 +494,7 @@ export async function seedDemo(prisma: PrismaClient) {
         // Optional modules, so the demo shows them (all off by default elsewhere).
         pettyCash: true,
         calendar: true,
+        hrms: true,
       },
     },
   });
@@ -1563,6 +1566,58 @@ export async function seedDemo(prisma: PrismaClient) {
   );
   await prisma.pettyCashEntry.createMany({ data: petty.entries });
 
+  // ── HR & payroll: twelve employees, three months of attendance/leave, pay runs ──
+  // Only ever for this flagged demo school (the `hrms` flag is set above). Sensitive
+  // values are encrypted with PAYMENT_SECRETS_KEY when the seeding environment has it, else skipped.
+  const secretsKey = process.env.PAYMENT_SECRETS_KEY;
+  const hr = buildDemoHrms(
+    {
+      tenantId,
+      adminId: admin.id,
+      accountantId: accountant.id,
+      // Demo teacher first, then the rest in order.
+      teachers: [teachers[6], ...teachers.filter((_, i) => i !== 6)].map(
+        (t) => ({ id: t.id, name: t.name, phone: t.phone }),
+      ),
+      holidays: HOLIDAYS.map(([d]) => d as string),
+    },
+    todayYmd,
+    secretsKey && secretsKey.length >= 32
+      ? (plain) => encryptSecret(secretsKey, plain)
+      : null,
+  );
+  await prisma.hrSetting.create({
+    data: hr.setting as unknown as Prisma.HrSettingUncheckedCreateInput,
+  });
+  await prisma.employee.createMany({
+    data: hr.employees as unknown as Prisma.EmployeeCreateManyInput[],
+  });
+  await prisma.leaveType.createMany({
+    data: hr.leaveTypes as unknown as Prisma.LeaveTypeCreateManyInput[],
+  });
+  await prisma.leaveRequest.createMany({
+    data: hr.leaveRequests as unknown as Prisma.LeaveRequestCreateManyInput[],
+  });
+  await chunked(hr.attendance, 500, (part) =>
+    prisma.staffAttendance.createMany({
+      data: part as unknown as Prisma.StaffAttendanceCreateManyInput[],
+    }),
+  );
+  await prisma.salaryStructure.createMany({
+    data: hr.structures as unknown as Prisma.SalaryStructureCreateManyInput[],
+  });
+  await prisma.payRun.createMany({
+    data: hr.payRuns as unknown as Prisma.PayRunCreateManyInput[],
+  });
+  await prisma.payRunLine.createMany({
+    data: hr.payRunLines as unknown as Prisma.PayRunLineCreateManyInput[],
+  });
+  await chunked(hr.payRunLineItems, 500, (part) =>
+    prisma.payRunLineItem.createMany({
+      data: part as unknown as Prisma.PayRunLineItemCreateManyInput[],
+    }),
+  );
+
   await prisma.tenant.update({
     where: { id: tenantId },
     data: { receiptSequence: receiptSeq },
@@ -1584,6 +1639,7 @@ export async function seedDemo(prisma: PrismaClient) {
       `  ${CLASSES.length} classes · ${students.length} students · ${parents.length} parents · ${teachers.length} teachers · ${SIBLING_PAIRS.length} sibling pairs`,
       `  Fees: ${lakh(collected)} collected · ${lakh(due - collected)} outstanding (of ${lakh(due)})`,
       `  Petty cash: ${petty.entries.length} entries over ~5 months (flag on for this school)`,
+      `  HR & payroll: ${hr.summary.employees} employees · ${hr.summary.lockedRuns} locked + ${hr.summary.reviewRuns} pending pay run · ${hr.summary.attendanceRows} staff attendance rows (flag on for this school)`,
       `  ${receipts.length} receipts · ${claims.length} payment claims · ${broadcasts.length} homework/notices · ${reports.length} reports`,
       `  Attendance: ${((present / marked) * 100).toFixed(1)}% over ${schoolDays.length} school days${todayIsSchoolDay ? `; ${unmarkedToday.size} classes not yet marked today` : ''}`,
       `  Files: ${files.uploaded} uploaded, ${files.skipped} skipped`,

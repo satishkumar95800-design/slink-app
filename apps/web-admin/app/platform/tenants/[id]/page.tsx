@@ -56,6 +56,11 @@ const OPTIONAL_MODULES = [
     name: 'School calendar',
     help: 'Holidays, events and parent-teacher meetings in the parent and teacher mobile apps, with events managed in Settings.',
   },
+  {
+    key: 'hrms',
+    name: 'HR & Payroll',
+    help: 'Employee directory, staff attendance, leave and payroll with payslips. Admin and accounts manage it; teachers see their own payslips and leave in the mobile app.',
+  },
 ] as const;
 
 type Tab = 'overview' | 'import' | 'users' | 'settings';

@@ -1261,4 +1261,163 @@ class AppLocalizationsEn extends AppLocalizations {
   String calendarDayHeading(String weekday, String date) {
     return '$weekday, $date';
   }
+
+  @override
+  String get hrmsPayslipsTitle => 'My payslips';
+
+  @override
+  String get hrmsLeaveTitle => 'Leave';
+
+  @override
+  String get hrmsNoRecord =>
+      'No HR record is linked to your account yet. Please ask your school admin.';
+
+  @override
+  String get hrmsPayslipsEmpty =>
+      'No payslips yet. They appear here after your school finalises the month\'s payroll.';
+
+  @override
+  String get hrmsCouldNotLoad => 'Could not load this. Please try again.';
+
+  @override
+  String get hrmsNetPay => 'Net pay';
+
+  @override
+  String get hrmsGross => 'Gross';
+
+  @override
+  String get hrmsDeductions => 'Deductions';
+
+  @override
+  String hrmsPaidOn(String date) {
+    return 'Paid on $date';
+  }
+
+  @override
+  String get hrmsNotPaidYet => 'Payment pending';
+
+  @override
+  String get hrmsPayslipOpenFailed => 'Could not open the payslip.';
+
+  @override
+  String hrmsPayslipViewerTitle(String month) {
+    return 'Payslip $month';
+  }
+
+  @override
+  String get hrmsBalances => 'Leave balance';
+
+  @override
+  String hrmsAvailable(String days) {
+    return '$days available';
+  }
+
+  @override
+  String hrmsBalanceDetail(
+      String allowance, String carried, String used, String pending) {
+    return 'Allowance $allowance · Carried in $carried · Used $used · Pending $pending';
+  }
+
+  @override
+  String get hrmsUnpaidLeave => 'Unpaid';
+
+  @override
+  String get hrmsRequests => 'My requests';
+
+  @override
+  String get hrmsNoRequests => 'You have not applied for any leave yet.';
+
+  @override
+  String get hrmsApplyLeave => 'Apply for leave';
+
+  @override
+  String get hrmsStatusPending => 'Pending';
+
+  @override
+  String get hrmsStatusApproved => 'Approved';
+
+  @override
+  String get hrmsStatusRejected => 'Rejected';
+
+  @override
+  String get hrmsStatusCancelled => 'Cancelled';
+
+  @override
+  String hrmsDaysCount(String days) {
+    return '$days days';
+  }
+
+  @override
+  String get hrmsHalfDayLabel => 'Half day';
+
+  @override
+  String get hrmsCancelRequest => 'Cancel request';
+
+  @override
+  String get hrmsCancelConfirm => 'Cancel this leave request?';
+
+  @override
+  String get hrmsKeepRequest => 'Keep it';
+
+  @override
+  String hrmsDecisionNote(String note) {
+    return 'Note: $note';
+  }
+
+  @override
+  String get hrmsLeaveType => 'Leave type';
+
+  @override
+  String get hrmsFromDate => 'From';
+
+  @override
+  String get hrmsToDate => 'To';
+
+  @override
+  String get hrmsPickDate => 'Choose a date';
+
+  @override
+  String get hrmsHalfDayToggle => 'Half day';
+
+  @override
+  String get hrmsReason => 'Reason';
+
+  @override
+  String get hrmsReasonRequired => 'Please give a reason.';
+
+  @override
+  String get hrmsChooseTypeAndDates => 'Choose the leave type and dates.';
+
+  @override
+  String get hrmsEndBeforeStart => 'The end date is before the start date.';
+
+  @override
+  String get hrmsSubmitRequest => 'Submit request';
+
+  @override
+  String get hrmsRequestSent => 'Leave request sent.';
+
+  @override
+  String get hrmsErrInsufficientBalance =>
+      'You do not have enough leave balance for this request.';
+
+  @override
+  String get hrmsErrOverlap =>
+      'Another leave request already covers some of these days.';
+
+  @override
+  String get hrmsErrNoWorkingDays =>
+      'These dates have no working days (weekly offs or holidays).';
+
+  @override
+  String get hrmsErrNoRecord =>
+      'No HR record is linked to your account. Ask your school admin.';
+
+  @override
+  String get hrmsErrLeaveStarted =>
+      'Leave that has started can only be cancelled by an admin.';
+
+  @override
+  String get hrmsErrFeatureOff =>
+      'This feature is not enabled for your school.';
 }

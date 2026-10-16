@@ -27,4 +27,9 @@ export class UpdatePlatformFeaturesDto extends UpdateFeaturesDto {
   @IsBoolean()
   @IsOptional()
   calendar?: boolean;
+
+  /** HR & Payroll: employees, staff attendance, leave, payroll (admin console + staff mobile). */
+  @IsBoolean()
+  @IsOptional()
+  hrms?: boolean;
 }

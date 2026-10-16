@@ -41,6 +41,7 @@ import { StudentNotesModule } from './modules/student-notes/student-notes.module
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
 import { PettyCashModule } from './modules/petty-cash/petty-cash.module';
+import { HrmsModule } from './modules/hrms/hrms.module';
 import { ParentModule } from './modules/parent/parent.module';
 import { FeeRemindersModule } from './modules/fee-reminders/fee-reminders.module';
 import { BroadcastsModule } from './modules/broadcasts/broadcasts.module';
@@ -93,6 +94,7 @@ import { ClassRemindersModule } from './modules/class-reminders/class-reminders.
     AttendanceModule,
     CalendarModule,
     PettyCashModule,
+    HrmsModule,
     ParentModule,
     FeeRemindersModule,
     BroadcastsModule,

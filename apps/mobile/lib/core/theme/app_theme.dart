@@ -25,6 +25,7 @@ abstract final class FeatureColors {
   static const reports = Color(0xFF8E5BD8);
   static const timetable = Color(0xFF1E88B8);
   static const calendar = Color(0xFF0E8F8A);
+  static const payroll = Color(0xFF3D7A4A);
   static const notifications = Color(0xFFD9467A);
   static const classes = Color(0xFF2A8C83);
   static const notes = Color(0xFFB7791F);

@@ -16,6 +16,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   PiggyBank,
+  Briefcase,
   Presentation,
   Receipt,
   School,
@@ -32,7 +33,7 @@ import { LanguageSwitcher } from './language-switcher';
 
 interface NavItem {
   /** Key into messages "nav". */
-  label: 'dashboard' | 'users' | 'students' | 'classes' | 'teachers' | 'fees' | 'studentFees' | 'payments' | 'feeReports' | 'reports' | 'attendance' | 'documents' | 'timetable' | 'paymentClaims' | 'pettyCash' | 'import' | 'settings';
+  label: 'dashboard' | 'users' | 'students' | 'classes' | 'teachers' | 'fees' | 'studentFees' | 'payments' | 'feeReports' | 'reports' | 'attendance' | 'documents' | 'timetable' | 'paymentClaims' | 'pettyCash' | 'hr' | 'import' | 'settings';
   href: string;
   icon: LucideIcon;
   /** Roles that should not see this item in the sidebar (still reachable by direct URL if the API allows it). */
@@ -72,6 +73,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'paymentClaims', href: '/admin/payment-claims', icon: Receipt, hiddenForRoles: ['teacher'] },
       { label: 'feeReports', href: '/admin/fee-reports', icon: ChartLine, hiddenForRoles: ['teacher'] },
       { label: 'pettyCash', href: '/admin/petty-cash', icon: PiggyBank, onlyRoles: ['admin', 'accounts'], feature: 'pettyCash' },
+      { label: 'hr', href: '/admin/hr', icon: Briefcase, onlyRoles: ['admin', 'accounts'], feature: 'hrms' },
     ],
   },
   {
