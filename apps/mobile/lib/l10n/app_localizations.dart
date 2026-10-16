@@ -2495,6 +2495,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This feature is not enabled for your school.'**
   String get hrmsErrFeatureOff;
+
+  /// No description provided for @hrmsPayslipSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save or share'**
+  String get hrmsPayslipSave;
+
+  /// No description provided for @staffDocsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared documents'**
+  String get staffDocsTitle;
+
+  /// No description provided for @staffDocsIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Folders and files every teacher of the school can see and download.'**
+  String get staffDocsIntro;
+
+  /// No description provided for @staffDocsNewFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'New folder'**
+  String get staffDocsNewFolder;
+
+  /// No description provided for @staffDocsRenameFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename folder'**
+  String get staffDocsRenameFolder;
+
+  /// No description provided for @staffDocsDeleteFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete folder'**
+  String get staffDocsDeleteFolder;
+
+  /// No description provided for @staffDocsFolderName.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder name'**
+  String get staffDocsFolderName;
+
+  /// No description provided for @staffDocsFolderNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Lesson plans'**
+  String get staffDocsFolderNameHint;
+
+  /// No description provided for @staffDocsSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get staffDocsSave;
+
+  /// No description provided for @staffDocsNoFolders.
+  ///
+  /// In en, this message translates to:
+  /// **'No folders yet. Create one and upload files for all teachers to see.'**
+  String get staffDocsNoFolders;
+
+  /// No description provided for @staffDocsNoFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'This folder is empty. Upload PDFs, images, Word, Excel or PowerPoint files (up to 20 MB each).'**
+  String get staffDocsNoFiles;
+
+  /// No description provided for @staffDocsFileCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No files} =1{1 file} other{{count} files}}'**
+  String staffDocsFileCount(int count);
+
+  /// No description provided for @staffDocsCreatedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Created by {name}'**
+  String staffDocsCreatedBy(String name);
+
+  /// No description provided for @staffDocsUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload files'**
+  String get staffDocsUpload;
+
+  /// No description provided for @staffDocsUploaded.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 file uploaded} other{{count} files uploaded}}'**
+  String staffDocsUploaded(int count);
+
+  /// No description provided for @staffDocsTooBig.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is larger than 20 MB.'**
+  String staffDocsTooBig(String name);
+
+  /// No description provided for @staffDocsDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get staffDocsDownload;
+
+  /// No description provided for @staffDocsDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get staffDocsDelete;
+
+  /// No description provided for @staffDocsDeleteFileConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete \"{name}\"? Other teachers will no longer see it.'**
+  String staffDocsDeleteFileConfirm(String name);
+
+  /// No description provided for @staffDocsDeleteFolderConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the folder \"{name}\"?'**
+  String staffDocsDeleteFolderConfirm(String name);
+
+  /// No description provided for @staffDocsOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the file.'**
+  String get staffDocsOpenFailed;
+
+  /// No description provided for @staffDocsErrFolderExists.
+  ///
+  /// In en, this message translates to:
+  /// **'A folder with this name already exists.'**
+  String get staffDocsErrFolderExists;
+
+  /// No description provided for @staffDocsErrFolderNotEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the files in this folder first.'**
+  String get staffDocsErrFolderNotEmpty;
+
+  /// No description provided for @staffDocsErrNotOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the person who added this, or an admin, can change it.'**
+  String get staffDocsErrNotOwner;
+
+  /// No description provided for @routinePeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Period {period}'**
+  String routinePeriod(int period);
 }
 
 class _AppLocalizationsDelegate

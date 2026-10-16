@@ -103,34 +103,66 @@ class _DaySection extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     child: Row(
                       children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: isToday ? AppColors.coral : FeatureColors.timetable.withValues(alpha: 0.13),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '${slots[i].periodNumber}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              color: isToday ? Colors.white : FeatureColors.timetable,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
                         Expanded(
-                          child: Text(
-                            slots[i].subject.name,
-                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: isToday ? AppColors.coral : FeatureColors.timetable.withValues(alpha: 0.13),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      context.l10n.routinePeriod(slots[i].periodNumber),
+                                      style: theme.textTheme.labelMedium?.copyWith(
+                                        fontWeight: FontWeight.w800,
+                                        color: isToday ? Colors.white : FeatureColors.timetable,
+                                      ),
+                                    ),
+                                  ),
+                                  if (slots[i].timeRange != null)
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.schedule_rounded, size: 15, color: AppColors.muted),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          slots[i].timeRange!,
+                                          style: theme.textTheme.labelMedium?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.muted,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      slots[i].subject.name,
+                                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  StatusPill(label: slots[i].studentClass.displayName, color: FeatureColors.classes),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                        StatusPill(label: slots[i].studentClass.displayName, color: FeatureColors.classes),
                       ],
                     ),
                   ),
-                  if (i != slots.length - 1) const Divider(height: 1, indent: 70),
+                  if (i != slots.length - 1) const Divider(height: 1, indent: 16, endIndent: 16),
                 ],
               ],
             ),

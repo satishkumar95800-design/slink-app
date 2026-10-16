@@ -42,6 +42,10 @@ class TimetableSlot {
   final TimetablePersonInfo subject;
   final TimetableClassInfo studentClass;
 
+  /// Bell times ("HH:mm") from the school or class schedule; null when none are set.
+  final String? startTime;
+  final String? endTime;
+
   const TimetableSlot({
     required this.id,
     required this.dayOfWeek,
@@ -49,7 +53,12 @@ class TimetableSlot {
     required this.teacher,
     required this.subject,
     required this.studentClass,
+    this.startTime,
+    this.endTime,
   });
+
+  /// "09:45 – 10:30", or null without bell times.
+  String? get timeRange => startTime != null && endTime != null ? '$startTime – $endTime' : startTime;
 
   factory TimetableSlot.fromJson(Map<String, dynamic> json) => TimetableSlot(
         id: json['id'] as String,
@@ -58,5 +67,7 @@ class TimetableSlot {
         teacher: TimetablePersonInfo.fromJson(json['teacher'] as Map<String, dynamic>),
         subject: TimetablePersonInfo.fromJson(json['subject'] as Map<String, dynamic>),
         studentClass: TimetableClassInfo.fromJson(json['class'] as Map<String, dynamic>),
+        startTime: json['startTime'] as String?,
+        endTime: json['endTime'] as String?,
       );
 }

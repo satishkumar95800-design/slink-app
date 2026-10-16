@@ -74,6 +74,9 @@ String? translateErrorCode(String? code) {
     'NO_EMPLOYEE_RECORD' => l.hrmsErrNoRecord,
     'LEAVE_STARTED' => l.hrmsErrLeaveStarted,
     'FEATURE_DISABLED' => l.hrmsErrFeatureOff,
+    'FOLDER_EXISTS' => l.staffDocsErrFolderExists,
+    'FOLDER_NOT_EMPTY' => l.staffDocsErrFolderNotEmpty,
+    'NOT_OWNER' => l.staffDocsErrNotOwner,
     _ => null,
   };
 }

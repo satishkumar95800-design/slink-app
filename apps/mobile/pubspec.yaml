@@ -52,6 +52,7 @@ dependencies:
   intl: any # version pinned by flutter_localizations
   uuid: ^4.4.2
   url_launcher: ^6.3.1
+  share_plus: ^12.0.2
 
 dev_dependencies:
   flutter_test:

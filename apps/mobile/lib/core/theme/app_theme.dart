@@ -30,6 +30,7 @@ abstract final class FeatureColors {
   static const classes = Color(0xFF2A8C83);
   static const notes = Color(0xFFB7791F);
   static const sent = Color(0xFF5B7083);
+  static const documents = Color(0xFF6D5BD0);
 }
 
 class AppThemeData {

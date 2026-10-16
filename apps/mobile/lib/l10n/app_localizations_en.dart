@@ -1420,4 +1420,112 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get hrmsErrFeatureOff =>
       'This feature is not enabled for your school.';
+
+  @override
+  String get hrmsPayslipSave => 'Save or share';
+
+  @override
+  String get staffDocsTitle => 'Shared documents';
+
+  @override
+  String get staffDocsIntro =>
+      'Folders and files every teacher of the school can see and download.';
+
+  @override
+  String get staffDocsNewFolder => 'New folder';
+
+  @override
+  String get staffDocsRenameFolder => 'Rename folder';
+
+  @override
+  String get staffDocsDeleteFolder => 'Delete folder';
+
+  @override
+  String get staffDocsFolderName => 'Folder name';
+
+  @override
+  String get staffDocsFolderNameHint => 'e.g. Lesson plans';
+
+  @override
+  String get staffDocsSave => 'Save';
+
+  @override
+  String get staffDocsNoFolders =>
+      'No folders yet. Create one and upload files for all teachers to see.';
+
+  @override
+  String get staffDocsNoFiles =>
+      'This folder is empty. Upload PDFs, images, Word, Excel or PowerPoint files (up to 20 MB each).';
+
+  @override
+  String staffDocsFileCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files',
+      one: '1 file',
+      zero: 'No files',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String staffDocsCreatedBy(String name) {
+    return 'Created by $name';
+  }
+
+  @override
+  String get staffDocsUpload => 'Upload files';
+
+  @override
+  String staffDocsUploaded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files uploaded',
+      one: '1 file uploaded',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String staffDocsTooBig(String name) {
+    return '$name is larger than 20 MB.';
+  }
+
+  @override
+  String get staffDocsDownload => 'Download';
+
+  @override
+  String get staffDocsDelete => 'Delete';
+
+  @override
+  String staffDocsDeleteFileConfirm(String name) {
+    return 'Delete \"$name\"? Other teachers will no longer see it.';
+  }
+
+  @override
+  String staffDocsDeleteFolderConfirm(String name) {
+    return 'Delete the folder \"$name\"?';
+  }
+
+  @override
+  String get staffDocsOpenFailed => 'Could not open the file.';
+
+  @override
+  String get staffDocsErrFolderExists =>
+      'A folder with this name already exists.';
+
+  @override
+  String get staffDocsErrFolderNotEmpty =>
+      'Delete the files in this folder first.';
+
+  @override
+  String get staffDocsErrNotOwner =>
+      'Only the person who added this, or an admin, can change it.';
+
+  @override
+  String routinePeriod(int period) {
+    return 'Period $period';
+  }
 }

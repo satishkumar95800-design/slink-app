@@ -1423,4 +1423,110 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get hrmsErrFeatureOff => 'यह सुविधा आपके स्कूल के लिए चालू नहीं है।';
+
+  @override
+  String get hrmsPayslipSave => 'सेव या शेयर करें';
+
+  @override
+  String get staffDocsTitle => 'साझा दस्तावेज़';
+
+  @override
+  String get staffDocsIntro =>
+      'फ़ोल्डर और फ़ाइलें जिन्हें स्कूल का हर शिक्षक देख और डाउनलोड कर सकता है।';
+
+  @override
+  String get staffDocsNewFolder => 'नया फ़ोल्डर';
+
+  @override
+  String get staffDocsRenameFolder => 'फ़ोल्डर का नाम बदलें';
+
+  @override
+  String get staffDocsDeleteFolder => 'फ़ोल्डर हटाएँ';
+
+  @override
+  String get staffDocsFolderName => 'फ़ोल्डर का नाम';
+
+  @override
+  String get staffDocsFolderNameHint => 'जैसे पाठ योजनाएँ';
+
+  @override
+  String get staffDocsSave => 'सेव करें';
+
+  @override
+  String get staffDocsNoFolders =>
+      'अभी कोई फ़ोल्डर नहीं। एक बनाएँ और सभी शिक्षकों के देखने के लिए फ़ाइलें अपलोड करें।';
+
+  @override
+  String get staffDocsNoFiles =>
+      'यह फ़ोल्डर खाली है। PDF, चित्र, Word, Excel या PowerPoint फ़ाइलें अपलोड करें (हर एक 20 MB तक)।';
+
+  @override
+  String staffDocsFileCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count फ़ाइलें',
+      one: '1 फ़ाइल',
+      zero: 'कोई फ़ाइल नहीं',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String staffDocsCreatedBy(String name) {
+    return '$name द्वारा बनाया गया';
+  }
+
+  @override
+  String get staffDocsUpload => 'फ़ाइलें अपलोड करें';
+
+  @override
+  String staffDocsUploaded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count फ़ाइलें अपलोड हुईं',
+      one: '1 फ़ाइल अपलोड हुई',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String staffDocsTooBig(String name) {
+    return '$name 20 MB से बड़ी है।';
+  }
+
+  @override
+  String get staffDocsDownload => 'डाउनलोड';
+
+  @override
+  String get staffDocsDelete => 'हटाएँ';
+
+  @override
+  String staffDocsDeleteFileConfirm(String name) {
+    return '\"$name\" हटाएँ? अन्य शिक्षक इसे अब नहीं देख पाएँगे।';
+  }
+
+  @override
+  String staffDocsDeleteFolderConfirm(String name) {
+    return '\"$name\" फ़ोल्डर हटाएँ?';
+  }
+
+  @override
+  String get staffDocsOpenFailed => 'फ़ाइल नहीं खुल सकी।';
+
+  @override
+  String get staffDocsErrFolderExists => 'इस नाम का फ़ोल्डर पहले से मौजूद है।';
+
+  @override
+  String get staffDocsErrFolderNotEmpty => 'पहले इस फ़ोल्डर की फ़ाइलें हटाएँ।';
+
+  @override
+  String get staffDocsErrNotOwner =>
+      'इसे केवल जोड़ने वाला व्यक्ति या एडमिन ही बदल सकता है।';
+
+  @override
+  String routinePeriod(int period) {
+    return 'पीरियड $period';
+  }
 }

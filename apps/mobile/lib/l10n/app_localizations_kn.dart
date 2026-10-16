@@ -1423,4 +1423,111 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get hrmsErrFeatureOff => 'ಈ ಸೌಲಭ್ಯ ನಿಮ್ಮ ಶಾಲೆಗೆ ಸಕ್ರಿಯಗೊಂಡಿಲ್ಲ.';
+
+  @override
+  String get hrmsPayslipSave => 'ಉಳಿಸಿ ಅಥವಾ ಹಂಚಿಕೊಳ್ಳಿ';
+
+  @override
+  String get staffDocsTitle => 'ಹಂಚಿದ ದಾಖಲೆಗಳು';
+
+  @override
+  String get staffDocsIntro =>
+      'ಶಾಲೆಯ ಪ್ರತಿ ಶಿಕ್ಷಕರು ನೋಡಬಹುದಾದ ಮತ್ತು ಡೌನ್‌ಲೋಡ್ ಮಾಡಬಹುದಾದ ಫೋಲ್ಡರ್‌ಗಳು ಮತ್ತು ಫೈಲ್‌ಗಳು.';
+
+  @override
+  String get staffDocsNewFolder => 'ಹೊಸ ಫೋಲ್ಡರ್';
+
+  @override
+  String get staffDocsRenameFolder => 'ಫೋಲ್ಡರ್ ಮರುಹೆಸರಿಸಿ';
+
+  @override
+  String get staffDocsDeleteFolder => 'ಫೋಲ್ಡರ್ ಅಳಿಸಿ';
+
+  @override
+  String get staffDocsFolderName => 'ಫೋಲ್ಡರ್ ಹೆಸರು';
+
+  @override
+  String get staffDocsFolderNameHint => 'ಉದಾ. ಪಾಠ ಯೋಜನೆಗಳು';
+
+  @override
+  String get staffDocsSave => 'ಉಳಿಸಿ';
+
+  @override
+  String get staffDocsNoFolders =>
+      'ಇನ್ನೂ ಫೋಲ್ಡರ್‌ಗಳಿಲ್ಲ. ಒಂದನ್ನು ರಚಿಸಿ ಮತ್ತು ಎಲ್ಲಾ ಶಿಕ್ಷಕರು ನೋಡಲು ಫೈಲ್‌ಗಳನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ.';
+
+  @override
+  String get staffDocsNoFiles =>
+      'ಈ ಫೋಲ್ಡರ್ ಖಾಲಿಯಾಗಿದೆ. PDF, ಚಿತ್ರಗಳು, Word, Excel ಅಥವಾ PowerPoint ಫೈಲ್‌ಗಳನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ (ಪ್ರತಿಯೊಂದೂ 20 MB ವರೆಗೆ).';
+
+  @override
+  String staffDocsFileCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ಫೈಲ್‌ಗಳು',
+      one: '1 ಫೈಲ್',
+      zero: 'ಫೈಲ್‌ಗಳಿಲ್ಲ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String staffDocsCreatedBy(String name) {
+    return '$name ರಚಿಸಿದ್ದಾರೆ';
+  }
+
+  @override
+  String get staffDocsUpload => 'ಫೈಲ್‌ಗಳನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ';
+
+  @override
+  String staffDocsUploaded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ಫೈಲ್‌ಗಳು ಅಪ್‌ಲೋಡ್ ಆಗಿವೆ',
+      one: '1 ಫೈಲ್ ಅಪ್‌ಲೋಡ್ ಆಗಿದೆ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String staffDocsTooBig(String name) {
+    return '$name 20 MB ಗಿಂತ ದೊಡ್ಡದಾಗಿದೆ.';
+  }
+
+  @override
+  String get staffDocsDownload => 'ಡೌನ್‌ಲೋಡ್';
+
+  @override
+  String get staffDocsDelete => 'ಅಳಿಸಿ';
+
+  @override
+  String staffDocsDeleteFileConfirm(String name) {
+    return '\"$name\" ಅಳಿಸಬೇಕೇ? ಇತರ ಶಿಕ್ಷಕರಿಗೆ ಇದು ಇನ್ನು ಕಾಣಿಸುವುದಿಲ್ಲ.';
+  }
+
+  @override
+  String staffDocsDeleteFolderConfirm(String name) {
+    return '\"$name\" ಫೋಲ್ಡರ್ ಅಳಿಸಬೇಕೇ?';
+  }
+
+  @override
+  String get staffDocsOpenFailed => 'ಫೈಲ್ ತೆರೆಯಲಾಗಲಿಲ್ಲ.';
+
+  @override
+  String get staffDocsErrFolderExists => 'ಈ ಹೆಸರಿನ ಫೋಲ್ಡರ್ ಈಗಾಗಲೇ ಇದೆ.';
+
+  @override
+  String get staffDocsErrFolderNotEmpty =>
+      'ಮೊದಲು ಈ ಫೋಲ್ಡರ್‌ನಲ್ಲಿರುವ ಫೈಲ್‌ಗಳನ್ನು ಅಳಿಸಿ.';
+
+  @override
+  String get staffDocsErrNotOwner =>
+      'ಇದನ್ನು ಸೇರಿಸಿದವರು ಅಥವಾ ನಿರ್ವಾಹಕರು ಮಾತ್ರ ಇದನ್ನು ಬದಲಾಯಿಸಬಹುದು.';
+
+  @override
+  String routinePeriod(int period) {
+    return 'ಅವಧಿ $period';
+  }
 }

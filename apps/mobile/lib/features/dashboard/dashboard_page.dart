@@ -184,6 +184,12 @@ class _TeacherDashboardBody extends ConsumerWidget {
                       ),
                     ],
                     FeatureTile(
+                      icon: Icons.folder_shared_rounded,
+                      label: l.staffDocsTitle,
+                      color: FeatureColors.documents,
+                      onTap: () => context.push('/staff-docs'),
+                    ),
+                    FeatureTile(
                       icon: Icons.groups_rounded,
                       label: l.teacherAboutMyClasses,
                       color: FeatureColors.classes,

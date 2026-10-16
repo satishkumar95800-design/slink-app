@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/format/money.dart';
 import '../../core/l10n/l10n.dart';
 import '../../core/theme/app_theme.dart';
@@ -79,12 +80,45 @@ class _PayslipViewerPageState extends ConsumerState<PayslipViewerPage> {
     _file = ref.read(hrmsRepositoryProvider).downloadPayslipPdf(widget.payslip.id);
   }
 
+  /// Opens the system share sheet with the PDF, from which it can be saved to Files/Downloads or sent on.
+  Future<void> _share(BuildContext btnContext, String path) async {
+    final box = btnContext.findRenderObject() as RenderBox?;
+    final messenger = ScaffoldMessenger.of(context);
+    final failed = context.l10n.hrmsPayslipOpenFailed;
+    try {
+      await SharePlus.instance.share(ShareParams(
+        files: [XFile(path, mimeType: 'application/pdf', name: 'payslip-${widget.payslip.month}.pdf')],
+        fileNameOverrides: ['payslip-${widget.payslip.month}.pdf'],
+        sharePositionOrigin: box == null ? null : box.localToGlobal(Offset.zero) & box.size,
+      ));
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(failed)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final lang = Localizations.localeOf(context).languageCode;
     return AuthenticatedScaffold(
-      appBar: AppBar(title: Text(l.hrmsPayslipViewerTitle(monthLabel(widget.payslip.month, lang)))),
+      appBar: AppBar(
+        title: Text(l.hrmsPayslipViewerTitle(monthLabel(widget.payslip.month, lang))),
+        actions: [
+          FutureBuilder<String>(
+            future: _file,
+            builder: (context, snap) => snap.hasData
+                ? Builder(
+                    // The share sheet anchors to this button on iPad.
+                    builder: (btnContext) => IconButton(
+                      icon: const Icon(Icons.ios_share_rounded),
+                      tooltip: l.hrmsPayslipSave,
+                      onPressed: () => _share(btnContext, snap.data!),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
+      ),
       body: FutureBuilder<String>(
         future: _file,
         builder: (context, snap) {

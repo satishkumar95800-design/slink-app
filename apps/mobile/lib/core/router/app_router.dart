@@ -8,6 +8,7 @@ import '../../features/auth/tenant_entry_page.dart';
 import '../../features/calendar/calendar_page.dart';
 import '../../features/hrms/leave_page.dart';
 import '../../features/hrms/payslips_page.dart';
+import '../../features/staff_docs/staff_docs_page.dart';
 import '../../features/dashboard/dashboard_page.dart';
 import '../../features/dashboard/my_classes_page.dart';
 import '../../features/fees/fees_list_page.dart';
@@ -85,6 +86,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/calendar', builder: (_, __) => const CalendarPage()),
       GoRoute(path: '/hrms/payslips', builder: (_, __) => const PayslipsPage()),
       GoRoute(path: '/hrms/leave', builder: (_, __) => const LeavePage()),
+      GoRoute(path: '/staff-docs', builder: (_, __) => const StaffDocsPage()),
       GoRoute(path: '/dashboard/routine', builder: (_, __) => const WeeklyRoutinePage()),
       GoRoute(path: '/dashboard/insights', builder: (_, __) => const InsightsPage()),
       GoRoute(path: '/ask', builder: (_, __) => const AskPage()),
