@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -152,6 +153,7 @@ export class TenantsService {
   }
 
   async updateSelf(tenantId: string, dto: UpdateTenantSelfDto) {
+    await this.assertBrandingAllowed(tenantId, dto);
     let logoUrl: string | undefined;
     let backgroundImageUrl: string | undefined;
 
@@ -203,6 +205,32 @@ export class TenantsService {
       data: { features: merged },
       select: tenantSelect,
     });
+  }
+
+  /**
+   * A new logo, background or colour needs the `customBranding` plan flag.
+   * Resending the current colours (the settings form saves them with every
+   * change) is always allowed, so schools without it can still edit the rest.
+   */
+  private async assertBrandingAllowed(tenantId: string, dto: UpdateTenantSelfDto) {
+    const current = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+      select: { primaryColor: true, accentColor: true, features: true },
+    });
+    const changesBranding =
+      !!dto.logoKey ||
+      !!dto.backgroundImageKey ||
+      (dto.primaryColor !== undefined &&
+        dto.primaryColor.toLowerCase() !== current.primaryColor.toLowerCase()) ||
+      (dto.accentColor !== undefined &&
+        dto.accentColor.toLowerCase() !== current.accentColor.toLowerCase());
+    const features = (current.features ?? {}) as Record<string, unknown>;
+    if (changesBranding && features.customBranding !== true) {
+      throw new ForbiddenException({
+        code: 'FEATURE_DISABLED',
+        message: 'This feature is not enabled for your school',
+      });
+    }
   }
 
   private async requireTenant(id: string) {

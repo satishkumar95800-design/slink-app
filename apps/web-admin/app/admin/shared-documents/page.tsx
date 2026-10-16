@@ -12,6 +12,7 @@ import { Input } from '../../../components/ui/input';
 import { Modal } from '../../../components/ui/modal';
 import { Spinner } from '../../../components/ui/spinner';
 import { useToast } from '../../../components/ui/toast';
+import { PlanGate } from '../../../components/plan-gate';
 
 interface StaffFolder {
   id: string;
@@ -51,6 +52,14 @@ function formatSize(bytes: number): string {
 
 /** Folders and files shared by all staff of the school: anyone can add, the owner or an admin can remove. */
 export default function SharedDocumentsPage() {
+  return (
+    <PlanGate feature="staffDocuments">
+      <SharedDocumentsPageContent />
+    </PlanGate>
+  );
+}
+
+function SharedDocumentsPageContent() {
   const t = useTranslations('sharedDocs');
   const tCommon = useTranslations('common');
   const errorText = useErrorText();

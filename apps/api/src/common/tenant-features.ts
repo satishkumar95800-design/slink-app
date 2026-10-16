@@ -3,8 +3,10 @@ import type { PrismaService } from '../prisma/prisma.service';
 
 /**
  * Optional per-school modules stored in tenants.features. A missing key means
- * off, so new flags never need a data migration. Only the platform
- * (super_admin) can switch these, via PATCH /tenants/:id/features.
+ * off. Only the platform (super_admin) can switch these, via
+ * PATCH /tenants/:id/features. The plan flags below (timetable to
+ * customBranding) were on for every school before plans existed, so migration
+ * 20261022090000_plan_feature_flags switched them on for existing schools.
  */
 export type OptionalFeature =
   | 'transferCertificate'
@@ -12,7 +14,15 @@ export type OptionalFeature =
   | 'aiInsights'
   | 'pettyCash'
   | 'calendar'
-  | 'hrms';
+  | 'hrms'
+  /** Timetable, bell times, teachers' weekly routine and next-class reminders. */
+  | 'timetable'
+  /** Shared staff folders and files (/staff-documents). */
+  | 'staffDocuments'
+  /** Attendance report and the fee reports (/insights) with CSV export. */
+  | 'advancedReports'
+  /** The school changing its own logo, background and colours. */
+  | 'customBranding';
 
 export async function isFeatureEnabled(
   prisma: PrismaService,

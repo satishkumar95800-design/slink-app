@@ -9,7 +9,10 @@ describe('TeacherDashboardService', () => {
   beforeEach(() => {
     prisma = {
       tenant: {
-        findUnique: jest.fn().mockResolvedValue({ timezone: 'Asia/Kolkata' }),
+        findUnique: jest.fn().mockResolvedValue({
+          timezone: 'Asia/Kolkata',
+          features: { timetable: true },
+        }),
       },
       schoolHoliday: { findUnique: jest.fn().mockResolvedValue(null) },
       timetableSlot: {
@@ -101,6 +104,18 @@ describe('TeacherDashboardService', () => {
       const today = await service.getToday('tenant-a', 'teacher-1');
 
       expect(today.periods.map((p) => p.startTime)).toEqual(['08:30', '09:00']);
+    });
+
+    it('shows no periods without the timetable plan flag', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-10-15T05:00:00.000Z')); // Thursday
+      prisma.tenant.findUnique.mockResolvedValue({
+        timezone: 'Asia/Kolkata',
+        features: {},
+      });
+      expect(await service.getToday('tenant-a', 'teacher-1')).toMatchObject({
+        periods: [],
+      });
+      expect(prisma.timetableSlot.findMany).not.toHaveBeenCalled();
     });
 
     it('is an off day on Sundays and holidays', async () => {

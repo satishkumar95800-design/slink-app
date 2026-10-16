@@ -3,6 +3,16 @@ import { validate } from 'class-validator';
 import { UpdateFeaturesDto } from './update-features.dto';
 import { UpdatePlatformFeaturesDto } from './update-platform-features.dto';
 
+const FLAGS = [
+  'pettyCash',
+  'calendar',
+  'hrms',
+  'timetable',
+  'staffDocuments',
+  'advancedReports',
+  'customBranding',
+];
+
 const check = <T extends object>(cls: new () => T, body: object) =>
   validate(plainToInstance(cls, body), {
     whitelist: true,
@@ -10,7 +20,7 @@ const check = <T extends object>(cls: new () => T, body: object) =>
   });
 
 describe('platform feature flags', () => {
-  it.each(['pettyCash', 'calendar', 'hrms'])(
+  it.each(FLAGS)(
     '%s can be switched by the platform team',
     async (flag) => {
       expect(
@@ -22,13 +32,13 @@ describe('platform feature flags', () => {
     },
   );
 
-  it.each(['pettyCash', 'calendar', 'hrms'])('%s must be a boolean', async (flag) => {
+  it.each(FLAGS)('%s must be a boolean', async (flag) => {
     expect(
       await check(UpdatePlatformFeaturesDto, { [flag]: 'yes' }),
     ).not.toHaveLength(0);
   });
 
-  it.each(['pettyCash', 'calendar', 'hrms'])(
+  it.each(FLAGS)(
     '%s cannot be switched by a school itself',
     async (flag) => {
       expect(await check(UpdateFeaturesDto, { [flag]: true })).not.toHaveLength(

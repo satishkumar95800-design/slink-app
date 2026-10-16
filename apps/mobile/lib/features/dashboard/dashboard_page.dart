@@ -156,12 +156,13 @@ class _TeacherDashboardBody extends ConsumerWidget {
                         color: FeatureColors.notes,
                         onTap: () => context.push('/student-notes/add'),
                       ),
-                    FeatureTile(
-                      icon: Icons.calendar_view_week_rounded,
-                      label: l.teacherWeeklyRoutine,
-                      color: FeatureColors.timetable,
-                      onTap: () => context.push('/dashboard/routine'),
-                    ),
+                    if (ref.watch(timetableEnabledProvider))
+                      FeatureTile(
+                        icon: Icons.calendar_view_week_rounded,
+                        label: l.teacherWeeklyRoutine,
+                        color: FeatureColors.timetable,
+                        onTap: () => context.push('/dashboard/routine'),
+                      ),
                     if (ref.watch(calendarEnabledProvider))
                       FeatureTile(
                         icon: Icons.calendar_month_rounded,
@@ -183,12 +184,13 @@ class _TeacherDashboardBody extends ConsumerWidget {
                         onTap: () => context.push('/hrms/leave'),
                       ),
                     ],
-                    FeatureTile(
-                      icon: Icons.folder_shared_rounded,
-                      label: l.staffDocsTitle,
-                      color: FeatureColors.documents,
-                      onTap: () => context.push('/staff-docs'),
-                    ),
+                    if (ref.watch(staffDocumentsEnabledProvider))
+                      FeatureTile(
+                        icon: Icons.folder_shared_rounded,
+                        label: l.staffDocsTitle,
+                        color: FeatureColors.documents,
+                        onTap: () => context.push('/staff-docs'),
+                      ),
                     FeatureTile(
                       icon: Icons.groups_rounded,
                       label: l.teacherAboutMyClasses,

@@ -3,7 +3,12 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { todayIn } from '../attendance/attendance-dates';
 import { MailerService } from './mailer.service';
-import { ContactRequestDto, SiteEventDto } from './dto/contact-request.dto';
+import {
+  ContactRequestDto,
+  PricingRequestDto,
+  SiteEventDto,
+} from './dto/contact-request.dto';
+import { buildPricingPdf } from './pricing-pdf';
 
 const SITE_TIMEZONE = 'Asia/Kolkata';
 const CONTACT_LIST_LIMIT = 200;
@@ -36,13 +41,12 @@ export class PublicSiteService {
         studentCount: dto.studentCount,
         phone: dto.phone,
         preferredTime: dto.preferredTime?.trim() || null,
+        interestedPlan: dto.interestedPlan ?? null,
       },
     });
     await this.recordEvent({ event: 'contact_submit', path: '/contact' });
 
-    const to =
-      this.config.get<string>('CONTACT_NOTIFY_EMAIL') ??
-      this.config.get<string>('SMTP_USER');
+    const to = this.notifyEmail();
     if (to) {
       const sent = await this.mailer.send(
         to,
@@ -56,6 +60,7 @@ export class PublicSiteService {
           `Students: ${dto.studentCount}`,
           `Phone: ${dto.phone}`,
           `Preferred time: ${dto.preferredTime?.trim() || '—'}`,
+          `Interested plan: ${dto.interestedPlan ?? '—'}`,
           ``,
           `WhatsApp: https://wa.me/${dto.phone.replace(/^\+/, '')}`,
         ].join('\n'),
@@ -67,6 +72,57 @@ export class PublicSiteService {
         });
     }
     return { received: true };
+  }
+
+  /**
+   * Stores who asked for the price list, emails the team if SMTP is set up,
+   * and returns the plans PDF with the school's name on it.
+   */
+  async createPricingRequest(dto: PricingRequestDto): Promise<Buffer> {
+    // Bots fill the honeypot: they get the PDF but no lead is stored.
+    if (dto.website) return buildPricingPdf(dto.schoolName);
+
+    const request = await this.prisma.pricingRequest.create({
+      data: { schoolName: dto.schoolName, email: dto.email, phone: dto.phone },
+    });
+    await this.recordEvent({ event: 'pricing_download', path: '/' });
+
+    const to = this.notifyEmail();
+    if (to) {
+      const sent = await this.mailer.send(
+        to,
+        `Price list downloaded: ${dto.schoolName}`,
+        [
+          `Someone downloaded the price list on schoolinkd.in`,
+          ``,
+          `School: ${dto.schoolName}`,
+          `Email: ${dto.email}`,
+          `Phone: ${dto.phone}`,
+          ``,
+          `WhatsApp: https://wa.me/${dto.phone.replace(/^\+/, '')}`,
+        ].join('\n'),
+      );
+      if (sent)
+        await this.prisma.pricingRequest.update({
+          where: { id: request.id },
+          data: { emailedAt: new Date() },
+        });
+    }
+    return buildPricingPdf(dto.schoolName);
+  }
+
+  listPricingRequests() {
+    return this.prisma.pricingRequest.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: CONTACT_LIST_LIMIT,
+    });
+  }
+
+  private notifyEmail(): string | undefined {
+    return (
+      this.config.get<string>('CONTACT_NOTIFY_EMAIL') ??
+      this.config.get<string>('SMTP_USER')
+    );
   }
 
   /** One atomic upsert per event into today's (IST) aggregate row. */

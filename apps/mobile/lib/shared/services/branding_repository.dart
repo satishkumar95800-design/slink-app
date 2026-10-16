@@ -38,3 +38,14 @@ final calendarEnabledProvider = Provider<bool>((ref) {
 final hrmsEnabledProvider = Provider<bool>((ref) {
   return ref.watch(brandingProvider).valueOrNull?.hrmsEnabled ?? false;
 });
+
+/// Whether the school's plan includes the timetable (weekly routine, class
+/// reminders). False while branding loads or fails, like the flags above.
+final timetableEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(brandingProvider).valueOrNull?.timetableEnabled ?? false;
+});
+
+/// Whether the school's plan includes shared staff documents.
+final staffDocumentsEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(brandingProvider).valueOrNull?.staffDocumentsEnabled ?? false;
+});

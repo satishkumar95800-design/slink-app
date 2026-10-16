@@ -60,6 +60,18 @@ describe('ClassRemindersService', () => {
     service = new ClassRemindersService(prisma as never, fcm as never);
   });
 
+  it('only looks at schools with the timetable plan flag', async () => {
+    await service.tick(NOW);
+
+    const [args] = prisma.tenant.findMany.mock.calls[0] as [
+      { where: { features: unknown } },
+    ];
+    expect(args.where.features).toEqual({
+      path: ['timetable'],
+      equals: true,
+    });
+  });
+
   it('reminds the teacher 5 minutes before by default', async () => {
     prisma.timetableSlot.findMany.mockResolvedValue([slot('s1', 1)]);
 

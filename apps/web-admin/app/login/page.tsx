@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
@@ -94,6 +95,9 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-cream p-4">
+      <Link href="/" aria-label={t('homeLink')} className="absolute left-4 top-4 flex items-center rounded-lg p-1 hover:opacity-80">
+        <img src="/schoolinkd-logo.svg" alt={strings.product.name} className="h-7 w-auto" />
+      </Link>
       <div className="absolute right-4 top-4">
         <LanguageSwitcher signedIn={false} />
       </div>

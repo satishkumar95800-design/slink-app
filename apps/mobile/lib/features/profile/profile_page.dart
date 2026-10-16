@@ -98,7 +98,8 @@ class ProfilePage extends ConsumerWidget {
               ),
               onTap: () => ref.read(themeModeProvider.notifier).setDark(!isDark),
             ),
-            if (user.role == UserRole.teacher) const ClassReminderTile(),
+            if (user.role == UserRole.teacher && ref.watch(timetableEnabledProvider))
+              const ClassReminderTile(),
             const SizedBox(height: 12),
             ListCard(
               leading: const IconBadge(icon: Icons.logout_rounded, color: Color(0xFFDC2626)),

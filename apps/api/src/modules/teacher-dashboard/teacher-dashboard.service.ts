@@ -30,9 +30,11 @@ export class TeacherDashboardService {
   async getToday(tenantId: string, teacherId: string) {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { timezone: true },
+      select: { timezone: true, features: true },
     });
     const timeZone = tenant?.timezone || 'Asia/Kolkata';
+    const timetableOn =
+      (tenant?.features as Record<string, unknown> | null)?.timetable === true;
     const now = new Date();
     const date = todayIn(timeZone, now);
     const weekday =
@@ -64,15 +66,18 @@ export class TeacherDashboardService {
       };
     }
 
-    const slots = await this.prisma.timetableSlot.findMany({
-      where: { tenantId, teacherId, dayOfWeek: weekday },
-      select: {
-        periodNumber: true,
-        class: { select: { id: true, name: true, section: true } },
-        subject: { select: { name: true } },
-      },
-      orderBy: { periodNumber: 'asc' },
-    });
+    // Without the timetable plan flag the strip shows no periods.
+    const slots = !timetableOn
+      ? []
+      : await this.prisma.timetableSlot.findMany({
+          where: { tenantId, teacherId, dayOfWeek: weekday },
+          select: {
+            periodNumber: true,
+            class: { select: { id: true, name: true, section: true } },
+            subject: { select: { name: true } },
+          },
+          orderBy: { periodNumber: 'asc' },
+        });
     const schedule = await loadPeriodSchedule(this.prisma, tenantId, [
       ...new Set(slots.map((s) => s.class.id)),
     ]);

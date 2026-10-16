@@ -11,6 +11,7 @@ import { Input } from '../../../components/ui/input';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
+import { PlanGate } from '../../../components/plan-gate';
 import { formatDateOnly, formatRupees } from '../../../lib/format';
 
 type ReportType =
@@ -40,6 +41,14 @@ const REPORT_OPTIONS = [
 ] as const satisfies readonly { value: ReportType; labelKey: string }[];
 
 export default function FeeReportsPage() {
+  return (
+    <PlanGate feature="advancedReports">
+      <FeeReportsPageContent />
+    </PlanGate>
+  );
+}
+
+function FeeReportsPageContent() {
   const t = useTranslations('feeReports');
   const errorText = useErrorText();
   const { toast } = useToast();

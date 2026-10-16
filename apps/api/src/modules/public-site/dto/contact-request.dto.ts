@@ -1,5 +1,6 @@
 import { Transform, Type } from 'class-transformer';
 import {
+  IsEmail,
   IsIn,
   IsInt,
   IsOptional,
@@ -24,6 +25,8 @@ export function normalizeIndianMobile(value: unknown): unknown {
         : digits;
   return /^[6-9]\d{9}$/.test(local) ? `+91${local}` : value;
 }
+
+export const INTERESTED_PLANS = ['basic', 'premium', 'gold', 'unsure'] as const;
 
 export class ContactRequestDto {
   @CleanName()
@@ -62,6 +65,40 @@ export class ContactRequestDto {
   @IsOptional()
   preferredTime?: string;
 
+  /** Plan the school is interested in, from the demo form (optional). */
+  @IsIn(INTERESTED_PLANS)
+  @IsOptional()
+  interestedPlan?: (typeof INTERESTED_PLANS)[number];
+
+  /** Honeypot: hidden from people, filled in by bots. Must be empty. */
+  @IsString()
+  @MaxLength(200)
+  @IsOptional()
+  website?: string;
+}
+
+/** "Download the price list" form: the PDF is sent back once these are given. */
+export class PricingRequestDto {
+  @CleanName()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(150)
+  schoolName: string;
+
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
+  @IsEmail()
+  @MaxLength(150)
+  email: string;
+
+  /** Indian mobile number, stored as +91XXXXXXXXXX (same rule as the demo form). */
+  @Transform(({ value }) => normalizeIndianMobile(value))
+  @Matches(/^\+91[6-9]\d{9}$/, {
+    message: 'Enter a valid 10-digit Indian mobile number',
+  })
+  phone: string;
+
   /** Honeypot: hidden from people, filled in by bots. Must be empty. */
   @IsString()
   @MaxLength(200)
@@ -77,6 +114,7 @@ export const SITE_EVENTS = [
   'video_play',
   'contact_submit',
   'store_click',
+  'pricing_download',
 ] as const;
 
 export class SiteEventDto {

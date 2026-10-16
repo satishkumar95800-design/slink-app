@@ -90,7 +90,7 @@ pnpm db:generate   # regenerates the Prisma client
 | parent | done | Parent home summary (fees/today/attendance in one call), per-child notices |
 | fee-reminders | done | Daily Bull job: fee-due pushes 3 days before and on the due date |
 | broadcasts | done | Notice/homework sent items, per-parent "seen" tracking, unseen-parent lists |
-| public-site | done | Marketing-site contact form (stored + SMTP email) and cookie-free daily event counts; Platform "Leads" views |
+| public-site | done | Marketing-site contact form (stored + SMTP email, optional plan interest), "Download the price list" form (`POST /public/pricing`: school name, email, phone → stored `pricing_requests` + SMTP email, returns `Schoolinkd_Plans_and_Pricing_2026-27.pdf`; plan prices live only in `pricing-plans.ts`), cookie-free daily event counts; Platform "Leads" views |
 | class-reminders | done | Teacher "next class" push 1–5 min before each period (in-process, once per slot per day) |
 | payment-gateway | done | Per-school Razorpay keys, encrypted (platform console) |
 | ai | done | Premium (`aiInsights`): Claude client with per-school cap + usage log, notice translation, report remark drafts — docs/SPEC-ai.md |
@@ -102,7 +102,9 @@ pnpm db:generate   # regenerates the Prisma client
 
 ## Optional per-school modules (feature flags)
 
-`tenants.features` flags are off unless set; only the platform `super_admin` switches them (`PATCH /tenants/:id/features`, `UpdatePlatformFeaturesDto`, toggles in the platform console tenant page). Add one by extending `OptionalFeature` in `apps/api/src/common/tenant-features.ts`, the DTO, and `OPTIONAL_MODULES` in the platform tenant page; endpoints call `assertFeatureEnabled` (403 `FEATURE_DISABLED`), the web-admin hides the nav item via `useTenantFeatures`. Current flags: `transferCertificate`, `feeConcession`, `aiInsights`, `pettyCash`, `calendar`, `hrms`.
+`tenants.features` flags are off unless set; only the platform `super_admin` switches them (`PATCH /tenants/:id/features`, `UpdatePlatformFeaturesDto`, toggles in the platform console tenant page). Add one by extending `OptionalFeature` in `apps/api/src/common/tenant-features.ts`, the DTO, and `OPTIONAL_MODULES` in the platform tenant page; endpoints call `assertFeatureEnabled` or `@UseGuards(FeatureGuard('<flag>'))` (`common/guards/feature.guard.ts`; 403 `FEATURE_DISABLED`), the web-admin hides the nav item via `useTenantFeatures` and gates the page with `PlanGate` or its own empty state. Current flags: `transferCertificate`, `feeConcession`, `aiInsights`, `pettyCash`, `calendar`, `hrms`, and the plan flags `timetable` (timetable routes, today's periods, class reminders), `staffDocuments`, `advancedReports` (attendance report + `/insights` fee reports, not the dashboard totals/forecast), `customBranding` (a school changing its own logo, background or colours).
+
+Plans are presets over these flags, picked on the platform tenant page (`PLANS` there): Basic = none; Premium = timetable, staffDocuments, advancedReports, customBranding, calendar, feeConcession, transferCertificate, pettyCash; Gold = Premium + hrms + aiInsights. A school whose flags match no preset shows as "Custom" (add-ons). The four plan flags were always on before plans, so migration `20261022090000_plan_feature_flags` switched them on for every existing school; new schools start on Basic. There is no student-count limit in code.
 
 ## Petty cash invariants (apps/api/src/modules/petty-cash)
 

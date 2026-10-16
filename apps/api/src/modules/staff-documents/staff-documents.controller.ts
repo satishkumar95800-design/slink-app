@@ -11,6 +11,7 @@ import {
   Patch,
   Post,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -19,6 +20,7 @@ import { Role } from '@prisma/client';
 import type { Express } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { FeatureGuard } from '../../common/guards/feature.guard';
 import { TenantId } from '../../common/decorators/tenant.decorator';
 import type { ActiveUser } from '../../common/types/active-user.type';
 import { FolderNameDto } from './dto/staff-documents.dto';
@@ -27,6 +29,7 @@ import { StaffDocumentsService } from './staff-documents.service';
 /** Shared staff folders and files. Parents and the developer role get nothing. */
 @Controller('staff-documents')
 @Roles(Role.teacher, Role.admin, Role.accounts, Role.super_admin)
+@UseGuards(FeatureGuard('staffDocuments'))
 export class StaffDocumentsController {
   constructor(private readonly docs: StaffDocumentsService) {}
 

@@ -10,9 +10,11 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { FeatureGuard } from '../../common/guards/feature.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { TenantId } from '../../common/decorators/tenant.decorator';
 import type { ActiveUser } from '../../common/types/active-user.type';
@@ -26,6 +28,7 @@ import {
 
 /** Addendum 4 / A10 — admin-managed weekly timetable, read by the teacher dashboard. */
 @Controller('timetable')
+@UseGuards(FeatureGuard('timetable'))
 export class TimetableController {
   constructor(private readonly timetableService: TimetableService) {}
 

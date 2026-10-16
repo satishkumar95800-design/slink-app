@@ -11,6 +11,7 @@ import { Modal } from '../../../components/ui/modal';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
+import { PlanGate } from '../../../components/plan-gate';
 import { getSession } from '../../../lib/auth';
 import Link from 'next/link';
 
@@ -61,6 +62,14 @@ function classLabel(c: SchoolClass): string {
 }
 
 export default function TimetablePage() {
+  return (
+    <PlanGate feature="timetable">
+      <TimetablePageContent />
+    </PlanGate>
+  );
+}
+
+function TimetablePageContent() {
   const t = useTranslations('timetable');
   const tCommon = useTranslations('common');
   const tTimings = useTranslations('periodTimings');

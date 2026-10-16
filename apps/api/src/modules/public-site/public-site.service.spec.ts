@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import {
   ContactRequestDto,
   normalizeIndianMobile,
+  PricingRequestDto,
 } from './dto/contact-request.dto';
 import { cleanPath, PublicSiteService } from './public-site.service';
 
@@ -51,11 +52,41 @@ describe('contact form validation', () => {
   });
 });
 
+describe('price list form validation', () => {
+  it('normalises the email and phone', async () => {
+    const dto = plainToInstance(PricingRequestDto, {
+      schoolName: ' Green  Valley ',
+      email: ' Office@GVPS.in ',
+      phone: '98765 43210',
+    });
+    expect(await validate(dto)).toEqual([]);
+    expect(dto).toMatchObject({
+      schoolName: 'Green Valley',
+      email: 'office@gvps.in',
+      phone: '+919876543210',
+    });
+  });
+
+  it('rejects a bad email or phone', async () => {
+    const dto = plainToInstance(PricingRequestDto, {
+      schoolName: 'GVPS',
+      email: 'not-an-email',
+      phone: '12345',
+    });
+    const errors = await validate(dto);
+    expect(errors.map((e) => e.property).sort()).toEqual(['email', 'phone']);
+  });
+});
+
 describe('PublicSiteService', () => {
   const make = (smtp = true) => {
     const prisma = {
       contactRequest: {
         create: jest.fn().mockResolvedValue({ id: 'c1' }),
+        update: jest.fn(),
+      },
+      pricingRequest: {
+        create: jest.fn().mockResolvedValue({ id: 'p1' }),
         update: jest.fn(),
       },
       $executeRaw: jest.fn().mockResolvedValue(1),
@@ -112,6 +143,41 @@ describe('PublicSiteService', () => {
       service.createContactRequest({ ...dto, website: 'http://spam' }),
     ).resolves.toEqual({ received: true });
     expect(prisma.contactRequest.create).not.toHaveBeenCalled();
+  });
+
+  it('stores a price-list request, emails the team and returns the PDF', async () => {
+    const { prisma, mailer, service } = make();
+    const pdf = await service.createPricingRequest({
+      schoolName: 'GVPS',
+      email: 'office@gvps.in',
+      phone: '+919876543210',
+    });
+    expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
+    expect(prisma.pricingRequest.create).toHaveBeenCalledWith({
+      data: {
+        schoolName: 'GVPS',
+        email: 'office@gvps.in',
+        phone: '+919876543210',
+      },
+    });
+    expect(mailer.send).toHaveBeenCalledWith(
+      'team@schoolinkd.in',
+      'Price list downloaded: GVPS',
+      expect.stringContaining('office@gvps.in'),
+    );
+    expect(prisma.pricingRequest.update).toHaveBeenCalled();
+  });
+
+  it('gives bots the PDF without storing a lead', async () => {
+    const { prisma, service } = make();
+    const pdf = await service.createPricingRequest({
+      schoolName: 'GVPS',
+      email: 'a@b.in',
+      phone: '+919876543210',
+      website: 'http://spam',
+    });
+    expect(pdf.length).toBeGreaterThan(0);
+    expect(prisma.pricingRequest.create).not.toHaveBeenCalled();
   });
 
   it('keeps only a clean path for analytics', () => {

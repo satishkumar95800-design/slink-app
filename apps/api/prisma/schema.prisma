@@ -1285,19 +1285,35 @@ model ClassReminderSent {
 /// Demo requests from the marketing site's contact form (docs/SPEC-improvements.md §5.9).
 /// Not tenant-scoped: these are prospective schools, before they're customers.
 model ContactRequest {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name          String
-  schoolName    String    @map("school_name")
-  city          String
-  studentCount  Int       @map("student_count")
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  schoolName     String    @map("school_name")
+  city           String
+  studentCount   Int       @map("student_count")
   /// E.164, e.g. +919876543210
-  phone         String
-  preferredTime String?   @map("preferred_time")
-  emailedAt     DateTime? @map("emailed_at")
-  createdAt     DateTime  @default(now()) @map("created_at")
+  phone          String
+  preferredTime  String?   @map("preferred_time")
+  /// basic | premium | gold | unsure, picked on the demo form (optional).
+  interestedPlan String?   @map("interested_plan")
+  emailedAt      DateTime? @map("emailed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
 
   @@index([createdAt])
   @@map("contact_requests")
+}
+
+/// Marketing-site "Download the price list" form: who asked for the plans PDF.
+model PricingRequest {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  schoolName String    @map("school_name")
+  email      String
+  /// E.164, e.g. +919876543210
+  phone      String
+  emailedAt  DateTime? @map("emailed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("pricing_requests")
 }
 
 /// Cookie-free marketing-site analytics (§5.10): daily totals only — no IPs,

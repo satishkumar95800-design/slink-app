@@ -495,6 +495,10 @@ export async function seedDemo(prisma: PrismaClient) {
         pettyCash: true,
         calendar: true,
         hrms: true,
+        timetable: true,
+        staffDocuments: true,
+        advancedReports: true,
+        customBranding: true,
       },
     },
   });

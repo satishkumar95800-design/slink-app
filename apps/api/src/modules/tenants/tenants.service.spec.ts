@@ -196,6 +196,12 @@ describe('TenantsService', () => {
   // ── updateSelf ────────────────────────────────────────────────────────────────
 
   describe('updateSelf', () => {
+    beforeEach(() => {
+      mockPrisma.tenant.findUniqueOrThrow.mockResolvedValue(
+        makeTenant({ features: { customBranding: true } }),
+      );
+    });
+
     it('updates name and colors', async () => {
       mockPrisma.tenant.update.mockResolvedValue(makeTenant({ name: 'Updated School' }));
 
@@ -212,6 +218,30 @@ describe('TenantsService', () => {
       await service.updateSelf('tenant-uuid', { logoKey: 'public/tenant-uuid/logos/abc.png' });
       const call = mockPrisma.tenant.update.mock.calls[0][0];
       expect(call.data.logoUrl).toBe('https://s3.example.com/public/tenant-uuid/logos/abc.png');
+    });
+
+    it('refuses a new colour or logo without the customBranding flag', async () => {
+      mockPrisma.tenant.findUniqueOrThrow.mockResolvedValue(makeTenant());
+
+      await expect(
+        service.updateSelf('tenant-uuid', { primaryColor: '#FF0000' }),
+      ).rejects.toMatchObject({ response: { code: 'FEATURE_DISABLED' } });
+      await expect(
+        service.updateSelf('tenant-uuid', { logoKey: 'public/tenant-uuid/logos/abc.png' }),
+      ).rejects.toMatchObject({ response: { code: 'FEATURE_DISABLED' } });
+      expect(mockPrisma.tenant.update).not.toHaveBeenCalled();
+    });
+
+    it('saves other settings with the current colours without the flag', async () => {
+      mockPrisma.tenant.findUniqueOrThrow.mockResolvedValue(makeTenant());
+      mockPrisma.tenant.update.mockResolvedValue(makeTenant({ name: 'Renamed' }));
+
+      await service.updateSelf('tenant-uuid', {
+        name: 'Renamed',
+        primaryColor: '#1e40af',
+        accentColor: '#F59E0B',
+      });
+      expect(mockPrisma.tenant.update).toHaveBeenCalledTimes(1);
     });
 
     it('merges branding JSON', async () => {

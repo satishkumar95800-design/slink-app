@@ -17,10 +17,6 @@ export const marketingConfig = {
   /** Flip to true once real testimonials replace the placeholders in components/marketing/testimonials.tsx. */
   showTestimonials: false,
 
-  /** Price per student per year in rupees; the number shows only when showPrice is true. */
-  showPrice: false,
-  pricePerStudentPerYear: 0,
-
   /** Store listings; a badge is hidden while its link is empty. */
   playStoreUrl: '',
   appStoreUrl: '',

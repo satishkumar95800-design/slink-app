@@ -1,7 +1,8 @@
-import { Controller, Get, Query, Res } from '@nestjs/common';
+import { Controller, Get, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { Role } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { FeatureGuard } from '../../common/guards/feature.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { TenantId } from '../../common/decorators/tenant.decorator';
 import type { ActiveUser } from '../../common/types/active-user.type';
@@ -12,12 +13,15 @@ import { InsightsQueryDto } from './dto/insights-query.dto';
  * Admin/accountant/teacher analytics reports — distinct from /reports, which is
  * the teacher-to-parent progress-report feature. "Students in a class" has no
  * route here; the web-admin report picker calls GET /students?classId= directly.
+ * The report routes need the `advancedReports` plan flag; the dashboard's
+ * fee totals and collection forecast don't.
  */
 @Controller('insights')
 export class InsightsController {
   constructor(private readonly insightsService: InsightsService) {}
 
   @Get('fee-pending')
+  @UseGuards(FeatureGuard('advancedReports'))
   @Roles(Role.admin, Role.accounts, Role.teacher)
   async feePending(
     @TenantId() tenantId: string,
@@ -30,6 +34,7 @@ export class InsightsController {
   }
 
   @Get('paid-history')
+  @UseGuards(FeatureGuard('advancedReports'))
   @Roles(Role.admin, Role.accounts, Role.teacher)
   async paidHistory(
     @TenantId() tenantId: string,
@@ -42,6 +47,7 @@ export class InsightsController {
   }
 
   @Get('defaulters')
+  @UseGuards(FeatureGuard('advancedReports'))
   @Roles(Role.admin, Role.accounts, Role.teacher)
   async defaulters(
     @TenantId() tenantId: string,
@@ -54,6 +60,7 @@ export class InsightsController {
   }
 
   @Get('class-collection-summary')
+  @UseGuards(FeatureGuard('advancedReports'))
   @Roles(Role.admin, Role.accounts, Role.super_admin)
   classCollectionSummary(
     @TenantId() tenantId: string,
@@ -70,6 +77,7 @@ export class InsightsController {
   }
 
   @Get('student-fee-summary')
+  @UseGuards(FeatureGuard('advancedReports'))
   @Roles(Role.admin, Role.accounts, Role.super_admin)
   async studentFeeSummary(
     @TenantId() tenantId: string,
@@ -81,6 +89,7 @@ export class InsightsController {
   }
 
   @Get('collection-register')
+  @UseGuards(FeatureGuard('advancedReports'))
   @Roles(Role.admin, Role.accounts, Role.super_admin)
   collectionRegister(@TenantId() tenantId: string, @Query() query: InsightsQueryDto) {
     return this.insightsService.getCollectionRegister(tenantId, query);

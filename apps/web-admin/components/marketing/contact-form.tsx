@@ -19,11 +19,11 @@ export function isIndianMobile(value: string): boolean {
 const FIELD = 'w-full rounded-xl border border-gray-300 bg-white px-3.5 py-3 text-base outline-none transition focus:border-coral focus:ring-2 focus:ring-coral/30';
 
 export function ContactForm() {
-  const [form, setForm] = useState({ name: '', schoolName: '', city: '', studentCount: '', phone: '', preferredTime: '', website: '' });
+  const [form, setForm] = useState({ name: '', schoolName: '', city: '', studentCount: '', phone: '', preferredTime: '', interestedPlan: '', website: '' });
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
-  const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,7 +37,7 @@ export function ContactForm() {
       const res = await fetch(`${API_BASE}/public/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, studentCount: Number(form.studentCount), preferredTime: form.preferredTime || undefined, website: form.website || undefined }),
+        body: JSON.stringify({ ...form, studentCount: Number(form.studentCount), preferredTime: form.preferredTime || undefined, interestedPlan: form.interestedPlan || undefined, website: form.website || undefined }),
       });
       if (!res.ok) throw new Error(String(res.status));
       track('demo_click');
@@ -93,6 +93,17 @@ export function ContactForm() {
         <label className="block">
           <span className="text-sm font-semibold text-gray-800">{t.preferredTime}</span>
           <input maxLength={60} placeholder={t.preferredTimePlaceholder} value={form.preferredTime} onChange={set('preferredTime')} className={`mt-1 ${FIELD}`} />
+        </label>
+        <label className="block">
+          <span className="text-sm font-semibold text-gray-800">{t.plan}</span>
+          <select value={form.interestedPlan} onChange={set('interestedPlan')} className={`mt-1 ${FIELD}`}>
+            <option value="" />
+            {t.planOptions.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
       {/* Honeypot: hidden from people and screen readers; bots fill it in. */}

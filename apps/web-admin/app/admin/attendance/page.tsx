@@ -12,6 +12,7 @@ import { Select } from '../../../components/ui/select';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
+import { useTenantFeatures } from '../../../lib/tenant-features';
 
 type Status = 'present' | 'absent' | 'late' | 'leave';
 const STATUSES: Status[] = ['present', 'absent', 'late', 'leave'];
@@ -69,6 +70,10 @@ export default function AttendancePage() {
   // The school-wide report is admin-only; teachers go straight to marking their classes.
   const isTeacher = getSession()?.role === 'teacher';
   const [tab, setTab] = useState<'report' | 'mark'>(isTeacher ? 'mark' : 'report');
+  // The report needs the advancedReports plan flag; without it admins only mark attendance.
+  const { advancedReports } = useTenantFeatures();
+  const showReport = !isTeacher && advancedReports === true;
+  const view = showReport ? tab : 'mark';
   const [classes, setClasses] = useState<ClassOption[]>([]);
 
   useEffect(() => {
@@ -82,7 +87,7 @@ export default function AttendancePage() {
 
   return (
     <div className="space-y-4">
-      {!isTeacher && (
+      {showReport && (
         <div className="flex gap-2">
           {(['report', 'mark'] as const).map((key) => (
             <button
@@ -90,7 +95,7 @@ export default function AttendancePage() {
               type="button"
               onClick={() => setTab(key)}
               className={`rounded-full px-4 py-2 text-sm font-bold transition-colors ${
-                tab === key ? 'bg-teal text-white' : 'bg-white text-teal border border-teal/30 hover:bg-teal/10'
+                view === key ? 'bg-teal text-white' : 'bg-white text-teal border border-teal/30 hover:bg-teal/10'
               }`}
             >
               {key === 'report' ? t('reportTab') : t('markTab')}
@@ -98,7 +103,7 @@ export default function AttendancePage() {
           ))}
         </div>
       )}
-      {tab === 'report' ? <ReportTab classOptions={classOptions} /> : <MarkTab classOptions={classOptions} />}
+      {view === 'report' ? <ReportTab classOptions={classOptions} /> : <MarkTab classOptions={classOptions} />}
     </div>
   );
 }

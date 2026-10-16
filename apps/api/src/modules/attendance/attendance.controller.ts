@@ -10,10 +10,12 @@ import {
   Put,
   Query,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { Role } from '@prisma/client';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { FeatureGuard } from '../../common/guards/feature.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { TenantId } from '../../common/decorators/tenant.decorator';
 import type { ActiveUser } from '../../common/types/active-user.type';
@@ -96,6 +98,7 @@ export class AttendanceController {
 
   @Get('report')
   @Roles(Role.admin, Role.super_admin)
+  @UseGuards(FeatureGuard('advancedReports'))
   async report(
     @TenantId() tenantId: string,
     @Query() query: AttendanceReportQueryDto,

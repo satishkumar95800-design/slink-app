@@ -32,4 +32,24 @@ export class UpdatePlatformFeaturesDto extends UpdateFeaturesDto {
   @IsBoolean()
   @IsOptional()
   hrms?: boolean;
+
+  /** Timetable, bell times, teachers' weekly routine and next-class reminders (Premium). */
+  @IsBoolean()
+  @IsOptional()
+  timetable?: boolean;
+
+  /** Shared staff folders and files (Premium). */
+  @IsBoolean()
+  @IsOptional()
+  staffDocuments?: boolean;
+
+  /** Attendance report and fee reports with CSV export (Premium). */
+  @IsBoolean()
+  @IsOptional()
+  advancedReports?: boolean;
+
+  /** The school changing its own logo, background and colours (Premium). */
+  @IsBoolean()
+  @IsOptional()
+  customBranding?: boolean;
 }

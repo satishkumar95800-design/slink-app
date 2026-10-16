@@ -61,7 +61,54 @@ const OPTIONAL_MODULES = [
     name: 'HR & Payroll',
     help: 'Employee directory, staff attendance, leave and payroll with payslips. Admin and accounts manage it; teachers see their own payslips and leave in the mobile app.',
   },
+  {
+    key: 'timetable',
+    name: 'Timetable',
+    help: 'Weekly timetable and bell times in the console, the teacher’s weekly routine and today’s periods in the app, and next-class reminders.',
+  },
+  {
+    key: 'staffDocuments',
+    name: 'Shared documents',
+    help: 'Shared staff folders and files for teachers, admin and accounts, in the console and the teacher app.',
+  },
+  {
+    key: 'advancedReports',
+    name: 'Attendance and fee reports',
+    help: 'The attendance report and the Fee reports page, with CSV download. The dashboard totals stay on without it.',
+  },
+  {
+    key: 'customBranding',
+    name: 'Custom branding',
+    help: 'Lets the school change its own background picture, logo and colours. The platform team can still set them.',
+  },
 ] as const;
+
+type ModuleKey = (typeof OPTIONAL_MODULES)[number]['key'];
+
+const PREMIUM_MODULES: ModuleKey[] = [
+  'timetable',
+  'staffDocuments',
+  'advancedReports',
+  'customBranding',
+  'calendar',
+  'feeConcession',
+  'transferCertificate',
+  'pettyCash',
+];
+
+/** Plans are presets over the optional modules (pricing: Basic / Premium / Gold). */
+const PLANS: { key: string; name: string; price: string; modules: ModuleKey[] }[] = [
+  { key: 'basic', name: 'Basic', price: '₹13,333 / year', modules: [] },
+  { key: 'premium', name: 'Premium', price: '₹29,999 / year', modules: PREMIUM_MODULES },
+  { key: 'gold', name: 'Gold', price: '₹60,000 / year', modules: [...PREMIUM_MODULES, 'hrms', 'aiInsights'] },
+];
+
+/** The plan whose modules match the school's flags exactly, or null (custom, e.g. Premium with an add-on). */
+function currentPlan(features: Record<string, boolean> | undefined) {
+  return (
+    PLANS.find((p) => OPTIONAL_MODULES.every((m) => (features?.[m.key] === true) === p.modules.includes(m.key))) ?? null
+  );
+}
 
 type Tab = 'overview' | 'import' | 'users' | 'settings';
 
@@ -615,6 +662,7 @@ function PurgeTenantModal({
 function ModulesCard({ tenant, onSaved }: { tenant: Tenant; onSaved: () => void }) {
   const { toast } = useToast();
   const [saving, setSaving] = useState<string | null>(null);
+  const [pendingPlan, setPendingPlan] = useState<string | null>(null);
 
   async function toggle(key: string, on: boolean) {
     try {
@@ -629,9 +677,78 @@ function ModulesCard({ tenant, onSaved }: { tenant: Tenant; onSaved: () => void 
     }
   }
 
+  const plan = currentPlan(tenant.features);
+  const pending = PLANS.find((p) => p.key === pendingPlan) ?? null;
+  const moduleName = (key: ModuleKey) => OPTIONAL_MODULES.find((m) => m.key === key)?.name ?? key;
+  const turnsOn = pending ? pending.modules.filter((k) => tenant.features?.[k] !== true) : [];
+  const turnsOff = pending
+    ? OPTIONAL_MODULES.map((m) => m.key).filter((k) => tenant.features?.[k] === true && !pending.modules.includes(k))
+    : [];
+
+  async function applyPlan() {
+    if (!pending) return;
+    try {
+      setSaving('plan');
+      await api.patch(
+        `/tenants/${tenant.id}/features`,
+        Object.fromEntries(OPTIONAL_MODULES.map((m) => [m.key, pending.modules.includes(m.key)])),
+      );
+      toast(`${tenant.name} is now on ${pending.name}`, 'success');
+      setPendingPlan(null);
+      onSaved();
+    } catch (err) {
+      toast(err instanceof ApiError ? err.message : 'Could not change plan', 'error');
+    } finally {
+      setSaving(null);
+    }
+  }
+
   return (
     <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
-      <h2 className="text-base font-semibold text-gray-900">Optional modules</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-base font-semibold text-gray-900">Plan</h2>
+        <Badge variant={plan ? 'green' : 'yellow'}>{plan ? plan.name : 'Custom'}</Badge>
+      </div>
+      <p className="mt-1 text-sm text-gray-500">
+        Picking a plan switches the modules below to match it. Turn single modules on or off afterwards for add-ons.
+      </p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        {PLANS.map((p) => (
+          <button
+            key={p.key}
+            type="button"
+            onClick={() => setPendingPlan(p.key === plan?.key ? null : p.key)}
+            className={`rounded-xl border px-4 py-3 text-left transition-colors ${
+              p.key === plan?.key
+                ? 'border-teal bg-teal/5'
+                : p.key === pendingPlan
+                  ? 'border-teal/60 bg-white'
+                  : 'border-gray-200 bg-white hover:border-teal/40'
+            }`}
+          >
+            <p className="text-sm font-semibold text-gray-900">{p.name}</p>
+            <p className="text-xs text-gray-500">{p.price}</p>
+          </button>
+        ))}
+      </div>
+      {pending && (
+        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-medium">Move {tenant.name} to {pending.name}?</p>
+          {turnsOn.length > 0 && <p className="mt-1">Turns on: {turnsOn.map(moduleName).join(', ')}</p>}
+          {turnsOff.length > 0 && <p className="mt-1">Turns off: {turnsOff.map(moduleName).join(', ')}</p>}
+          {turnsOn.length === 0 && turnsOff.length === 0 && <p className="mt-1">No modules change.</p>}
+          <div className="mt-3 flex gap-2">
+            <Button size="sm" loading={saving === 'plan'} onClick={applyPlan}>
+              Move to {pending.name}
+            </Button>
+            <Button size="sm" variant="secondary" onClick={() => setPendingPlan(null)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <h2 className="mt-6 text-base font-semibold text-gray-900">Optional modules</h2>
       <p className="mt-1 text-sm text-gray-500">Off for every school unless switched on here.</p>
       <ul className="mt-4 divide-y divide-gray-100">
         {OPTIONAL_MODULES.map((m) => {

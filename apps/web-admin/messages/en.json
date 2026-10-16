@@ -159,7 +159,8 @@
     "submit": "Sign in",
     "invalidEmail": "Enter a valid email",
     "passwordRequired": "Password is required",
-    "failed": "Login failed"
+    "failed": "Login failed",
+    "homeLink": "Go to the Schoolinkd home page"
   },
   "changePassword": {
     "title": "Change Password",
@@ -1724,5 +1725,12 @@
     "deleteFile": "Delete file",
     "fileDeleted": "File deleted.",
     "confirmDeleteFile": "Delete \"{name}\"? Other staff will no longer see it."
+  },
+  "plans": {
+    "offTitle": "Not in your school's plan",
+    "timetableOff": "The timetable is part of the Premium plan. Ask the Schoolinkd team to upgrade your school.",
+    "staffDocumentsOff": "Shared documents are part of the Premium plan. Ask the Schoolinkd team to upgrade your school.",
+    "reportsOff": "Fee reports are part of the Premium plan. Ask the Schoolinkd team to upgrade your school.",
+    "brandingOff": "Changing the school's background picture is part of the Premium plan. Ask the Schoolinkd team to upgrade your school."
   }
 }

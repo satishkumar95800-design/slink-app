@@ -4,7 +4,7 @@
  * Cookie-free analytics: posts an event name + page path to our own API, which
  * only keeps daily totals. No ids, cookies or personal data are sent or stored.
  */
-export type SiteEvent = 'page_view' | 'whatsapp_click' | 'demo_click' | 'login_click' | 'video_play' | 'store_click';
+export type SiteEvent = 'page_view' | 'whatsapp_click' | 'demo_click' | 'login_click' | 'video_play' | 'store_click' | 'pricing_download';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/v1';
 

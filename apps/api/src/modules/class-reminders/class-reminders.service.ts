@@ -113,6 +113,7 @@ export class ClassRemindersService implements OnModuleInit, OnModuleDestroy {
       const tenants = await this.prisma.tenant.findMany({
         where: {
           isActive: true,
+          features: { path: ['timetable'], equals: true },
           OR: [
             { periodTimings: { some: {} } },
             { classPeriodTimings: { some: {} } },

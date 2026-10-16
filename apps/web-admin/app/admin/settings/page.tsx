@@ -11,7 +11,7 @@ import { Input } from '../../../components/ui/input';
 import { Select } from '../../../components/ui/select';
 import { useToast } from '../../../components/ui/toast';
 import { getSession } from '../../../lib/auth';
-import { useTenantFeatures } from '../../../lib/tenant-features';
+import { useTenantFeaturesState } from '../../../lib/tenant-features';
 import { BellSchedulesSection } from './bell-schedules';
 import { EventsSection } from './events-section';
 
@@ -31,10 +31,12 @@ type Stage = 'idle' | 'uploading';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
+  const tPlans = useTranslations('plans');
   const errorText = useErrorText();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { calendar } = useTenantFeatures();
+  const { features, loaded } = useTenantFeaturesState();
+  const { calendar, timetable, customBranding } = features;
 
   const [tenant, setTenant] = useState<TenantSelf | null>(null);
   const [stage, setStage] = useState<Stage>('idle');
@@ -91,24 +93,32 @@ export default function SettingsPage() {
           )}
         </div>
 
-        <div className="mt-4 flex items-center gap-3">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={handleFileChange}
-            disabled={stage === 'uploading'}
-            className="block text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-teal/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-teal hover:file:bg-teal/20"
-          />
-          {stage === 'uploading' && <Button loading disabled>{t('uploading')}</Button>}
-        </div>
-        <p className="mt-2 text-xs text-gray-400">{t('fileHint')}</p>
+        {!loaded ? null : !customBranding ? (
+          <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {tPlans('brandingOff')}
+          </p>
+        ) : (
+          <>
+            <div className="mt-4 flex items-center gap-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleFileChange}
+                disabled={stage === 'uploading'}
+                className="block text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-teal/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-teal hover:file:bg-teal/20"
+              />
+              {stage === 'uploading' && <Button loading disabled>{t('uploading')}</Button>}
+            </div>
+            <p className="mt-2 text-xs text-gray-400">{t('fileHint')}</p>
+          </>
+        )}
       </div>
 
       {getSession()?.role === 'admin' && <CustomFieldsSection />}
       {getSession()?.role === 'admin' && <HolidaysSection />}
       {calendar && getSession()?.role === 'admin' && <EventsSection />}
-      {getSession()?.role === 'admin' && <BellSchedulesSection />}
+      {timetable && getSession()?.role === 'admin' && <BellSchedulesSection />}
     </div>
   );
 }
