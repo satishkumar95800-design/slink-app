@@ -18,6 +18,7 @@ import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
 import { formatDateOnly, formatRupees } from '../../../lib/format';
+import { AssignFeeModal } from '../../../components/fees/assign-fee-modal';
 
 type FeeStatus = 'pending' | 'partial' | 'paid' | 'overdue' | 'waived';
 
@@ -40,28 +41,12 @@ interface StudentFee {
   components: StudentFeeComponent[];
 }
 
-interface Student {
-  id: string;
-  name: string;
-  admissionNo: string;
-}
-
-interface FeeStructure {
-  id: string;
-  name: string;
-  totalAmount: number;
-}
-
 interface DiscountType {
   id: string;
   name: string;
 }
 
 const makeSchemas = (t: ReturnType<typeof useTranslations<'studentFees'>>) => ({
-  assign: z.object({
-    studentId: z.string().min(1, t('studentRequired')),
-    feeStructureId: z.string().min(1, t('structureRequired')),
-  }),
   offline: z.object({
   studentFeeId: z.string().min(1),
   allocations: z
@@ -84,7 +69,6 @@ const makeSchemas = (t: ReturnType<typeof useTranslations<'studentFees'>>) => ({
   }),
 });
 
-type AssignData = z.infer<ReturnType<typeof makeSchemas>['assign']>;
 type OfflineData = z.infer<ReturnType<typeof makeSchemas>['offline']>;
 
 const statusVariant = (s: FeeStatus): 'green' | 'red' | 'yellow' | 'blue' | 'gray' => {
@@ -107,8 +91,6 @@ export default function StudentFeesPage() {
   const schemas = useMemo(() => makeSchemas(t), [t]);
   const { toast } = useToast();
   const [fees, setFees] = useState<StudentFee[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [structures, setStructures] = useState<FeeStructure[]>([]);
   const [discountTypes, setDiscountTypes] = useState<DiscountType[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -117,7 +99,6 @@ export default function StudentFeesPage() {
   const [selectedFee, setSelectedFee] = useState<StudentFee | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
 
-  const assignForm = useForm<AssignData>({ resolver: zodResolver(schemas.assign) });
   const offlineForm = useForm<OfflineData>({
     resolver: zodResolver(schemas.offline),
     defaultValues: { allocations: [] },
@@ -129,16 +110,12 @@ export default function StudentFeesPage() {
     try {
       setLoading(true);
       const qs = status ? `?status=${status}&limit=100` : '?limit=100';
-      const [feesRes, studentsRes, structuresRes, discountTypesRes] = await Promise.all([
+      const [feesRes, discountTypesRes] = await Promise.all([
         api.get<{ data: StudentFee[]; total: number }>(`/student-fees${qs}`),
-        api.get<{ data: Student[]; meta: { total: number } }>('/students?limit=100'),
-        api.get<FeeStructure[]>('/fee-structures'),
         api.get<DiscountType[]>('/discount-types'),
       ]);
       setFees(feesRes.data);
       setTotal(feesRes.total);
-      setStudents(studentsRes.data);
-      setStructures(structuresRes);
       setDiscountTypes(discountTypesRes);
       setError(null);
     } catch (e) {
@@ -151,18 +128,6 @@ export default function StudentFeesPage() {
   useEffect(() => {
     fetchFees();
   }, []);
-
-  async function onAssign(data: AssignData) {
-    try {
-      await api.post('/student-fees', data);
-      toast(t('assigned'), 'success');
-      setShowAssign(false);
-      assignForm.reset();
-      fetchFees(statusFilter);
-    } catch (e) {
-      toast(errorText(e), 'error');
-    }
-  }
 
   async function onOfflinePayment(data: OfflineData) {
     try {
@@ -207,16 +172,6 @@ export default function StudentFeesPage() {
         })),
     });
   }
-
-  const studentOptions = students.map((s) => ({
-    value: s.id,
-    label: `${s.name} (${s.admissionNo})`,
-  }));
-
-  const structureOptions = structures.map((s) => ({
-    value: s.id,
-    label: `${s.name} — ${formatRupees(s.totalAmount)}`,
-  }));
 
   const statusOptions = [
     { value: '', label: t('allStatuses') },
@@ -306,37 +261,11 @@ export default function StudentFeesPage() {
         </div>
       )}
 
-      {/* Assign fee modal */}
-      <Modal
+      <AssignFeeModal
         open={showAssign}
-        onClose={() => { setShowAssign(false); assignForm.reset(); }}
-        title={t('assignTitle')}
-      >
-        <form onSubmit={assignForm.handleSubmit(onAssign)} className="space-y-4">
-          <Select
-            label={t('student')} required
-            options={studentOptions}
-            placeholder={t('selectStudent')}
-            error={assignForm.formState.errors.studentId?.message}
-            {...assignForm.register('studentId')}
-          />
-          <Select
-            label={t('feeStructure')} required
-            options={structureOptions}
-            placeholder={t('selectStructure')}
-            error={assignForm.formState.errors.feeStructureId?.message}
-            {...assignForm.register('feeStructureId')}
-          />
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => { setShowAssign(false); assignForm.reset(); }}>
-              {tCommon('cancel')}
-            </Button>
-            <Button type="submit" loading={assignForm.formState.isSubmitting}>
-              {t('assignSubmit')}
-            </Button>
-          </div>
-        </form>
-      </Modal>
+        onClose={() => setShowAssign(false)}
+        onAssigned={() => fetchFees(statusFilter)}
+      />
 
       {/* Offline payment modal */}
       <Modal

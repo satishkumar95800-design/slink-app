@@ -68,6 +68,8 @@ export default function TeachersPage() {
   const [assigningTeacher, setAssigningTeacher] = useState<Teacher | null>(null);
   const [showSubjectModal, setShowSubjectModal] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [subjectFilter, setSubjectFilter] = useState('');
+  const [classFilter, setClassFilter] = useState('');
 
   const {
     register: registerAssign,
@@ -150,13 +152,79 @@ export default function TeachersPage() {
 
   const subjectOptions = subjects.map((s) => ({ value: s.id, label: s.name }));
   const classOptions = classes.map((c) => ({ value: c.id, label: classLabel(c) }));
+  // Newest year first, then Class 1, 2 … 10 in number order, then section.
+  const sortedClassOptions = [...classes]
+    .sort(
+      (a, b) =>
+        b.academicYear.localeCompare(a.academicYear) ||
+        a.name.localeCompare(b.name, undefined, { numeric: true }) ||
+        (a.section ?? '').localeCompare(b.section ?? ''),
+    )
+    .map((c) => ({ value: c.id, label: classLabel(c) }));
+  const sortedSubjectOptions = [...subjectOptions].sort((a, b) => a.label.localeCompare(b.label));
+
+  // Subject: teaches it in any class. Class: teaches any subject there or is its
+  // class teacher. Both: teaches that subject in that class.
+  const filtering = !!subjectFilter || !!classFilter;
+  const visibleTeachers = teachers.filter((teacher) => {
+    if (subjectFilter) {
+      return teacher.taughtSubjects.some(
+        (a) => a.subject.id === subjectFilter && (!classFilter || a.class.id === classFilter),
+      );
+    }
+    if (classFilter) {
+      return (
+        teacher.taughtSubjects.some((a) => a.class.id === classFilter) ||
+        teacher.taughtClasses.some((c) => c.isClassTeacher && c.class.id === classFilter)
+      );
+    }
+    return true;
+  });
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-gray-500">
-          {t('count', { count: teachers.length })}
-        </p>
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <div className="w-full sm:w-56">
+            <Select
+              id="teacher-subject-filter"
+              aria-label={t('filterSubject')}
+              options={sortedSubjectOptions}
+              placeholder={t('allSubjects')}
+              value={subjectFilter}
+              onChange={(e) => setSubjectFilter(e.target.value)}
+              className="!py-1.5"
+            />
+          </div>
+          <div className="w-full sm:w-64">
+            <Select
+              id="teacher-class-filter"
+              aria-label={t('filterClass')}
+              options={sortedClassOptions}
+              placeholder={t('allClasses')}
+              value={classFilter}
+              onChange={(e) => setClassFilter(e.target.value)}
+              className="!py-1.5"
+            />
+          </div>
+          {filtering && (
+            <button
+              type="button"
+              onClick={() => {
+                setSubjectFilter('');
+                setClassFilter('');
+              }}
+              className="text-xs text-teal hover:underline"
+            >
+              {t('clearFilters')}
+            </button>
+          )}
+          <p className="text-sm text-gray-500">
+            {filtering
+              ? t('countFiltered', { shown: visibleTeachers.length, count: teachers.length })
+              : t('count', { count: teachers.length })}
+          </p>
+        </div>
         <Button variant="secondary" onClick={() => setShowSubjectModal(true)}>
           {t('addSubject')}
         </Button>
@@ -173,9 +241,13 @@ export default function TeachersPage() {
           title={t('emptyTitle')}
           description={t('emptyDescription')}
         />
+      ) : visibleTeachers.length === 0 ? (
+        <p className="rounded-2xl border border-gray-100 bg-white px-6 py-10 text-center text-sm text-gray-500 shadow-sm">
+          {t('noMatches')}
+        </p>
       ) : (
         <div className="space-y-3">
-          {teachers.map((teacher) => (
+          {visibleTeachers.map((teacher) => (
             <div key={teacher.id} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>

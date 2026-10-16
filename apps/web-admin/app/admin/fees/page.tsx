@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { Controller, useForm, useFieldArray, type Control } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { api } from '../../../lib/api-client';
@@ -15,6 +15,17 @@ import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
 import { useToast } from '../../../components/ui/toast';
 import { formatDateOnly, formatRupees } from '../../../lib/format';
+import { classLabel, compareClasses, compareTerms, termOf, type ClassRef } from '../../../lib/fee-terms';
+
+type Class = ClassRef;
+
+interface FeeItem {
+  label: string;
+  amount: number;
+  billingFrequency?: string;
+  quarterMonthCounts?: number[] | null;
+  isTransportFee?: boolean;
+}
 
 interface FeeStructure {
   id: string;
@@ -23,21 +34,15 @@ interface FeeStructure {
   dueDate: string;
   lateFeePerDay: number;
   academicYear: string;
-  classId: string;
-  class?: { name: string };
-  items?: { label: string; amount: number }[];
-}
-
-interface Class {
-  id: string;
-  name: string;
-  academicYear: string;
+  /** One plan can cover several classes. */
+  classes?: Array<{ class: Class }>;
+  items?: FeeItem[];
 }
 
 const makeSchema = (t: ReturnType<typeof useTranslations<'fees'>>, tCommon: ReturnType<typeof useTranslations<'common'>>) =>
   z.object({
     name: z.string().min(1, tCommon('nameRequired')),
-    classId: z.string().min(1, tCommon('classRequired')),
+    classIds: z.array(z.string()).min(1, tCommon('classRequired')),
     academicYear: z.string().min(4, t('yearHint')),
     dueDate: z.string().min(1, t('dueDateRequired')),
     lateFeePerDay: z.number().min(0),
@@ -61,6 +66,8 @@ export default function FeesPage() {
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingStructure, setEditingStructure] = useState<FeeStructure | null>(null);
+  const [termFilter, setTermFilter] = useState('');
+  const [classFilter, setClassFilter] = useState('');
 
   const {
     register,
@@ -70,7 +77,7 @@ export default function FeesPage() {
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { items: [{ label: '', amount: 0 }] },
+    defaultValues: { classIds: [], items: [{ label: '', amount: 0 }] },
   });
 
   const {
@@ -114,7 +121,7 @@ export default function FeesPage() {
       await api.post('/fee-structures', data);
       toast(t('created'), 'success');
       setShowModal(false);
-      reset({ items: [{ label: '', amount: 0 }] });
+      reset({ classIds: [], items: [{ label: '', amount: 0 }] });
       fetchData();
     } catch (e) {
       toast(errorText(e), 'error');
@@ -125,7 +132,7 @@ export default function FeesPage() {
     setEditingStructure(structure);
     resetEdit({
       name: structure.name,
-      classId: structure.classId,
+      classIds: (structure.classes ?? []).map((c) => c.class.id),
       academicYear: structure.academicYear,
       dueDate: structure.dueDate.slice(0, 10),
       lateFeePerDay: structure.lateFeePerDay,
@@ -136,7 +143,21 @@ export default function FeesPage() {
   async function onEditSubmit(data: FormData) {
     if (!editingStructure) return;
     try {
-      await api.patch(`/fee-structures/${editingStructure.id}`, data);
+      // Saving items replaces them all: carry over each item's billing settings,
+      // which this form doesn't edit, so a rename or amount change keeps them.
+      const original = editingStructure.items ?? [];
+      await api.patch(`/fee-structures/${editingStructure.id}`, {
+        ...data,
+        items: data.items.map((item, i) => {
+          const before = original.find((o) => o.label === item.label) ?? original[i];
+          return {
+            ...item,
+            ...(before?.billingFrequency && { billingFrequency: before.billingFrequency }),
+            ...(before?.billingFrequency === 'quarterly' && before.quarterMonthCounts && { quarterMonthCounts: before.quarterMonthCounts }),
+            ...(before?.isTransportFee && { isTransportFee: true }),
+          };
+        }),
+      });
       toast(t('updated'), 'success');
       setEditingStructure(null);
       fetchData();
@@ -145,15 +166,65 @@ export default function FeesPage() {
     }
   }
 
-  const classOptions = classes.map((c) => ({
+  const sortedClasses = [...classes].sort(compareClasses);
+  const classOptions = sortedClasses.map((c) => ({
     value: c.id,
-    label: `${c.name} (${c.academicYear})`,
+    label: `${classLabel(c)} (${c.academicYear})`,
   }));
+  const termOptions = [...new Set(structures.map(termOf))]
+    .sort(compareTerms)
+    .map((term) => ({ value: term, label: term }));
+  const filtering = !!termFilter || !!classFilter;
+  const visibleStructures = structures
+    .filter(
+      (s) =>
+        (!termFilter || termOf(s) === termFilter) &&
+        (!classFilter || (s.classes ?? []).some((c) => c.class.id === classFilter)),
+    )
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-gray-500">{t('count', { count: total })}</p>
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <div className="w-full sm:w-48">
+            <Select
+              id="fee-term-filter"
+              aria-label={t('filterTerm')}
+              options={termOptions}
+              placeholder={t('allTerms')}
+              value={termFilter}
+              onChange={(e) => setTermFilter(e.target.value)}
+              className="!py-1.5"
+            />
+          </div>
+          <div className="w-full sm:w-64">
+            <Select
+              id="fee-class-filter"
+              aria-label={t('filterClass')}
+              options={classOptions}
+              placeholder={t('allClasses')}
+              value={classFilter}
+              onChange={(e) => setClassFilter(e.target.value)}
+              className="!py-1.5"
+            />
+          </div>
+          {filtering && (
+            <button
+              type="button"
+              onClick={() => {
+                setTermFilter('');
+                setClassFilter('');
+              }}
+              className="text-xs text-teal hover:underline"
+            >
+              {t('clearFilters')}
+            </button>
+          )}
+          <p className="text-sm text-gray-500">
+            {filtering ? t('countFiltered', { shown: visibleStructures.length, count: total }) : t('count', { count: total })}
+          </p>
+        </div>
         <Button onClick={() => setShowModal(true)}>{t('add')}</Button>
       </div>
 
@@ -169,6 +240,10 @@ export default function FeesPage() {
           description={t('emptyDescription')}
           action={<Button onClick={() => setShowModal(true)}>{t('add')}</Button>}
         />
+      ) : visibleStructures.length === 0 ? (
+        <p className="rounded-2xl border border-gray-100 bg-white px-6 py-10 text-center text-sm text-gray-500 shadow-sm">
+          {t('noMatches')}
+        </p>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
@@ -182,10 +257,14 @@ export default function FeesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {structures.map((s) => (
+              {visibleStructures.map((s) => (
                 <tr key={s.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{s.name}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{s.class?.name ?? '—'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {s.classes?.length
+                      ? [...s.classes].map((c) => c.class).sort(compareClasses).map(classLabel).join(', ')
+                      : '—'}
+                  </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{s.academicYear}</td>
                   <td className="px-6 py-4 text-sm font-semibold text-gray-900">{formatRupees(s.totalAmount)}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">
@@ -208,21 +287,13 @@ export default function FeesPage() {
 
       <Modal
         open={showModal}
-        onClose={() => { setShowModal(false); reset({ items: [{ label: '', amount: 0 }] }); }}
+        onClose={() => { setShowModal(false); reset({ classIds: [], items: [{ label: '', amount: 0 }] }); }}
         title={t('addTitle')}
         size="lg"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Input label={t('name')} required placeholder={t('namePlaceholder')} error={errors.name?.message} {...register('name')} />
-            <Select
-              label={t('class')} required
-              options={classOptions}
-              placeholder={tCommon('selectClass')}
-              error={errors.classId?.message}
-              {...register('classId')}
-            />
-          </div>
+          <Input label={t('name')} required placeholder={t('namePlaceholder')} error={errors.name?.message} {...register('name')} />
+          <ClassChecklist label={t('class')} control={control} classes={sortedClasses} error={errors.classIds?.message} />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Input label={t('academicYear')} required placeholder={t('academicYearPlaceholder')} error={errors.academicYear?.message} {...register('academicYear')} />
             <Input label={t('dueDate')} required type="date" error={errors.dueDate?.message} {...register('dueDate')} />
@@ -283,7 +354,7 @@ export default function FeesPage() {
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => { setShowModal(false); reset({ items: [{ label: '', amount: 0 }] }); }}>
+            <Button variant="secondary" type="button" onClick={() => { setShowModal(false); reset({ classIds: [], items: [{ label: '', amount: 0 }] }); }}>
               {tCommon('cancel')}
             </Button>
             <Button type="submit" loading={isSubmitting}>
@@ -300,16 +371,8 @@ export default function FeesPage() {
         size="lg"
       >
         <form onSubmit={handleEditSubmit(onEditSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Input label={t('name')} required placeholder={t('namePlaceholder')} error={editErrors.name?.message} {...registerEdit('name')} />
-            <Select
-              label={t('class')} required
-              options={classOptions}
-              placeholder={tCommon('selectClass')}
-              error={editErrors.classId?.message}
-              {...registerEdit('classId')}
-            />
-          </div>
+          <Input label={t('name')} required placeholder={t('namePlaceholder')} error={editErrors.name?.message} {...registerEdit('name')} />
+          <ClassChecklist label={t('class')} control={controlEdit} classes={sortedClasses} error={editErrors.classIds?.message} />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Input label={t('academicYear')} required placeholder={t('academicYearPlaceholder')} error={editErrors.academicYear?.message} {...registerEdit('academicYear')} />
             <Input label={t('dueDate')} required type="date" error={editErrors.dueDate?.message} {...registerEdit('dueDate')} />
@@ -380,5 +443,58 @@ export default function FeesPage() {
         </form>
       </Modal>
     </div>
+  );
+}
+
+/** Tick every class this plan covers (one plan can span several classes). */
+function ClassChecklist({
+  label,
+  control,
+  classes,
+  error,
+}: {
+  label: string;
+  control: Control<FormData>;
+  classes: Class[];
+  error?: string;
+}) {
+  return (
+    <Controller
+      control={control}
+      name="classIds"
+      render={({ field }) => {
+        const selected = new Set(field.value ?? []);
+        const manyYears = new Set(classes.map((c) => c.academicYear)).size > 1;
+        const toggle = (id: string) => {
+          const next = new Set(selected);
+          if (next.has(id)) next.delete(id);
+          else next.add(id);
+          field.onChange([...next]);
+        };
+        return (
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-semibold text-gray-800">
+              {label}
+              <span className="ml-0.5 text-red-500" aria-hidden="true">*</span>
+            </p>
+            <div className="grid max-h-40 grid-cols-2 gap-x-4 gap-y-1.5 overflow-y-auto rounded-xl border border-gray-300 p-3 sm:grid-cols-3">
+              {classes.map((c) => (
+                <label key={c.id} className="flex cursor-pointer items-center gap-2 whitespace-nowrap text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(c.id)}
+                    onChange={() => toggle(c.id)}
+                    className="h-4 w-4 accent-coral"
+                  />
+                  {classLabel(c)}
+                  {manyYears && <span className="text-xs text-gray-400">{c.academicYear}</span>}
+                </label>
+              ))}
+            </div>
+            {error && <p className="text-xs text-red-600">{error}</p>}
+          </div>
+        );
+      }}
+    />
   );
 }

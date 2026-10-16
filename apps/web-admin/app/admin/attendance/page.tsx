@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 import { api, apiDownload } from '../../../lib/api-client';
+import { getSession } from '../../../lib/auth';
 import { useErrorText } from '../../../lib/i18n/errors';
 import { formatDateOnly } from '../../../lib/format';
 import { Button } from '../../../components/ui/button';
@@ -65,7 +66,9 @@ function firstOfMonth() {
 
 export default function AttendancePage() {
   const t = useTranslations('attendance');
-  const [tab, setTab] = useState<'report' | 'mark'>('report');
+  // The school-wide report is admin-only; teachers go straight to marking their classes.
+  const isTeacher = getSession()?.role === 'teacher';
+  const [tab, setTab] = useState<'report' | 'mark'>(isTeacher ? 'mark' : 'report');
   const [classes, setClasses] = useState<ClassOption[]>([]);
 
   useEffect(() => {
@@ -79,20 +82,22 @@ export default function AttendancePage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
-        {(['report', 'mark'] as const).map((key) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setTab(key)}
-            className={`rounded-full px-4 py-2 text-sm font-bold transition-colors ${
-              tab === key ? 'bg-teal text-white' : 'bg-white text-teal border border-teal/30 hover:bg-teal/10'
-            }`}
-          >
-            {key === 'report' ? t('reportTab') : t('markTab')}
-          </button>
-        ))}
-      </div>
+      {!isTeacher && (
+        <div className="flex gap-2">
+          {(['report', 'mark'] as const).map((key) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              className={`rounded-full px-4 py-2 text-sm font-bold transition-colors ${
+                tab === key ? 'bg-teal text-white' : 'bg-white text-teal border border-teal/30 hover:bg-teal/10'
+              }`}
+            >
+              {key === 'report' ? t('reportTab') : t('markTab')}
+            </button>
+          ))}
+        </div>
+      )}
       {tab === 'report' ? <ReportTab classOptions={classOptions} /> : <MarkTab classOptions={classOptions} />}
     </div>
   );

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
   CalendarCheck,
   CalendarDays,
+  CalendarX2,
   ChartColumn,
   ChartLine,
   ClipboardList,
@@ -33,7 +34,7 @@ import { LanguageSwitcher } from './language-switcher';
 
 interface NavItem {
   /** Key into messages "nav". */
-  label: 'dashboard' | 'users' | 'students' | 'classes' | 'teachers' | 'fees' | 'studentFees' | 'payments' | 'feeReports' | 'reports' | 'attendance' | 'documents' | 'timetable' | 'paymentClaims' | 'pettyCash' | 'hr' | 'import' | 'settings';
+  label: 'dashboard' | 'users' | 'students' | 'classes' | 'teachers' | 'fees' | 'studentFees' | 'payments' | 'feeReports' | 'reports' | 'attendance' | 'documents' | 'timetable' | 'paymentClaims' | 'pettyCash' | 'hr' | 'absence' | 'import' | 'settings';
   href: string;
   icon: LucideIcon;
   /** Roles that should not see this item in the sidebar (still reachable by direct URL if the API allows it). */
@@ -58,7 +59,8 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'students', href: '/admin/students', icon: GraduationCap },
       { label: 'classes', href: '/admin/classes', icon: School },
       { label: 'teachers', href: '/admin/teachers', icon: Presentation, hiddenForRoles: ['teacher'] },
-      { label: 'attendance', href: '/admin/attendance', icon: CalendarCheck, hiddenForRoles: ['teacher', 'accounts'] },
+      { label: 'attendance', href: '/admin/attendance', icon: CalendarCheck, hiddenForRoles: ['accounts'] },
+      { label: 'absence', href: '/admin/absence', icon: CalendarX2, onlyRoles: ['teacher'] },
       { label: 'timetable', href: '/admin/timetable', icon: CalendarDays, hiddenForRoles: ['teacher'] },
       { label: 'reports', href: '/admin/reports', icon: ChartColumn },
       { label: 'documents', href: '/admin/documents', icon: FolderOpen, hiddenForRoles: ['teacher'] },
