@@ -240,7 +240,8 @@ export default function StudentsPage() {
 
     const uploaded = await uploadRes.json() as { key: string };
     const signed = await api.get<{ url: string }>(`/files/signed-url?key=${encodeURIComponent(uploaded.key)}`);
-    await api.patch(`/students/${editingStudent.id}`, { photoUrl: signed.url });
+    // Save the key: the API signs a fresh URL on every read (a saved signed URL expires).
+    await api.patch(`/students/${editingStudent.id}`, { photoUrl: uploaded.key });
     toast(t('photoUpdated'), 'success');
     fetchStudents();
     setEditingStudent((current) => current ? { ...current, photoUrl: signed.url } : current);

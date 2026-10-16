@@ -6,7 +6,6 @@ import {
   MinLength,
   MaxLength,
   IsDateString,
-  IsUrl,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { BloodGroup, Caste, Gender } from '@prisma/client';
@@ -53,7 +52,9 @@ export class UpdateStudentDto {
   @IsOptional()
   caste?: Caste;
 
-  @IsUrl({ require_tld: false })
+  /** A URL, or the key of an uploaded student photo (preferred: it never expires). */
+  @IsString()
+  @MaxLength(2048)
   @IsOptional()
   photoUrl?: string;
 

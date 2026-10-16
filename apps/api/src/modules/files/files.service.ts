@@ -30,6 +30,28 @@ export const isHrKey = (key: string): boolean => key.split('/')[2] === 'hr';
 export const isModuleOwnedKey = (key: string): boolean =>
   isPettyCashKey(key) || isHrKey(key);
 
+/**
+ * The S3 key of one of this school's student photos, from either the stored
+ * key or an old signed URL of it (photos used to be saved as 15-minute signed
+ * URLs, which then broke). Null for anything else.
+ */
+export function studentPhotoKey(
+  stored: string,
+  tenantId: string,
+): string | null {
+  const prefix = `private/${tenantId}/students/`;
+  if (stored.startsWith(prefix)) return stored;
+  try {
+    const path = decodeURIComponent(new URL(stored).pathname);
+    const at = path.indexOf(`/${prefix}`);
+    return at >= 0 ? path.slice(at + 1) : null;
+  } catch {
+    return null;
+  }
+}
+
+const STUDENT_PHOTO_URL_TTL = 12 * 60 * 60;
+
 export interface UploadResult {
   key: string;
   /** Direct public URL for public/ objects; null for private objects */
@@ -112,6 +134,19 @@ export class FilesService {
    * [verifyExists] does a HEAD request first so a missing file is a clean 404;
    * list endpoints signing many known keys at once pass false to skip that round trip.
    */
+  /** A fresh signed URL for a stored student photo; other values pass through. */
+  async studentPhotoUrl(
+    stored: string | null,
+    tenantId: string,
+  ): Promise<string | null> {
+    if (!stored) return null;
+    const key = studentPhotoKey(stored, tenantId);
+    if (!key) return stored;
+    return this.getSignedUrl(key, tenantId, STUDENT_PHOTO_URL_TTL, {
+      verifyExists: false,
+    });
+  }
+
   async getSignedUrl(
     key: string,
     tenantId: string,

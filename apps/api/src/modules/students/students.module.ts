@@ -3,8 +3,10 @@ import { StudentsService } from './students.service';
 import { ClassesService } from './classes.service';
 import { StudentsController } from './students.controller';
 import { ClassesController } from './classes.controller';
+import { FilesModule } from '../files/files.module';
 
 @Module({
+  imports: [FilesModule],
   providers: [StudentsService, ClassesService],
   controllers: [StudentsController, ClassesController],
   exports: [StudentsService],

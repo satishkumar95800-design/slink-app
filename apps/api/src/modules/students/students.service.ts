@@ -3,9 +3,12 @@ import {
   NotFoundException,
   ForbiddenException,
   ConflictException,
+  BadRequestException,
+  Optional,
 } from '@nestjs/common';
 import { Prisma, Role, GuardianRelation } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { FilesService, studentPhotoKey } from '../files/files.service';
 import { ActiveUser } from '../../common/types/active-user.type';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
@@ -47,7 +50,10 @@ const studentInclude = {
 
 @Injectable()
 export class StudentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly files?: FilesService,
+  ) {}
 
   // ─── List ────────────────────────────────────────────────────────────────────
 
@@ -70,7 +76,11 @@ export class StudentsService {
     ]);
 
     return {
-      data: data.map((s) => this.sanitiseForRole(s, user)),
+      data: await Promise.all(
+        data.map((s) =>
+          this.withPhoto(this.sanitiseForRole(s, user), tenantId),
+        ),
+      ),
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
@@ -90,7 +100,11 @@ export class StudentsService {
       name: '',
       isVerified: true,
     };
-    return links.map((l) => this.sanitiseForRole(l.student, parentUser));
+    return Promise.all(
+      links.map((l) =>
+        this.withPhoto(this.sanitiseForRole(l.student, parentUser), tenantId),
+      ),
+    );
   }
 
   // ─── Get one ─────────────────────────────────────────────────────────────────
@@ -105,7 +119,7 @@ export class StudentsService {
 
     await this.assertAccess(student, user);
 
-    return this.sanitiseForRole(student, user);
+    return this.withPhoto(this.sanitiseForRole(student, user), tenantId);
   }
 
   // ─── Create ──────────────────────────────────────────────────────────────────
@@ -133,7 +147,7 @@ export class StudentsService {
         gender: dto.gender ?? null,
         bloodGroup: dto.bloodGroup ?? null,
         caste: dto.caste ?? null,
-        photoUrl: dto.photoUrl ?? null,
+        photoUrl: this.photoToStore(tenantId, dto.photoUrl) ?? null,
         classId: dto.classId,
       },
       include: studentInclude,
@@ -148,10 +162,13 @@ export class StudentsService {
     }
 
     // Re-fetch with the parent link included
-    return this.prisma.student.findUniqueOrThrow({
-      where: { id: student.id },
-      include: studentInclude,
-    });
+    return this.withPhoto(
+      await this.prisma.student.findUniqueOrThrow({
+        where: { id: student.id },
+        include: studentInclude,
+      }),
+      tenantId,
+    );
   }
 
   // ─── Bulk create ─────────────────────────────────────────────────────────────
@@ -186,7 +203,7 @@ export class StudentsService {
     if (dto.transportSlabId)
       await this.requireTransportSlab(tenantId, dto.transportSlabId);
 
-    return this.prisma.student.update({
+    const updated = await this.prisma.student.update({
       where: { id: studentId },
       data: {
         name: dto.name,
@@ -198,11 +215,12 @@ export class StudentsService {
         gender: dto.gender,
         bloodGroup: dto.bloodGroup,
         caste: dto.caste,
-        photoUrl: dto.photoUrl,
+        photoUrl: this.photoToStore(tenantId, dto.photoUrl),
         transportSlabId: dto.transportSlabId,
       },
       include: studentInclude,
     });
+    return this.withPhoto(updated, tenantId);
   }
 
   // ─── Delete ──────────────────────────────────────────────────────────────────
@@ -410,6 +428,34 @@ export class StudentsService {
    * Custom fields flagged "sensitive" (e.g. religion/caste-adjacent fields a
    * school defines itself) are restricted to admin/accounts view.
    */
+  /**
+   * Student photos are private: the row keeps the S3 key and every response
+   * carries a fresh signed URL (a stored signed URL expires within minutes).
+   */
+  private photoToStore(tenantId: string, photo: string | undefined) {
+    if (photo === undefined || photo === '') return photo || undefined;
+    const key = studentPhotoKey(photo, tenantId);
+    if (key) return key;
+    if (!/^https?:\/\//.test(photo))
+      throw new BadRequestException(
+        'photoUrl must be a URL or a student photo key',
+      );
+    return photo;
+  }
+
+  private async withPhoto<T extends { photoUrl?: string | null }>(
+    student: T,
+    tenantId: string,
+  ): Promise<T> {
+    if (!this.files || !student.photoUrl) return student;
+    return {
+      ...student,
+      photoUrl: await this.files
+        .studentPhotoUrl(student.photoUrl, tenantId)
+        .catch(() => null),
+    };
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private sanitiseForRole(student: any, user: ActiveUser) {
     const isFinanceOrAdmin =
