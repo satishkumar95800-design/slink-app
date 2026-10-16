@@ -117,3 +117,51 @@ describe('TimetableService period timings', () => {
     });
   });
 });
+
+describe('TimetableService.findMine', () => {
+  it("adds each period's bell times, preferring the class's own schedule", async () => {
+    const slot = (id: string, classId: string, periodNumber: number) => ({
+      id,
+      classId,
+      periodNumber,
+      dayOfWeek: 1,
+    });
+    const prisma = {
+      timetableSlot: {
+        findMany: jest
+          .fn()
+          .mockResolvedValue([
+            slot('a', 'c1', 1),
+            slot('b', 'c2', 1),
+            slot('c', 'c1', 9),
+          ]),
+      },
+      periodTiming: {
+        findMany: jest
+          .fn()
+          .mockResolvedValue([
+            { periodNumber: 1, startTime: '09:00', endTime: '09:45' },
+          ]),
+      },
+      classPeriodTiming: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            classId: 'c2',
+            periodNumber: 1,
+            startTime: '08:30',
+            endTime: '09:10',
+          },
+        ]),
+      },
+    };
+    const rows = await new TimetableService(prisma as never).findMine(
+      't',
+      'teacher',
+    );
+    expect(rows.map((r) => [r.id, r.startTime, r.endTime])).toEqual([
+      ['a', '09:00', '09:45'],
+      ['b', '08:30', '09:10'],
+      ['c', null, null],
+    ]);
+  });
+});

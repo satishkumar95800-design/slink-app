@@ -7,6 +7,7 @@ import { Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpsertTimetableSlotDto } from './dto/upsert-timetable-slot.dto';
 import { PeriodTimingDto } from './dto/period-timings.dto';
+import { loadPeriodSchedule } from './period-schedule';
 
 const slotInclude = {
   teacher: { select: { id: true, name: true } },
@@ -29,12 +30,26 @@ export class TimetableService {
     });
   }
 
-  /** A teacher's own weekly routine, across every class they're assigned a period in. */
+  /**
+   * A teacher's own weekly routine, across every class they're assigned a
+   * period in, with each period's bell times (null when none are set).
+   */
   async findMine(tenantId: string, teacherId: string) {
-    return this.prisma.timetableSlot.findMany({
+    const slots = await this.prisma.timetableSlot.findMany({
       where: { tenantId, teacherId },
       include: slotInclude,
       orderBy: [{ dayOfWeek: 'asc' }, { periodNumber: 'asc' }],
+    });
+    const schedule = await loadPeriodSchedule(this.prisma, tenantId, [
+      ...new Set(slots.map((s) => s.classId)),
+    ]);
+    return slots.map((s) => {
+      const time = schedule.timeFor(s.classId, s.periodNumber);
+      return {
+        ...s,
+        startTime: time?.startTime ?? null,
+        endTime: time?.endTime ?? null,
+      };
     });
   }
 
