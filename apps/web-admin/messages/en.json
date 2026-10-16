@@ -303,7 +303,8 @@
     "resetExplainer": "Sets a new password for this user without needing their current one. Share it with them securely — they can change it themselves afterwards from their account menu.",
     "newPassword": "New Password",
     "searchPlaceholder": "Search by name, email or phone",
-    "noMatches": "No users match your search."
+    "noMatches": "No users match your search.",
+    "colWard": "Ward"
   },
   "caste": {
     "General": "General",
@@ -356,7 +357,11 @@
     "submitAdd": "Add Student",
     "photo": "Photo",
     "uploadPhoto": "Upload Photo",
-    "profession": "Profession (optional)"
+    "profession": "Profession (optional)",
+    "classFilter": "Class",
+    "allClasses": "All classes",
+    "classOption": "{name} · {count, plural, =1 {1 student} other {# students}}",
+    "colParent": "Parent"
   },
   "noteType": {
     "note": "Note",
@@ -397,6 +402,16 @@
     "totalDue": "Due:",
     "totalPaid": "Paid:",
     "totalPending": "Pending:"
+  },
+  "userDetail": {
+    "back": "← Back",
+    "couldNotLoad": "Could not load this person",
+    "phone": "Phone",
+    "email": "Email",
+    "profession": "Profession",
+    "joined": "Joined",
+    "wards": "{count, plural, =1 {Ward (1)} other {Wards (#)}}",
+    "noWards": "No students are linked to this parent yet."
   },
   "classes": {
     "nameRequired": "Class name is required",

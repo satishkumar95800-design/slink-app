@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,6 +31,7 @@ interface User {
   isVerified: boolean;
   createdAt: string;
   _count: { linkedStudents: number };
+  linkedStudents?: Array<{ student: { id: string; name: string; class: { name: string; section: string | null } | null } }>;
 }
 
 type TCommon = ReturnType<typeof useTranslations<'common'>>;
@@ -299,7 +301,7 @@ export default function UsersPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-cream/60">
               <tr>
-                {[t('colName'), t('colEmail'), t('colPhone'), t('colRole'), t('colStudents'), t('colJoined'), ''].map((h, i) => (
+                {[t('colName'), t('colEmail'), t('colPhone'), t('colRole'), t('colWard'), t('colJoined'), ''].map((h, i) => (
                   <th
                     key={i}
                     className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80"
@@ -312,13 +314,40 @@ export default function UsersPage() {
             <tbody className="divide-y divide-gray-100">
               {users.map((u) => (
                 <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{u.name}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                    {u.role === 'parent' ? (
+                      <Link href={`/admin/users/${u.id}`} className="text-teal hover:underline">
+                        {u.name}
+                      </Link>
+                    ) : (
+                      u.name
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{u.email ?? '—'}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{u.phone ?? '—'}</td>
                   <td className="px-6 py-4">
                     <Badge variant={roleVariant(u.role)}>{roleLabel(tRoles, u.role)}</Badge>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{u._count.linkedStudents}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {u.linkedStudents?.length ? (
+                      <div className="flex flex-col gap-0.5">
+                        {u.linkedStudents.map(({ student }) => (
+                          <Link key={student.id} href={`/admin/students/${student.id}`} className="text-teal hover:underline">
+                            {student.name}
+                            {student.class && (
+                              <span className="text-xs text-gray-500">
+                                {' '}
+                                · {student.class.name}
+                                {student.class.section ? ` ${student.class.section}` : ''}
+                              </span>
+                            )}
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
                     {formatDate(u.createdAt)}
                   </td>

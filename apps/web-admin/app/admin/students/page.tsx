@@ -60,7 +60,13 @@ interface FieldDefinition {
 interface Class {
   id: string;
   name: string;
+  section?: string | null;
   academicYear: string;
+  _count?: { students: number };
+}
+
+function classLabel(c: Class) {
+  return `${c.name}${c.section ? ` ${c.section}` : ''} (${c.academicYear})`;
 }
 
 const makeSchemas = (t: ReturnType<typeof useTranslations<'students'>>, tCommon: ReturnType<typeof useTranslations<'common'>>) => ({
@@ -105,6 +111,8 @@ export default function StudentsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [search, setSearch] = useState('');
+  /** '' = all classes. Starts on the first class once classes load. */
+  const [classFilter, setClassFilter] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const isTeacher = getSession()?.role === 'teacher';
   const [extraFields, setExtraFields] = useState<FieldDefinition[]>([]);
@@ -131,17 +139,15 @@ export default function StudentsPage() {
   const nameValue = useWatch({ control, name: 'name' });
   const editNameValue = useWatch({ control: editControl, name: 'name' });
 
-  async function fetchStudents(q?: string) {
+  async function fetchStudents(q = search, classId = classFilter) {
     try {
       setLoading(true);
-      const qs = q ? `?search=${encodeURIComponent(q)}&limit=100` : '?limit=100';
-      const [studentRes, classRes] = await Promise.all([
-        api.get<{ data: Student[]; meta: { total: number } }>(`/students${qs}`),
-        api.get<Class[]>('/classes'),
-      ]);
+      const params = new URLSearchParams({ limit: '100' });
+      if (q) params.set('search', q);
+      if (classId) params.set('classId', classId);
+      const studentRes = await api.get<{ data: Student[]; meta: { total: number } }>(`/students?${params}`);
       setStudents(studentRes.data);
       setTotal(studentRes.meta.total);
-      setClasses(classRes);
       setError(null);
     } catch (e) {
       setError(errorText(e));
@@ -151,12 +157,41 @@ export default function StudentsPage() {
   }
 
   useEffect(() => {
-    fetchStudents();
+    api
+      .get<Class[]>('/classes')
+      .then((res) => {
+        // Newest year first, then Class 1, 2 … 10 in number order, then section.
+        const sorted = [...res].sort(
+          (a, b) =>
+            b.academicYear.localeCompare(a.academicYear) ||
+            a.name.localeCompare(b.name, undefined, { numeric: true }) ||
+            (a.section ?? '').localeCompare(b.section ?? ''),
+        );
+        setClasses(sorted);
+        const first = sorted[0]?.id ?? '';
+        setClassFilter(first);
+        fetchStudents('', first);
+      })
+      .catch((e) => {
+        setError(errorText(e));
+        setLoading(false);
+      });
   }, []);
+
+  function changeClass(classId: string) {
+    setClassFilter(classId);
+    fetchStudents(search, classId);
+  }
 
   function handleSearch(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     fetchStudents(search);
+  }
+
+  function openAdd() {
+    // New students default to the class being viewed.
+    reset({ classId: classFilter || '' } as Partial<FormData>);
+    setShowModal(true);
   }
 
   async function onSubmit(data: FormData) {
@@ -257,8 +292,15 @@ export default function StudentsPage() {
 
   const classOptions = classes.map((c) => ({
     value: c.id,
-    label: `${c.name} (${c.academicYear})`,
+    label: classLabel(c),
   }));
+  const classFilterOptions = [
+    ...classes.map((c) => ({
+      value: c.id,
+      label: c._count ? t('classOption', { name: classLabel(c), count: c._count.students }) : classLabel(c),
+    })),
+    { value: '', label: t('allClasses') },
+  ];
 
   const relationOptions = (['father', 'mother', 'guardian'] as const).map((value) => ({ value, label: tRelation(value) }));
 
@@ -268,18 +310,31 @@ export default function StudentsPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
-        <form onSubmit={handleSearch} className="flex w-full gap-2 sm:w-auto">
-          <input
-            className="min-w-0 flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-coral focus:ring-1 focus:ring-coral outline-none"
-            placeholder={t('searchPlaceholder')}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <Button variant="secondary" size="sm" type="submit">{tCommon('searchButton')}</Button>
-        </form>
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <div className="w-full sm:w-80">
+            <Select
+              id="student-class-filter"
+              aria-label={t('classFilter')}
+              options={classFilterOptions}
+              value={classFilter ?? ''}
+              onChange={(e) => changeClass(e.target.value)}
+              disabled={classFilter === null}
+              className="!py-1.5"
+            />
+          </div>
+          <form onSubmit={handleSearch} className="flex w-full gap-2 sm:w-auto">
+            <input
+              className="min-w-0 flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-coral focus:ring-1 focus:ring-coral outline-none"
+              placeholder={t('searchPlaceholder')}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <Button variant="secondary" size="sm" type="submit">{tCommon('searchButton')}</Button>
+          </form>
+        </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-gray-500">{t('count', { count: total })}</span>
-          <Button onClick={() => setShowModal(true)}>{t('add')}</Button>
+          <Button onClick={openAdd}>{t('add')}</Button>
         </div>
       </div>
 
@@ -293,14 +348,14 @@ export default function StudentsPage() {
         <EmptyState
           title={t('emptyTitle')}
           description={t('emptyDescription')}
-          action={<Button onClick={() => setShowModal(true)}>{t('add')}</Button>}
+          action={<Button onClick={openAdd}>{t('add')}</Button>}
         />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-cream/60">
               <tr>
-                {[t('colAdmissionNo'), t('colName'), t('colClass'), ...extraFields.map((f) => f.label), t('colDob'), t('colBloodGroup'), t('colEnrolled'), ''].map((h, i) => (
+                {[t('colAdmissionNo'), t('colName'), t('colParent'), t('colClass'), ...extraFields.map((f) => f.label), t('colDob'), t('colBloodGroup'), t('colEnrolled'), ''].map((h, i) => (
                   <th key={i} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-teal/80">
                     {h}
                   </th>
@@ -310,7 +365,7 @@ export default function StudentsPage() {
             <tbody className="divide-y divide-gray-100">
               {students.map((s) => (
                 <tr key={s.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-sm font-mono text-gray-700">{s.admissionNo}</td>
+                  <td className="whitespace-nowrap px-6 py-4 text-sm font-mono text-gray-700">{s.admissionNo}</td>
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">
                     <div className="flex items-center gap-3">
                       <div className="h-9 w-9 overflow-hidden rounded-full border border-gray-200 bg-gray-100">
@@ -322,13 +377,37 @@ export default function StudentsPage() {
                           </div>
                         )}
                       </div>
-                      <Link href={`/admin/students/${s.id}`} className="text-teal hover:underline">
+                      <Link href={`/admin/students/${s.id}`} className="whitespace-nowrap text-teal hover:underline">
                         {s.name}
                       </Link>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {s.class ? `${s.class.name} (${s.class.academicYear})` : '—'}
+                    {s.parents?.length ? (
+                      <div className="flex flex-col gap-0.5">
+                        {[...s.parents]
+                          .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
+                          .map(({ parent, relation }) => (
+                            <Link key={parent.id} href={`/admin/users/${parent.id}`} className="whitespace-nowrap text-teal hover:underline">
+                              {parent.name}
+                              {(['father', 'mother', 'guardian'] as const).some((r) => r === relation) && (
+                                <span className="text-xs text-gray-500">
+                                  {' '}
+                                  · {tRelation(relation as 'father' | 'mother' | 'guardian')}
+                                </span>
+                              )}
+                            </Link>
+                          ))}
+                      </div>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {(() => {
+                      const cls = classes.find((c) => c.id === s.classId);
+                      return cls ? classLabel(cls) : s.class ? `${s.class.name} (${s.class.academicYear})` : '—';
+                    })()}
                   </td>
                   {extraFields.map((f) => (
                     <td key={f.id} className="px-6 py-4 text-sm font-mono text-gray-700">

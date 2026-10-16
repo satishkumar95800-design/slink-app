@@ -31,6 +31,22 @@ const userSelect = {
   createdAt: true,
   updatedAt: true,
   _count: { select: { linkedStudents: true } },
+  // A parent's children (wards), for the console's Users list and parent page.
+  linkedStudents: {
+    select: {
+      relation: true,
+      isPrimary: true,
+      student: {
+        select: {
+          id: true,
+          name: true,
+          admissionNo: true,
+          class: { select: { name: true, section: true, academicYear: true } },
+        },
+      },
+    },
+    orderBy: { student: { name: 'asc' } },
+  },
 } satisfies Prisma.UserSelect;
 
 @Injectable()
