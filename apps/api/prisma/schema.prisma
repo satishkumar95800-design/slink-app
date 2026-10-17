@@ -229,6 +229,7 @@ model Tenant {
   pettyCashPayees          PettyCashPayee[]
   pettyCashEntries         PettyCashEntry[]
   pettyCashCounts          PettyCashCount[]
+  syllabusTopics           SyllabusTopic[]
   hrSetting                HrSetting?
   employees                Employee[]
   employeeDocuments        EmployeeDocument[]
@@ -385,6 +386,7 @@ model Class {
   broadcasts         Broadcast[]
   periodTimings      ClassPeriodTiming[]
   consentForms       ConsentFormClass[]
+  syllabusTopics     SyllabusTopic[]
 
   @@unique([tenantId, name, section, academicYear])
   @@index([tenantId])
@@ -420,6 +422,7 @@ model Subject {
   teacherAssignments TeacherSubject[]
   timetableSlots     TimetableSlot[]
   broadcasts         Broadcast[]
+  syllabusTopics     SyllabusTopic[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -446,6 +449,36 @@ model TeacherSubject {
   @@index([teacherId])
   @@index([classId])
   @@map("teacher_subjects")
+}
+
+// ─── Syllabus (feature flag `syllabus`) ────────────────────────────────────────
+
+/// One topic of a class's subject plan, in teaching order. The admin sets the
+/// list and the date each topic should be finished by; the subject teacher
+/// marks it covered. On time / late is derived from these dates, never stored.
+model SyllabusTopic {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  classId     String    @map("class_id") @db.Uuid
+  subjectId   String    @map("subject_id") @db.Uuid
+  /// Optional chapter or unit name the topic is grouped under.
+  unit        String?
+  title       String
+  sortOrder   Int       @map("sort_order")
+  /// The date the topic should be finished by.
+  plannedBy   DateTime  @map("planned_by") @db.Date
+  /// The day it was taught; null until covered.
+  completedOn DateTime? @map("completed_on") @db.Date
+  completedBy String?   @map("completed_by") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, classId, subjectId, sortOrder])
+  @@map("syllabus_topics")
 }
 
 // ─── Timetable (Addendum 4 / A10) ──────────────────────────────────────────────

@@ -81,6 +81,11 @@ const OPTIONAL_MODULES = [
     name: 'Custom branding',
     help: 'Lets the school change its own background picture, logo and colours. The platform team can still set them.',
   },
+  {
+    key: 'syllabus',
+    name: 'Syllabus progress',
+    help: 'Topic plans with target dates per class and subject; subject teachers tick topics off in the app, parents see how much is covered, the admin sees which subjects are running late.',
+  },
 ] as const;
 
 type ModuleKey = (typeof OPTIONAL_MODULES)[number]['key'];
@@ -94,6 +99,7 @@ const PREMIUM_MODULES: ModuleKey[] = [
   'feeConcession',
   'transferCertificate',
   'pettyCash',
+  'syllabus',
 ];
 
 /** Plans are presets over the optional modules (pricing: Basic / Premium / Gold). */

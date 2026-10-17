@@ -2795,6 +2795,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This consent form is no longer available.'**
   String get consentErrNotFound;
+
+  /// No description provided for @syllabusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Syllabus'**
+  String get syllabusTitle;
+
+  /// No description provided for @syllabusStatusOnTime.
+  ///
+  /// In en, this message translates to:
+  /// **'On time'**
+  String get syllabusStatusOnTime;
+
+  /// No description provided for @syllabusStatusLate.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{1 day late} other{{days} days late}}'**
+  String syllabusStatusLate(int days);
+
+  /// No description provided for @syllabusStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get syllabusStatusCompleted;
+
+  /// No description provided for @syllabusStatusNotPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Not planned'**
+  String get syllabusStatusNotPlanned;
+
+  /// No description provided for @syllabusMineEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not the subject teacher of any class yet.'**
+  String get syllabusMineEmpty;
+
+  /// No description provided for @syllabusSubjectInClass.
+  ///
+  /// In en, this message translates to:
+  /// **'{subject} · {className}'**
+  String syllabusSubjectInClass(String subject, String className);
+
+  /// No description provided for @syllabusNoTopics.
+  ///
+  /// In en, this message translates to:
+  /// **'No topics planned yet'**
+  String get syllabusNoTopics;
+
+  /// No description provided for @syllabusNoTopicsTeacher.
+  ///
+  /// In en, this message translates to:
+  /// **'The school has not planned the topics for this subject yet.'**
+  String get syllabusNoTopicsTeacher;
+
+  /// No description provided for @syllabusCoveredOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{covered} of {total} topics covered · {percent}%'**
+  String syllabusCoveredOf(int covered, int total, int percent);
+
+  /// No description provided for @syllabusNextTopic.
+  ///
+  /// In en, this message translates to:
+  /// **'Next: {title} (by {date})'**
+  String syllabusNextTopic(String title, String date);
+
+  /// No description provided for @syllabusTickHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a topic when you have taught it. Parents see the topics you tick.'**
+  String get syllabusTickHelp;
+
+  /// No description provided for @syllabusPickDateHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'When was this topic taught?'**
+  String get syllabusPickDateHelp;
+
+  /// No description provided for @syllabusMarked.
+  ///
+  /// In en, this message translates to:
+  /// **'Marked as covered'**
+  String get syllabusMarked;
+
+  /// No description provided for @syllabusUnmarked.
+  ///
+  /// In en, this message translates to:
+  /// **'Marked as not covered'**
+  String get syllabusUnmarked;
+
+  /// No description provided for @syllabusUndoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as not covered?'**
+  String get syllabusUndoTitle;
+
+  /// No description provided for @syllabusUndoBody.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{title}\" will show as not covered, for parents too.'**
+  String syllabusUndoBody(String title);
+
+  /// No description provided for @syllabusUndoConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark not covered'**
+  String get syllabusUndoConfirm;
+
+  /// No description provided for @syllabusCoveredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Covered'**
+  String get syllabusCoveredLabel;
+
+  /// No description provided for @syllabusNotCoveredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Not covered yet'**
+  String get syllabusNotCoveredLabel;
+
+  /// No description provided for @syllabusCoveredOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Covered on {date}'**
+  String syllabusCoveredOn(String date);
+
+  /// No description provided for @syllabusDueBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Due by {date}'**
+  String syllabusDueBy(String date);
+
+  /// No description provided for @syllabusLateDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Late: due by {date}'**
+  String syllabusLateDue(String date);
+
+  /// No description provided for @syllabusChildEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'The school hasn\'t shared the syllabus for {name}\'s class yet.'**
+  String syllabusChildEmpty(String name);
+
+  /// No description provided for @syllabusChildIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'How much of each subject has been taught in {name}\'s class ({className}).'**
+  String syllabusChildIntro(String name, String className);
+
+  /// No description provided for @syllabusPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String syllabusPercent(int percent);
+
+  /// No description provided for @syllabusTopicsCovered.
+  ///
+  /// In en, this message translates to:
+  /// **'{covered} of {total} topics covered'**
+  String syllabusTopicsCovered(int covered, int total);
+
+  /// No description provided for @syllabusLastCovered.
+  ///
+  /// In en, this message translates to:
+  /// **'Last topic covered on {date}'**
+  String syllabusLastCovered(String date);
+
+  /// No description provided for @syllabusErrNotTeacher.
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t teach this subject in this class.'**
+  String get syllabusErrNotTeacher;
+
+  /// No description provided for @syllabusErrFutureDate.
+  ///
+  /// In en, this message translates to:
+  /// **'A topic can\'t be marked covered on a future date.'**
+  String get syllabusErrFutureDate;
+
+  /// No description provided for @syllabusErrTopicGone.
+  ///
+  /// In en, this message translates to:
+  /// **'This topic was removed. Pull down to refresh.'**
+  String get syllabusErrTopicGone;
 }
 
 class _AppLocalizationsDelegate

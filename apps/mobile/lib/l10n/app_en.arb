@@ -1106,5 +1106,145 @@
     }
   },
   "consentErrClosed": "The last day to sign has passed.",
-  "consentErrNotFound": "This consent form is no longer available."
+  "consentErrNotFound": "This consent form is no longer available.",
+  "syllabusTitle": "Syllabus",
+  "syllabusStatusOnTime": "On time",
+  "syllabusStatusLate": "{days, plural, =1{1 day late} other{{days} days late}}",
+  "@syllabusStatusLate": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "syllabusStatusCompleted": "Completed",
+  "syllabusStatusNotPlanned": "Not planned",
+  "syllabusMineEmpty": "You are not the subject teacher of any class yet.",
+  "syllabusSubjectInClass": "{subject} · {className}",
+  "@syllabusSubjectInClass": {
+    "placeholders": {
+      "subject": {
+        "type": "String"
+      },
+      "className": {
+        "type": "String"
+      }
+    }
+  },
+  "syllabusNoTopics": "No topics planned yet",
+  "syllabusNoTopicsTeacher": "The school has not planned the topics for this subject yet.",
+  "syllabusCoveredOf": "{covered} of {total} topics covered · {percent}%",
+  "@syllabusCoveredOf": {
+    "placeholders": {
+      "covered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "syllabusNextTopic": "Next: {title} (by {date})",
+  "@syllabusNextTopic": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syllabusTickHelp": "Tap a topic when you have taught it. Parents see the topics you tick.",
+  "syllabusPickDateHelp": "When was this topic taught?",
+  "syllabusMarked": "Marked as covered",
+  "syllabusUnmarked": "Marked as not covered",
+  "syllabusUndoTitle": "Mark as not covered?",
+  "syllabusUndoBody": "\"{title}\" will show as not covered, for parents too.",
+  "@syllabusUndoBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "syllabusUndoConfirm": "Mark not covered",
+  "syllabusCoveredLabel": "Covered",
+  "syllabusNotCoveredLabel": "Not covered yet",
+  "syllabusCoveredOn": "Covered on {date}",
+  "@syllabusCoveredOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syllabusDueBy": "Due by {date}",
+  "@syllabusDueBy": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syllabusLateDue": "Late: due by {date}",
+  "@syllabusLateDue": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syllabusChildEmpty": "The school hasn't shared the syllabus for {name}'s class yet.",
+  "@syllabusChildEmpty": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "syllabusChildIntro": "How much of each subject has been taught in {name}'s class ({className}).",
+  "@syllabusChildIntro": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "className": {
+        "type": "String"
+      }
+    }
+  },
+  "syllabusPercent": "{percent}%",
+  "@syllabusPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "syllabusTopicsCovered": "{covered} of {total} topics covered",
+  "@syllabusTopicsCovered": {
+    "placeholders": {
+      "covered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "syllabusLastCovered": "Last topic covered on {date}",
+  "@syllabusLastCovered": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "syllabusErrNotTeacher": "You don't teach this subject in this class.",
+  "syllabusErrFutureDate": "A topic can't be marked covered on a future date.",
+  "syllabusErrTopicGone": "This topic was removed. Pull down to refresh."
 }

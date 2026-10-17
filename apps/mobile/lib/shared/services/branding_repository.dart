@@ -49,3 +49,8 @@ final timetableEnabledProvider = Provider<bool>((ref) {
 final staffDocumentsEnabledProvider = Provider<bool>((ref) {
   return ref.watch(brandingProvider).valueOrNull?.staffDocumentsEnabled ?? false;
 });
+
+/// Whether the school's plan includes syllabus progress.
+final syllabusEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(brandingProvider).valueOrNull?.syllabusEnabled ?? false;
+});

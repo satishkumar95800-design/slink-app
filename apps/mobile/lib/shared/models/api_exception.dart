@@ -79,6 +79,9 @@ String? translateErrorCode(String? code) {
     'NOT_OWNER' => l.staffDocsErrNotOwner,
     'CONSENT_CLOSED' => l.consentErrClosed,
     'CONSENT_NOT_FOUND' => l.consentErrNotFound,
+    'NOT_SUBJECT_TEACHER' => l.syllabusErrNotTeacher,
+    'DATE_IN_FUTURE' => l.syllabusErrFutureDate,
+    'TOPIC_NOT_FOUND' => l.syllabusErrTopicGone,
     _ => null,
   };
 }

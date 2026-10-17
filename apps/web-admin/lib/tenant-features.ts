@@ -16,6 +16,8 @@ export interface TenantFeatures {
   staffDocuments?: boolean;
   advancedReports?: boolean;
   customBranding?: boolean;
+  /** Syllabus topics and coverage (Premium and Gold). */
+  syllabus?: boolean;
 }
 
 // Keyed by school so signing in to another school in the same tab refetches.

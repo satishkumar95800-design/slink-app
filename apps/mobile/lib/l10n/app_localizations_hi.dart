@@ -1618,4 +1618,133 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get consentErrNotFound => 'यह सहमति पत्र अब उपलब्ध नहीं है।';
+
+  @override
+  String get syllabusTitle => 'पाठ्यक्रम';
+
+  @override
+  String get syllabusStatusOnTime => 'समय पर';
+
+  @override
+  String syllabusStatusLate(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days दिन देर',
+      one: '1 दिन देर',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get syllabusStatusCompleted => 'पूरा';
+
+  @override
+  String get syllabusStatusNotPlanned => 'योजना नहीं';
+
+  @override
+  String get syllabusMineEmpty => 'आप अभी किसी कक्षा के विषय शिक्षक नहीं हैं।';
+
+  @override
+  String syllabusSubjectInClass(String subject, String className) {
+    return '$subject · $className';
+  }
+
+  @override
+  String get syllabusNoTopics => 'अभी कोई पाठ तय नहीं';
+
+  @override
+  String get syllabusNoTopicsTeacher =>
+      'स्कूल ने इस विषय के पाठ अभी तय नहीं किए हैं।';
+
+  @override
+  String syllabusCoveredOf(int covered, int total, int percent) {
+    return '$total में से $covered पाठ पढ़ाए गए · $percent%';
+  }
+
+  @override
+  String syllabusNextTopic(String title, String date) {
+    return 'अगला: $title ($date तक)';
+  }
+
+  @override
+  String get syllabusTickHelp =>
+      'पाठ पढ़ा लेने पर उस पर टैप करें। आपके चिह्नित पाठ अभिभावक देखते हैं।';
+
+  @override
+  String get syllabusPickDateHelp => 'यह पाठ कब पढ़ाया गया?';
+
+  @override
+  String get syllabusMarked => 'पढ़ाया गया चिह्नित किया';
+
+  @override
+  String get syllabusUnmarked => 'नहीं पढ़ाया गया चिह्नित किया';
+
+  @override
+  String get syllabusUndoTitle => 'नहीं पढ़ाया गया चिह्नित करें?';
+
+  @override
+  String syllabusUndoBody(String title) {
+    return '\"$title\" अभिभावकों को भी नहीं पढ़ाया गया दिखेगा।';
+  }
+
+  @override
+  String get syllabusUndoConfirm => 'नहीं पढ़ाया गया';
+
+  @override
+  String get syllabusCoveredLabel => 'पढ़ाया गया';
+
+  @override
+  String get syllabusNotCoveredLabel => 'अभी नहीं पढ़ाया गया';
+
+  @override
+  String syllabusCoveredOn(String date) {
+    return '$date को पढ़ाया गया';
+  }
+
+  @override
+  String syllabusDueBy(String date) {
+    return '$date तक';
+  }
+
+  @override
+  String syllabusLateDue(String date) {
+    return 'देर: $date तक पूरा होना था';
+  }
+
+  @override
+  String syllabusChildEmpty(String name) {
+    return 'स्कूल ने अभी $name की कक्षा का पाठ्यक्रम साझा नहीं किया है।';
+  }
+
+  @override
+  String syllabusChildIntro(String name, String className) {
+    return '$name की कक्षा ($className) में हर विषय कितना पढ़ाया गया है।';
+  }
+
+  @override
+  String syllabusPercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String syllabusTopicsCovered(int covered, int total) {
+    return '$total में से $covered पाठ पढ़ाए गए';
+  }
+
+  @override
+  String syllabusLastCovered(String date) {
+    return 'आखिरी पाठ $date को पढ़ाया गया';
+  }
+
+  @override
+  String get syllabusErrNotTeacher => 'आप इस कक्षा में यह विषय नहीं पढ़ाते।';
+
+  @override
+  String get syllabusErrFutureDate =>
+      'भविष्य की तारीख पर पाठ को पढ़ाया गया नहीं चिह्नित कर सकते।';
+
+  @override
+  String get syllabusErrTopicGone =>
+      'यह पाठ हटा दिया गया है। रीफ़्रेश करने के लिए नीचे खींचें।';
 }

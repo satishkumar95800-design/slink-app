@@ -43,6 +43,11 @@ export class UpdatePlatformFeaturesDto extends UpdateFeaturesDto {
   @IsOptional()
   staffDocuments?: boolean;
 
+  /** Syllabus topics, target dates and coverage (Premium). */
+  @IsBoolean()
+  @IsOptional()
+  syllabus?: boolean;
+
   /** Attendance report and fee reports with CSV export (Premium). */
   @IsBoolean()
   @IsOptional()

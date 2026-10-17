@@ -22,7 +22,9 @@ export type OptionalFeature =
   /** Attendance report and the fee reports (/insights) with CSV export. */
   | 'advancedReports'
   /** The school changing its own logo, background and colours. */
-  | 'customBranding';
+  | 'customBranding'
+  /** Syllabus topics with target dates, ticked off by subject teachers (Premium). */
+  | 'syllabus';
 
 export async function isFeatureEnabled(
   prisma: PrismaService,

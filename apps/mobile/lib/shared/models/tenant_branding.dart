@@ -27,6 +27,9 @@ class TenantBranding {
   /// Plan module (Premium and Gold): shared staff documents.
   bool get staffDocumentsEnabled => features['staffDocuments'] == true;
 
+  /// Plan module (Premium and Gold): syllabus topics and coverage.
+  bool get syllabusEnabled => features['syllabus'] == true;
+
   factory TenantBranding.fromJson(Map<String, dynamic> json) => TenantBranding(
         id: json['id'] as String,
         name: json['name'] as String,

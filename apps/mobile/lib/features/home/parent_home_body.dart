@@ -141,6 +141,13 @@ class _ParentHomeBodyState extends ConsumerState<ParentHomeBody> {
                       color: FeatureColors.reports,
                       onTap: () => context.push('/dashboard/reports'),
                     ),
+                    if (ref.watch(syllabusEnabledProvider))
+                      FeatureTile(
+                        icon: Icons.checklist_rounded,
+                        label: l.syllabusTitle,
+                        color: FeatureColors.syllabus,
+                        onTap: () => context.push('/syllabus/child/${child.id}'),
+                      ),
                     if (ref.watch(calendarEnabledProvider))
                       FeatureTile(
                         icon: Icons.calendar_month_rounded,

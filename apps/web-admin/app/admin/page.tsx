@@ -14,6 +14,7 @@ import {
   GraduationCap,
   Hourglass,
   LayoutGrid,
+  ListChecks,
   Megaphone,
   ReceiptIndianRupee,
   TrendingUp,
@@ -35,6 +36,8 @@ import { TransferCertificateReport } from './transfer-certificates-report';
 import { AlertReason, AlertsBanner, AlertsList, useAlerts } from './alerts-panel';
 import { AskBox, AssistantThread } from './assistant-panel';
 import { AttendanceSplit, ChartCard, FeeDonut, HBarChart, Ring, TrendChart } from './dashboard-charts';
+import { SyllabusRoadmap, SyllabusSummary, syllabusCounts } from './syllabus-panel';
+import type { OverviewRow as SyllabusRow } from './syllabus/types';
 
 interface Stats {
   userCount: number;
@@ -114,7 +117,7 @@ function readView(): DashboardView {
   }
 }
 
-type PanelKey = 'notify' | 'attendance' | 'workload' | 'forecast' | 'payments' | 'routine' | 'classes' | 'tc' | 'insights' | 'ask';
+type PanelKey = 'notify' | 'attendance' | 'workload' | 'forecast' | 'payments' | 'routine' | 'classes' | 'tc' | 'insights' | 'ask' | 'syllabus';
 
 /** Colours per section: icon square, and the soft glow in the card's corner. */
 const ACCENTS = {
@@ -274,7 +277,10 @@ export default function DashboardPage() {
   const isTeacher = session?.role === 'teacher';
   const isAdmin = session?.role === 'admin';
   const isAccounts = session?.role === 'accounts';
-  const { feeConcession, transferCertificate, aiInsights } = useTenantFeatures();
+  const tSyllabus = useTranslations('syllabus');
+  const { feeConcession, transferCertificate, aiInsights, syllabus } = useTenantFeatures();
+  // Syllabus roadmap: admin only (on time / late is for the school, not parents).
+  const [syllabusRows, setSyllabusRows] = useState<SyllabusRow[] | null | undefined>(undefined);
   // Premium pattern warnings (docs/SPEC-ai.md phase 2) and the Monday summary.
   const { alerts, setAlerts } = useAlerts(!!aiInsights);
   // Premium: plain-language questions (docs/SPEC-ai.md 3.1); the first one comes from the header box.
@@ -360,6 +366,14 @@ export default function DashboardPage() {
       .then(setAttendance)
       .catch(() => setAttendance(null));
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (!syllabus || !isAdmin) return;
+    api
+      .get<SyllabusRow[]>('/syllabus/overview')
+      .then(setSyllabusRows)
+      .catch(() => setSyllabusRows(null));
+  }, [syllabus, isAdmin]);
 
   useEffect(() => {
     if (!feeConcession || !(isAdmin || isAccounts)) return;
@@ -577,6 +591,17 @@ export default function DashboardPage() {
                 />
               </ChartCard>
             )}
+            {isAdmin && syllabus && syllabusRows && syllabusRows.length > 0 && (
+              <ChartCard
+                title={tSyllabus('dashboardTitle')}
+                subtitle={tSyllabus('dashboardSubtitle')}
+                icon={<ListChecks className="h-5 w-5" />}
+                accent={ACCENTS.indigo.chip}
+                onOpen={() => setPanel('syllabus')}
+              >
+                <SyllabusSummary rows={syllabusRows} />
+              </ChartCard>
+            )}
             {recent.length > 0 && (
               <ChartCard
                 title={t('recentPayments')}
@@ -666,6 +691,30 @@ export default function DashboardPage() {
               accent="violet"
               loading={workload === undefined}
               onClick={() => setPanel('workload')}
+            />
+          )}
+          {isAdmin && syllabus && syllabusRows !== null && (
+            <FeatureCard
+              icon={<ListChecks className="h-5 w-5" />}
+              title={tSyllabus('dashboardTitle')}
+              value={
+                syllabusRows
+                  ? syllabusCounts(syllabusRows).late > 0
+                    ? tSyllabus('lateValue', { count: syllabusCounts(syllabusRows).late })
+                    : tSyllabus('allOnTimeShort')
+                  : undefined
+              }
+              caption={
+                syllabusRows
+                  ? tSyllabus('cardCaption', {
+                      onTime: syllabusCounts(syllabusRows).on_time,
+                      notPlanned: syllabusCounts(syllabusRows).not_planned,
+                    })
+                  : undefined
+              }
+              accent="indigo"
+              loading={syllabusRows === undefined}
+              onClick={() => setPanel('syllabus')}
             />
           )}
           {!isTeacher && forecast !== null && (
@@ -833,6 +882,19 @@ export default function DashboardPage() {
           accent={ACCENTS.amber.chip}
         >
           <PaymentsPanel payments={recent} />
+        </Drawer>
+      )}
+
+      {isAdmin && syllabusRows && (
+        <Drawer
+          open={panel === 'syllabus'}
+          onClose={close}
+          title={tSyllabus('dashboardTitle')}
+          subtitle={tSyllabus('dashboardSubtitle')}
+          icon={<ListChecks className="h-5 w-5" />}
+          accent={ACCENTS.indigo.chip}
+        >
+          <SyllabusRoadmap rows={syllabusRows} />
         </Drawer>
       )}
 

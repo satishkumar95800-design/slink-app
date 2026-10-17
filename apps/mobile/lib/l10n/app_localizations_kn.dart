@@ -1619,4 +1619,134 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get consentErrNotFound => 'ಈ ಒಪ್ಪಿಗೆ ಪತ್ರ ಈಗ ಲಭ್ಯವಿಲ್ಲ.';
+
+  @override
+  String get syllabusTitle => 'ಪಠ್ಯಕ್ರಮ';
+
+  @override
+  String get syllabusStatusOnTime => 'ಸಮಯಕ್ಕೆ ಸರಿಯಾಗಿ';
+
+  @override
+  String syllabusStatusLate(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days ದಿನ ತಡ',
+      one: '1 ದಿನ ತಡ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get syllabusStatusCompleted => 'ಮುಗಿದಿದೆ';
+
+  @override
+  String get syllabusStatusNotPlanned => 'ಯೋಜಿಸಿಲ್ಲ';
+
+  @override
+  String get syllabusMineEmpty => 'ನೀವು ಇನ್ನೂ ಯಾವುದೇ ತರಗತಿಯ ವಿಷಯ ಶಿಕ್ಷಕರಲ್ಲ.';
+
+  @override
+  String syllabusSubjectInClass(String subject, String className) {
+    return '$subject · $className';
+  }
+
+  @override
+  String get syllabusNoTopics => 'ಇನ್ನೂ ಪಾಠಗಳನ್ನು ಯೋಜಿಸಿಲ್ಲ';
+
+  @override
+  String get syllabusNoTopicsTeacher =>
+      'ಶಾಲೆ ಈ ವಿಷಯದ ಪಾಠಗಳನ್ನು ಇನ್ನೂ ಯೋಜಿಸಿಲ್ಲ.';
+
+  @override
+  String syllabusCoveredOf(int covered, int total, int percent) {
+    return '$total ರಲ್ಲಿ $covered ಪಾಠಗಳು ಮುಗಿದಿವೆ · $percent%';
+  }
+
+  @override
+  String syllabusNextTopic(String title, String date) {
+    return 'ಮುಂದಿನದು: $title ($date ರೊಳಗೆ)';
+  }
+
+  @override
+  String get syllabusTickHelp =>
+      'ಪಾಠವನ್ನು ಕಲಿಸಿದ ನಂತರ ಅದರ ಮೇಲೆ ಒತ್ತಿ. ನೀವು ಗುರುತಿಸಿದ ಪಾಠಗಳನ್ನು ಪೋಷಕರು ನೋಡುತ್ತಾರೆ.';
+
+  @override
+  String get syllabusPickDateHelp => 'ಈ ಪಾಠವನ್ನು ಯಾವಾಗ ಕಲಿಸಲಾಯಿತು?';
+
+  @override
+  String get syllabusMarked => 'ಮುಗಿದಿದೆ ಎಂದು ಗುರುತಿಸಲಾಗಿದೆ';
+
+  @override
+  String get syllabusUnmarked => 'ಮುಗಿದಿಲ್ಲ ಎಂದು ಗುರುತಿಸಲಾಗಿದೆ';
+
+  @override
+  String get syllabusUndoTitle => 'ಮುಗಿದಿಲ್ಲ ಎಂದು ಗುರುತಿಸಬೇಕೇ?';
+
+  @override
+  String syllabusUndoBody(String title) {
+    return '\"$title\" ಮುಗಿದಿಲ್ಲ ಎಂದು ತೋರುತ್ತದೆ, ಪೋಷಕರಿಗೂ.';
+  }
+
+  @override
+  String get syllabusUndoConfirm => 'ಮುಗಿದಿಲ್ಲ ಎಂದು ಗುರುತಿಸಿ';
+
+  @override
+  String get syllabusCoveredLabel => 'ಮುಗಿದಿದೆ';
+
+  @override
+  String get syllabusNotCoveredLabel => 'ಇನ್ನೂ ಮುಗಿದಿಲ್ಲ';
+
+  @override
+  String syllabusCoveredOn(String date) {
+    return '$date ರಂದು ಮುಗಿದಿದೆ';
+  }
+
+  @override
+  String syllabusDueBy(String date) {
+    return '$date ರೊಳಗೆ';
+  }
+
+  @override
+  String syllabusLateDue(String date) {
+    return 'ತಡ: $date ರೊಳಗೆ ಮುಗಿಯಬೇಕಿತ್ತು';
+  }
+
+  @override
+  String syllabusChildEmpty(String name) {
+    return '$name ಅವರ ತರಗತಿಯ ಪಠ್ಯಕ್ರಮವನ್ನು ಶಾಲೆ ಇನ್ನೂ ಹಂಚಿಕೊಂಡಿಲ್ಲ.';
+  }
+
+  @override
+  String syllabusChildIntro(String name, String className) {
+    return '$name ಅವರ ತರಗತಿಯಲ್ಲಿ ($className) ಪ್ರತಿ ವಿಷಯ ಎಷ್ಟು ಕಲಿಸಲಾಗಿದೆ.';
+  }
+
+  @override
+  String syllabusPercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String syllabusTopicsCovered(int covered, int total) {
+    return '$total ರಲ್ಲಿ $covered ಪಾಠಗಳು ಮುಗಿದಿವೆ';
+  }
+
+  @override
+  String syllabusLastCovered(String date) {
+    return 'ಕೊನೆಯ ಪಾಠ $date ರಂದು ಮುಗಿದಿದೆ';
+  }
+
+  @override
+  String get syllabusErrNotTeacher =>
+      'ನೀವು ಈ ತರಗತಿಯಲ್ಲಿ ಈ ವಿಷಯವನ್ನು ಕಲಿಸುವುದಿಲ್ಲ.';
+
+  @override
+  String get syllabusErrFutureDate =>
+      'ಮುಂದಿನ ದಿನಾಂಕದಲ್ಲಿ ಪಾಠವನ್ನು ಮುಗಿದಿದೆ ಎಂದು ಗುರುತಿಸಲಾಗದು.';
+
+  @override
+  String get syllabusErrTopicGone =>
+      'ಈ ಪಾಠವನ್ನು ತೆಗೆದುಹಾಕಲಾಗಿದೆ. ನವೀಕರಿಸಲು ಕೆಳಗೆ ಎಳೆಯಿರಿ.';
 }

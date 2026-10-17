@@ -1617,4 +1617,135 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get consentErrNotFound => 'This consent form is no longer available.';
+
+  @override
+  String get syllabusTitle => 'Syllabus';
+
+  @override
+  String get syllabusStatusOnTime => 'On time';
+
+  @override
+  String syllabusStatusLate(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days late',
+      one: '1 day late',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get syllabusStatusCompleted => 'Completed';
+
+  @override
+  String get syllabusStatusNotPlanned => 'Not planned';
+
+  @override
+  String get syllabusMineEmpty =>
+      'You are not the subject teacher of any class yet.';
+
+  @override
+  String syllabusSubjectInClass(String subject, String className) {
+    return '$subject · $className';
+  }
+
+  @override
+  String get syllabusNoTopics => 'No topics planned yet';
+
+  @override
+  String get syllabusNoTopicsTeacher =>
+      'The school has not planned the topics for this subject yet.';
+
+  @override
+  String syllabusCoveredOf(int covered, int total, int percent) {
+    return '$covered of $total topics covered · $percent%';
+  }
+
+  @override
+  String syllabusNextTopic(String title, String date) {
+    return 'Next: $title (by $date)';
+  }
+
+  @override
+  String get syllabusTickHelp =>
+      'Tap a topic when you have taught it. Parents see the topics you tick.';
+
+  @override
+  String get syllabusPickDateHelp => 'When was this topic taught?';
+
+  @override
+  String get syllabusMarked => 'Marked as covered';
+
+  @override
+  String get syllabusUnmarked => 'Marked as not covered';
+
+  @override
+  String get syllabusUndoTitle => 'Mark as not covered?';
+
+  @override
+  String syllabusUndoBody(String title) {
+    return '\"$title\" will show as not covered, for parents too.';
+  }
+
+  @override
+  String get syllabusUndoConfirm => 'Mark not covered';
+
+  @override
+  String get syllabusCoveredLabel => 'Covered';
+
+  @override
+  String get syllabusNotCoveredLabel => 'Not covered yet';
+
+  @override
+  String syllabusCoveredOn(String date) {
+    return 'Covered on $date';
+  }
+
+  @override
+  String syllabusDueBy(String date) {
+    return 'Due by $date';
+  }
+
+  @override
+  String syllabusLateDue(String date) {
+    return 'Late: due by $date';
+  }
+
+  @override
+  String syllabusChildEmpty(String name) {
+    return 'The school hasn\'t shared the syllabus for $name\'s class yet.';
+  }
+
+  @override
+  String syllabusChildIntro(String name, String className) {
+    return 'How much of each subject has been taught in $name\'s class ($className).';
+  }
+
+  @override
+  String syllabusPercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String syllabusTopicsCovered(int covered, int total) {
+    return '$covered of $total topics covered';
+  }
+
+  @override
+  String syllabusLastCovered(String date) {
+    return 'Last topic covered on $date';
+  }
+
+  @override
+  String get syllabusErrNotTeacher =>
+      'You don\'t teach this subject in this class.';
+
+  @override
+  String get syllabusErrFutureDate =>
+      'A topic can\'t be marked covered on a future date.';
+
+  @override
+  String get syllabusErrTopicGone =>
+      'This topic was removed. Pull down to refresh.';
 }

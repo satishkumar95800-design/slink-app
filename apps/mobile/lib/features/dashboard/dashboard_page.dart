@@ -184,6 +184,13 @@ class _TeacherDashboardBody extends ConsumerWidget {
                         onTap: () => context.push('/hrms/leave'),
                       ),
                     ],
+                    if (ref.watch(syllabusEnabledProvider))
+                      FeatureTile(
+                        icon: Icons.checklist_rounded,
+                        label: l.syllabusTitle,
+                        color: FeatureColors.syllabus,
+                        onTap: () => context.push('/syllabus'),
+                      ),
                     if (ref.watch(staffDocumentsEnabledProvider))
                       FeatureTile(
                         icon: Icons.folder_shared_rounded,
