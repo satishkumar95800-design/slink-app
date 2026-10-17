@@ -162,3 +162,27 @@ export const TERMS = [
 /** Same WhatsApp number as the marketing site (web-admin lib/marketing-config.ts). */
 export const CONTACT_LINE =
   'Book a free demo: WhatsApp +91 77957 57002 · schoolinkd.in';
+
+/**
+ * Schools with several branches (docs/SPEC-franchise.md §5): each branch pays
+ * by its size with Premium features, Premium Max adds a fixed amount, branch
+ * fees get a volume discount, and the head office pays a yearly fee that is
+ * waived for large groups. Groups of 1–2 branches pay single-school prices.
+ */
+export const FRANCHISE_PRICING = {
+  minBranches: 3,
+  bands: [
+    { upTo: 150, price: 12000, label: 'Up to 150 students' },
+    { upTo: 500, price: 20000, label: '151 to 500 students' },
+    { upTo: 1000, price: 29999, label: '501 to 1,000 students' },
+  ],
+  /** Per student above the largest band. */
+  extraStudent: 30,
+  premiumMaxAddOn: 12000,
+  discounts: [
+    { minBranches: 25, percent: 20 },
+    { minBranches: 10, percent: 15 },
+    { minBranches: 3, percent: 10 },
+  ],
+  headOffice: { price: 15000, freeFromBranches: 10 },
+} as const;

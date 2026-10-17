@@ -17,7 +17,7 @@ export interface Subscription {
   daysLeft: number;
   graceDaysLeft: number | null;
   addOns: string[];
-  yearlyAmount: { plan: number; addOns: number; extraStudents: number; extraStudentsAmount: number; total: number };
+  yearlyAmount: { plan: number; addOns: number; extraStudents: number; extraStudentsAmount: number; total: number; groupDiscountPercent?: number };
 }
 
 export const PLANS: { key: PlanKey; name: string; price: number; students: number; extraStudent: number }[] = [
@@ -52,6 +52,7 @@ export const MODULES = [
   { key: 'pettyCash', group: 'premium', name: 'Petty cash', help: 'Cash ledger with approvals, advances, notes in hand and savings advice.' },
   { key: 'customBranding', group: 'premium', name: 'School background and colours', help: 'The school changes its own background, logo and colours.' },
   { key: 'syllabus', group: 'premium', name: 'Syllabus progress', help: 'Topic plans with target dates; teachers tick topics off, parents see coverage, the admin sees subjects running late.' },
+  { key: 'admissions', group: 'premium', name: 'Admissions pipeline', help: 'Enquiry, campus tour, follow-up, registration and enrolment, with follow-up reminders and a funnel (also on the head office view).' },
   { key: 'hrms', group: 'premium_max', name: 'HR and payroll', help: 'Staff records, attendance, leave, pay runs with PF, ESI, PT and payslips. Add-on for Premium (₹18,000).' },
   { key: 'aiInsights', group: 'premium_max', name: 'AI features', help: 'AI assistant, notice translation, report remarks, early warnings and Monday summary. Add-on for Premium (₹15,000).' },
 ] as const satisfies readonly { key: string; group: ModuleGroup; name: string; help: string }[];
@@ -114,4 +115,50 @@ export function oneYearFrom(start: string) {
   const [y, m, d] = start.split('-').map(Number);
   if (m === 2 && d === 29) return `${y + 1}-02-28`;
   return addDays(`${y + 1}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`, -1);
+}
+
+/**
+ * Group (franchise) pricing, mirroring FRANCHISE_PRICING in the API's
+ * pricing-plans.ts (docs/SPEC-franchise.md §5). Used by the quote calculator.
+ */
+export const FRANCHISE = {
+  minBranches: 3,
+  bands: [
+    { upTo: 150, price: 12000, label: 'Up to 150 students' },
+    { upTo: 500, price: 20000, label: '151 to 500 students' },
+    { upTo: 1000, price: 29999, label: '501 to 1,000 students' },
+  ],
+  extraStudent: 30,
+  premiumMaxAddOn: 12000,
+  discounts: [
+    { minBranches: 25, percent: 20 },
+    { minBranches: 10, percent: 15 },
+    { minBranches: 3, percent: 10 },
+  ],
+  headOffice: { price: 15000, freeFromBranches: 10 },
+} as const;
+
+export interface GroupQuote {
+  groupPricing: boolean;
+  discountPercent: number;
+  branches: { id: string; name: string; students: number; listPrice: number; price: number }[];
+  branchesTotal: number;
+  headOfficeFee: number;
+  total: number;
+}
+
+/** Estimate for N branches of about the same size (sales calculator). */
+export function estimateGroup(branches: number, studentsEach: number, premiumMax: boolean) {
+  const band = FRANCHISE.bands.find((b) => studentsEach <= b.upTo);
+  const last = FRANCHISE.bands[FRANCHISE.bands.length - 1];
+  const list = (band ? band.price : last.price + (studentsEach - last.upTo) * FRANCHISE.extraStudent) + (premiumMax ? FRANCHISE.premiumMaxAddOn : 0);
+  const groupPricing = branches >= FRANCHISE.minBranches;
+  const discount = groupPricing ? (FRANCHISE.discounts.find((d) => branches >= d.minBranches)?.percent ?? 0) : 0;
+  const single = PLANS.find((p) => p.key === (premiumMax ? 'premium_max' : 'premium'))!;
+  const perBranch = groupPricing
+    ? Math.round(list * (1 - discount / 100))
+    : single.price + Math.max(0, studentsEach - single.students) * single.extraStudent;
+  const headOffice = branches >= 2 && branches < FRANCHISE.headOffice.freeFromBranches ? FRANCHISE.headOffice.price : 0;
+  const total = perBranch * branches + headOffice;
+  return { groupPricing, discount, list, perBranch, headOffice, total, perChild: branches * studentsEach ? Math.round(total / (branches * studentsEach)) : 0 };
 }

@@ -48,6 +48,11 @@ export class UpdatePlatformFeaturesDto extends UpdateFeaturesDto {
   @IsOptional()
   syllabus?: boolean;
 
+  /** Admissions pipeline (Premium). */
+  @IsBoolean()
+  @IsOptional()
+  admissions?: boolean;
+
   /** Attendance report and fee reports with CSV export (Premium). */
   @IsBoolean()
   @IsOptional()

@@ -1,5 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, Role, SubscriptionPlan } from '@prisma/client';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  NotificationChannel,
+  Prisma,
+  Role,
+  SubscriptionPlan,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { ActiveUser } from '../../common/types/active-user.type';
 import {
@@ -9,6 +19,11 @@ import {
   subscriptionState,
 } from '../../common/subscription';
 import { fromDbDate, todayIn, toDbDate } from '../attendance/attendance-dates';
+import { academicYearStart, Funnel } from '../admissions/admissions.math';
+import { funnelFor } from '../admissions/admissions.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { BroadcastTarget } from '../notifications/dto/broadcast-notification.dto';
+import { CreateCircularDto } from './dto/groups.dto';
 
 const err = (code: string, message: string) => ({ code, message });
 
@@ -69,7 +84,39 @@ export interface BranchMetrics {
     onTime: number;
     onTimePct: number | null;
   } | null;
+  /** Attendance marked by the group's cutoff today (docs/SPEC-franchise.md §2). */
+  compliance: {
+    state: 'holiday' | 'done' | 'pending' | 'late';
+    classes: number;
+    notMarked: number;
+  };
+  /** This academic year's admissions funnel, when the school uses admissions. */
+  admissions: Funnel | null;
 }
+
+/** One branch on the overview: plan access, and its numbers when it has data. */
+export interface BranchOverview {
+  id: string;
+  name: string;
+  plan: SubscriptionPlan;
+  planName: string;
+  included: boolean;
+  status: SubscriptionStatus;
+  available: boolean;
+  metrics: BranchMetrics | null;
+}
+
+/** HH:MM now in a timezone. */
+const nowIn = (timeZone: string) =>
+  new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(new Date());
+
+const isSunday = (ymd: string) =>
+  new Date(`${ymd}T00:00:00Z`).getUTCDay() === 0;
 
 /**
  * Head office (franchise) view: read-only numbers for the schools of the
@@ -78,20 +125,31 @@ export interface BranchMetrics {
  */
 @Injectable()
 export class HeadOfficeService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(HeadOfficeService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async overview(user: ActiveUser) {
     const group = await this.groupOf(user);
-    if (!group) return { group: null, totals: null, branches: [] };
+    if (!group)
+      return {
+        group: null,
+        totals: null,
+        attendanceCutoff: null,
+        branches: [] as BranchOverview[],
+      };
     const branches = await this.prisma.tenant.findMany({
       where: { groupId: group.id },
       select: branchSelect,
       orderBy: { name: 'asc' },
     });
     const live = branches.filter((b) => this.access(b).available);
-    const metrics = await this.metrics(live);
+    const metrics = await this.metrics(live, group.attendanceCutoff);
 
-    const rows = branches.map((b) => {
+    const rows = branches.map((b): BranchOverview => {
       const a = this.access(b);
       return {
         id: b.id,
@@ -121,7 +179,11 @@ export class HeadOfficeService {
         collectionPct: pct(collected, collected + outstanding),
         overdueCount: sum((x) => x.fees.overdueCount),
         noticesLast30: sum((x) => x.noticesLast30),
+        lateAttendance: m.filter((x) => x.compliance.state === 'late').length,
+        enquiries: sum((x) => x.admissions?.enquiries ?? 0),
+        enrolled: sum((x) => x.admissions?.enrolled ?? 0),
       },
+      attendanceCutoff: group.attendanceCutoff,
       branches: rows,
     };
   }
@@ -162,7 +224,7 @@ export class HeadOfficeService {
     const from30 = addDays(today, -29);
     const [metrics, classes, attByClass, feesByClass, monthly, daily] =
       await Promise.all([
-        this.metrics([b]).then((x) => x.get(b.id)!),
+        this.metrics([b], group!.attendanceCutoff).then((x) => x.get(b.id)!),
         this.prisma.class.findMany({
           where: { tenantId: b.id, students: { some: {} } },
           select: {
@@ -265,13 +327,157 @@ export class HeadOfficeService {
     };
   }
 
+  // ── circulars (the only thing a head office creates) ──────────────────────
+
+  /**
+   * Sends a circular to the staff (and optionally the parents) of the chosen
+   * branches of the user's own group, or all of them. Only branches with data
+   * (Premium / Premium Max, not switched off) receive it.
+   */
+  async createCircular(user: ActiveUser, dto: CreateCircularDto) {
+    const group = await this.groupOf(user);
+    if (!group)
+      throw new NotFoundException(
+        err('GROUP_NOT_FOUND', 'Your login is not linked to a group'),
+      );
+    const branches = await this.prisma.tenant.findMany({
+      where: { groupId: group.id },
+      select: branchSelect,
+    });
+    const wanted = dto.tenantIds?.length ? new Set(dto.tenantIds) : null;
+    if (wanted && [...wanted].some((id) => !branches.some((b) => b.id === id)))
+      throw new NotFoundException(
+        err('BRANCH_NOT_IN_GROUP', 'This school is not part of your group'),
+      );
+    const targets = branches.filter(
+      (b) => this.access(b).available && (!wanted || wanted.has(b.id)),
+    );
+    if (targets.length === 0)
+      throw new BadRequestException(
+        err('NO_BRANCHES', 'None of the chosen schools can receive circulars'),
+      );
+    const circular = await this.prisma.$transaction(async (tx) => {
+      const c = await tx.groupCircular.create({
+        data: {
+          groupId: group.id,
+          title: dto.title,
+          body: dto.body,
+          audience: dto.audience,
+          createdBy: user.id,
+          branches: { create: targets.map((b) => ({ tenantId: b.id })) },
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          tenantId: null,
+          actorId: user.id,
+          action: 'group.circular.create',
+          entityType: 'group_circular',
+          entityId: c.id,
+          diff: {
+            groupId: group.id,
+            title: dto.title,
+            audience: dto.audience,
+            tenantIds: targets.map((b) => b.id),
+          },
+        },
+      });
+      return c;
+    });
+    // Delivery can take a while (push per person); the counts fill in as it runs.
+    void this.deliver(circular.id, dto, targets, user).catch((e: unknown) =>
+      this.logger.error(`Circular ${circular.id} delivery failed`, e as Error),
+    );
+    return (await this.listCirculars(user)).find((c) => c.id === circular.id)!;
+  }
+
+  async listCirculars(user: ActiveUser) {
+    const group = await this.groupOf(user);
+    if (!group) return [];
+    const rows = await this.prisma.groupCircular.findMany({
+      where: { groupId: group.id },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: {
+        branches: { include: { tenant: { select: { name: true } } } },
+      },
+    });
+    const names = new Map(
+      (
+        await this.prisma.user.findMany({
+          where: { id: { in: [...new Set(rows.map((r) => r.createdBy))] } },
+          select: { id: true, name: true },
+        })
+      ).map((u) => [u.id, u.name]),
+    );
+    return rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      body: r.body,
+      audience: r.audience,
+      createdAt: r.createdAt,
+      createdBy: names.get(r.createdBy) ?? '',
+      branches: r.branches.map((b) => ({
+        tenantId: b.tenantId,
+        name: b.tenant.name,
+        staffCount: b.staffCount,
+        parentCount: b.parentCount,
+      })),
+    }));
+  }
+
+  private async deliver(
+    circularId: string,
+    dto: CreateCircularDto,
+    targets: BranchRow[],
+    user: ActiveUser,
+  ) {
+    for (const b of targets) {
+      const staff = await this.prisma.user.findMany({
+        where: { tenantId: b.id, role: { in: STAFF } },
+        select: { id: true },
+      });
+      for (const s of staff)
+        await this.notifications.send({
+          tenantId: b.id,
+          userId: s.id,
+          channel: NotificationChannel.fcm,
+          title: dto.title,
+          body: dto.body,
+          data: { type: 'circular', circularId },
+        });
+      let parents = 0;
+      if (dto.audience === 'staff_and_parents') {
+        const r = await this.notifications.broadcast(
+          b.id,
+          {
+            channel: NotificationChannel.fcm,
+            title: dto.title,
+            body: dto.body,
+            targetType: BroadcastTarget.ALL_PARENTS,
+            kind: 'notice',
+          },
+          user,
+        );
+        parents = r.queued;
+      }
+      await this.prisma.groupCircularBranch.update({
+        where: { circularId_tenantId: { circularId, tenantId: b.id } },
+        data: { staffCount: staff.length, parentCount: parents },
+      });
+    }
+  }
+
   // ── internals ─────────────────────────────────────────────────────────────
 
   /** The signed-in head office user's group, read from their own row. */
   private async groupOf(user: ActiveUser) {
     const row = await this.prisma.user.findUnique({
       where: { id: user.id },
-      select: { role: true, group: { select: { id: true, name: true } } },
+      select: {
+        role: true,
+        group: { select: { id: true, name: true, attendanceCutoff: true } },
+      },
     });
     return row?.role === Role.head_office ? row.group : null;
   }
@@ -297,6 +503,7 @@ export class HeadOfficeService {
   /** Headline numbers for several branches in a few grouped queries. */
   private async metrics(
     branches: BranchRow[],
+    cutoff: string,
   ): Promise<Map<string, BranchMetrics>> {
     const out = new Map<string, BranchMetrics>();
     if (branches.length === 0) return out;
@@ -307,6 +514,43 @@ export class HeadOfficeService {
     const days = [...new Set(todayOf.values())];
     const since30 = new Date(Date.now() - 30 * 86_400_000);
     const earliest = days.sort()[0];
+
+    const admissionIds = branches
+      .filter(
+        (b) => (b.features as Record<string, unknown>)?.admissions === true,
+      )
+      .map((b) => b.id);
+    const [classStudents, markedClasses, holidays, funnels] = await Promise.all(
+      [
+        this.prisma.student.groupBy({
+          by: ['tenantId', 'classId'],
+          where: { tenantId: { in: ids } },
+        }),
+        this.prisma.attendanceRecord.groupBy({
+          by: ['tenantId', 'classId', 'date'],
+          where: { tenantId: { in: ids }, date: { in: days.map(toDbDate) } },
+        }),
+        this.prisma.schoolHoliday.findMany({
+          where: { tenantId: { in: ids }, date: { in: days.map(toDbDate) } },
+          select: { tenantId: true, date: true },
+        }),
+        admissionIds.length
+          ? funnelFor(this.prisma, admissionIds, academicYearStart(earliest))
+          : Promise.resolve(new Map<string, Funnel>()),
+      ],
+    );
+    const classesBy = new Map<string, number>();
+    for (const c of classStudents)
+      classesBy.set(c.tenantId, (classesBy.get(c.tenantId) ?? 0) + 1);
+    const markedBy = new Map<string, number>();
+    for (const r of markedClasses)
+      if (fromDbDate(r.date) === todayOf.get(r.tenantId))
+        markedBy.set(r.tenantId, (markedBy.get(r.tenantId) ?? 0) + 1);
+    const holidayBy = new Set(
+      holidays
+        .filter((h) => fromDbDate(h.date) === todayOf.get(h.tenantId))
+        .map((h) => h.tenantId),
+    );
 
     const [staff, attToday, att30, fees, notices, appUse, syllabus] =
       await Promise.all([
@@ -426,6 +670,21 @@ export class HeadOfficeService {
                 ),
               }
             : null,
+        compliance: (() => {
+          const today = todayOf.get(b.id)!;
+          const classes = classesBy.get(b.id) ?? 0;
+          const notMarked = Math.max(0, classes - (markedBy.get(b.id) ?? 0));
+          const state: BranchMetrics['compliance']['state'] =
+            isSunday(today) || holidayBy.has(b.id) || classes === 0
+              ? 'holiday'
+              : notMarked === 0
+                ? 'done'
+                : nowIn(b.timezone || 'Asia/Kolkata') >= cutoff
+                  ? 'late'
+                  : 'pending';
+          return { state, classes, notMarked };
+        })(),
+        admissions: funnels.get(b.id) ?? null,
       });
     }
     return out;

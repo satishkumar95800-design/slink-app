@@ -113,7 +113,7 @@ export const strings = {
       error: 'Something went wrong. Please try again, or message us on WhatsApp.',
       privacy: 'We use these details only to send you the price list and follow up. No spam.',
       cta: 'Get a quote on WhatsApp',
-      multiBranch: 'Talk to us for multi-branch pricing.',
+      multiBranch: 'Running 3 or more schools? Branch pricing with volume discounts and a head office view is in the price list.',
     },
     appEyebrow: 'Download the app',
     appTitle: 'Parents and teachers use the Schoolinkd app.',

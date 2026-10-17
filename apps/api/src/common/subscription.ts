@@ -2,6 +2,7 @@ import { SubscriptionPlan } from '@prisma/client';
 import type { OptionalFeature } from './tenant-features';
 import {
   ADD_ONS,
+  FRANCHISE_PRICING,
   PLANS as PRICE_LIST,
 } from '../modules/public-site/pricing-plans';
 
@@ -28,6 +29,7 @@ export const PLAN_MANAGED_FEATURES: OptionalFeature[] = [
   'transferCertificate',
   'pettyCash',
   'syllabus',
+  'admissions',
   'hrms',
   'aiInsights',
 ];
@@ -42,6 +44,7 @@ const PREMIUM: OptionalFeature[] = [
   'transferCertificate',
   'pettyCash',
   'syllabus',
+  'admissions',
 ];
 
 export const PLAN_PRESETS: Record<SubscriptionPlan, OptionalFeature[]> = {
@@ -168,4 +171,85 @@ export function nextPeriodStart(currentEndsOn: string, today: string): string {
   return subscriptionState(currentEndsOn, today).status === 'expired'
     ? today
     : next;
+}
+
+// ── group (franchise) pricing ──────────────────────────────────────────────
+
+/** Volume discount (percent) for a group of this many branches; 0 below 3. */
+export function groupDiscount(branches: number): number {
+  return (
+    FRANCHISE_PRICING.discounts.find((d) => branches >= d.minBranches)
+      ?.percent ?? 0
+  );
+}
+
+/** List price of one branch by size (before the volume discount). */
+export function branchListPrice(plan: SubscriptionPlan, students: number) {
+  const bands = FRANCHISE_PRICING.bands;
+  const band = bands.find((b) => students <= b.upTo);
+  const base = band
+    ? band.price
+    : bands[bands.length - 1].price +
+      (students - bands[bands.length - 1].upTo) *
+        FRANCHISE_PRICING.extraStudent;
+  return (
+    base + (plan === 'premium_max' ? FRANCHISE_PRICING.premiumMaxAddOn : 0)
+  );
+}
+
+export interface GroupQuote {
+  /** False for 1–2 branches: they pay single-school prices. */
+  groupPricing: boolean;
+  discountPercent: number;
+  branches: {
+    id: string;
+    name: string;
+    students: number;
+    listPrice: number;
+    price: number;
+  }[];
+  branchesTotal: number;
+  headOfficeFee: number;
+  total: number;
+}
+
+/** Yearly price of a group of branches (docs/SPEC-franchise.md §5). */
+export function groupQuote(
+  branches: {
+    id: string;
+    name: string;
+    plan: SubscriptionPlan;
+    students: number;
+    features?: Record<string, unknown>;
+  }[],
+): GroupQuote {
+  const n = branches.length;
+  const groupPricing = n >= FRANCHISE_PRICING.minBranches;
+  const discountPercent = groupPricing ? groupDiscount(n) : 0;
+  const rows = branches.map((b) => {
+    const listPrice = groupPricing
+      ? branchListPrice(b.plan, b.students)
+      : yearlyAmount(b.plan, b.features ?? {}, b.students).total;
+    return {
+      id: b.id,
+      name: b.name,
+      students: b.students,
+      listPrice,
+      price: Math.round(listPrice * (1 - discountPercent / 100)),
+    };
+  });
+  const branchesTotal = rows.reduce((t, r) => t + r.price, 0);
+  // A head office (2+ branches) pays its own fee until the group is large.
+  const headOfficeFee =
+    n >= 2 && n < FRANCHISE_PRICING.headOffice.freeFromBranches
+      ? FRANCHISE_PRICING.headOffice.price
+      : 0;
+  return {
+    groupPricing,
+    discountPercent,
+    branches: rows,
+    branchesTotal,
+    headOfficeFee,
+    total: branchesTotal + headOfficeFee,
+  };
 }

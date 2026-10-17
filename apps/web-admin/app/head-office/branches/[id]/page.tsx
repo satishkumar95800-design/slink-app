@@ -92,6 +92,34 @@ export default function BranchPage() {
             />
           </div>
 
+          {m.compliance.state === 'late' && (
+            <p role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">
+              {t('complianceBranchLate', { count: m.compliance.notMarked, total: m.compliance.classes })}
+            </p>
+          )}
+
+          {m.admissions && (
+            <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 className="text-base font-semibold text-gray-900">{t('admissionsTitle')}</h2>
+                <p className="text-sm text-gray-600">{t('admissionsConversion', { pct: m.admissions.conversionPct ?? 0, lost: m.admissions.lost })}</p>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {[
+                  [t('funnelEnquiries'), m.admissions.enquiries],
+                  [t('funnelTours'), m.admissions.tours],
+                  [t('funnelRegistrations'), m.admissions.registrations],
+                  [t('funnelEnrolled'), m.admissions.enrolled],
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-2xl bg-cream/70 p-3">
+                    <p className="text-2xl font-extrabold text-gray-900">{value}</p>
+                    <p className="text-xs font-semibold text-gray-600">{label}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           <div className="grid gap-4 lg:grid-cols-2">
             <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
               <h2 className="text-base font-semibold text-gray-900">{t('monthlyTitle')}</h2>

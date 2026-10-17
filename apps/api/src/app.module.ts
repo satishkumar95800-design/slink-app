@@ -46,6 +46,7 @@ import { SyllabusModule } from './modules/syllabus/syllabus.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { PlatformDashboardModule } from './modules/platform-dashboard/platform-dashboard.module';
 import { HeadOfficeModule } from './modules/head-office/head-office.module';
+import { AdmissionsModule } from './modules/admissions/admissions.module';
 import { PettyCashModule } from './modules/petty-cash/petty-cash.module';
 import { HrmsModule } from './modules/hrms/hrms.module';
 import { ParentModule } from './modules/parent/parent.module';
@@ -105,6 +106,7 @@ import { ClassRemindersModule } from './modules/class-reminders/class-reminders.
     SubscriptionsModule,
     PlatformDashboardModule,
     HeadOfficeModule,
+    AdmissionsModule,
     PettyCashModule,
     HrmsModule,
     ParentModule,
@@ -152,6 +154,7 @@ export class AppModule implements NestModule {
           method: RequestMethod.ALL,
         },
         { path: 'head-office/overview', method: RequestMethod.GET },
+        { path: 'head-office/circulars', method: RequestMethod.ALL },
         { path: 'head-office/branches/:tenantId', method: RequestMethod.GET },
         { path: 'dev/audit-logs', method: RequestMethod.ALL },
         // Addendum 4 / A9 — unauthenticated receipt link: no X-Tenant-ID header

@@ -8,7 +8,7 @@ import { api } from '../../lib/api-client';
 import { formatRupees } from '../../lib/format';
 import { useErrorText } from '../../lib/i18n/errors';
 import { Badge } from '../../components/ui/badge';
-import { Kpi, StatusBadge, UnavailableNote } from './components';
+import { ComplianceCard, Kpi, StatusBadge, UnavailableNote } from './components';
 import { EmptyState } from '../../components/ui/empty-state';
 import { Spinner } from '../../components/ui/spinner';
 import type { Branch, BranchMetrics, Overview } from './types';
@@ -25,6 +25,7 @@ const MEASURES = [
   { key: 'notices', get: (m: BranchMetrics) => m.noticesLast30, better: 'high' },
   { key: 'appUse', get: (m: BranchMetrics) => m.appUsePct, better: 'high' },
   { key: 'syllabus', get: (m: BranchMetrics) => m.syllabus?.onTimePct ?? null, better: 'high' },
+  { key: 'admissions', get: (m: BranchMetrics) => m.admissions?.conversionPct ?? null, better: 'high' },
 ] as const;
 type MeasureKey = (typeof MEASURES)[number]['key'];
 
@@ -89,6 +90,7 @@ export default function HeadOfficeOverview() {
       case 'staff':
         return String(m.staff);
       case 'attToday':
+        if (m.compliance.state === 'late') return t('lateClasses', { count: m.compliance.notMarked });
         return m.attendanceToday.marked === 0 ? t('notMarked') : pctText(m.attendanceToday.pct);
       case 'att30':
         return pctText(m.attendance30);
@@ -104,6 +106,8 @@ export default function HeadOfficeOverview() {
         return pctText(m.appUsePct);
       case 'syllabus':
         return m.syllabus ? pctText(m.syllabus.onTimePct) : '—';
+      case 'admissions':
+        return m.admissions ? t('admissionsCell', { enrolled: m.admissions.enrolled, enquiries: m.admissions.enquiries }) : '—';
     }
   };
   const header = (key: MeasureKey | 'name') => (
@@ -127,6 +131,8 @@ export default function HeadOfficeOverview() {
         <p className="text-sm text-gray-500">{t('intro')}</p>
       </div>
 
+      <ComplianceCard branches={live} cutoff={data.attendanceCutoff ?? '10:00'} />
+
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
         <Kpi icon={<Building2 className="h-4 w-4" />} label={t('kpiSchools')} value={String(tot.branches)} sub={t('kpiSchoolsSub', { available: tot.available, total: tot.branches })} />
         <Kpi icon={<Users className="h-4 w-4" />} label={t('kpiStudents')} value={tot.students.toLocaleString('en-IN')} sub={t('kpiStaff', { count: tot.staff })} />
@@ -137,7 +143,12 @@ export default function HeadOfficeOverview() {
           sub={tot.collectionPct === null ? undefined : t('kpiCollectedSub', { pct: tot.collectionPct })}
         />
         <Kpi icon={<Wallet className="h-4 w-4" />} label={t('kpiOutstanding')} value={formatRupees(tot.outstanding)} sub={t('kpiOverdue', { count: tot.overdueCount })} />
-        <Kpi icon={<Megaphone className="h-4 w-4" />} label={t('kpiNotices')} value={String(tot.noticesLast30)} sub={t('last30')} />
+        <Kpi
+          icon={<Megaphone className="h-4 w-4" />}
+          label={t('kpiEnquiries')}
+          value={String(tot.enquiries)}
+          sub={t('kpiEnrolled', { count: tot.enrolled })}
+        />
       </div>
 
       <section className="rounded-3xl border border-black/5 bg-white shadow-sm">
@@ -172,7 +183,14 @@ export default function HeadOfficeOverview() {
                   {b.available && b.metrics ? (
                     MEASURES.map((m) => {
                       const e = extremes.get(m.key);
-                      const tone = e?.best === b.id ? 'bg-emerald-50 font-semibold text-emerald-800' : e?.worst === b.id ? 'bg-red-50 font-semibold text-red-700' : 'text-gray-700';
+                      const late = m.key === 'attToday' && b.metrics!.compliance.state === 'late';
+                      const tone = late
+                        ? 'bg-red-50 font-semibold text-red-700'
+                        : e?.best === b.id
+                          ? 'bg-emerald-50 font-semibold text-emerald-800'
+                          : e?.worst === b.id
+                            ? 'bg-red-50 font-semibold text-red-700'
+                            : 'text-gray-700';
                       return (
                         <td key={m.key} className={`whitespace-nowrap px-3 py-3 text-sm ${tone}`}>
                           {cell(b, m.key)}

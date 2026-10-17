@@ -12,15 +12,19 @@ import {
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { TenantId } from '../../common/decorators/tenant.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import type { ActiveUser } from '../../common/types/active-user.type';
 import {
+  CreateCircularDto,
   GroupNameDto,
   GroupSchoolsDto,
+  GroupSettingsDto,
   HeadOfficeUserDto,
   PasswordDto,
 } from './dto/groups.dto';
 import { GroupsService } from './groups.service';
+import { CircularsService } from './circulars.service';
 import { HeadOfficeService } from './head-office.service';
 
 /**
@@ -35,6 +39,20 @@ export class HeadOfficeController {
   @Get('overview')
   overview(@CurrentUser() user: ActiveUser) {
     return this.headOffice.overview(user);
+  }
+
+  @Get('circulars')
+  circulars(@CurrentUser() user: ActiveUser) {
+    return this.headOffice.listCirculars(user);
+  }
+
+  /** The one write route a head office has (docs/SPEC-franchise.md §3). */
+  @Post('circulars')
+  sendCircular(
+    @CurrentUser() user: ActiveUser,
+    @Body() dto: CreateCircularDto,
+  ) {
+    return this.headOffice.createCircular(user, dto);
   }
 
   @Get('branches/:tenantId')
@@ -63,12 +81,12 @@ export class GroupsController {
   }
 
   @Patch(':id')
-  rename(
+  update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: GroupNameDto,
+    @Body() dto: GroupSettingsDto,
     @CurrentUser() user: ActiveUser,
   ) {
-    return this.groups.rename(id, dto, user);
+    return this.groups.update(id, dto, user);
   }
 
   @Delete(':id')
@@ -117,5 +135,17 @@ export class GroupsController {
     @CurrentUser() user: ActiveUser,
   ) {
     await this.groups.removeUser(id, userId, user);
+  }
+}
+
+/** Head office circulars a school's staff received (tenant-scoped). */
+@Controller('circulars')
+@Roles(Role.admin, Role.accounts, Role.teacher)
+export class SchoolCircularsController {
+  constructor(private readonly circulars: CircularsService) {}
+
+  @Get()
+  list(@TenantId() tenantId: string) {
+    return this.circulars.forSchool(tenantId);
   }
 }

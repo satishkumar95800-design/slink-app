@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- in-memory Prisma fake */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call -- in-memory Prisma fake */
 import { Role } from '@prisma/client';
 import type { ActiveUser } from '../../common/types/active-user.type';
 import { GroupsService } from './groups.service';

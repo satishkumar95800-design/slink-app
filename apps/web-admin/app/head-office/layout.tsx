@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import { clearSession, getSession, isLoggedIn } from '../../lib/auth';
@@ -21,6 +21,7 @@ export default function HeadOfficeLayout({ children }: { children: ReactNode }) 
 function Shell({ children }: { children: ReactNode }) {
   const t = useTranslations('headOffice');
   const router = useRouter();
+  const pathname = usePathname();
   const [name, setName] = useState<string | null>(null);
   const checked = useRef(false);
 
@@ -56,8 +57,22 @@ function Shell({ children }: { children: ReactNode }) {
               <img src="/schoolinkd-mark.svg" alt="" className="h-full w-full" />
             </span>
             <span className="truncate text-sm font-bold text-white">{t('title')}</span>
-            <span className="hidden rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold text-white sm:inline">{t('readOnly')}</span>
+
           </Link>
+          <nav className="flex items-center gap-1">
+            {[
+              { href: '/head-office', label: t('navOverview'), active: !pathname.startsWith('/head-office/circulars') },
+              { href: '/head-office/circulars', label: t('navCirculars'), active: pathname.startsWith('/head-office/circulars') },
+            ].map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium ${item.active ? 'bg-coral text-white' : 'text-white/80 hover:bg-white/10'}`}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden text-sm text-white md:inline">{name}</span>
             <LanguageSwitcher signedIn={false} className="border-white/20 bg-white/10 text-white" />

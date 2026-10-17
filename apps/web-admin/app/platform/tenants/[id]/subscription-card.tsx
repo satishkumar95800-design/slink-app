@@ -73,7 +73,7 @@ export function SubscriptionCard({
           <dt className="text-xs font-semibold uppercase tracking-wider text-gray-500">Amount at renewal</dt>
           <dd className="mt-0.5 font-semibold text-gray-900">{inr(a.total)}</dd>
           <dd className="text-xs text-gray-500">
-            Plan {inr(a.plan)}
+            {a.groupDiscountPercent ? `Group branch ${inr(a.plan)} − ${a.groupDiscountPercent}%` : `Plan ${inr(a.plan)}`}
             {a.addOns > 0 && ` + add-ons ${inr(a.addOns)}`}
             {a.extraStudents > 0 && ` + ${a.extraStudents} extra students ${inr(a.extraStudentsAmount)}`}
           </dd>

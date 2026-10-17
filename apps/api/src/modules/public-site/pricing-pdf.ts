@@ -1,10 +1,12 @@
 import { join } from 'path';
 import PDFDocument from 'pdfkit';
 import { formatDateOnly, formatRupees } from '../../common/format';
+import { groupQuote } from '../../common/subscription';
 import {
   ADD_ONS,
   COMPARISON,
   CONTACT_LINE,
+  FRANCHISE_PRICING,
   GST_RATE,
   type Cell,
   PLANS,
@@ -281,6 +283,111 @@ export function buildPricingPdf(
         doc.y = y + h;
       }
     }
+
+    // Schools with several branches (docs/SPEC-franchise.md §5)
+    doc.addPage();
+    sectionTitle(doc, 'Schools with several branches', width);
+    doc
+      .font('regular')
+      .fontSize(9.5)
+      .fillColor(MUTED)
+      .text(
+        `For groups and franchises of ${FRANCHISE_PRICING.minBranches} or more schools. Every branch gets the Premium features and pays by its size, with a discount for the number of branches. A head office login sees all branches side by side and can send circulars to them.`,
+        M,
+        doc.y,
+        { width },
+      );
+    doc.moveDown(1);
+    sectionTitle(doc, 'Price per branch, per year', width);
+    for (const band of FRANCHISE_PRICING.bands)
+      row2(doc, band.label, formatRupees(band.price), width);
+    row2(
+      doc,
+      `More than ${FRANCHISE_PRICING.bands[FRANCHISE_PRICING.bands.length - 1].upTo.toLocaleString('en-IN')} students`,
+      `+ ${formatRupees(FRANCHISE_PRICING.extraStudent)} per extra student`,
+      width,
+    );
+    row2(
+      doc,
+      'Premium Max features (HR, payroll and AI) for a branch',
+      `+ ${formatRupees(FRANCHISE_PRICING.premiumMaxAddOn)}`,
+      width,
+    );
+    doc.moveDown(0.8);
+    sectionTitle(doc, 'Volume discount on branch prices', width);
+    for (const d of [...FRANCHISE_PRICING.discounts].reverse()) {
+      const upper = [...FRANCHISE_PRICING.discounts]
+        .filter((x) => x.minBranches > d.minBranches)
+        .sort((a, b) => a.minBranches - b.minBranches)[0];
+      row2(
+        doc,
+        upper
+          ? `${d.minBranches} to ${upper.minBranches - 1} branches`
+          : `${d.minBranches} or more branches`,
+        `${d.percent}% off`,
+        width,
+      );
+    }
+    doc.moveDown(0.8);
+    sectionTitle(doc, 'Head office', width);
+    row2(
+      doc,
+      `Head office access, below ${FRANCHISE_PRICING.headOffice.freeFromBranches} branches`,
+      `${formatRupees(FRANCHISE_PRICING.headOffice.price)} / year`,
+      width,
+    );
+    row2(
+      doc,
+      `${FRANCHISE_PRICING.headOffice.freeFromBranches} or more branches`,
+      'Included',
+      width,
+    );
+    for (const item of [
+      'All branches compared: students, attendance, fees collected and due, parent app use, syllabus and admissions',
+      'Alerts when a branch has not marked attendance by the morning cutoff',
+      'Circulars to staff, and optionally parents, of all or chosen branches',
+      'Read-only: branch data stays with each school',
+    ]) {
+      const y = doc.y;
+      doc.circle(M + 3, y + 5.5, 1.4).fill(TEAL);
+      doc
+        .font('regular')
+        .fontSize(8.5)
+        .fillColor(INK)
+        .text(item, M + 10, y, { width: width - 10 });
+      doc.y += 2;
+    }
+    doc.moveDown(1);
+    const example = groupQuote(
+      Array.from({ length: 12 }, (_, i) => ({
+        id: String(i),
+        name: '',
+        plan: 'premium' as const,
+        students: 100,
+      })),
+    );
+    const ey = doc.y;
+    doc.roundedRect(M, ey, width, 54, 6).fill(TINT);
+    doc
+      .font('bold')
+      .fontSize(10)
+      .fillColor(TEAL)
+      .text(
+        `Example: 12 preschools of 100 children each = ${formatRupees(example.total)} a year`,
+        M + 12,
+        ey + 10,
+        { width: width - 24 },
+      );
+    doc
+      .font('regular')
+      .fontSize(8.5)
+      .fillColor(INK)
+      .text(
+        `12 × ${formatRupees(FRANCHISE_PRICING.bands[0].price)} less ${example.discountPercent}%, head office included: about ${formatRupees(Math.round(example.total / 1200))} per child per year, plus GST. Groups of 1 or 2 schools pay the single-school prices above.`,
+        M + 12,
+        ey + 27,
+        { width: width - 24 },
+      );
 
     // Footer on every page
     const range = doc.bufferedPageRange();

@@ -1,5 +1,7 @@
 import {
   addOnsOf,
+  branchListPrice,
+  groupQuote,
   nextPeriodStart,
   oneYearFrom,
   presetFlags,
@@ -66,5 +68,44 @@ describe('subscription rules', () => {
       total: 51499,
     });
     expect(yearlyAmount('basic', {}, 300).total).toBe(13333);
+  });
+
+  it('prices a group by branch size with a volume discount and a head office fee', () => {
+    const b = (
+      i: number,
+      students: number,
+      plan: 'premium' | 'premium_max' = 'premium',
+    ) => ({ id: `b${i}`, name: `B${i}`, plan, students });
+    expect(branchListPrice('premium', 150)).toBe(12000);
+    expect(branchListPrice('premium', 151)).toBe(20000);
+    expect(branchListPrice('premium', 1100)).toBe(29999 + 100 * 30);
+    expect(branchListPrice('premium_max', 100)).toBe(24000);
+
+    // The spec's example: 12 branches of 100 → 15% off, head office included.
+    const twelve = groupQuote(Array.from({ length: 12 }, (_, i) => b(i, 100)));
+    expect(twelve).toMatchObject({
+      groupPricing: true,
+      discountPercent: 15,
+      branchesTotal: 122400,
+      headOfficeFee: 0,
+      total: 122400,
+    });
+
+    const three = groupQuote([b(1, 100), b(2, 300), b(3, 100, 'premium_max')]);
+    expect(three).toMatchObject({ discountPercent: 10, headOfficeFee: 15000 });
+    expect(three.branchesTotal).toBe(
+      Math.round(12000 * 0.9) +
+        Math.round(20000 * 0.9) +
+        Math.round(24000 * 0.9),
+    );
+
+    // Two branches: single-school prices, plus the head office fee.
+    const two = groupQuote([b(1, 100), b(2, 100)]);
+    expect(two).toMatchObject({
+      groupPricing: false,
+      discountPercent: 0,
+      headOfficeFee: 15000,
+      branchesTotal: 2 * 29999,
+    });
   });
 });

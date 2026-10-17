@@ -24,7 +24,9 @@ export type OptionalFeature =
   /** The school changing its own logo, background and colours. */
   | 'customBranding'
   /** Syllabus topics with target dates, ticked off by subject teachers (Premium). */
-  | 'syllabus';
+  | 'syllabus'
+  /** Admissions pipeline: enquiry to enrolment (Premium). */
+  | 'admissions';
 
 export async function isFeatureEnabled(
   prisma: PrismaService,

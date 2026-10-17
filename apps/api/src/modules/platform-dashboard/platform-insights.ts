@@ -62,6 +62,8 @@ const SETUP_DAYS = 14;
 export function buildDashboard(
   schools: SchoolFacts[],
   leads: { last7: number; last30: number },
+  /** Yearly head office fees of school groups (docs/SPEC-franchise.md §5). */
+  headOfficeFees = 0,
 ) {
   const live = schools.filter((s) => s.isActive);
   const billable = live.filter((s) => s.status !== 'expired');
@@ -97,7 +99,8 @@ export function buildDashboard(
     byStatus,
   };
   const revenue = {
-    contracted: sum(billable),
+    contracted: sum(billable) + headOfficeFees,
+    headOfficeFees,
     byPlan: revenueByPlan,
     dueIn30: sum(live.filter((s) => s.daysLeft >= 0 && s.daysLeft <= 30)),
     dueIn90: sum(live.filter((s) => s.daysLeft >= 0 && s.daysLeft <= 90)),

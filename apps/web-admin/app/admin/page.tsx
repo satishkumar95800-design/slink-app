@@ -37,6 +37,7 @@ import { AlertReason, AlertsBanner, AlertsList, useAlerts } from './alerts-panel
 import { AskBox, AssistantThread } from './assistant-panel';
 import { AttendanceSplit, ChartCard, FeeDonut, HBarChart, Ring, TrendChart } from './dashboard-charts';
 import { SyllabusRoadmap, SyllabusSummary, syllabusCounts } from './syllabus-panel';
+import { HeadOfficeCirculars } from './circulars-card';
 import type { OverviewRow as SyllabusRow } from './syllabus/types';
 
 interface Stats {
@@ -477,6 +478,8 @@ export default function DashboardPage() {
       {alerts && (alerts.length > 0 || summary) && (
         <AlertsBanner alerts={alerts} hasSummary={!!summary} onOpen={() => setPanel('insights')} />
       )}
+
+      <HeadOfficeCirculars />
 
       {/* Addendum 4 / A10 — no fee-related widget may ever appear on the Teacher
           Dashboard, so the stat cards and payments below are admin/accounts only. */}

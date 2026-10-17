@@ -8,10 +8,11 @@ import { Prisma, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { ActiveUser } from '../../common/types/active-user.type';
-import { PLAN_LABEL } from '../../common/subscription';
+import { PLAN_LABEL, groupQuote } from '../../common/subscription';
 import {
   GroupNameDto,
   GroupSchoolsDto,
+  GroupSettingsDto,
   HeadOfficeUserDto,
 } from './dto/groups.dto';
 
@@ -20,7 +21,14 @@ const err = (code: string, message: string) => ({ code, message });
 
 const groupInclude = {
   tenants: {
-    select: { id: true, name: true, slug: true, subscriptionPlan: true },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      subscriptionPlan: true,
+      features: true,
+      _count: { select: { students: true } },
+    },
     orderBy: { name: 'asc' },
   },
   users: {
@@ -35,6 +43,7 @@ type GroupRow = Prisma.SchoolGroupGetPayload<{ include: typeof groupInclude }>;
 const view = (g: GroupRow) => ({
   id: g.id,
   name: g.name,
+  attendanceCutoff: g.attendanceCutoff,
   createdAt: g.createdAt,
   schools: g.tenants.map((t) => ({
     id: t.id,
@@ -42,8 +51,19 @@ const view = (g: GroupRow) => ({
     slug: t.slug,
     plan: t.subscriptionPlan,
     planName: PLAN_LABEL[t.subscriptionPlan],
+    students: t._count.students,
   })),
   headOfficeUsers: g.users,
+  /** Yearly price of the whole group (docs/SPEC-franchise.md §5). */
+  quote: groupQuote(
+    g.tenants.map((t) => ({
+      id: t.id,
+      name: t.name,
+      plan: t.subscriptionPlan,
+      students: t._count.students,
+      features: (t.features ?? {}) as Record<string, unknown>,
+    })),
+  ),
 });
 
 /** Franchise groups and their head office logins (super_admin, platform console). */
@@ -75,17 +95,26 @@ export class GroupsService {
     }
   }
 
-  async rename(id: string, dto: GroupNameDto, actor: ActiveUser) {
+  /** Name and attendance cutoff. */
+  async update(id: string, dto: GroupSettingsDto, actor: ActiveUser) {
     await this.require(id);
     try {
       const g = await this.prisma.schoolGroup.update({
         where: { id },
-        data: { name: dto.name },
+        data: {
+          ...(dto.name !== undefined && { name: dto.name }),
+          ...(dto.attendanceCutoff !== undefined && {
+            attendanceCutoff: dto.attendanceCutoff,
+          }),
+        },
         include: groupInclude,
       });
-      await this.audit(actor, null, 'group.rename', {
+      await this.audit(actor, null, 'group.update', {
         groupId: id,
-        name: dto.name,
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.attendanceCutoff !== undefined && {
+          attendanceCutoff: dto.attendanceCutoff,
+        }),
       });
       return view(g);
     } catch (e) {

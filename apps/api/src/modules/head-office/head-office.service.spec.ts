@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- in-memory Prisma fake */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call -- in-memory Prisma fake */
 import { Role } from '@prisma/client';
 import type { ActiveUser } from '../../common/types/active-user.type';
 import { HeadOfficeService } from './head-office.service';
@@ -29,7 +29,10 @@ const branch = (
   _count: { students: 100 },
 });
 
-function setup(userGroup: string | null = 'g1') {
+function setup(
+  userGroup: string | null = 'g1',
+  opts: { classes?: number; markedClasses?: number; holiday?: boolean } = {},
+) {
   const tenants = [
     branch('b1', 'premium'),
     branch('b2', 'basic'),
@@ -40,8 +43,11 @@ function setup(userGroup: string | null = 'g1') {
     user: {
       findUnique: jest.fn().mockResolvedValue({
         role: Role.head_office,
-        group: userGroup ? { id: userGroup, name: 'Vidya Group' } : null,
+        group: userGroup
+          ? { id: userGroup, name: 'Vidya Group', attendanceCutoff: '10:00' }
+          : null,
       }),
+      findMany: jest.fn().mockResolvedValue([{ id: 's1' }, { id: 's2' }]),
       groupBy: jest
         .fn()
         .mockResolvedValue([{ tenantId: 'b1', _count: { _all: 12 } }]),
@@ -58,12 +64,58 @@ function setup(userGroup: string | null = 'g1') {
         ),
       ),
     },
-    attendanceRecord: { groupBy: jest.fn().mockResolvedValue([]) },
+    attendanceRecord: {
+      groupBy: jest.fn(({ by }: Row) =>
+        Promise.resolve(
+          by.includes('classId') && by.includes('date')
+            ? Array.from({ length: opts.markedClasses ?? 0 }, (_, i) => ({
+                tenantId: 'b1',
+                classId: `c${i}`,
+                date: new Date('2026-10-17T00:00:00Z'),
+              }))
+            : [],
+        ),
+      ),
+    },
+    student: {
+      groupBy: jest.fn().mockResolvedValue(
+        Array.from({ length: opts.classes ?? 3 }, (_, i) => ({
+          tenantId: 'b1',
+          classId: `c${i}`,
+        })),
+      ),
+    },
+    schoolHoliday: {
+      findMany: jest
+        .fn()
+        .mockResolvedValue(
+          opts.holiday
+            ? [{ tenantId: 'b1', date: new Date('2026-10-17T00:00:00Z') }]
+            : [],
+        ),
+    },
+    groupCircular: {
+      create: jest.fn(({ data }: Row) =>
+        Promise.resolve({ id: 'circ1', ...data }),
+      ),
+      findMany: jest.fn().mockResolvedValue([]),
+    },
+    groupCircularBranch: { update: jest.fn().mockResolvedValue({}) },
+    auditLog: { create: jest.fn() },
     broadcast: { groupBy: jest.fn().mockResolvedValue([]) },
     class: { findMany: jest.fn().mockResolvedValue([]) },
     $queryRaw: jest.fn().mockResolvedValue([]),
   };
-  return { service: new HeadOfficeService(prisma as never), prisma };
+  prisma.$transaction = jest.fn((fn: (tx: unknown) => unknown) => fn(prisma));
+  const notifications = {
+    send: jest.fn().mockResolvedValue(undefined),
+    broadcast: jest.fn().mockResolvedValue({ queued: 40 }),
+  };
+  return {
+    service: new HeadOfficeService(prisma as never, notifications as never),
+    prisma,
+    notifications,
+  };
 }
 
 beforeAll(() => {
@@ -113,10 +165,76 @@ describe('HeadOfficeService', () => {
     expect(await service.overview(HO)).toEqual({
       group: null,
       totals: null,
+      attendanceCutoff: null,
       branches: [],
     });
     await expect(service.branch(HO, 'b1')).rejects.toMatchObject({
       response: { code: 'BRANCH_NOT_IN_GROUP' },
     });
+  });
+
+  // 2026-10-17 06:00 UTC is 11:30 in India, past the 10:00 cutoff (a Saturday).
+  it('flags a branch that has not marked attendance by the cutoff', async () => {
+    const { service } = setup('g1', { classes: 3, markedClasses: 1 });
+    const o = await service.overview(HO);
+    const b1 = o.branches.find((b) => b.id === 'b1')!;
+    expect(b1.metrics!.compliance).toEqual({
+      state: 'late',
+      classes: 3,
+      notMarked: 2,
+    });
+    expect(o.totals!.lateAttendance).toBe(1);
+  });
+
+  it('is done when every class is marked, and quiet on a holiday', async () => {
+    const done = await setup('g1', {
+      classes: 2,
+      markedClasses: 2,
+    }).service.overview(HO);
+    expect(done.branches[0].metrics!.compliance.state).toBe('done');
+    const off = await setup('g1', {
+      classes: 2,
+      holiday: true,
+    }).service.overview(HO);
+    expect(off.branches[0].metrics!.compliance.state).toBe('holiday');
+  });
+
+  it('sends a circular only to branches that can receive it, staff and parents', async () => {
+    const { service, prisma, notifications } = setup();
+    await service.createCircular(HO, {
+      title: 'Holiday',
+      body: 'Closed on Monday',
+      audience: 'staff_and_parents',
+    });
+    const created = prisma.groupCircular.create.mock.calls[0][0].data;
+    expect(created.branches.create).toEqual([{ tenantId: 'b1' }]);
+    await new Promise((r) => setImmediate(r));
+    await new Promise((r) => setImmediate(r));
+    expect(notifications.send).toHaveBeenCalledTimes(2);
+    expect(notifications.broadcast).toHaveBeenCalledWith(
+      'b1',
+      expect.objectContaining({ targetType: 'all_parents', kind: 'notice' }),
+      HO,
+    );
+  });
+
+  it('refuses a circular to a school outside the group, or with no school to receive it', async () => {
+    const { service } = setup();
+    await expect(
+      service.createCircular(HO, {
+        title: 'x',
+        body: 'y',
+        audience: 'staff',
+        tenantIds: ['x'],
+      }),
+    ).rejects.toMatchObject({ response: { code: 'BRANCH_NOT_IN_GROUP' } });
+    await expect(
+      service.createCircular(HO, {
+        title: 'x',
+        body: 'y',
+        audience: 'staff',
+        tenantIds: ['b2'],
+      }),
+    ).rejects.toMatchObject({ response: { code: 'NO_BRANCHES' } });
   });
 });

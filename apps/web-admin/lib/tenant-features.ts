@@ -18,6 +18,8 @@ export interface TenantFeatures {
   customBranding?: boolean;
   /** Syllabus topics and coverage (Premium and Premium Max). */
   syllabus?: boolean;
+  /** Admissions pipeline (Premium and Premium Max). */
+  admissions?: boolean;
 }
 
 // Keyed by school so signing in to another school in the same tab refetches.

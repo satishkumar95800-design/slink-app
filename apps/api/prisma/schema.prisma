@@ -203,6 +203,9 @@ model Tenant {
 
   users                    User[]
   subscriptionRenewals     SubscriptionRenewal[]
+  circularBranches         GroupCircularBranch[]
+  admissionEnquiries       AdmissionEnquiry[]
+  admissionActivities      AdmissionActivity[]
   group                    SchoolGroup?          @relation(fields: [groupId], references: [id], onDelete: SetNull)
   students                 Student[]
   classes                  Class[]
@@ -263,13 +266,54 @@ model Tenant {
 model SchoolGroup {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String   @unique
+  /// HH:MM in each school's own timezone: attendance not marked by then is flagged to the head office.
+  attendanceCutoff String @default("10:00") @map("attendance_cutoff")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  tenants Tenant[]
-  users   User[]
+  tenants   Tenant[]
+  users     User[]
+  circulars GroupCircular[]
 
   @@map("school_groups")
+}
+
+enum CircularAudience {
+  staff
+  staff_and_parents
+}
+
+/// A head office circular (the only thing a head office creates): delivered
+/// to the staff, and optionally the parents, of the chosen branches.
+model GroupCircular {
+  id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  groupId   String           @map("group_id") @db.Uuid
+  title     String
+  body      String
+  audience  CircularAudience
+  createdBy String           @map("created_by") @db.Uuid
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  group    SchoolGroup             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  branches GroupCircularBranch[]
+
+  @@index([groupId, createdAt])
+  @@map("group_circulars")
+}
+
+/// One branch a circular went to, with how many people it reached there.
+model GroupCircularBranch {
+  circularId String @map("circular_id") @db.Uuid
+  tenantId   String @map("tenant_id") @db.Uuid
+  staffCount  Int @default(0) @map("staff_count")
+  parentCount Int @default(0) @map("parent_count")
+
+  circular GroupCircular @relation(fields: [circularId], references: [id], onDelete: Cascade)
+  tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@id([circularId, tenantId])
+  @@index([tenantId])
+  @@map("group_circular_branches")
 }
 
 enum SubscriptionPlan {
@@ -536,6 +580,76 @@ model SyllabusTopic {
 
   @@index([tenantId, classId, subjectId, sortOrder])
   @@map("syllabus_topics")
+}
+
+// ─── Admissions pipeline (feature flag `admissions`) ───────────────────────────
+
+enum AdmissionStage {
+  enquiry
+  campus_tour
+  follow_up
+  registration
+  enrolled
+  lost
+}
+
+enum AdmissionSource {
+  walk_in
+  phone
+  website
+  referral
+  social_media
+  other
+}
+
+/// A prospective student's family, from first enquiry to enrolment (or lost).
+model AdmissionEnquiry {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String          @map("tenant_id") @db.Uuid
+  childName      String          @map("child_name")
+  dob            DateTime?       @db.Date
+  classSought    String?         @map("class_sought")
+  parentName     String          @map("parent_name")
+  phone          String
+  email          String?
+  source         AdmissionSource
+  stage          AdmissionStage  @default(enquiry)
+  tourOn         DateTime?       @map("tour_on") @db.Date
+  nextFollowUpOn DateTime?       @map("next_follow_up_on") @db.Date
+  lostReason     String?         @map("lost_reason")
+  notes          String?
+  assignedTo     String?         @map("assigned_to") @db.Uuid
+  createdBy      String          @map("created_by") @db.Uuid
+  stageChangedAt DateTime        @default(now()) @map("stage_changed_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  tenant     Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  activities AdmissionActivity[]
+
+  @@index([tenantId, stage])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, nextFollowUpOn])
+  @@map("admission_enquiries")
+}
+
+/// Append-only timeline of an enquiry: created, stage changes, notes.
+model AdmissionActivity {
+  id         String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String          @map("tenant_id") @db.Uuid
+  enquiryId  String          @map("enquiry_id") @db.Uuid
+  kind       String
+  fromStage  AdmissionStage? @map("from_stage")
+  toStage    AdmissionStage? @map("to_stage")
+  note       String?
+  byUserId   String          @map("by_user_id") @db.Uuid
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  tenant  Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  enquiry AdmissionEnquiry @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+
+  @@index([enquiryId, createdAt])
+  @@map("admission_activities")
 }
 
 // ─── Timetable (Addendum 4 / A10) ──────────────────────────────────────────────

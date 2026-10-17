@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { daysFromTo } from '../../common/subscription';
+import { daysFromTo, groupQuote } from '../../common/subscription';
 import { fromDbDate, todayIn, toDbDate } from '../attendance/attendance-dates';
 import { subscriptionView, tenantSelect } from '../tenants/tenants.service';
 import { SchoolFacts, buildDashboard } from './platform-insights';
@@ -27,6 +27,7 @@ export class PlatformDashboardService {
       leads30,
       pricing7,
       pricing30,
+      groups,
     ] = await Promise.all([
       this.prisma.tenant.findMany({ select: tenantSelect }),
       this.prisma.user.groupBy({
@@ -58,7 +59,24 @@ export class PlatformDashboardService {
       this.prisma.pricingRequest.count({
         where: { createdAt: { gte: new Date(Date.now() - 30 * DAY) } },
       }),
+      this.prisma.schoolGroup.findMany({
+        select: { _count: { select: { tenants: true } } },
+      }),
     ]);
+    // Head office fees of school groups (docs/SPEC-franchise.md §5).
+    const headOfficeFees = groups.reduce(
+      (t, g) =>
+        t +
+        groupQuote(
+          Array.from({ length: g._count.tenants }, (_, i) => ({
+            id: String(i),
+            name: '',
+            plan: 'premium' as const,
+            students: 0,
+          })),
+        ).headOfficeFee,
+      0,
+    );
     const staffBy = new Map(staff.map((s) => [s.tenantId, s._count._all]));
     const appBy = new Map(appUse.map((a) => [a.tenant_id, a.n]));
     const attBy = new Map(attendance.map((a) => [a.tenantId, a._count._all]));
@@ -84,10 +102,11 @@ export class PlatformDashboardService {
     });
     return {
       today,
-      ...buildDashboard(facts, {
-        last7: leads7 + pricing7,
-        last30: leads30 + pricing30,
-      }),
+      ...buildDashboard(
+        facts,
+        { last7: leads7 + pricing7, last30: leads30 + pricing30 },
+        headOfficeFees,
+      ),
     };
   }
 }

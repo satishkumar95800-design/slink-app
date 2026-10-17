@@ -17,6 +17,8 @@ import { TenantQueryDto } from './dto/tenant-query.dto';
 import {
   PLAN_LABEL,
   addOnsOf,
+  branchListPrice,
+  groupDiscount,
   oneYearFrom,
   presetFlags,
   subscriptionState,
@@ -42,6 +44,7 @@ export const tenantSelect = {
   subscriptionStartsOn: true,
   subscriptionEndsOn: true,
   groupId: true,
+  group: { select: { id: true, name: true, _count: { select: { tenants: true } } } },
   createdAt: true,
   updatedAt: true,
   _count: { select: { users: true, students: true } },
@@ -68,11 +71,28 @@ export function subscriptionView(t: TenantRow) {
     endsOn,
     ...subscriptionState(endsOn, todayIn(t.timezone || 'Asia/Kolkata')),
     addOns: addOnsOf(t.subscriptionPlan, features),
-    yearlyAmount: yearlyAmount(
-      t.subscriptionPlan,
-      features,
-      t._count.students,
-    ),
+    yearlyAmount: branchAmount(t, features),
+  };
+}
+
+/**
+ * Yearly amount at renewal. A branch of a group of 3+ schools pays its share
+ * of the group price (docs/SPEC-franchise.md §5); the head office fee is billed
+ * on the group, not here.
+ */
+function branchAmount(t: TenantRow, features: Record<string, unknown>) {
+  const branches = t.group?._count.tenants ?? 0;
+  const single = yearlyAmount(t.subscriptionPlan, features, t._count.students);
+  if (branches < 3) return { ...single, groupDiscountPercent: 0 };
+  const list = branchListPrice(t.subscriptionPlan, t._count.students);
+  const discount = groupDiscount(branches);
+  return {
+    plan: list,
+    addOns: 0,
+    extraStudents: 0,
+    extraStudentsAmount: 0,
+    groupDiscountPercent: discount,
+    total: Math.round(list * (1 - discount / 100)),
   };
 }
 

@@ -10,12 +10,14 @@ import { Input } from '../../../components/ui/input';
 import { Modal } from '../../../components/ui/modal';
 import { Spinner } from '../../../components/ui/spinner';
 import { useToast } from '../../../components/ui/toast';
-import { PLAN_VARIANT, PlanKey } from '../plans';
+import { FRANCHISE, GroupQuote, PLAN_VARIANT, PlanKey, estimateGroup, inr } from '../plans';
 
 interface Group {
   id: string;
   name: string;
-  schools: { id: string; name: string; slug: string; plan: PlanKey; planName: string }[];
+  attendanceCutoff: string;
+  quote: GroupQuote;
+  schools: { id: string; name: string; slug: string; plan: PlanKey; planName: string; students: number }[];
   headOfficeUsers: { id: string; name: string; email: string | null; createdAt: string }[];
 }
 
@@ -94,6 +96,8 @@ export default function GroupsPage() {
         </Button>
       </div>
 
+      <Calculator />
+
       {!groups ? (
         <div className="flex justify-center p-10">
           <Spinner className="h-6 w-6 text-teal" />
@@ -105,10 +109,13 @@ export default function GroupsPage() {
           {groups.map((g) => (
             <section key={g.id} className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
               <div className="flex items-start justify-between gap-2">
-                <h2 className="text-base font-bold text-gray-900">{g.name}</h2>
+                <div>
+                  <h2 className="text-base font-bold text-gray-900">{g.name}</h2>
+                  <p className="text-xs text-gray-500">Attendance cutoff {g.attendanceCutoff}</p>
+                </div>
                 <div className="flex gap-1">
                   <Button size="sm" variant="ghost" onClick={() => setNaming(g)}>
-                    Rename
+                    Settings
                   </Button>
                   {g.schools.length === 0 && g.headOfficeUsers.length === 0 && (
                     <Button size="sm" variant="ghost" onClick={() => removeGroup(g)}>
@@ -131,13 +138,20 @@ export default function GroupsPage() {
               ) : (
                 <ul className="mt-2 divide-y divide-gray-100">
                   {g.schools.map((s) => (
-                    <li key={s.id} className="flex items-center justify-between py-1.5 text-sm">
-                      <span className="text-gray-900">{s.name}</span>
-                      <Badge variant={PLAN_VARIANT[s.plan]}>{s.planName}</Badge>
+                    <li key={s.id} className="flex items-center justify-between gap-2 py-1.5 text-sm">
+                      <span className="min-w-0 truncate text-gray-900">
+                        {s.name} <span className="text-xs text-gray-500">· {s.students} students</span>
+                      </span>
+                      <span className="flex shrink-0 items-center gap-2">
+                        <span className="text-xs text-gray-600">{inr(g.quote.branches.find((b) => b.id === s.id)?.price ?? 0)}</span>
+                        <Badge variant={PLAN_VARIANT[s.plan]}>{s.planName}</Badge>
+                      </span>
                     </li>
                   ))}
                 </ul>
               )}
+
+              {g.schools.length > 0 && <QuoteSummary quote={g.quote} />}
 
               <div className="mt-4 flex items-center justify-between">
                 <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-gray-500">
@@ -223,11 +237,12 @@ export default function GroupsPage() {
 function NameModal({ group, onClose, onDone }: { group: Group | null; onClose: () => void; onDone: () => void }) {
   const { toast } = useToast();
   const [name, setName] = useState(group?.name ?? '');
+  const [cutoff, setCutoff] = useState(group?.attendanceCutoff ?? '10:00');
   const [saving, setSaving] = useState(false);
   async function save() {
     setSaving(true);
     try {
-      if (group) await api.patch(`/platform/groups/${group.id}`, { name: name.trim() });
+      if (group) await api.patch(`/platform/groups/${group.id}`, { name: name.trim(), attendanceCutoff: cutoff });
       else await api.post('/platform/groups', { name: name.trim() });
       toast(group ? 'Group renamed' : 'Group created', 'success');
       onDone();
@@ -238,9 +253,18 @@ function NameModal({ group, onClose, onDone }: { group: Group | null; onClose: (
     }
   }
   return (
-    <Modal open onClose={onClose} title={group ? 'Rename group' : 'New group'}>
+    <Modal open onClose={onClose} title={group ? 'Group settings' : 'New group'}>
       <div className="space-y-4">
         <Input label="Group name" required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} placeholder="Vidya Education Trust" />
+        {group && (
+          <Input
+            label="Attendance cutoff"
+            type="time"
+            value={cutoff}
+            onChange={(e) => setCutoff(e.target.value)}
+            helpText="The head office sees schools that haven't marked attendance by this time (each school's own time zone)."
+          />
+        )}
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>
             Cancel
@@ -395,5 +419,64 @@ function PasswordModal({ target, onClose }: { target: { group: Group; userId: st
         </div>
       </div>
     </Modal>
+  );
+}
+
+/** Branch prices, discount and head office fee for one group. */
+function QuoteSummary({ quote }: { quote: GroupQuote }) {
+  return (
+    <div className="mt-3 rounded-2xl bg-cream/70 px-4 py-3 text-sm">
+      <div className="flex items-center justify-between">
+        <span className="font-semibold text-gray-900">Yearly price</span>
+        <span className="text-base font-extrabold text-gray-900">{inr(quote.total)}</span>
+      </div>
+      <p className="mt-0.5 text-xs text-gray-600">
+        {quote.groupPricing
+          ? `Group pricing: ${quote.branches.length} branches by size, ${quote.discountPercent}% volume discount`
+          : `Fewer than ${FRANCHISE.minBranches} branches: single-school prices`}
+        {` · head office ${quote.headOfficeFee ? inr(quote.headOfficeFee) : 'included'}. Before GST.`}
+      </p>
+    </div>
+  );
+}
+
+/** Sales calculator: a franchise of N branches of about the same size. */
+function Calculator() {
+  const [branches, setBranches] = useState('10');
+  const [students, setStudents] = useState('120');
+  const [premiumMax, setPremiumMax] = useState(false);
+  const n = Math.max(0, Math.floor(Number(branches) || 0));
+  const kids = Math.max(0, Math.floor(Number(students) || 0));
+  const e = estimateGroup(n, kids, premiumMax);
+  return (
+    <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
+      <h2 className="text-base font-semibold text-gray-900">Price a franchise</h2>
+      <p className="mt-1 text-sm text-gray-500">
+        Each branch pays by size ({FRANCHISE.bands.map((b) => `${b.label.toLowerCase()} ${inr(b.price)}`).join(', ')}), less a volume
+        discount of {FRANCHISE.discounts.slice().reverse().map((d) => `${d.percent}% from ${d.minBranches} branches`).join(', ')}. Head office{' '}
+        {inr(FRANCHISE.headOffice.price)}, free from {FRANCHISE.headOffice.freeFromBranches} branches.
+      </p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-4">
+        <Input label="Branches" type="number" min="1" value={branches} onChange={(ev) => setBranches(ev.target.value)} />
+        <Input label="Students per branch" type="number" min="1" value={students} onChange={(ev) => setStudents(ev.target.value)} />
+        <label className="flex items-center gap-2 self-end pb-3 text-sm text-gray-700">
+          <input type="checkbox" className="h-4 w-4 accent-coral" checked={premiumMax} onChange={(ev) => setPremiumMax(ev.target.checked)} />
+          Premium Max (HR and AI)
+        </label>
+        <div className="rounded-2xl bg-teal/5 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Per year</p>
+          <p className="text-xl font-extrabold text-gray-900">{inr(e.total)}</p>
+          <p className="text-xs text-gray-600">{e.perChild ? `≈ ${inr(e.perChild)} per student` : ''}</p>
+        </div>
+      </div>
+      {n > 0 && (
+        <p className="mt-2 text-xs text-gray-500">
+          {e.groupPricing
+            ? `${n} × ${inr(e.perBranch)} (${inr(e.list)} less ${e.discount}%)`
+            : `${n} × ${inr(e.perBranch)} at single-school prices`}
+          {e.headOffice ? ` + head office ${inr(e.headOffice)}` : n >= 2 ? ' · head office included' : ''}. Before GST.
+        </p>
+      )}
+    </section>
   );
 }

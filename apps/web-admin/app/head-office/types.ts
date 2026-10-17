@@ -9,6 +9,8 @@ export interface BranchMetrics {
   noticesLast30: number;
   appUsePct: number | null;
   syllabus: { planned: number; onTime: number; onTimePct: number | null } | null;
+  compliance: { state: 'holiday' | 'done' | 'pending' | 'late'; classes: number; notMarked: number };
+  admissions: { enquiries: number; tours: number; registrations: number; enrolled: number; lost: number; open: number; conversionPct: number | null } | null;
 }
 
 export interface Branch {
@@ -34,8 +36,22 @@ export interface Overview {
     collectionPct: number | null;
     overdueCount: number;
     noticesLast30: number;
+    lateAttendance: number;
+    enquiries: number;
+    enrolled: number;
   } | null;
+  attendanceCutoff?: string;
   branches: Branch[];
+}
+
+export interface Circular {
+  id: string;
+  title: string;
+  body: string;
+  audience: 'staff' | 'staff_and_parents';
+  createdAt: string;
+  createdBy: string;
+  branches: { tenantId: string; name: string; staffCount: number; parentCount: number }[];
 }
 
 export interface BranchDetail extends Branch {
