@@ -41,6 +41,7 @@ import { PaymentClaimsModule } from './modules/payment-claims/payment-claims.mod
 import { StudentNotesModule } from './modules/student-notes/student-notes.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
+import { ConsentFormsModule } from './modules/consent-forms/consent-forms.module';
 import { PettyCashModule } from './modules/petty-cash/petty-cash.module';
 import { HrmsModule } from './modules/hrms/hrms.module';
 import { ParentModule } from './modules/parent/parent.module';
@@ -95,6 +96,7 @@ import { ClassRemindersModule } from './modules/class-reminders/class-reminders.
     StudentNotesModule,
     AttendanceModule,
     CalendarModule,
+    ConsentFormsModule,
     PettyCashModule,
     HrmsModule,
     ParentModule,

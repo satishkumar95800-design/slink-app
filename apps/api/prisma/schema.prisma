@@ -275,6 +275,7 @@ model User {
   reviewedClaims   PaymentClaim[]  @relation("PaymentClaimReviewer")
   markedAttendance AttendanceRecord[] @relation("AttendanceMarkedBy")
   sentBroadcasts   Broadcast[]        @relation("BroadcastSender")
+  consentResponses ConsentResponse[]
   authoredStudentNotes StudentNote[]
   classReminderSetting ClassReminderSetting?
   pettyCashReceived    PettyCashEntry[] @relation("PettyCashRecipient")
@@ -334,6 +335,7 @@ model Student {
   receipts          Receipt[]
   discounts         StudentDiscount[]
   customFieldValues StudentCustomFieldValue[]
+  consentResponses  ConsentResponse[]
   paymentClaims     PaymentClaim[]
   notes             StudentNote[]
   attendance        AttendanceRecord[]
@@ -381,6 +383,7 @@ model Class {
   attendanceRecords  AttendanceRecord[]
   broadcasts         Broadcast[]
   periodTimings      ClassPeriodTiming[]
+  consentForms       ConsentFormClass[]
 
   @@unique([tenantId, name, section, academicYear])
   @@index([tenantId])
@@ -1121,10 +1124,72 @@ model SchoolEvent {
   createdBy   String?         @map("created_by") @db.Uuid
   createdAt   DateTime        @default(now()) @map("created_at")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  consentForm  ConsentForm?
 
   @@index([tenantId, startDate])
   @@map("school_events")
+}
+
+enum ConsentDecision {
+  APPROVED
+  DECLINED
+}
+
+/// Parent consent for an event (e.g. a school trip), sent to the parents of
+/// students in the chosen classes. At most one per event.
+model ConsentForm {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  eventId   String   @unique @map("event_id") @db.Uuid
+  /// The consent wording parents agree to.
+  body      String
+  /// Last day parents can sign (school-local, inclusive).
+  deadline  DateTime @db.Date
+  createdBy String?  @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  event     SchoolEvent        @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  classes   ConsentFormClass[]
+  responses ConsentResponse[]
+
+  @@index([tenantId])
+  @@map("consent_forms")
+}
+
+model ConsentFormClass {
+  formId  String @map("form_id") @db.Uuid
+  classId String @map("class_id") @db.Uuid
+
+  form  ConsentForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  class Class       @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@id([formId, classId])
+  @@index([classId])
+  @@map("consent_form_classes")
+}
+
+/// One signed answer per student (from any of their parents); a parent can
+/// change it until the deadline, and each change is audit-logged.
+model ConsentResponse {
+  id         String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  formId     String          @map("form_id") @db.Uuid
+  studentId  String          @map("student_id") @db.Uuid
+  /// Null once the parent account is removed; signedName keeps the record.
+  parentId   String?         @map("parent_id") @db.Uuid
+  decision   ConsentDecision
+  /// Full name the parent typed as their signature.
+  signedName String          @map("signed_name")
+  note       String?
+  signedAt   DateTime        @default(now()) @map("signed_at")
+
+  form    ConsentForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  student Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  parent  User?       @relation(fields: [parentId], references: [id], onDelete: SetNull)
+
+  @@unique([formId, studentId])
+  @@index([parentId])
+  @@map("consent_responses")
 }
 
 /// One notice or homework message as sent (docs/SPEC-improvements.md §4.3);

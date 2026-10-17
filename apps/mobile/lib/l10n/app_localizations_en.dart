@@ -1528,4 +1528,93 @@ class AppLocalizationsEn extends AppLocalizations {
   String routinePeriod(int period) {
     return 'Period $period';
   }
+
+  @override
+  String get consentTitle => 'Consent forms';
+
+  @override
+  String get consentEmpty => 'No consent forms from the school yet.';
+
+  @override
+  String get consentNeedsAnswer => 'Sign now';
+
+  @override
+  String get consentApproved => 'Agreed';
+
+  @override
+  String get consentDeclined => 'Not agreed';
+
+  @override
+  String get consentClosed => 'Closed';
+
+  @override
+  String consentSignBy(String date) {
+    return 'Sign by $date';
+  }
+
+  @override
+  String consentForChild(String name) {
+    return 'For $name';
+  }
+
+  @override
+  String consentForChildClass(String name, String className) {
+    return 'For $name · $className';
+  }
+
+  @override
+  String get consentAgreeingTo => 'What you are agreeing to';
+
+  @override
+  String get consentYourAnswer => 'Your answer';
+
+  @override
+  String get consentAllow => 'I agree';
+
+  @override
+  String get consentDecline => 'I don\'t agree';
+
+  @override
+  String get consentSignatureLabel => 'Your full name';
+
+  @override
+  String get consentSignatureHint => 'Typing your name is your signature';
+
+  @override
+  String get consentNoteLabel => 'Message to the school (optional)';
+
+  @override
+  String consentConfirm(String name) {
+    return 'I am $name\'s parent or guardian and I confirm this answer.';
+  }
+
+  @override
+  String get consentSubmit => 'Sign and send';
+
+  @override
+  String get consentSubmitted => 'Thank you. The school has your answer.';
+
+  @override
+  String consentSignedBy(String name, String date) {
+    return 'Signed by $name on $date';
+  }
+
+  @override
+  String consentCanChange(String date) {
+    return 'You can change your answer until $date.';
+  }
+
+  @override
+  String get consentChange => 'Change answer';
+
+  @override
+  String consentClosedNote(String date) {
+    return 'The last day to sign was $date.';
+  }
+
+  @override
+  String get consentErrClosed => 'The last day to sign has passed.';
+
+  @override
+  String get consentErrNotFound => 'This consent form is no longer available.';
 }

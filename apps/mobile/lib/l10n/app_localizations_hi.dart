@@ -1529,4 +1529,93 @@ class AppLocalizationsHi extends AppLocalizations {
   String routinePeriod(int period) {
     return 'पीरियड $period';
   }
+
+  @override
+  String get consentTitle => 'सहमति पत्र';
+
+  @override
+  String get consentEmpty => 'स्कूल से अभी कोई सहमति पत्र नहीं आया है।';
+
+  @override
+  String get consentNeedsAnswer => 'अभी हस्ताक्षर करें';
+
+  @override
+  String get consentApproved => 'सहमत';
+
+  @override
+  String get consentDeclined => 'सहमत नहीं';
+
+  @override
+  String get consentClosed => 'बंद';
+
+  @override
+  String consentSignBy(String date) {
+    return '$date तक हस्ताक्षर करें';
+  }
+
+  @override
+  String consentForChild(String name) {
+    return '$name के लिए';
+  }
+
+  @override
+  String consentForChildClass(String name, String className) {
+    return '$name के लिए · $className';
+  }
+
+  @override
+  String get consentAgreeingTo => 'आप किस बात पर सहमति दे रहे हैं';
+
+  @override
+  String get consentYourAnswer => 'आपका जवाब';
+
+  @override
+  String get consentAllow => 'मैं सहमत हूँ';
+
+  @override
+  String get consentDecline => 'मैं सहमत नहीं हूँ';
+
+  @override
+  String get consentSignatureLabel => 'आपका पूरा नाम';
+
+  @override
+  String get consentSignatureHint => 'अपना नाम टाइप करना ही आपका हस्ताक्षर है';
+
+  @override
+  String get consentNoteLabel => 'स्कूल के लिए संदेश (वैकल्पिक)';
+
+  @override
+  String consentConfirm(String name) {
+    return 'मैं $name का/की माता-पिता या अभिभावक हूँ और इस जवाब की पुष्टि करता/करती हूँ।';
+  }
+
+  @override
+  String get consentSubmit => 'हस्ताक्षर करके भेजें';
+
+  @override
+  String get consentSubmitted => 'धन्यवाद। स्कूल को आपका जवाब मिल गया है।';
+
+  @override
+  String consentSignedBy(String name, String date) {
+    return '$name ने $date को हस्ताक्षर किए';
+  }
+
+  @override
+  String consentCanChange(String date) {
+    return 'आप $date तक अपना जवाब बदल सकते हैं।';
+  }
+
+  @override
+  String get consentChange => 'जवाब बदलें';
+
+  @override
+  String consentClosedNote(String date) {
+    return 'हस्ताक्षर की अंतिम तिथि $date थी।';
+  }
+
+  @override
+  String get consentErrClosed => 'हस्ताक्षर की अंतिम तिथि निकल चुकी है।';
+
+  @override
+  String get consentErrNotFound => 'यह सहमति पत्र अब उपलब्ध नहीं है।';
 }

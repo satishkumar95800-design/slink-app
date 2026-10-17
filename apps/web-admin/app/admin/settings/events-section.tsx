@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../../lib/api-client';
 import { useErrorText } from '../../../lib/i18n/errors';
 import { formatDateOnly } from '../../../lib/format';
@@ -9,6 +9,7 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Select } from '../../../components/ui/select';
 import { useToast } from '../../../components/ui/toast';
+import { ConsentDialog, ConsentSummary } from './consent-dialog';
 
 type EventType = 'EVENT' | 'PTM';
 
@@ -27,6 +28,7 @@ interface SchoolEvent {
 /** Events and parent-teacher meetings shown on the mobile calendar next to holidays. */
 export function EventsSection() {
   const t = useTranslations('schoolEvents');
+  const tConsent = useTranslations('consent');
   const errorText = useErrorText();
   const { toast } = useToast();
   const [events, setEvents] = useState<SchoolEvent[]>([]);
@@ -39,10 +41,20 @@ export function EventsSection() {
   const [venue, setVenue] = useState('');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
+  const [askConsent, setAskConsent] = useState(false);
+  const [consents, setConsents] = useState<ConsentSummary[]>([]);
+  const [consentFor, setConsentFor] = useState<SchoolEvent | null>(null);
+
+  const loadConsents = useCallback(() => {
+    api.get<ConsentSummary[]>('/consent-forms').then(setConsents).catch(() => {});
+  }, []);
 
   useEffect(() => {
     api.get<SchoolEvent[]>('/calendar/events').then(setEvents).catch(() => {});
-  }, []);
+    loadConsents();
+  }, [loadConsents]);
+
+  const consentOf = (event: SchoolEvent) => consents.find((c) => c.event.id === event.id) ?? null;
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
@@ -68,6 +80,10 @@ export function EventsSection() {
       setVenue('');
       setDescription('');
       toast(t('added'), 'success');
+      if (askConsent) {
+        setAskConsent(false);
+        setConsentFor(created);
+      }
     } catch (err) {
       toast(errorText(err), 'error');
     } finally {
@@ -127,6 +143,15 @@ export function EventsSection() {
             onChange={(e) => setDescription(e.target.value)}
           />
         </div>
+        <label className="flex w-full cursor-pointer items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={askConsent}
+            onChange={(e) => setAskConsent(e.target.checked)}
+            className="h-4 w-4 accent-coral"
+          />
+          {tConsent('askConsent')}
+        </label>
         <Button type="submit" loading={saving} disabled={!startDate || !title.trim()}>
           {t('add')}
         </Button>
@@ -155,12 +180,33 @@ export function EventsSection() {
                 )}
                 {event.venue && <span className="ml-2 text-gray-500">· {event.venue}</span>}
               </span>
-              <Button variant="ghost" size="sm" onClick={() => remove(event)}>
-                {t('remove')}
-              </Button>
+              <span className="flex flex-shrink-0 items-center gap-2">
+                {consentOf(event) && (
+                  <span className="whitespace-nowrap rounded-full bg-coral/10 px-2 py-0.5 text-xs font-medium text-coral-dark">
+                    {tConsent('badge', {
+                      signed: consentOf(event)!.counts.approved + consentOf(event)!.counts.declined,
+                      total: consentOf(event)!.counts.total,
+                    })}
+                  </span>
+                )}
+                <Button variant="secondary" size="sm" onClick={() => setConsentFor(event)}>
+                  {consentOf(event) ? tConsent('button') : tConsent('buttonNew')}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => remove(event)}>
+                  {t('remove')}
+                </Button>
+              </span>
             </li>
           ))}
         </ul>
+      )}
+      {consentFor && (
+        <ConsentDialog
+          event={consentFor}
+          form={consentOf(consentFor)}
+          onClose={() => setConsentFor(null)}
+          onChanged={loadConsents}
+        />
       )}
     </div>
   );

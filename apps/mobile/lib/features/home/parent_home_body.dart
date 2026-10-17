@@ -13,6 +13,7 @@ import '../dashboard/home_header.dart';
 import '../dashboard/students_repository.dart';
 import 'parent_home_models.dart';
 import 'parent_home_repository.dart';
+import '../consent/consent_repository.dart';
 import '../../shared/services/ai_repository.dart';
 import '../../shared/services/branding_repository.dart';
 
@@ -55,7 +56,10 @@ class _ParentHomeBodyState extends ConsumerState<ParentHomeBody> {
     final l = context.l10n;
 
     return RefreshIndicator(
-      onRefresh: () async => ref.invalidate(parentHomeProvider(child.id)),
+      onRefresh: () async {
+        ref.invalidate(consentItemsProvider);
+        ref.invalidate(parentHomeProvider(child.id));
+      },
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
@@ -143,6 +147,15 @@ class _ParentHomeBodyState extends ConsumerState<ParentHomeBody> {
                         label: l.calendarTitle,
                         color: FeatureColors.calendar,
                         onTap: () => context.push('/calendar'),
+                      ),
+                    // Consent forms belong to the calendar module (events).
+                    if (ref.watch(calendarEnabledProvider))
+                      FeatureTile(
+                        icon: Icons.assignment_turned_in_rounded,
+                        label: l.consentTitle,
+                        color: FeatureColors.notices,
+                        badge: ref.watch(consentPendingCountProvider),
+                        onTap: () => context.push('/consent'),
                       ),
                     FeatureTile(
                       icon: Icons.notifications_rounded,

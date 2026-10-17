@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -148,9 +149,29 @@ export class CalendarService {
   async deleteEvent(tenantId: string, id: string, user: ActiveUser) {
     const row = await this.prisma.schoolEvent.findFirst({
       where: { id, tenantId },
+      include: {
+        consentForm: {
+          select: { id: true, _count: { select: { responses: true } } },
+        },
+      },
     });
     if (!row) throw new NotFoundException(t.eventNotFound);
-    await this.prisma.schoolEvent.delete({ where: { id } });
+    // Signed consent answers are a record the school must keep.
+    if (row.consentForm && row.consentForm._count.responses > 0)
+      throw new ConflictException({
+        code: 'EVENT_HAS_CONSENT',
+        message: t.eventHasConsent,
+      });
+    await this.prisma.$transaction([
+      ...(row.consentForm
+        ? [
+            this.prisma.consentForm.delete({
+              where: { id: row.consentForm.id },
+            }),
+          ]
+        : []),
+      this.prisma.schoolEvent.delete({ where: { id } }),
+    ]);
     await this.prisma.auditLog.create({
       data: {
         tenantId,

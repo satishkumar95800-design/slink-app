@@ -86,6 +86,7 @@ pnpm db:generate   # regenerates the Prisma client
 | notifications | done | FCM push (multicast), Twilio SMS, broadcast, audit log, FCM token management |
 | files | done | S3 upload/download, presigned URLs, tenant-isolated key paths |
 | calendar | done | School calendar: admin-managed events + PTMs (`school_events`), unified `GET /calendar?from=&to=` feed with holidays for parents and teachers (mobile month-grid calendar). Optional: `calendar` flag, off by default; every endpoint answers `FEATURE_DISABLED` without it and the mobile tiles hide (flag read from `GET /tenant` `features`) |
+| consent-forms | done | Parent consent for an event (e.g. a school trip), part of the `calendar` flag: an admin sends one form per event to the parents of chosen classes (push in the parent's language) with the wording and a last day to sign; any linked parent signs for their child by typing their full name and ticking a confirmation, and can change the answer until the deadline (school-local). Console Settings → Events shows answers per student, reminds parents who haven't answered, and downloads CSV. A form, or an event, with answers can't be deleted; every create/sign/remind is audit-logged |
 | attendance | done | Daily class attendance (bulk upsert), absent/correction pushes, school holidays, summaries + CSV report |
 | parent | done | Parent home summary (fees/today/attendance in one call), per-child notices |
 | fee-reminders | done | Daily Bull job: fee-due pushes 3 days before and on the due date |

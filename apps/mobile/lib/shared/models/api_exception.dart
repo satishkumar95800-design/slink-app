@@ -77,6 +77,8 @@ String? translateErrorCode(String? code) {
     'FOLDER_EXISTS' => l.staffDocsErrFolderExists,
     'FOLDER_NOT_EMPTY' => l.staffDocsErrFolderNotEmpty,
     'NOT_OWNER' => l.staffDocsErrNotOwner,
+    'CONSENT_CLOSED' => l.consentErrClosed,
+    'CONSENT_NOT_FOUND' => l.consentErrNotFound,
     _ => null,
   };
 }

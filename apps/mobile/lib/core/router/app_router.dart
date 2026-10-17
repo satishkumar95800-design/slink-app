@@ -6,6 +6,7 @@ import '../../features/auth/session_controller.dart';
 import '../../features/auth/splash_page.dart';
 import '../../features/auth/tenant_entry_page.dart';
 import '../../features/calendar/calendar_page.dart';
+import '../../features/consent/consent_page.dart';
 import '../../features/hrms/leave_page.dart';
 import '../../features/hrms/payslips_page.dart';
 import '../../features/staff_docs/staff_docs_page.dart';
@@ -84,6 +85,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/dashboard/reports', builder: (_, __) => const ReportsListPage()),
       GoRoute(path: '/dashboard/notifications', builder: (_, __) => const NotificationHistoryPage()),
       GoRoute(path: '/calendar', builder: (_, __) => const CalendarPage()),
+      GoRoute(path: '/consent', builder: (_, __) => const ConsentPage()),
       GoRoute(path: '/hrms/payslips', builder: (_, __) => const PayslipsPage()),
       GoRoute(path: '/hrms/leave', builder: (_, __) => const LeavePage()),
       GoRoute(path: '/staff-docs', builder: (_, __) => const StaffDocsPage()),

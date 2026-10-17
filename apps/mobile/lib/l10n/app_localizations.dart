@@ -2645,6 +2645,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Period {period}'**
   String routinePeriod(int period);
+
+  /// No description provided for @consentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Consent forms'**
+  String get consentTitle;
+
+  /// No description provided for @consentEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No consent forms from the school yet.'**
+  String get consentEmpty;
+
+  /// No description provided for @consentNeedsAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign now'**
+  String get consentNeedsAnswer;
+
+  /// No description provided for @consentApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Agreed'**
+  String get consentApproved;
+
+  /// No description provided for @consentDeclined.
+  ///
+  /// In en, this message translates to:
+  /// **'Not agreed'**
+  String get consentDeclined;
+
+  /// No description provided for @consentClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get consentClosed;
+
+  /// No description provided for @consentSignBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign by {date}'**
+  String consentSignBy(String date);
+
+  /// No description provided for @consentForChild.
+  ///
+  /// In en, this message translates to:
+  /// **'For {name}'**
+  String consentForChild(String name);
+
+  /// No description provided for @consentForChildClass.
+  ///
+  /// In en, this message translates to:
+  /// **'For {name} · {className}'**
+  String consentForChildClass(String name, String className);
+
+  /// No description provided for @consentAgreeingTo.
+  ///
+  /// In en, this message translates to:
+  /// **'What you are agreeing to'**
+  String get consentAgreeingTo;
+
+  /// No description provided for @consentYourAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answer'**
+  String get consentYourAnswer;
+
+  /// No description provided for @consentAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'I agree'**
+  String get consentAllow;
+
+  /// No description provided for @consentDecline.
+  ///
+  /// In en, this message translates to:
+  /// **'I don\'t agree'**
+  String get consentDecline;
+
+  /// No description provided for @consentSignatureLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your full name'**
+  String get consentSignatureLabel;
+
+  /// No description provided for @consentSignatureHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Typing your name is your signature'**
+  String get consentSignatureHint;
+
+  /// No description provided for @consentNoteLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Message to the school (optional)'**
+  String get consentNoteLabel;
+
+  /// No description provided for @consentConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'I am {name}\'s parent or guardian and I confirm this answer.'**
+  String consentConfirm(String name);
+
+  /// No description provided for @consentSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign and send'**
+  String get consentSubmit;
+
+  /// No description provided for @consentSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you. The school has your answer.'**
+  String get consentSubmitted;
+
+  /// No description provided for @consentSignedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed by {name} on {date}'**
+  String consentSignedBy(String name, String date);
+
+  /// No description provided for @consentCanChange.
+  ///
+  /// In en, this message translates to:
+  /// **'You can change your answer until {date}.'**
+  String consentCanChange(String date);
+
+  /// No description provided for @consentChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change answer'**
+  String get consentChange;
+
+  /// No description provided for @consentClosedNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The last day to sign was {date}.'**
+  String consentClosedNote(String date);
+
+  /// No description provided for @consentErrClosed.
+  ///
+  /// In en, this message translates to:
+  /// **'The last day to sign has passed.'**
+  String get consentErrClosed;
+
+  /// No description provided for @consentErrNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'This consent form is no longer available.'**
+  String get consentErrNotFound;
 }
 
 class _AppLocalizationsDelegate

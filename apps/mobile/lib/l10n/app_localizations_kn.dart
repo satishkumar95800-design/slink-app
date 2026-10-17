@@ -1530,4 +1530,93 @@ class AppLocalizationsKn extends AppLocalizations {
   String routinePeriod(int period) {
     return 'ಅವಧಿ $period';
   }
+
+  @override
+  String get consentTitle => 'ಒಪ್ಪಿಗೆ ಪತ್ರಗಳು';
+
+  @override
+  String get consentEmpty => 'ಶಾಲೆಯಿಂದ ಇನ್ನೂ ಯಾವುದೇ ಒಪ್ಪಿಗೆ ಪತ್ರಗಳಿಲ್ಲ.';
+
+  @override
+  String get consentNeedsAnswer => 'ಈಗ ಸಹಿ ಮಾಡಿ';
+
+  @override
+  String get consentApproved => 'ಒಪ್ಪಿದ್ದೀರಿ';
+
+  @override
+  String get consentDeclined => 'ಒಪ್ಪಿಲ್ಲ';
+
+  @override
+  String get consentClosed => 'ಮುಚ್ಚಲಾಗಿದೆ';
+
+  @override
+  String consentSignBy(String date) {
+    return '$date ರೊಳಗೆ ಸಹಿ ಮಾಡಿ';
+  }
+
+  @override
+  String consentForChild(String name) {
+    return '$name ಗಾಗಿ';
+  }
+
+  @override
+  String consentForChildClass(String name, String className) {
+    return '$name ಗಾಗಿ · $className';
+  }
+
+  @override
+  String get consentAgreeingTo => 'ನೀವು ಒಪ್ಪುತ್ತಿರುವುದು';
+
+  @override
+  String get consentYourAnswer => 'ನಿಮ್ಮ ಉತ್ತರ';
+
+  @override
+  String get consentAllow => 'ನಾನು ಒಪ್ಪುತ್ತೇನೆ';
+
+  @override
+  String get consentDecline => 'ನಾನು ಒಪ್ಪುವುದಿಲ್ಲ';
+
+  @override
+  String get consentSignatureLabel => 'ನಿಮ್ಮ ಪೂರ್ಣ ಹೆಸರು';
+
+  @override
+  String get consentSignatureHint => 'ನಿಮ್ಮ ಹೆಸರನ್ನು ಟೈಪ್ ಮಾಡುವುದೇ ನಿಮ್ಮ ಸಹಿ';
+
+  @override
+  String get consentNoteLabel => 'ಶಾಲೆಗೆ ಸಂದೇಶ (ಐಚ್ಛಿಕ)';
+
+  @override
+  String consentConfirm(String name) {
+    return 'ನಾನು $name ಅವರ ಪೋಷಕ ಅಥವಾ ರಕ್ಷಕ, ಮತ್ತು ಈ ಉತ್ತರವನ್ನು ದೃಢೀಕರಿಸುತ್ತೇನೆ.';
+  }
+
+  @override
+  String get consentSubmit => 'ಸಹಿ ಮಾಡಿ ಕಳುಹಿಸಿ';
+
+  @override
+  String get consentSubmitted => 'ಧನ್ಯವಾದಗಳು. ನಿಮ್ಮ ಉತ್ತರ ಶಾಲೆಗೆ ತಲುಪಿದೆ.';
+
+  @override
+  String consentSignedBy(String name, String date) {
+    return '$name ಅವರು $date ರಂದು ಸಹಿ ಮಾಡಿದ್ದಾರೆ';
+  }
+
+  @override
+  String consentCanChange(String date) {
+    return '$date ರವರೆಗೆ ನಿಮ್ಮ ಉತ್ತರವನ್ನು ಬದಲಾಯಿಸಬಹುದು.';
+  }
+
+  @override
+  String get consentChange => 'ಉತ್ತರ ಬದಲಾಯಿಸಿ';
+
+  @override
+  String consentClosedNote(String date) {
+    return 'ಸಹಿ ಮಾಡಲು ಕೊನೆಯ ದಿನ $date ಆಗಿತ್ತು.';
+  }
+
+  @override
+  String get consentErrClosed => 'ಸಹಿ ಮಾಡುವ ಕೊನೆಯ ದಿನ ಕಳೆದಿದೆ.';
+
+  @override
+  String get consentErrNotFound => 'ಈ ಒಪ್ಪಿಗೆ ಪತ್ರ ಈಗ ಲಭ್ಯವಿಲ್ಲ.';
 }

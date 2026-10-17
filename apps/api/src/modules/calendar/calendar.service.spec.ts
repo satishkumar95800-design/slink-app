@@ -1,4 +1,8 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Role, SchoolEventType } from '@prisma/client';
 import { CalendarService } from './calendar.service';
 import type { ActiveUser } from '../../common/types/active-user.type';
@@ -20,7 +24,9 @@ function setup() {
       create: jest.fn(),
       delete: jest.fn(),
     },
+    consentForm: { delete: jest.fn() },
     auditLog: { create: jest.fn() },
+    $transaction: jest.fn((ops: unknown[]) => Promise.all(ops)),
   };
   const attendance = { listHolidays: jest.fn().mockResolvedValue([]) };
   const service = new CalendarService(prisma as never, attendance as never);
@@ -163,9 +169,9 @@ describe('CalendarService', () => {
       await expect(
         service.deleteEvent('tenant-b', 'e1', ADMIN),
       ).rejects.toThrow(NotFoundException);
-      expect(prisma.schoolEvent.findFirst).toHaveBeenCalledWith({
-        where: { id: 'e1', tenantId: 'tenant-b' },
-      });
+      expect(prisma.schoolEvent.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'e1', tenantId: 'tenant-b' } }),
+      );
       expect(prisma.schoolEvent.delete).not.toHaveBeenCalled();
     });
 
@@ -177,6 +183,29 @@ describe('CalendarService', () => {
         where: { id: 'e1' },
       });
       expect(prisma.auditLog.create).toHaveBeenCalled();
+    });
+
+    it('removes an unanswered consent form with the event', async () => {
+      const { prisma, service } = setup();
+      prisma.schoolEvent.findFirst.mockResolvedValue(
+        eventRow({ consentForm: { id: 'f1', _count: { responses: 0 } } }),
+      );
+      await service.deleteEvent('tenant-a', 'e1', ADMIN);
+      expect(prisma.consentForm.delete).toHaveBeenCalledWith({
+        where: { id: 'f1' },
+      });
+      expect(prisma.schoolEvent.delete).toHaveBeenCalled();
+    });
+
+    it('keeps an event whose consent form parents have answered', async () => {
+      const { prisma, service } = setup();
+      prisma.schoolEvent.findFirst.mockResolvedValue(
+        eventRow({ consentForm: { id: 'f1', _count: { responses: 2 } } }),
+      );
+      await expect(
+        service.deleteEvent('tenant-a', 'e1', ADMIN),
+      ).rejects.toThrow(ConflictException);
+      expect(prisma.schoolEvent.delete).not.toHaveBeenCalled();
     });
   });
 });

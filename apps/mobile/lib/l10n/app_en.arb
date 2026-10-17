@@ -1026,5 +1026,85 @@
         "type": "int"
       }
     }
-  }
+  },
+  "consentTitle": "Consent forms",
+  "consentEmpty": "No consent forms from the school yet.",
+  "consentNeedsAnswer": "Sign now",
+  "consentApproved": "Agreed",
+  "consentDeclined": "Not agreed",
+  "consentClosed": "Closed",
+  "consentSignBy": "Sign by {date}",
+  "@consentSignBy": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "consentForChild": "For {name}",
+  "@consentForChild": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "consentForChildClass": "For {name} · {className}",
+  "@consentForChildClass": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "className": {
+        "type": "String"
+      }
+    }
+  },
+  "consentAgreeingTo": "What you are agreeing to",
+  "consentYourAnswer": "Your answer",
+  "consentAllow": "I agree",
+  "consentDecline": "I don't agree",
+  "consentSignatureLabel": "Your full name",
+  "consentSignatureHint": "Typing your name is your signature",
+  "consentNoteLabel": "Message to the school (optional)",
+  "consentConfirm": "I am {name}'s parent or guardian and I confirm this answer.",
+  "@consentConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "consentSubmit": "Sign and send",
+  "consentSubmitted": "Thank you. The school has your answer.",
+  "consentSignedBy": "Signed by {name} on {date}",
+  "@consentSignedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "consentCanChange": "You can change your answer until {date}.",
+  "@consentCanChange": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "consentChange": "Change answer",
+  "consentClosedNote": "The last day to sign was {date}.",
+  "@consentClosedNote": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "consentErrClosed": "The last day to sign has passed.",
+  "consentErrNotFound": "This consent form is no longer available."
 }

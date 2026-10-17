@@ -7,4 +7,6 @@ export const calendarStrings = {
   rangeTooLong: 'Choose a date range of at most 366 days',
   rangeReversed: '"from" must be on or before "to"',
   eventNotFound: 'Event not found',
+  eventHasConsent:
+    'Parents have already answered this event’s consent form, so the event cannot be deleted',
 };
