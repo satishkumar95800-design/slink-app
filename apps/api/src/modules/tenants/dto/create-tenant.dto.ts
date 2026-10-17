@@ -1,4 +1,5 @@
-import { IsString, IsOptional, Matches, MinLength, MaxLength, IsHexColor } from 'class-validator';
+import { SubscriptionPlan } from '@prisma/client';
+import { IsEnum, IsString, IsOptional, Matches, MinLength, MaxLength, IsHexColor } from 'class-validator';
 
 export class CreateTenantDto {
   /** URL-safe slug: lowercase letters, digits, hyphens. e.g. "greenfield-school" */
@@ -27,4 +28,14 @@ export class CreateTenantDto {
   @IsHexColor()
   @IsOptional()
   accentColor?: string;
+
+  /** Basic (default), Premium or Premium Max; switches on the plan's modules. */
+  @IsEnum(SubscriptionPlan)
+  @IsOptional()
+  plan?: SubscriptionPlan;
+
+  /** YYYY-MM-DD; defaults to today in the school's timezone. Ends a year later. */
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'startsOn must be YYYY-MM-DD' })
+  @IsOptional()
+  startsOn?: string;
 }

@@ -9,6 +9,7 @@ import { ToastProvider } from '../../components/ui/toast';
 import { ChangePasswordModal } from '../../components/layout/change-password-modal';
 import { strings } from '../../lib/strings';
 import { ConsoleI18nProvider } from '../../lib/i18n/provider';
+import { api } from '../../lib/api-client';
 
 /** The platform (super-admin) console stays English for now (docs/SPEC-languages.md scope);
  * the provider is here for the shared modal / spinner / password dialog. */
@@ -26,7 +27,17 @@ function PlatformShell({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [renewalsDue, setRenewalsDue] = useState(0);
   const checked = useRef(false);
+
+  // Count for the Renewals tab; refreshed when the page changes (e.g. after marking one renewed).
+  useEffect(() => {
+    if (!ready) return;
+    api
+      .get<unknown[]>('/platform/renewals')
+      .then((r) => setRenewalsDue(r.length))
+      .catch(() => {});
+  }, [ready, pathname]);
 
   useEffect(() => {
     if (checked.current) return;
@@ -63,33 +74,33 @@ function PlatformShell({ children }: { children: ReactNode }) {
       <div className="flex h-screen flex-col overflow-hidden bg-cream">
         <header className="flex h-16 flex-shrink-0 items-center justify-between gap-2 border-b bg-teal px-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-3 sm:gap-6">
-            <Link href="/platform/tenants" className="flex items-center gap-2">
+            <Link href="/platform/dashboard" className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1">
                 <img src="/schoolinkd-mark.svg" alt="" className="h-full w-full" />
               </div>
               <span className="hidden text-sm font-bold tracking-tight text-white sm:inline">{strings.product.platformTitle}</span>
             </Link>
-            <nav className="flex items-center gap-1">
-              <Link
-                href="/platform/tenants"
-                className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-                  pathname.startsWith('/platform/tenants')
-                    ? 'bg-coral text-white'
-                    : 'text-white/80 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                Tenants
-              </Link>
-              <Link
-                href="/platform/leads"
-                className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-                  pathname.startsWith('/platform/leads')
-                    ? 'bg-coral text-white'
-                    : 'text-white/80 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                Leads
-              </Link>
+            <nav className="flex items-center gap-1 overflow-x-auto">
+              {[
+                { href: '/platform/dashboard', label: 'Dashboard' },
+                { href: '/platform/tenants', label: 'Tenants' },
+                { href: '/platform/renewals', label: 'Renewals', count: renewalsDue },
+                { href: '/platform/groups', label: 'Groups' },
+                { href: '/platform/leads', label: 'Leads' },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                    pathname.startsWith(item.href) ? 'bg-coral text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  {item.label}
+                  {!!item.count && (
+                    <span className="rounded-full bg-white px-1.5 text-xs font-bold text-coral">{item.count}</span>
+                  )}
+                </Link>
+              ))}
             </nav>
           </div>
           <div className="flex flex-shrink-0 items-center gap-2 sm:gap-4">

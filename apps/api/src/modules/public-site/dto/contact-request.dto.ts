@@ -26,7 +26,14 @@ export function normalizeIndianMobile(value: unknown): unknown {
   return /^[6-9]\d{9}$/.test(local) ? `+91${local}` : value;
 }
 
-export const INTERESTED_PLANS = ['basic', 'premium', 'gold', 'unsure'] as const;
+/** 'gold' is the old name of Premium Max; still accepted from cached marketing pages. */
+export const INTERESTED_PLANS = [
+  'basic',
+  'premium',
+  'premium_max',
+  'gold',
+  'unsure',
+] as const;
 
 export class ContactRequestDto {
   @CleanName()

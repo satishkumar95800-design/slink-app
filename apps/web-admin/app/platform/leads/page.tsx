@@ -27,7 +27,7 @@ interface PricingRequest {
   createdAt: string;
 }
 
-const PLAN_LABEL: Record<string, string> = { basic: 'Basic', premium: 'Premium', gold: 'Gold', unsure: 'Not sure' };
+const PLAN_LABEL: Record<string, string> = { basic: 'Basic', premium: 'Premium', premium_max: 'Premium Max', gold: 'Premium Max', unsure: 'Not sure' };
 
 interface SiteStats {
   days: number;

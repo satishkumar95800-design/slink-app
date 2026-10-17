@@ -16,6 +16,8 @@ enum Role {
   accounts
   super_admin
   developer
+  /// Head office of a group of schools: read-only view of its branches (docs/SPEC-subscriptions.md 6).
+  head_office
 }
 
 enum FeeStatus {
@@ -188,10 +190,20 @@ model Tenant {
   // features: { installmentPlans, inAppMessaging, transportFeeModule, photoGallery }
   features           Json     @default("{\"installmentPlans\":false,\"inAppMessaging\":false,\"transportFeeModule\":true,\"photoGallery\":false}")
   receiptSequence    Int      @default(0) @map("receipt_sequence")
+  // Subscription (docs/SPEC-subscriptions.md). The plan is what the school pays
+  // for; module flags in `features` are what is switched on. Status (active /
+  // renewal due / grace / expired) is derived from ends_on, never stored.
+  subscriptionPlan     SubscriptionPlan @default(basic) @map("subscription_plan")
+  subscriptionStartsOn DateTime         @default(dbgenerated("CURRENT_DATE")) @map("subscription_starts_on") @db.Date
+  subscriptionEndsOn   DateTime         @default(dbgenerated("((CURRENT_DATE + '1 year'::interval) - '1 day'::interval)")) @map("subscription_ends_on") @db.Date
+  /// Franchise / group the school belongs to (head office view), if any.
+  groupId              String?          @map("group_id") @db.Uuid
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
   users                    User[]
+  subscriptionRenewals     SubscriptionRenewal[]
+  group                    SchoolGroup?          @relation(fields: [groupId], references: [id], onDelete: SetNull)
   students                 Student[]
   classes                  Class[]
   feeStructures            FeeStructure[]
@@ -243,7 +255,48 @@ model Tenant {
   payRunLines              PayRunLine[]
   payRunLineItems          PayRunLineItem[]
 
+  @@index([groupId])
   @@map("tenants")
+}
+
+/// A franchise: schools (branches) seen together by head office users.
+model SchoolGroup {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenants Tenant[]
+  users   User[]
+
+  @@map("school_groups")
+}
+
+enum SubscriptionPlan {
+  basic
+  premium
+  premium_max
+}
+
+/// One renewal marked by the platform team (append-only history).
+model SubscriptionRenewal {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId         String           @map("tenant_id") @db.Uuid
+  plan             SubscriptionPlan
+  previousEndsOn   DateTime         @map("previous_ends_on") @db.Date
+  startsOn         DateTime         @map("starts_on") @db.Date
+  endsOn           DateTime         @map("ends_on") @db.Date
+  /// Rupees received, if recorded.
+  amount           Decimal?         @db.Decimal(12, 2)
+  reference        String?
+  note             String?
+  renewedBy        String           @map("renewed_by") @db.Uuid
+  createdAt        DateTime         @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@map("subscription_renewals")
 }
 
 // ─── User ─────────────────────────────────────────────────────────────────────
@@ -261,10 +314,14 @@ model User {
   isVerified   Boolean  @default(false) @map("is_verified")
   // Language the user picked (en | kn | hi); null = follow the school's default.
   preferredLanguage String? @map("preferred_language") @db.VarChar(8)
+  // head_office users only: the group whose schools they see. Their tenant_id
+  // is one school of the group (a user needs one) and is never used for scope.
+  groupId      String?  @map("group_id") @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   tenant           Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  group            SchoolGroup?    @relation(fields: [groupId], references: [id], onDelete: SetNull)
   linkedStudents   StudentParent[]
   reports          Report[]        @relation("TeacherReports")
   refreshTokens    RefreshToken[]

@@ -12,7 +12,21 @@ import { Badge } from '../../../components/ui/badge';
 import { Modal } from '../../../components/ui/modal';
 import { Spinner } from '../../../components/ui/spinner';
 import { EmptyState } from '../../../components/ui/empty-state';
+import { Select } from '../../../components/ui/select';
 import { useToast } from '../../../components/ui/toast';
+import {
+  PLANS,
+  PLAN_VARIANT,
+  STATUS_LABEL,
+  STATUS_VARIANT,
+  Subscription,
+  SubscriptionStatus,
+  daysText,
+  dmy,
+  inr,
+  oneYearFrom,
+  todayYmd,
+} from '../plans';
 
 interface Tenant {
   id: string;
@@ -20,8 +34,11 @@ interface Tenant {
   name: string;
   isActive: boolean;
   createdAt: string;
+  subscription: Subscription;
   _count: { users: number; students: number };
 }
+
+
 
 const schema = z.object({
   slug: z
@@ -29,6 +46,8 @@ const schema = z.object({
     .min(3, 'At least 3 characters')
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Lowercase letters, digits, and hyphens only'),
   name: z.string().min(2, 'Name is required'),
+  plan: z.enum(['basic', 'premium', 'premium_max']),
+  startsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Choose a date'),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -40,6 +59,15 @@ export default function TenantsListPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  // Links from the dashboard open the list already filtered.
+  const [plan, setPlan] = useState(() =>
+    typeof window === 'undefined' ? '' : (new URLSearchParams(window.location.search).get('plan') ?? ''),
+  );
+  const [status, setStatus] = useState<SubscriptionStatus | ''>(() =>
+    typeof window === 'undefined'
+      ? ''
+      : ((new URLSearchParams(window.location.search).get('subscription') ?? '') as SubscriptionStatus | ''),
+  );
   const [showModal, setShowModal] = useState(false);
 
   const {
@@ -47,12 +75,19 @@ export default function TenantsListPage() {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
+    watch,
+  } = useForm<FormData>({ resolver: zodResolver(schema), defaultValues: { plan: 'basic', startsOn: todayYmd() } });
+  const chosenPlan = PLANS.find((p) => p.key === watch('plan'));
+  const startsOn = watch('startsOn');
 
   async function fetchTenants(q: string) {
     try {
       setLoading(true);
-      const query = q ? `?search=${encodeURIComponent(q)}&limit=50` : '?limit=50';
+      const params = new URLSearchParams({ limit: '100' });
+      if (q) params.set('search', q);
+      if (plan) params.set('plan', plan);
+      if (status) params.set('subscription', status);
+      const query = `?${params}`;
       const res = await api.get<{ data: Tenant[]; total: number }>(`/tenants${query}`);
       setTenants(res.data);
       setTotal(res.total);
@@ -67,14 +102,14 @@ export default function TenantsListPage() {
     const handle = setTimeout(() => fetchTenants(search), 300);
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+  }, [search, plan, status]);
 
   async function onCreate(data: FormData) {
     try {
       const tenant = await api.post<Tenant>('/tenants', data);
       toast(`"${tenant.name}" created`, 'success');
       setShowModal(false);
-      reset();
+      reset({ plan: 'basic', startsOn: todayYmd(), name: '', slug: '' });
       router.push(`/platform/tenants/${tenant.id}`);
     } catch (err) {
       toast(err instanceof ApiError ? err.message : 'Could not create tenant', 'error');
@@ -82,7 +117,7 @@ export default function TenantsListPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-extrabold tracking-tight text-gray-900">Tenants</h1>
@@ -91,12 +126,29 @@ export default function TenantsListPage() {
         <Button onClick={() => setShowModal(true)}>+ New tenant</Button>
       </div>
 
-      <Input
-        placeholder="Search by name or slug…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="max-w-sm"
-      />
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="w-full max-w-sm">
+          <Input placeholder="Search by name or slug…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <div className="w-44">
+          <Select
+            aria-label="Plan"
+            value={plan}
+            onChange={(e) => setPlan(e.target.value)}
+            placeholder="All plans"
+            options={PLANS.map((p) => ({ value: p.key, label: p.name }))}
+          />
+        </div>
+        <div className="w-48">
+          <Select
+            aria-label="Subscription"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as SubscriptionStatus | '')}
+            placeholder="Any subscription"
+            options={(Object.keys(STATUS_LABEL) as SubscriptionStatus[]).map((k) => ({ value: k, label: STATUS_LABEL[k] }))}
+          />
+        </div>
+      </div>
 
       <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
         {loading ? (
@@ -114,10 +166,10 @@ export default function TenantsListPage() {
 <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-left text-gray-500">
-                <th className="px-4 py-3 font-medium">Name</th>
-                <th className="px-4 py-3 font-medium">Slug</th>
-                <th className="px-4 py-3 font-medium">Users</th>
+                <th className="px-4 py-3 font-medium">School</th>
+                <th className="px-4 py-3 font-medium">Plan</th>
                 <th className="px-4 py-3 font-medium">Students</th>
+                <th className="px-4 py-3 font-medium">Subscription ends</th>
                 <th className="px-4 py-3 font-medium">Status</th>
               </tr>
             </thead>
@@ -128,12 +180,34 @@ export default function TenantsListPage() {
                   onClick={() => router.push(`/platform/tenants/${t.id}`)}
                   className="cursor-pointer hover:bg-gray-50"
                 >
-                  <td className="px-4 py-3 font-medium text-gray-900">{t.name}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-600">{t.slug}</td>
-                  <td className="px-4 py-3 text-gray-600">{t._count.users}</td>
-                  <td className="px-4 py-3 text-gray-600">{t._count.students}</td>
                   <td className="px-4 py-3">
-                    <Badge variant={t.isActive ? 'green' : 'gray'}>{t.isActive ? 'Active' : 'Inactive'}</Badge>
+                    <p className="font-medium text-gray-900">{t.name}</p>
+                    <p className="font-mono text-xs text-gray-500">{t.slug}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge variant={PLAN_VARIANT[t.subscription.plan]}>{t.subscription.planName}</Badge>
+                    {t.subscription.addOns.length > 0 && <p className="mt-1 text-xs text-gray-500">+ add-ons</p>}
+                  </td>
+                  <td className="px-4 py-3 text-gray-700">
+                    {t._count.students.toLocaleString('en-IN')}
+                    {t.subscription.yearlyAmount.extraStudents > 0 && (
+                      <p className="text-xs font-semibold text-amber-700">{t.subscription.yearlyAmount.extraStudents} over limit</p>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <p className="text-gray-900">{dmy(t.subscription.endsOn)}</p>
+                    <p className={`text-xs ${t.subscription.status === 'active' ? 'text-gray-500' : 'font-semibold text-red-600'}`}>
+                      {daysText(t.subscription)}
+                    </p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {!t.isActive ? (
+                        <Badge variant="gray">Inactive</Badge>
+                      ) : (
+                        <Badge variant={STATUS_VARIANT[t.subscription.status]}>{STATUS_LABEL[t.subscription.status]}</Badge>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -157,6 +231,35 @@ export default function TenantsListPage() {
             helpText="Used in the login screen and, later, as the subdomain."
             error={errors.slug?.message}
             {...register('slug')}
+          />
+          <div>
+            <p className="mb-2 text-sm font-semibold text-gray-800">Plan</p>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {PLANS.map((p) => (
+                <label
+                  key={p.key}
+                  className={`cursor-pointer rounded-xl border-2 px-3 py-2 text-sm ${
+                    watch('plan') === p.key ? 'border-teal bg-teal/5' : 'border-gray-200 bg-white'
+                  }`}
+                >
+                  <input type="radio" value={p.key} className="sr-only" {...register('plan')} />
+                  <span className="block font-bold text-gray-900">{p.name}</span>
+                  <span className="block text-xs text-gray-500">{inr(p.price)} / year</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <Input
+            label="Subscription starts"
+            type="date"
+            required
+            error={errors.startsOn?.message}
+            helpText={
+              chosenPlan && startsOn
+                ? `Runs one year, until ${dmy(oneYearFrom(startsOn))}. ${chosenPlan.key === 'basic' ? 'Core features only; modules can be added later.' : `${chosenPlan.name} modules are switched on.`}`
+                : undefined
+            }
+            {...register('startsOn')}
           />
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={() => setShowModal(false)}>

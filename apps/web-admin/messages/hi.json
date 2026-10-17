@@ -120,7 +120,9 @@
     "DATE_INVALID": "सही तारीख नहीं है।",
     "IMPORT_ROWS_INVALID": "समस्या वाली पंक्तियाँ ठीक करके फिर से अपलोड करें।",
     "SUBJECT_NOT_FOUND": "विषय नहीं मिला।",
-    "CLASS_NOT_FOUND": "कक्षा नहीं मिली।"
+    "CLASS_NOT_FOUND": "कक्षा नहीं मिली।",
+    "SUBSCRIPTION_EXPIRED": "इस स्कूल की Schoolinkd सदस्यता समाप्त हो गई है। कृपया स्कूल कार्यालय से संपर्क करें।",
+    "BRANCH_NOT_IN_GROUP": "यह स्कूल आपके समूह का हिस्सा नहीं है।"
   },
   "language": {
     "label": "भाषा",
@@ -1958,5 +1960,65 @@
     "openSyllabusPage": "पाठ्यक्रम खोलें",
     "timelineCovered": "{target} तक · {date} को पढ़ाया",
     "noTopicsYet": "अभी कोई पाठ नहीं"
+  },
+  "subscription": {
+    "graceTitle": "आपकी Schoolinkd सदस्यता {date} को समाप्त हो गई।",
+    "graceBody": "{days, plural, =0 {रुकावट से बचने के लिए आज ही नवीनीकरण करें: कल स्कूल बंद कर दिया जाएगा।} =1 {रुकावट से बचने के लिए 1 दिन में नवीनीकरण करें।} other {रुकावट से बचने के लिए # दिनों में नवीनीकरण करें।}} नवीनीकरण के लिए Schoolinkd टीम से संपर्क करें।"
+  },
+  "headOffice": {
+    "title": "मुख्य कार्यालय",
+    "readOnly": "केवल देखने के लिए",
+    "logout": "लॉग आउट",
+    "intro": "आपके स्कूल साथ-साथ। यह केवल देखने के लिए है: यहाँ से स्कूल का कोई डेटा नहीं बदलता।",
+    "noGroupTitle": "अभी कोई स्कूल जुड़ा नहीं",
+    "noGroup": "आपका लॉगिन अभी किसी स्कूल समूह से नहीं जुड़ा है। Schoolinkd टीम से संपर्क करें।",
+    "kpiSchools": "स्कूल",
+    "kpiSchoolsSub": "{total} में से {available} का डेटा",
+    "kpiStudents": "विद्यार्थी",
+    "kpiStaff": "{count, plural, =1 {1 स्टाफ़} other {# स्टाफ़}}",
+    "kpiCollected": "वसूली गई फ़ीस",
+    "kpiCollectedSub": "इस वर्ष की फ़ीस का {pct}%",
+    "kpiOutstanding": "बकाया",
+    "kpiOverdue": "{count, plural, =0 {कुछ भी अतिदेय नहीं} =1 {1 फ़ीस अतिदेय} other {# फ़ीस अतिदेय}}",
+    "kpiNotices": "भेजी गई सूचनाएँ",
+    "last30": "पिछले 30 दिन",
+    "tableTitle": "स्कूलों की तुलना",
+    "tableHelp": "हरा उस माप पर सबसे अच्छा स्कूल और लाल सबसे कमज़ोर दिखाता है। क्रम बदलने के लिए कॉलम पर, विवरण के लिए स्कूल पर क्लिक करें।",
+    "col": {
+      "name": "स्कूल",
+      "students": "विद्यार्थी",
+      "staff": "स्टाफ़",
+      "attToday": "आज की उपस्थिति",
+      "att30": "उपस्थिति (30 दिन)",
+      "collection": "वसूली गई फ़ीस",
+      "outstanding": "बकाया",
+      "overdue": "अतिदेय फ़ीस",
+      "notices": "सूचनाएँ (30 दिन)",
+      "appUse": "अभिभावक ऐप उपयोग",
+      "syllabus": "समय पर पाठ्यक्रम",
+      "class": "कक्षा"
+    },
+    "notMarked": "दर्ज नहीं",
+    "pct": "{value}%",
+    "notIncluded": "{plan} प्लान में शामिल नहीं",
+    "switchedOff": "बंद: सदस्यता नवीनीकृत नहीं हुई",
+    "status": {
+      "active": "सक्रिय",
+      "renewal_due": "नवीनीकरण बाकी",
+      "grace": "अतिरिक्त अवधि",
+      "expired": "बंद"
+    },
+    "back": "सभी स्कूल",
+    "todayNotMarked": "आज अभी दर्ज नहीं",
+    "todayPct": "आज {value}%",
+    "appUseSub": "जिन विद्यार्थियों के अभिभावक ऐप में साइन इन हैं",
+    "syllabusSub": "{planned} में से {onTime} विषय समय पर",
+    "syllabusOff": "पाठ्यक्रम प्रगति चालू नहीं है",
+    "monthlyTitle": "महीनेवार फ़ीस वसूली",
+    "trendTitle": "उपस्थिति, पिछले 30 दिन",
+    "trendDay": "{date}: {value}%",
+    "noData": "अभी कोई डेटा नहीं",
+    "classesTitle": "कक्षावार",
+    "amountCollected": "वसूली गई राशि"
   }
 }

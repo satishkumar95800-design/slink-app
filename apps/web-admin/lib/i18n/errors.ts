@@ -87,6 +87,8 @@ const KNOWN_CODES = [
   'IMPORT_ROWS_INVALID',
   'SUBJECT_NOT_FOUND',
   'CLASS_NOT_FOUND',
+  'SUBSCRIPTION_EXPIRED',
+  'BRANCH_NOT_IN_GROUP',
 ] as const;
 type KnownCode = (typeof KNOWN_CODES)[number];
 

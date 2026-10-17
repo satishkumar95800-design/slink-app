@@ -21,13 +21,13 @@ class TenantBranding {
   /// HR & payroll (My payslips, Leave for staff) is an optional module the platform team switches on.
   bool get hrmsEnabled => features['hrms'] == true;
 
-  /// Plan module (Premium and Gold): weekly routine and next-class reminders.
+  /// Plan module (Premium and Premium Max): weekly routine and next-class reminders.
   bool get timetableEnabled => features['timetable'] == true;
 
-  /// Plan module (Premium and Gold): shared staff documents.
+  /// Plan module (Premium and Premium Max): shared staff documents.
   bool get staffDocumentsEnabled => features['staffDocuments'] == true;
 
-  /// Plan module (Premium and Gold): syllabus topics and coverage.
+  /// Plan module (Premium and Premium Max): syllabus topics and coverage.
   bool get syllabusEnabled => features['syllabus'] == true;
 
   factory TenantBranding.fromJson(Map<String, dynamic> json) => TenantBranding(

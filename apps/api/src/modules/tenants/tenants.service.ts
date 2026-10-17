@@ -14,8 +14,17 @@ import { UpdateTenantSelfDto } from './dto/update-tenant-self.dto';
 import { UpdateFeaturesDto } from './dto/update-features.dto';
 import { UpdatePlatformFeaturesDto } from './dto/update-platform-features.dto';
 import { TenantQueryDto } from './dto/tenant-query.dto';
+import {
+  PLAN_LABEL,
+  addOnsOf,
+  oneYearFrom,
+  presetFlags,
+  subscriptionState,
+  yearlyAmount,
+} from '../../common/subscription';
+import { fromDbDate, todayIn, toDbDate } from '../attendance/attendance-dates';
 
-const tenantSelect = {
+export const tenantSelect = {
   id: true,
   slug: true,
   name: true,
@@ -29,10 +38,48 @@ const tenantSelect = {
   isActive: true,
   branding: true,
   features: true,
+  subscriptionPlan: true,
+  subscriptionStartsOn: true,
+  subscriptionEndsOn: true,
+  groupId: true,
   createdAt: true,
   updatedAt: true,
   _count: { select: { users: true, students: true } },
 } satisfies Prisma.TenantSelect;
+
+export type TenantRow = Prisma.TenantGetPayload<{ select: typeof tenantSelect }>;
+
+/** Schema default for features a new school starts with, before its plan's modules. */
+const BASE_FEATURES = {
+  installmentPlans: false,
+  inAppMessaging: false,
+  transportFeeModule: true,
+  photoGallery: false,
+};
+
+/** Plan, period and derived status (docs/SPEC-subscriptions.md) for the platform console. */
+export function subscriptionView(t: TenantRow) {
+  const endsOn = fromDbDate(t.subscriptionEndsOn);
+  const features = (t.features ?? {}) as Record<string, unknown>;
+  return {
+    plan: t.subscriptionPlan,
+    planName: PLAN_LABEL[t.subscriptionPlan],
+    startsOn: fromDbDate(t.subscriptionStartsOn),
+    endsOn,
+    ...subscriptionState(endsOn, todayIn(t.timezone || 'Asia/Kolkata')),
+    addOns: addOnsOf(t.subscriptionPlan, features),
+    yearlyAmount: yearlyAmount(
+      t.subscriptionPlan,
+      features,
+      t._count.students,
+    ),
+  };
+}
+
+export const withSubscription = (t: TenantRow) => ({
+  ...t,
+  subscription: subscriptionView(t),
+});
 
 // ── super_admin operations (no tenant-scoping) ────────────────────────────────
 
@@ -43,20 +90,30 @@ export class TenantsService {
     private readonly files: FilesService,
   ) {}
 
+  /** A new school on the chosen plan (default Basic), subscribed for a year from today. */
   async create(dto: CreateTenantDto) {
     const existing = await this.prisma.tenant.findUnique({ where: { slug: dto.slug } });
     if (existing) throw new ConflictException(`Slug "${dto.slug}" is already taken`);
 
-    return this.prisma.tenant.create({
-      data: {
-        slug: dto.slug,
-        name: dto.name,
-        timezone: dto.timezone ?? 'Asia/Kolkata',
-        primaryColor: dto.primaryColor ?? '#1E40AF',
-        accentColor: dto.accentColor ?? '#F59E0B',
-      },
-      select: tenantSelect,
-    });
+    const timezone = dto.timezone ?? 'Asia/Kolkata';
+    const plan = dto.plan ?? 'basic';
+    const startsOn = dto.startsOn ?? todayIn(timezone);
+    return withSubscription(
+      await this.prisma.tenant.create({
+        data: {
+          slug: dto.slug,
+          name: dto.name,
+          timezone,
+          primaryColor: dto.primaryColor ?? '#1E40AF',
+          accentColor: dto.accentColor ?? '#F59E0B',
+          subscriptionPlan: plan,
+          subscriptionStartsOn: toDbDate(startsOn),
+          subscriptionEndsOn: toDbDate(oneYearFrom(startsOn)),
+          features: { ...BASE_FEATURES, ...presetFlags(plan) },
+        },
+        select: tenantSelect,
+      }),
+    );
   }
 
   async findAll(query: TenantQueryDto) {
@@ -70,6 +127,30 @@ export class TenantsService {
       ];
     }
 
+    if (query.plan) where.subscriptionPlan = query.plan;
+
+    // Subscription status is derived per school (its own timezone), so that
+    // filter runs over the matching schools before paging.
+    if (query.subscription) {
+      const rows = (
+        await this.prisma.tenant.findMany({
+          where,
+          select: tenantSelect,
+          orderBy: { subscriptionEndsOn: 'asc' },
+        })
+      )
+        .map(withSubscription)
+        .filter((t) => t.subscription.status === query.subscription);
+      const page = query.page ?? 1;
+      const limit = query.limit ?? 20;
+      return {
+        data: rows.slice((page - 1) * limit, page * limit),
+        total: rows.length,
+        page,
+        limit,
+      };
+    }
+
     const [data, total] = await this.prisma.$transaction([
       this.prisma.tenant.findMany({
         where,
@@ -81,7 +162,12 @@ export class TenantsService {
       this.prisma.tenant.count({ where }),
     ]);
 
-    return { data, total, page: query.page ?? 1, limit: query.limit ?? 20 };
+    return {
+      data: data.map(withSubscription),
+      total,
+      page: query.page ?? 1,
+      limit: query.limit ?? 20,
+    };
   }
 
   async findById(id: string) {
@@ -90,7 +176,7 @@ export class TenantsService {
       select: tenantSelect,
     });
     if (!tenant) throw new NotFoundException('Tenant not found');
-    return tenant;
+    return withSubscription(tenant);
   }
 
   async update(id: string, dto: UpdateTenantDto) {
@@ -103,7 +189,7 @@ export class TenantsService {
       if (taken) throw new ConflictException(`Slug "${dto.slug}" is already taken`);
     }
 
-    return this.prisma.tenant.update({
+    const row = await this.prisma.tenant.update({
       where: { id },
       data: {
         ...(dto.slug !== undefined && { slug: dto.slug }),
@@ -115,15 +201,18 @@ export class TenantsService {
       },
       select: tenantSelect,
     });
+    return withSubscription(row);
   }
 
   async deactivate(id: string) {
     await this.requireTenant(id);
-    return this.prisma.tenant.update({
-      where: { id },
-      data: { isActive: false },
-      select: tenantSelect,
-    });
+    return withSubscription(
+      await this.prisma.tenant.update({
+        where: { id },
+        data: { isActive: false },
+        select: tenantSelect,
+      }),
+    );
   }
 
   /**
@@ -145,11 +234,13 @@ export class TenantsService {
 
   // ── admin (own tenant) operations ─────────────────────────────────────────────
 
+  /** The school's own settings; `subscription` carries only what the expiry banner needs. */
   async getSelf(tenantId: string) {
-    return this.prisma.tenant.findUniqueOrThrow({
+    const t = await this.prisma.tenant.findUniqueOrThrow({
       where: { id: tenantId },
       select: tenantSelect,
     });
+    return selfView(t);
   }
 
   async updateSelf(tenantId: string, dto: UpdateTenantSelfDto) {
@@ -170,7 +261,7 @@ export class TenantsService {
       ? (dto.branding as Prisma.InputJsonValue)
       : undefined;
 
-    return this.prisma.tenant.update({
+    const row = await this.prisma.tenant.update({
       where: { id: tenantId },
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
@@ -185,6 +276,7 @@ export class TenantsService {
       },
       select: tenantSelect,
     });
+    return selfView(row);
   }
 
   async updateFeatures(tenantId: string, dto: UpdateFeaturesDto | UpdatePlatformFeaturesDto) {
@@ -200,11 +292,13 @@ export class TenantsService {
       ),
     };
 
-    return this.prisma.tenant.update({
-      where: { id: tenantId },
-      data: { features: merged },
-      select: tenantSelect,
-    });
+    return withSubscription(
+      await this.prisma.tenant.update({
+        where: { id: tenantId },
+        data: { features: merged },
+        select: tenantSelect,
+      }),
+    );
   }
 
   /**
@@ -238,4 +332,20 @@ export class TenantsService {
     if (!t) throw new NotFoundException('Tenant not found');
     return t;
   }
+}
+
+/** What a school's own users get: no prices, just the plan and the dates for the banner. */
+function selfView(t: TenantRow) {
+  const sub = subscriptionView(t);
+  return {
+    ...t,
+    subscription: {
+      plan: sub.plan,
+      planName: sub.planName,
+      endsOn: sub.endsOn,
+      status: sub.status,
+      daysLeft: sub.daysLeft,
+      graceDaysLeft: sub.graceDaysLeft,
+    },
+  };
 }

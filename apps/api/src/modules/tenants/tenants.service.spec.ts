@@ -20,6 +20,9 @@ const makeTenant = (overrides: Record<string, unknown> = {}) => ({
     transportFeeModule: true,
     photoGallery: false,
   },
+  subscriptionPlan: 'basic',
+  subscriptionStartsOn: new Date('2026-10-17T00:00:00Z'),
+  subscriptionEndsOn: new Date('2027-10-16T00:00:00Z'),
   createdAt: new Date(),
   updatedAt: new Date(),
   _count: { users: 0, students: 0 },
@@ -71,6 +74,18 @@ describe('TenantsService', () => {
       const result = await service.create(dto);
       expect(result.slug).toBe('greenfield-school');
       expect(mockPrisma.tenant.create).toHaveBeenCalledTimes(1);
+    });
+
+    it('starts the chosen plan with its modules and a one-year period', async () => {
+      mockPrisma.tenant.findUnique.mockResolvedValue(null);
+      mockPrisma.tenant.create.mockResolvedValue(makeTenant());
+
+      await service.create({ ...dto, plan: 'premium', startsOn: '2026-10-17' });
+      const data = mockPrisma.tenant.create.mock.calls[0][0].data;
+      expect(data.subscriptionPlan).toBe('premium');
+      expect(data.subscriptionStartsOn).toEqual(new Date('2026-10-17T00:00:00Z'));
+      expect(data.subscriptionEndsOn).toEqual(new Date('2027-10-16T00:00:00Z'));
+      expect(data.features).toMatchObject({ transportFeeModule: true, calendar: true, syllabus: true, hrms: false });
     });
 
     it('applies defaults for timezone and colors', async () => {

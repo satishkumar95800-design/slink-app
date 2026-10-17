@@ -1749,4 +1749,8 @@ class AppLocalizationsKn extends AppLocalizations {
   @override
   String get syllabusErrTopicGone =>
       'ಈ ಪಾಠವನ್ನು ತೆಗೆದುಹಾಕಲಾಗಿದೆ. ನವೀಕರಿಸಲು ಕೆಳಗೆ ಎಳೆಯಿರಿ.';
+
+  @override
+  String get errSubscriptionExpired =>
+      'ಈ ಶಾಲೆಯ Schoolinkd ಚಂದಾದಾರಿಕೆ ಮುಗಿದಿದೆ. ದಯವಿಟ್ಟು ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.';
 }

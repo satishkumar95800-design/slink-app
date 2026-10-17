@@ -191,7 +191,7 @@ export function buildPricingPdf(
       .fontSize(8)
       .fillColor(MUTED)
       .text(
-        `Taking both add-ons costs more than Gold at ${formatRupees(PLANS[2].price)}.`,
+        `Taking both add-ons costs more than Premium Max at ${formatRupees(PLANS[2].price)}.`,
         M,
         doc.y + 2,
         { width },

@@ -1748,4 +1748,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get syllabusErrTopicGone =>
       'This topic was removed. Pull down to refresh.';
+
+  @override
+  String get errSubscriptionExpired =>
+      'This school\'s Schoolinkd subscription has ended. Please contact the school office.';
 }

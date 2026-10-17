@@ -82,10 +82,11 @@ export const strings = {
             'Fee concessions and transfer certificates',
             'Petty cash and shared staff documents',
             'Attendance and fee reports',
+            'Syllabus progress and head office view',
           ],
         },
         {
-          name: 'Gold',
+          name: 'Premium Max',
           tagline: 'For established schools that want payroll and AI',
           students: '2,000',
           highlights: [
@@ -137,7 +138,7 @@ export const strings = {
         { value: 'unsure', label: 'Not sure yet' },
         { value: 'basic', label: 'Basic' },
         { value: 'premium', label: 'Premium' },
-        { value: 'gold', label: 'Gold' },
+        { value: 'premium_max', label: 'Premium Max' },
       ],
       submit: 'Request a demo',
       sending: 'Sending…',

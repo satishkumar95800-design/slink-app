@@ -120,7 +120,9 @@
     "DATE_INVALID": "Not a valid date.",
     "IMPORT_ROWS_INVALID": "Fix the rows with problems and upload again.",
     "SUBJECT_NOT_FOUND": "Subject not found.",
-    "CLASS_NOT_FOUND": "Class not found."
+    "CLASS_NOT_FOUND": "Class not found.",
+    "SUBSCRIPTION_EXPIRED": "This school's Schoolinkd subscription has ended. Please contact the school office.",
+    "BRANCH_NOT_IN_GROUP": "This school is not part of your group."
   },
   "language": {
     "label": "Language",
@@ -1958,5 +1960,65 @@
     "openSyllabusPage": "Open Syllabus",
     "timelineCovered": "Due {target} · covered {date}",
     "noTopicsYet": "No topics yet"
+  },
+  "subscription": {
+    "graceTitle": "Your Schoolinkd subscription ended on {date}.",
+    "graceBody": "{days, plural, =0 {Renew today to avoid interruption: the school will be switched off tomorrow.} =1 {Renew within 1 day to avoid interruption.} other {Renew within # days to avoid interruption.}} Contact the Schoolinkd team to renew."
+  },
+  "headOffice": {
+    "title": "Head office",
+    "readOnly": "Read-only",
+    "logout": "Logout",
+    "intro": "Your schools side by side. This view is read-only: nothing here changes school data.",
+    "noGroupTitle": "No schools linked yet",
+    "noGroup": "Your login is not linked to a group of schools yet. Contact the Schoolinkd team.",
+    "kpiSchools": "Schools",
+    "kpiSchoolsSub": "{available} of {total} with data",
+    "kpiStudents": "Students",
+    "kpiStaff": "{count, plural, =1 {1 staff member} other {# staff}}",
+    "kpiCollected": "Fees collected",
+    "kpiCollectedSub": "{pct}% of this year's fees",
+    "kpiOutstanding": "Outstanding",
+    "kpiOverdue": "{count, plural, =0 {Nothing overdue} =1 {1 fee overdue} other {# fees overdue}}",
+    "kpiNotices": "Notices sent",
+    "last30": "Last 30 days",
+    "tableTitle": "Schools compared",
+    "tableHelp": "Green marks the best school on a measure and red the weakest. Click a column to sort, or a school for details.",
+    "col": {
+      "name": "School",
+      "students": "Students",
+      "staff": "Staff",
+      "attToday": "Attendance today",
+      "att30": "Attendance (30 days)",
+      "collection": "Fees collected",
+      "outstanding": "Outstanding",
+      "overdue": "Overdue fees",
+      "notices": "Notices (30 days)",
+      "appUse": "Parent app use",
+      "syllabus": "Syllabus on time",
+      "class": "Class"
+    },
+    "notMarked": "Not marked",
+    "pct": "{value}%",
+    "notIncluded": "Not included in the {plan} plan",
+    "switchedOff": "Switched off: subscription not renewed",
+    "status": {
+      "active": "Active",
+      "renewal_due": "Renewal due",
+      "grace": "Grace period",
+      "expired": "Switched off"
+    },
+    "back": "All schools",
+    "todayNotMarked": "Today not marked yet",
+    "todayPct": "Today {value}%",
+    "appUseSub": "Students with a parent signed in to the app",
+    "syllabusSub": "{onTime} of {planned} subjects on schedule",
+    "syllabusOff": "Syllabus progress is not switched on",
+    "monthlyTitle": "Fee collection by month",
+    "trendTitle": "Attendance, last 30 days",
+    "trendDay": "{date}: {value}%",
+    "noData": "No data yet",
+    "classesTitle": "By class",
+    "amountCollected": "Amount collected"
   }
 }

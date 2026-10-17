@@ -11,7 +11,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = new URL('..', import.meta.url).pathname;
-const SCOPES = ['app/admin', 'app/login', 'components/layout', 'components/import', 'components/ui'];
+const SCOPES = ['app/admin', 'app/head-office', 'app/login', 'components/layout', 'components/import', 'components/ui'];
 const PROP = /\b(label|placeholder|title|helpText|description|aria-label|alt|warning)=("|')([^"']*[A-Za-z]{2,}[^"']*)\2/g;
 const CALL = /\b(toast|confirm|alert|setError)\(\s*(['"`])([^'"`]*[A-Za-z]{2,}[^'"`]*)\2/g;
 

@@ -5,7 +5,8 @@ import { ReactNode, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from '../../components/layout/sidebar';
 import { ChangePasswordModal } from '../../components/layout/change-password-modal';
-import { isLoggedIn } from '../../lib/auth';
+import { getSession, isLoggedIn } from '../../lib/auth';
+import { formatDateOnly } from '../../lib/format';
 import { ToastProvider } from '../../components/ui/toast';
 import { api } from '../../lib/api-client';
 import { useTranslations } from 'next-intl';
@@ -17,6 +18,8 @@ interface TenantBrand {
   name: string;
   logoUrl: string | null;
   backgroundImageUrl: string | null;
+  /** Plan and end date; drives the grace-period banner (docs/SPEC-subscriptions.md). */
+  subscription?: { status: string; endsOn: string; graceDaysLeft: number | null };
 }
 
 /** Header title (shown when the school's name hasn't loaded) — keys into messages "nav". */
@@ -139,6 +142,7 @@ function AdminShell({ children }: { children: ReactNode }) {
                 : undefined
             }
           >
+            {tenant?.subscription?.status === 'grace' && <GraceBanner endsOn={tenant.subscription.endsOn} daysLeft={tenant.subscription.graceDaysLeft ?? 0} />}
             {children}
           </main>
         </div>
@@ -208,4 +212,21 @@ const ROLE_KEYS = ['parent', 'teacher', 'admin', 'accounts', 'super_admin'] as c
 
 function roleLabel(t: ReturnType<typeof useTranslations<'roles'>>, role: string) {
   return (ROLE_KEYS as readonly string[]).includes(role) ? t(role as (typeof ROLE_KEYS)[number]) : role;
+}
+
+/** Admin and accounts see this during the 7 days after the subscription's end date. */
+function GraceBanner({ endsOn, daysLeft }: { endsOn: string; daysLeft: number }) {
+  const t = useTranslations('subscription');
+  const [role, setRole] = useState<string | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- session is read after hydration
+    setRole(getSession()?.role ?? null);
+  }, []);
+  if (role !== 'admin' && role !== 'accounts') return null;
+  return (
+    <div role="alert" className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+      <p className="font-semibold">{t('graceTitle', { date: formatDateOnly(endsOn) })}</p>
+      <p className="mt-0.5">{t('graceBody', { days: daysLeft })}</p>
+    </div>
+  );
 }

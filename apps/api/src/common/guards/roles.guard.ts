@@ -13,11 +13,21 @@ export class RolesGuard implements CanActivate {
       context.getClass(),
     ]);
 
+    const { user } = context
+      .switchToHttp()
+      .getRequest<{ user?: { role?: Role } }>();
+
+    // A head office login is read-only and cross-school: it may only reach
+    // routes that name it explicitly, never a school's open routes
+    // (docs/SPEC-subscriptions.md 6.2).
+    if (user?.role === Role.head_office) {
+      return !!requiredRoles?.includes(Role.head_office);
+    }
+
     if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }
 
-    const { user } = context.switchToHttp().getRequest();
-    return requiredRoles.includes(user?.role);
+    return requiredRoles.includes(user?.role as Role);
   }
 }

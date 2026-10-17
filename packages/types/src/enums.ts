@@ -5,6 +5,8 @@ export enum Role {
   ACCOUNTS = 'accounts',
   SUPER_ADMIN = 'super_admin',
   DEVELOPER = 'developer',
+  /** Read-only view of a group of schools (docs/SPEC-subscriptions.md 6). */
+  HEAD_OFFICE = 'head_office',
 }
 
 export enum FeeStatus {

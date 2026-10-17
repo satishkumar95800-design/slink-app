@@ -1,4 +1,5 @@
-import { IsString, IsBoolean, IsOptional, IsInt, Min, Max } from 'class-validator';
+import { SubscriptionPlan } from '@prisma/client';
+import { IsEnum, IsIn, IsString, IsBoolean, IsOptional, IsInt, Min, Max } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
 export class TenantQueryDto {
@@ -11,6 +12,15 @@ export class TenantQueryDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @IsEnum(SubscriptionPlan)
+  @IsOptional()
+  plan?: SubscriptionPlan;
+
+  /** Derived subscription status (docs/SPEC-subscriptions.md). */
+  @IsIn(['active', 'renewal_due', 'grace', 'expired'])
+  @IsOptional()
+  subscription?: 'active' | 'renewal_due' | 'grace' | 'expired';
 
   @Type(() => Number)
   @IsInt()

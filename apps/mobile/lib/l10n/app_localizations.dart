@@ -2981,6 +2981,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This topic was removed. Pull down to refresh.'**
   String get syllabusErrTopicGone;
+
+  /// No description provided for @errSubscriptionExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'This school\'s Schoolinkd subscription has ended. Please contact the school office.'**
+  String get errSubscriptionExpired;
 }
 
 class _AppLocalizationsDelegate

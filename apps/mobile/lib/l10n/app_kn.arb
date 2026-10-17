@@ -479,5 +479,6 @@
   "syllabusLastCovered": "ಕೊನೆಯ ಪಾಠ {date} ರಂದು ಮುಗಿದಿದೆ",
   "syllabusErrNotTeacher": "ನೀವು ಈ ತರಗತಿಯಲ್ಲಿ ಈ ವಿಷಯವನ್ನು ಕಲಿಸುವುದಿಲ್ಲ.",
   "syllabusErrFutureDate": "ಮುಂದಿನ ದಿನಾಂಕದಲ್ಲಿ ಪಾಠವನ್ನು ಮುಗಿದಿದೆ ಎಂದು ಗುರುತಿಸಲಾಗದು.",
-  "syllabusErrTopicGone": "ಈ ಪಾಠವನ್ನು ತೆಗೆದುಹಾಕಲಾಗಿದೆ. ನವೀಕರಿಸಲು ಕೆಳಗೆ ಎಳೆಯಿರಿ."
+  "syllabusErrTopicGone": "ಈ ಪಾಠವನ್ನು ತೆಗೆದುಹಾಕಲಾಗಿದೆ. ನವೀಕರಿಸಲು ಕೆಳಗೆ ಎಳೆಯಿರಿ.",
+  "errSubscriptionExpired": "ಈ ಶಾಲೆಯ Schoolinkd ಚಂದಾದಾರಿಕೆ ಮುಗಿದಿದೆ. ದಯವಿಟ್ಟು ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ."
 }

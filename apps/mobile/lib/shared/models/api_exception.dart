@@ -82,6 +82,7 @@ String? translateErrorCode(String? code) {
     'NOT_SUBJECT_TEACHER' => l.syllabusErrNotTeacher,
     'DATE_IN_FUTURE' => l.syllabusErrFutureDate,
     'TOPIC_NOT_FOUND' => l.syllabusErrTopicGone,
+    'SUBSCRIPTION_EXPIRED' => l.errSubscriptionExpired,
     _ => null,
   };
 }

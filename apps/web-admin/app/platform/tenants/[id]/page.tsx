@@ -15,6 +15,9 @@ import { Modal } from '../../../../components/ui/modal';
 import { useToast } from '../../../../components/ui/toast';
 import { ImportWorkflow } from '../../../../components/import/import-workflow';
 import { PaymentGatewayCard } from './payment-gateway-card';
+import { ModulesCard } from './modules-card';
+import { SubscriptionCard } from './subscription-card';
+import { PLAN_VARIANT, STATUS_LABEL, STATUS_VARIANT, Subscription } from '../../plans';
 
 interface Tenant {
   id: string;
@@ -26,94 +29,8 @@ interface Tenant {
   isActive: boolean;
   createdAt: string;
   features?: Record<string, boolean>;
+  subscription: Subscription;
   _count: { users: number; students: number };
-}
-
-/** Per-school modules only the platform team can switch on (API: common/tenant-features.ts). */
-const OPTIONAL_MODULES = [
-  {
-    key: 'transferCertificate',
-    name: 'Transfer certificates',
-    help: 'TC upload on the student page, and a "TC not attached" report.',
-  },
-  {
-    key: 'aiInsights',
-    name: 'AI features (premium)',
-    help: 'Notices translated into each parent’s language, report remark drafts, payment-proof reading, weekly summary and early warnings.',
-  },
-  {
-    key: 'feeConcession',
-    name: 'Fee concessions',
-    help: "Percentage concession on a student's unpaid fees, and today's concession total on the dashboard.",
-  },
-  {
-    key: 'pettyCash',
-    name: 'Petty cash',
-    help: 'Cash float ledger for the accountant: advances, approvals above a limit, forecast and savings advice. Admin and accounts only.',
-  },
-  {
-    key: 'calendar',
-    name: 'School calendar',
-    help: 'Holidays, events and parent-teacher meetings in the parent and teacher mobile apps, with events managed in Settings.',
-  },
-  {
-    key: 'hrms',
-    name: 'HR & Payroll',
-    help: 'Employee directory, staff attendance, leave and payroll with payslips. Admin and accounts manage it; teachers see their own payslips and leave in the mobile app.',
-  },
-  {
-    key: 'timetable',
-    name: 'Timetable',
-    help: 'Weekly timetable and bell times in the console, the teacher’s weekly routine and today’s periods in the app, and next-class reminders.',
-  },
-  {
-    key: 'staffDocuments',
-    name: 'Shared documents',
-    help: 'Shared staff folders and files for teachers, admin and accounts, in the console and the teacher app.',
-  },
-  {
-    key: 'advancedReports',
-    name: 'Attendance and fee reports',
-    help: 'The attendance report and the Fee reports page, with CSV download. The dashboard totals stay on without it.',
-  },
-  {
-    key: 'customBranding',
-    name: 'Custom branding',
-    help: 'Lets the school change its own background picture, logo and colours. The platform team can still set them.',
-  },
-  {
-    key: 'syllabus',
-    name: 'Syllabus progress',
-    help: 'Topic plans with target dates per class and subject; subject teachers tick topics off in the app, parents see how much is covered, the admin sees which subjects are running late.',
-  },
-] as const;
-
-type ModuleKey = (typeof OPTIONAL_MODULES)[number]['key'];
-
-const PREMIUM_MODULES: ModuleKey[] = [
-  'timetable',
-  'staffDocuments',
-  'advancedReports',
-  'customBranding',
-  'calendar',
-  'feeConcession',
-  'transferCertificate',
-  'pettyCash',
-  'syllabus',
-];
-
-/** Plans are presets over the optional modules (pricing: Basic / Premium / Gold). */
-const PLANS: { key: string; name: string; price: string; modules: ModuleKey[] }[] = [
-  { key: 'basic', name: 'Basic', price: '₹13,333 / year', modules: [] },
-  { key: 'premium', name: 'Premium', price: '₹29,999 / year', modules: PREMIUM_MODULES },
-  { key: 'gold', name: 'Gold', price: '₹60,000 / year', modules: [...PREMIUM_MODULES, 'hrms', 'aiInsights'] },
-];
-
-/** The plan whose modules match the school's flags exactly, or null (custom, e.g. Premium with an add-on). */
-function currentPlan(features: Record<string, boolean> | undefined) {
-  return (
-    PLANS.find((p) => OPTIONAL_MODULES.every((m) => (features?.[m.key] === true) === p.modules.includes(m.key))) ?? null
-  );
 }
 
 type Tab = 'overview' | 'import' | 'users' | 'settings';
@@ -153,7 +70,7 @@ export default function TenantDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       <div>
         <button
           onClick={() => router.push('/platform/tenants')}
@@ -164,6 +81,10 @@ export default function TenantDetailPage() {
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-extrabold tracking-tight text-gray-900">{tenant.name}</h1>
           <Badge variant={tenant.isActive ? 'green' : 'gray'}>{tenant.isActive ? 'Active' : 'Inactive'}</Badge>
+          <Badge variant={PLAN_VARIANT[tenant.subscription.plan]}>{tenant.subscription.planName}</Badge>
+          {tenant.subscription.status !== 'active' && (
+            <Badge variant={STATUS_VARIANT[tenant.subscription.status]}>{STATUS_LABEL[tenant.subscription.status]}</Badge>
+          )}
         </div>
         <p className="font-mono text-xs text-gray-500">{tenant.slug}</p>
       </div>
@@ -185,6 +106,7 @@ export default function TenantDetailPage() {
       {tab === 'overview' && (
         <>
           <OverviewTab tenant={tenant} />
+          <SubscriptionCard tenant={tenant} onSaved={fetchTenant} />
           <ModulesCard tenant={tenant} onSaved={fetchTenant} />
           <PaymentGatewayCard tenantId={tenant.id} tenantName={tenant.name} />
         </>
@@ -662,121 +584,5 @@ function PurgeTenantModal({
         </div>
       </div>
     </Modal>
-  );
-}
-
-function ModulesCard({ tenant, onSaved }: { tenant: Tenant; onSaved: () => void }) {
-  const { toast } = useToast();
-  const [saving, setSaving] = useState<string | null>(null);
-  const [pendingPlan, setPendingPlan] = useState<string | null>(null);
-
-  async function toggle(key: string, on: boolean) {
-    try {
-      setSaving(key);
-      await api.patch(`/tenants/${tenant.id}/features`, { [key]: on });
-      toast(`${on ? 'Turned on' : 'Turned off'} for ${tenant.name}`, 'success');
-      onSaved();
-    } catch (err) {
-      toast(err instanceof ApiError ? err.message : 'Could not update module', 'error');
-    } finally {
-      setSaving(null);
-    }
-  }
-
-  const plan = currentPlan(tenant.features);
-  const pending = PLANS.find((p) => p.key === pendingPlan) ?? null;
-  const moduleName = (key: ModuleKey) => OPTIONAL_MODULES.find((m) => m.key === key)?.name ?? key;
-  const turnsOn = pending ? pending.modules.filter((k) => tenant.features?.[k] !== true) : [];
-  const turnsOff = pending
-    ? OPTIONAL_MODULES.map((m) => m.key).filter((k) => tenant.features?.[k] === true && !pending.modules.includes(k))
-    : [];
-
-  async function applyPlan() {
-    if (!pending) return;
-    try {
-      setSaving('plan');
-      await api.patch(
-        `/tenants/${tenant.id}/features`,
-        Object.fromEntries(OPTIONAL_MODULES.map((m) => [m.key, pending.modules.includes(m.key)])),
-      );
-      toast(`${tenant.name} is now on ${pending.name}`, 'success');
-      setPendingPlan(null);
-      onSaved();
-    } catch (err) {
-      toast(err instanceof ApiError ? err.message : 'Could not change plan', 'error');
-    } finally {
-      setSaving(null);
-    }
-  }
-
-  return (
-    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-base font-semibold text-gray-900">Plan</h2>
-        <Badge variant={plan ? 'green' : 'yellow'}>{plan ? plan.name : 'Custom'}</Badge>
-      </div>
-      <p className="mt-1 text-sm text-gray-500">
-        Picking a plan switches the modules below to match it. Turn single modules on or off afterwards for add-ons.
-      </p>
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        {PLANS.map((p) => (
-          <button
-            key={p.key}
-            type="button"
-            onClick={() => setPendingPlan(p.key === plan?.key ? null : p.key)}
-            className={`rounded-xl border px-4 py-3 text-left transition-colors ${
-              p.key === plan?.key
-                ? 'border-teal bg-teal/5'
-                : p.key === pendingPlan
-                  ? 'border-teal/60 bg-white'
-                  : 'border-gray-200 bg-white hover:border-teal/40'
-            }`}
-          >
-            <p className="text-sm font-semibold text-gray-900">{p.name}</p>
-            <p className="text-xs text-gray-500">{p.price}</p>
-          </button>
-        ))}
-      </div>
-      {pending && (
-        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <p className="font-medium">Move {tenant.name} to {pending.name}?</p>
-          {turnsOn.length > 0 && <p className="mt-1">Turns on: {turnsOn.map(moduleName).join(', ')}</p>}
-          {turnsOff.length > 0 && <p className="mt-1">Turns off: {turnsOff.map(moduleName).join(', ')}</p>}
-          {turnsOn.length === 0 && turnsOff.length === 0 && <p className="mt-1">No modules change.</p>}
-          <div className="mt-3 flex gap-2">
-            <Button size="sm" loading={saving === 'plan'} onClick={applyPlan}>
-              Move to {pending.name}
-            </Button>
-            <Button size="sm" variant="secondary" onClick={() => setPendingPlan(null)}>
-              Cancel
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <h2 className="mt-6 text-base font-semibold text-gray-900">Optional modules</h2>
-      <p className="mt-1 text-sm text-gray-500">Off for every school unless switched on here.</p>
-      <ul className="mt-4 divide-y divide-gray-100">
-        {OPTIONAL_MODULES.map((m) => {
-          const on = tenant.features?.[m.key] === true;
-          return (
-            <li key={m.key} className="flex items-center justify-between gap-4 py-3">
-              <div>
-                <p className="text-sm font-medium text-gray-900">{m.name}</p>
-                <p className="text-xs text-gray-500">{m.help}</p>
-              </div>
-              <Button
-                size="sm"
-                variant={on ? 'secondary' : 'primary'}
-                loading={saving === m.key}
-                onClick={() => toggle(m.key, !on)}
-              >
-                {on ? 'Turn off' : 'Turn on'}
-              </Button>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
   );
 }

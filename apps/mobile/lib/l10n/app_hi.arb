@@ -479,5 +479,6 @@
   "syllabusLastCovered": "आखिरी पाठ {date} को पढ़ाया गया",
   "syllabusErrNotTeacher": "आप इस कक्षा में यह विषय नहीं पढ़ाते।",
   "syllabusErrFutureDate": "भविष्य की तारीख पर पाठ को पढ़ाया गया नहीं चिह्नित कर सकते।",
-  "syllabusErrTopicGone": "यह पाठ हटा दिया गया है। रीफ़्रेश करने के लिए नीचे खींचें।"
+  "syllabusErrTopicGone": "यह पाठ हटा दिया गया है। रीफ़्रेश करने के लिए नीचे खींचें।",
+  "errSubscriptionExpired": "इस स्कूल की Schoolinkd सदस्यता समाप्त हो गई है। कृपया स्कूल कार्यालय से संपर्क करें।"
 }

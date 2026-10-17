@@ -1747,4 +1747,8 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get syllabusErrTopicGone =>
       'यह पाठ हटा दिया गया है। रीफ़्रेश करने के लिए नीचे खींचें।';
+
+  @override
+  String get errSubscriptionExpired =>
+      'इस स्कूल की Schoolinkd सदस्यता समाप्त हो गई है। कृपया स्कूल कार्यालय से संपर्क करें।';
 }

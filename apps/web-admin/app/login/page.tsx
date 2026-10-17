@@ -87,7 +87,9 @@ export default function LoginPage() {
       );
       applyAccountLanguage(user);
 
-      router.push(user.role === 'super_admin' ? '/platform/tenants' : '/admin');
+      router.push(
+        user.role === 'super_admin' ? '/platform/dashboard' : (user.role as string) === 'head_office' ? '/head-office' : '/admin',
+      );
     } catch {
       setError(errorText(new ApiError(0, '', undefined, 'NETWORK_ERROR')));
     }

@@ -43,6 +43,9 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
 import { ConsentFormsModule } from './modules/consent-forms/consent-forms.module';
 import { SyllabusModule } from './modules/syllabus/syllabus.module';
+import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
+import { PlatformDashboardModule } from './modules/platform-dashboard/platform-dashboard.module';
+import { HeadOfficeModule } from './modules/head-office/head-office.module';
 import { PettyCashModule } from './modules/petty-cash/petty-cash.module';
 import { HrmsModule } from './modules/hrms/hrms.module';
 import { ParentModule } from './modules/parent/parent.module';
@@ -99,6 +102,9 @@ import { ClassRemindersModule } from './modules/class-reminders/class-reminders.
     CalendarModule,
     ConsentFormsModule,
     SyllabusModule,
+    SubscriptionsModule,
+    PlatformDashboardModule,
+    HeadOfficeModule,
     PettyCashModule,
     HrmsModule,
     ParentModule,
@@ -127,6 +133,26 @@ export class AppModule implements NestModule {
         { path: 'tenants/:id/purge', method: RequestMethod.ALL },
         { path: 'tenants/:id/features', method: RequestMethod.ALL },
         { path: 'tenants/:id/payment-gateway', method: RequestMethod.ALL },
+        { path: 'tenants/:id/subscription', method: RequestMethod.ALL },
+        { path: 'tenants/:id/renew', method: RequestMethod.ALL },
+        { path: 'tenants/:id/renewals', method: RequestMethod.ALL },
+        { path: 'platform/renewals', method: RequestMethod.GET },
+        { path: 'platform/dashboard', method: RequestMethod.GET },
+        // Head office (franchise) and its management: cross-school, no X-Tenant-ID.
+        { path: 'platform/groups', method: RequestMethod.ALL },
+        { path: 'platform/groups/:id', method: RequestMethod.ALL },
+        { path: 'platform/groups/:id/schools', method: RequestMethod.ALL },
+        { path: 'platform/groups/:id/users', method: RequestMethod.ALL },
+        {
+          path: 'platform/groups/:id/users/:userId',
+          method: RequestMethod.ALL,
+        },
+        {
+          path: 'platform/groups/:id/users/:userId/password',
+          method: RequestMethod.ALL,
+        },
+        { path: 'head-office/overview', method: RequestMethod.GET },
+        { path: 'head-office/branches/:tenantId', method: RequestMethod.GET },
         { path: 'dev/audit-logs', method: RequestMethod.ALL },
         // Addendum 4 / A9 — unauthenticated receipt link: no X-Tenant-ID header
         // (opened straight from an SMS/push, not a logged-in session); the

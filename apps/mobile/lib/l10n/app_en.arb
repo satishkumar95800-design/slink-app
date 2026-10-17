@@ -1246,5 +1246,6 @@
   },
   "syllabusErrNotTeacher": "You don't teach this subject in this class.",
   "syllabusErrFutureDate": "A topic can't be marked covered on a future date.",
-  "syllabusErrTopicGone": "This topic was removed. Pull down to refresh."
+  "syllabusErrTopicGone": "This topic was removed. Pull down to refresh.",
+  "errSubscriptionExpired": "This school's Schoolinkd subscription has ended. Please contact the school office."
 }

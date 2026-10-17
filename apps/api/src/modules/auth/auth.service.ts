@@ -129,13 +129,17 @@ export class AuthService {
   }
 
   /**
-   * Email + password login for super_admin — no tenant context, since a super_admin
-   * operates across every tenant. Looked up by email + role only, never by tenant_id,
-   * so this never trusts a client-supplied tenant like the tenant-scoped login does.
+   * Email + password login without a school code: super_admin (every tenant) and
+   * head_office (the schools of its group, read-only). Looked up by email + role
+   * only, never by tenant_id, so this never trusts a client-supplied tenant like
+   * the tenant-scoped login does.
    */
   async superAdminLogin(dto: SuperAdminLoginDto): Promise<AuthResult> {
     const user = await this.prisma.user.findFirst({
-      where: { email: dto.email, role: Role.super_admin },
+      where: {
+        email: dto.email,
+        role: { in: [Role.super_admin, Role.head_office] },
+      },
     });
 
     if (!user || !user.passwordHash) {

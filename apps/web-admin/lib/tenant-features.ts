@@ -11,12 +11,12 @@ export interface TenantFeatures {
   pettyCash?: boolean;
   calendar?: boolean;
   hrms?: boolean;
-  /** Plan flags (Premium and Gold): on for schools that existed before plans. */
+  /** Plan flags (Premium and Premium Max): on for schools that existed before plans. */
   timetable?: boolean;
   staffDocuments?: boolean;
   advancedReports?: boolean;
   customBranding?: boolean;
-  /** Syllabus topics and coverage (Premium and Gold). */
+  /** Syllabus topics and coverage (Premium and Premium Max). */
   syllabus?: boolean;
 }
 
