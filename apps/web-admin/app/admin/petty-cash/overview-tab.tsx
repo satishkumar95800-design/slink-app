@@ -11,6 +11,7 @@ import { Modal } from '../../../components/ui/modal';
 import { Spinner } from '../../../components/ui/spinner';
 import { useToast } from '../../../components/ui/toast';
 import type { EntryModalRequest } from './entry-modal';
+import { CashInHandCard } from './denominations';
 import { ForecastPanel } from './forecast-panel';
 import { Advance, STATUS_VARIANT, Statement, Summary } from './types';
 
@@ -110,6 +111,8 @@ export function OverviewTab({ summary, version, aiInsights, onAction, onGoToAppr
           {t('actionExpense')}
         </Button>
       </div>
+
+      <CashInHandCard version={version} />
 
       <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
         <h2 className="text-base font-semibold text-gray-900">{t('openAdvancesTitle')}</h2>

@@ -42,6 +42,11 @@ export const pettyCashStrings = {
   payeeNotFoundAny: 'Payee not found',
   settingsInvalid: 'Setting out of range',
   duplicate: 'Already exists',
+  denominationsInvalid: 'The notes and coins are not valid',
+  denominationsRequired: 'Enter the notes and coins for this cash entry',
+  denominationsMismatch:
+    'The notes and coins do not add up to the amount of this entry',
+  denominationsOff: 'Notes and coins tracking is switched off for this school',
 } as const;
 
 export const DEFAULT_CATEGORIES = [
@@ -68,6 +73,8 @@ export const CSV_HEADERS = [
   'Created by',
   'Reviewed by',
   'Rejection / void reason',
+  'Notes in',
+  'Notes out',
 ] as const;
 
 /** Template text for forecast findings (English; the console renders its own translations from kind + params). */

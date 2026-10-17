@@ -34,9 +34,11 @@ function setup(
     threshold?: string;
     receiptAbove?: string;
     overdueDays?: number;
+    track?: boolean;
   } = {},
 ) {
   const entries: Row[] = [];
+  const counts: Row[] = [];
   let seq = 0;
   const matches = (row: Row, where: Row = {}): boolean =>
     Object.entries(where).every(([k, v]) => {
@@ -70,6 +72,7 @@ function setup(
         monthlyBudget: null,
         receiptRequiredAbove: over.receiptAbove ?? '500',
         overdueDays: over.overdueDays ?? 7,
+        trackDenominations: over.track ?? false,
         categoriesSeeded: true,
       }),
     },
@@ -134,6 +137,14 @@ function setup(
         Promise.resolve(entries.filter((e) => matches(e, where)).length),
       ),
     },
+    pettyCashCount: {
+      create: jest.fn(({ data }: Row) => {
+        const row = { id: `c${++seq}`, countedAt: new Date(), ...data };
+        counts.unshift(row);
+        return Promise.resolve(row);
+      }),
+      findMany: jest.fn(() => Promise.resolve([...counts])),
+    },
     auditLog: {
       create: jest.fn(
         ({ data }: Row) => (audit.push(data), Promise.resolve(data)),
@@ -159,7 +170,7 @@ function setup(
       ...r,
       id: (r.id as string | undefined) ?? `s${++seq}`,
     });
-  return { prisma, entries, audit, service, seed, files };
+  return { prisma, entries, counts, audit, service, seed, files };
 }
 
 const dto = (over: Partial<CreateEntryDto>): CreateEntryDto => ({
@@ -787,6 +798,123 @@ describe('PettyCashService', () => {
       expect(csv).toContain(`"'=HYPERLINK(""x"")"`);
       expect(csv).toContain('"a, b"');
       expect(csv.split('\n')[0]).toContain('Amount (INR)');
+    });
+  });
+
+  describe('notes and coins', () => {
+    const notes = (inn: Row, out: Row) => ({ in: inn, out });
+
+    it('ignores breakdowns when the school does not track notes', async () => {
+      const { service, entries } = setup();
+      await service.createEntry(
+        TENANT,
+        ACCOUNTS,
+        dto({ denominations: notes({ '500': 2 }, {}) }),
+      );
+      expect(entries[0].denominations).toBeUndefined();
+    });
+
+    it('requires a breakdown that adds up for cash entries', async () => {
+      const { service } = setup({ track: true });
+      await expect(
+        service.createEntry(TENANT, ACCOUNTS, dto({ amount: 1000 })),
+      ).rejects.toMatchObject({
+        response: { code: 'DENOMINATIONS_REQUIRED' },
+      });
+      await expect(
+        service.createEntry(
+          TENANT,
+          ACCOUNTS,
+          dto({ amount: 1000, denominations: notes({ '500': 1 }, {}) }),
+        ),
+      ).rejects.toMatchObject({
+        response: { code: 'DENOMINATIONS_MISMATCH' },
+      });
+      await expect(
+        service.createEntry(
+          TENANT,
+          ACCOUNTS,
+          dto({ amount: 1000, denominations: notes({ '2000': 1 }, {}) }),
+        ),
+      ).rejects.toMatchObject({ response: { code: 'DENOMINATIONS_INVALID' } });
+    });
+
+    it('accepts cash given with change back, and stores it', async () => {
+      const { service, seed, entries } = setup({ track: true });
+      seed({ type: 'TOP_UP', amount: '1000' });
+      const e = await service.createEntry(
+        TENANT,
+        ACCOUNTS,
+        dto({
+          type: 'EXPENSE',
+          amount: 180,
+          categoryId: CAT,
+          denominations: notes({ '20': 1 }, { '200': 1 }),
+        }),
+      );
+      expect(e.denominations).toEqual(notes({ '20': 1 }, { '200': 1 }));
+      expect(entries.at(-1)!.denominations).toEqual(
+        notes({ '20': 1 }, { '200': 1 }),
+      );
+    });
+
+    it('needs no breakdown for an expense settled from an advance', async () => {
+      const { service, seed } = setup({ track: true });
+      seed({ type: 'TOP_UP', amount: '1000' });
+      seed({
+        id: 'adv',
+        type: 'DISBURSEMENT',
+        amount: '500',
+        recipientUserId: STAFF,
+      });
+      const e = await service.createEntry(
+        TENANT,
+        ACCOUNTS,
+        dto({
+          type: 'EXPENSE',
+          amount: 300,
+          categoryId: CAT,
+          settlesEntryId: 'adv',
+        }),
+      );
+      expect(e.denominations).toBeNull();
+    });
+
+    it('counts the box and moves notes with later entries', async () => {
+      const { service, seed, audit } = setup({ track: true });
+      seed({ type: 'TOP_UP', amount: '1000' });
+      const counted = await service.recordCount(TENANT, ACCOUNTS, {
+        counts: { '500': 1, '100': 4 },
+      });
+      expect(counted.total).toBe('900.00');
+      expect(counted.difference).toBe('-100.00');
+      expect(audit.at(-1)!.action).toBe('petty_cash.count.create');
+
+      jest.advanceTimersByTime(1000);
+      await service.createEntry(
+        TENANT,
+        ACCOUNTS,
+        dto({
+          type: 'DISBURSEMENT',
+          amount: 300,
+          recipientUserId: STAFF,
+          denominations: notes({ '100': 2 }, { '500': 1 }),
+        }),
+      );
+      const view = await service.cashInHand(TENANT);
+      const n = Object.fromEntries(view.notes.map((x) => [x.value, x.count]));
+      expect(n[500]).toBe(0);
+      expect(n[100]).toBe(6);
+      expect(view.total).toBe('600.00');
+      expect(view.ledgerBalance).toBe('700.00');
+      expect(view.untrackedEntries).toBe(0);
+    });
+
+    it('refuses a count when tracking is off', async () => {
+      const { service } = setup();
+      await expect(
+        service.recordCount(TENANT, ACCOUNTS, { counts: { '500': 1 } }),
+      ).rejects.toMatchObject({ response: { code: 'DENOMINATIONS_OFF' } });
     });
   });
 });

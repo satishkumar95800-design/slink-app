@@ -10,6 +10,7 @@ import {
   IsIn,
   IsInt,
   IsNumber,
+  IsObject,
   IsOptional,
   IsPositive,
   IsString,
@@ -73,6 +74,27 @@ export class CreateEntryDto {
   @IsUUID()
   @IsOptional()
   settlesEntryId?: string;
+
+  /**
+   * Notes and coins moved, when the school tracks them:
+   * { in: { "100": 1 }, out: { "500": 1 } } (rupee value -> count).
+   * Checked in the service (petty-cash.denominations.ts).
+   */
+  @IsObject()
+  @IsOptional()
+  denominations?: { in?: Record<string, number>; out?: Record<string, number> };
+}
+
+export class CashCountDto {
+  /** { "500": 3, "100": 7 }: rupee value -> number of notes or coins. */
+  @IsObject()
+  counts: Record<string, number>;
+
+  @trim()
+  @IsString()
+  @MaxLength(500)
+  @IsOptional()
+  note?: string;
 }
 
 export class EntryQueryDto {
@@ -287,4 +309,9 @@ export class UpdateSettingsDto {
   @Max(90)
   @IsOptional()
   overdueDays?: number;
+
+  /** Ask for notes and coins on cash entries and keep the notes in hand. */
+  @IsBoolean()
+  @IsOptional()
+  trackDenominations?: boolean;
 }

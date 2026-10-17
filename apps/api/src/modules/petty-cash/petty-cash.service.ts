@@ -25,6 +25,7 @@ import {
 } from '../attendance/attendance-dates';
 import {
   AdvanceQueryDto,
+  CashCountDto,
   CreateCategoryDto,
   CreateEntryDto,
   CreatePayeeDto,
@@ -39,12 +40,26 @@ import {
   LedgerRow,
   computeAdvances,
   computeBalance,
+  floatEffect,
   fromPaise,
   needsApproval,
   outstandingOn,
   reducesFloat,
   toPaise,
 } from './petty-cash.math';
+import {
+  CashNotes,
+  DENOMINATIONS,
+  DenominationError,
+  NoteCounts,
+  applyMovements,
+  countsText,
+  countsTotalPaise,
+  isEmptyNotes,
+  netPaise,
+  normalizeCounts,
+  normalizeNotes,
+} from './petty-cash.denominations';
 import {
   CSV_HEADERS,
   DEFAULT_CATEGORIES,
@@ -58,6 +73,7 @@ export interface PettyCashSettings {
   monthlyBudgetPaise: number | null;
   receiptAbovePaise: number;
   overdueDays: number;
+  trackDenominations: boolean;
 }
 
 export interface ApprovedRow extends LedgerRow {
@@ -142,6 +158,7 @@ export class PettyCashService {
         row.monthlyBudget === null ? null : toPaise(row.monthlyBudget),
       receiptAbovePaise: toPaise(row.receiptRequiredAbove),
       overdueDays: row.overdueDays,
+      trackDenominations: row.trackDenominations,
     };
   }
 
@@ -156,6 +173,7 @@ export class PettyCashService {
         s.monthlyBudgetPaise === null ? null : fromPaise(s.monthlyBudgetPaise),
       receiptRequiredAbove: fromPaise(s.receiptAbovePaise),
       overdueDays: s.overdueDays,
+      trackDenominations: s.trackDenominations,
     };
   }
 
@@ -179,6 +197,9 @@ export class PettyCashService {
         receiptRequiredAbove: fromPaise(toPaise(dto.receiptRequiredAbove)),
       }),
       ...(dto.overdueDays !== undefined && { overdueDays: dto.overdueDays }),
+      ...(dto.trackDenominations !== undefined && {
+        trackDenominations: dto.trackDenominations,
+      }),
     };
     const row = await this.prisma.pettyCashSetting.update({
       where: { tenantId },
@@ -190,6 +211,7 @@ export class PettyCashService {
         row.monthlyBudget === null ? null : toPaise(row.monthlyBudget),
       receiptAbovePaise: toPaise(row.receiptRequiredAbove),
       overdueDays: row.overdueDays,
+      trackDenominations: row.trackDenominations,
     });
     await this.audit(
       this.prisma,
@@ -217,6 +239,7 @@ export class PettyCashService {
       fail(BadRequestException, 'DESCRIPTION_REQUIRED', t.descriptionRequired);
 
     this.assertShape(dto, amountPaise, settings, tenantId);
+    const notes = this.entryNotes(dto, amountPaise, settings);
 
     const gated = needsApproval(amountPaise, settings.thresholdPaise);
     const approver = isApprover(user.role);
@@ -258,6 +281,9 @@ export class PettyCashService {
           recipientUserId: dto.recipientUserId ?? null,
           payeeId: dto.payeeId ?? null,
           settlesEntryId: dto.settlesEntryId ?? null,
+          ...(notes && {
+            denominations: notes as unknown as Prisma.JsonObject,
+          }),
           status,
           createdBy: user.id,
           ...(selfApproved && { approvedBy: user.id, approvedAt: new Date() }),
@@ -281,6 +307,9 @@ export class PettyCashService {
           recipientUserId: dto.recipientUserId ?? null,
           payeeId: dto.payeeId ?? null,
           settlesEntryId: dto.settlesEntryId ?? null,
+          ...(notes && {
+            denominations: notes as unknown as Prisma.JsonObject,
+          }),
         },
       );
       return row;
@@ -513,12 +542,134 @@ export class PettyCashService {
           v.createdBy.name,
           v.reviewedBy?.name,
           v.rejectionReason ?? v.voidReason,
+          v.denominations ? countsText(v.denominations.in) : '',
+          v.denominations ? countsText(v.denominations.out) : '',
         ]
           .map(csvCell)
           .join(','),
       );
     }
     return lines.join('\n');
+  }
+
+  // ── notes and coins in hand ───────────────────────────────────────────────
+
+  /** Notes in hand = latest count + approved entries that took effect after it. */
+  async cashInHand(tenantId: string) {
+    const settings = await this.getSettings(tenantId);
+    return this.cashInHandView(
+      this.prisma,
+      tenantId,
+      settings.trackDenominations,
+    );
+  }
+
+  /** A physical count of the box. It becomes the starting point for the notes in hand. */
+  async recordCount(tenantId: string, user: ActiveUser, dto: CashCountDto) {
+    const settings = await this.getSettings(tenantId);
+    if (!settings.trackDenominations)
+      fail(ConflictException, 'DENOMINATIONS_OFF', t.denominationsOff);
+    const counts = this.parseCounts(dto.counts);
+    const note = dto.note?.trim() || null;
+    return this.locked(tenantId, async (tx) => {
+      const balance = computeBalance(await this.loadApprovedRows(tx, tenantId));
+      const total = countsTotalPaise(counts);
+      const row = await tx.pettyCashCount.create({
+        data: {
+          tenantId,
+          counts,
+          total: fromPaise(total),
+          ledgerBalance: fromPaise(balance),
+          note,
+          countedBy: user.id,
+        },
+      });
+      await this.audit(
+        tx,
+        tenantId,
+        user.id,
+        'petty_cash.count.create',
+        'petty_cash_count',
+        row.id,
+        {
+          counts,
+          total: fromPaise(total),
+          ledgerBalance: fromPaise(balance),
+          difference: fromPaise(total - balance),
+          note,
+        },
+      );
+      return this.cashInHandView(tx, tenantId, true);
+    });
+  }
+
+  private async cashInHandView(db: Db, tenantId: string, tracking: boolean) {
+    const counts = await db.pettyCashCount.findMany({
+      where: { tenantId },
+      orderBy: { countedAt: 'desc' },
+      take: 5,
+    });
+    const last = counts[0] ?? null;
+    const rows = await db.pettyCashEntry.findMany({
+      where: { tenantId, status: 'APPROVED' },
+      select: {
+        type: true,
+        amount: true,
+        settlesEntryId: true,
+        denominations: true,
+        approvedAt: true,
+        createdAt: true,
+      },
+    });
+    const withEffect = rows.map((r) => ({
+      ...r,
+      effect: floatEffect({
+        type: r.type,
+        amountPaise: toPaise(r.amount),
+        settlesEntryId: r.settlesEntryId,
+      }),
+    }));
+    const balance = withEffect.reduce((sum, r) => sum + r.effect, 0);
+    // An auto-approved entry has no approvedAt; it took effect when created.
+    const after = last
+      ? withEffect.filter((r) => (r.approvedAt ?? r.createdAt) > last.countedAt)
+      : withEffect;
+    const notes = applyMovements(
+      last ? normalizeCounts(last.counts) : {},
+      after
+        .filter((r) => r.denominations !== null)
+        .map((r) => normalizeNotes(r.denominations)),
+    );
+    const total = countsTotalPaise(notes);
+
+    const names = await this.userNames(counts.map((c) => c.countedBy));
+    const countView = (c: (typeof counts)[number]) => ({
+      id: c.id,
+      countedAt: c.countedAt,
+      countedBy: { id: c.countedBy, name: names.get(c.countedBy) ?? '' },
+      counts: normalizeCounts(c.counts),
+      total: fromPaise(toPaise(c.total)),
+      ledgerBalance: fromPaise(toPaise(c.ledgerBalance)),
+      difference: fromPaise(toPaise(c.total) - toPaise(c.ledgerBalance)),
+      note: c.note,
+    });
+    return {
+      tracking,
+      notes: DENOMINATIONS.map((d) => ({
+        value: d,
+        count: notes[String(d)] ?? 0,
+      })),
+      total: fromPaise(total),
+      ledgerBalance: fromPaise(balance),
+      /** Notes in hand minus the ledger balance: 0 when they agree. */
+      difference: fromPaise(total - balance),
+      /** Cash entries since the last count with no note breakdown (e.g. made before tracking started). */
+      untrackedEntries: after.filter(
+        (r) => r.denominations === null && r.effect !== 0,
+      ).length,
+      lastCount: last ? countView(last) : null,
+      recentCounts: counts.map(countView),
+    };
   }
 
   // ── summary, advances, statements ────────────────────────────────────────
@@ -1170,6 +1321,79 @@ export class PettyCashService {
       fail(BadRequestException, 'RECEIPT_REQUIRED', t.receiptRequired);
   }
 
+  /**
+   * The note breakdown to store: null when the school doesn't track notes, or
+   * when the entry moves no cash and none was given. Otherwise in - out must
+   * equal the entry's effect on the float.
+   */
+  private entryNotes(
+    dto: CreateEntryDto,
+    amountPaise: number,
+    s: PettyCashSettings,
+  ): CashNotes | null {
+    if (!s.trackDenominations) return null;
+    const notes = this.parseNotes(dto.denominations);
+    const effect = floatEffect({
+      type: dto.type,
+      amountPaise,
+      settlesEntryId: dto.settlesEntryId ?? null,
+    });
+    if (isEmptyNotes(notes)) {
+      if (effect === 0) return null;
+      return fail(
+        BadRequestException,
+        'DENOMINATIONS_REQUIRED',
+        t.denominationsRequired,
+      );
+    }
+    if (netPaise(notes) !== effect)
+      fail(
+        BadRequestException,
+        'DENOMINATIONS_MISMATCH',
+        t.denominationsMismatch,
+      );
+    return notes;
+  }
+
+  private parseNotes(raw: unknown): CashNotes {
+    try {
+      return normalizeNotes(raw);
+    } catch (e) {
+      if (e instanceof DenominationError)
+        return fail(
+          BadRequestException,
+          'DENOMINATIONS_INVALID',
+          t.denominationsInvalid,
+        );
+      throw e;
+    }
+  }
+
+  private parseCounts(raw: unknown): NoteCounts {
+    try {
+      return normalizeCounts(raw);
+    } catch (e) {
+      if (e instanceof DenominationError)
+        return fail(
+          BadRequestException,
+          'DENOMINATIONS_INVALID',
+          t.denominationsInvalid,
+        );
+      throw e;
+    }
+  }
+
+  private async userNames(ids: string[]) {
+    const unique = [...new Set(ids)];
+    const users = unique.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: unique } },
+          select: { id: true, name: true },
+        })
+      : [];
+    return new Map(users.map((u) => [u.id, u.name]));
+  }
+
   /** Referenced category / staff user / payee must exist in this school (and be active). */
   private async assertRefs(db: Db, tenantId: string, dto: CreateEntryDto) {
     if (dto.categoryId) {
@@ -1359,6 +1583,8 @@ export class PettyCashService {
       voidReason: r.voidReason,
       voidedBy: person(r.voidedBy),
       voidedAt: r.voidedAt,
+      /** Notes and coins moved (schools that track them), else null. */
+      denominations: (r.denominations ?? null) as CashNotes | null,
     }));
   }
 

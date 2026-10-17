@@ -228,6 +228,7 @@ model Tenant {
   pettyCashCategories      PettyCashCategory[]
   pettyCashPayees          PettyCashPayee[]
   pettyCashEntries         PettyCashEntry[]
+  pettyCashCounts          PettyCashCount[]
   hrSetting                HrSetting?
   employees                Employee[]
   employeeDocuments        EmployeeDocument[]
@@ -1425,6 +1426,8 @@ model PettyCashSetting {
   receiptRequiredAbove Decimal  @default(500) @map("receipt_required_above") @db.Decimal(12, 2)
   /// A disbursement still open after this many days is overdue.
   overdueDays          Int      @default(7) @map("overdue_days")
+  /// Record which notes and coins go in and out, and keep a count of the notes in hand.
+  trackDenominations   Boolean  @default(false) @map("track_denominations")
   categoriesSeeded     Boolean  @default(false) @map("categories_seeded")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
@@ -1483,6 +1486,9 @@ model PettyCashEntry {
   recipientUserId String?            @map("recipient_user_id") @db.Uuid
   payeeId         String?            @map("payee_id") @db.Uuid
   settlesEntryId  String?            @map("settles_entry_id") @db.Uuid
+  /// Notes and coins moved, when the school tracks them: {"in": {"500": 2}, "out": {"10": 1}}
+  /// (rupee value -> count). in - out equals the entry's effect on the float.
+  denominations   Json?
   status          PettyCashStatus
   createdBy       String             @map("created_by") @db.Uuid
   approvedBy      String?            @map("approved_by") @db.Uuid
@@ -1505,6 +1511,26 @@ model PettyCashEntry {
   @@index([tenantId, type, status])
   @@index([settlesEntryId])
   @@map("petty_cash_entries")
+}
+
+/// A physical count of the petty cash box by note and coin (append-only). The
+/// latest count plus the approved entries after it give the notes in hand.
+model PettyCashCount {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  /// {"500": 3, "100": 7}: rupee value -> number of notes or coins.
+  counts        Json
+  total         Decimal  @db.Decimal(12, 2)
+  /// Ledger balance when counted; total - ledgerBalance is the shortage or excess.
+  ledgerBalance Decimal  @map("ledger_balance") @db.Decimal(12, 2)
+  note          String?
+  countedBy     String   @map("counted_by") @db.Uuid
+  countedAt     DateTime @default(now()) @map("counted_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, countedAt])
+  @@map("petty_cash_counts")
 }
 
 

@@ -35,6 +35,8 @@ export interface Entry {
   voidReason: string | null;
   voidedBy: Person | null;
   voidedAt: string | null;
+  /** Notes and coins moved (schools that track them). */
+  denominations: CashNotes | null;
 }
 
 export interface EntryPage {
@@ -49,6 +51,7 @@ export interface Settings {
   monthlyBudget: string | null;
   receiptRequiredAbove: string;
   overdueDays: number;
+  trackDenominations: boolean;
 }
 
 export interface Summary {
@@ -158,6 +161,45 @@ export interface Advice {
   ready: boolean;
   source?: 'ai' | 'template';
   text?: string;
+}
+
+/** Indian notes and coins in circulation, largest first (matches the API). */
+export const DENOMINATIONS = [500, 200, 100, 50, 20, 10, 5, 2, 1] as const;
+
+/** Rupee value ("500") -> number of notes or coins. */
+export type NoteCounts = Record<string, number>;
+
+/** Notes into the cash box and out of it for one entry. */
+export interface CashNotes {
+  in: NoteCounts;
+  out: NoteCounts;
+}
+
+export interface CashCount {
+  id: string;
+  countedAt: string;
+  countedBy: Person;
+  counts: NoteCounts;
+  total: string;
+  ledgerBalance: string;
+  difference: string;
+  note: string | null;
+}
+
+export interface CashInHand {
+  tracking: boolean;
+  notes: { value: number; count: number }[];
+  total: string;
+  ledgerBalance: string;
+  difference: string;
+  untrackedEntries: number;
+  lastCount: CashCount | null;
+  recentCounts: CashCount[];
+}
+
+/** Total value of a set of counts, in paise. */
+export function countsPaise(c: NoteCounts): number {
+  return DENOMINATIONS.reduce((s, d) => s + d * 100 * (c[String(d)] ?? 0), 0);
 }
 
 /** Local calendar date as YYYY-MM-DD (the school is in one timezone; browsers on site match it). */

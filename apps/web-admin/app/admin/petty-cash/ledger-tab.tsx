@@ -13,6 +13,7 @@ import { Modal } from '../../../components/ui/modal';
 import { Select } from '../../../components/ui/select';
 import { Spinner } from '../../../components/ui/spinner';
 import { useToast } from '../../../components/ui/toast';
+import { useNotesText } from './denominations';
 import type { EntryModalRequest } from './entry-modal';
 import { Entry, EntryPage, ENTRY_STATUSES, ENTRY_TYPES, STATUS_VARIANT, TYPE_VARIANT } from './types';
 import type { PettyLookups } from './use-lookups';
@@ -29,6 +30,7 @@ const PAGE_SIZE = 25;
 export function LedgerTab({ lookups, version, onAction, onChanged }: Props) {
   const t = useTranslations('pettyCash');
   const tCommon = useTranslations('common');
+  const notesText = useNotesText();
   const errorText = useErrorText();
   const { toast } = useToast();
 
@@ -216,6 +218,12 @@ export function LedgerTab({ lookups, version, onAction, onChanged }: Props) {
                       <p className={e.status === 'VOIDED' ? 'line-through' : ''}>{e.description}</p>
                       {e.category && <p className="text-xs text-gray-500">{e.category.name}</p>}
                       {e.settlesEntryId && <p className="text-xs text-gray-500">{t('settlesAdvance')}</p>}
+                      {e.denominations && Object.keys(e.denominations.out).length > 0 && (
+                        <p className="text-xs text-gray-500">{t('ledgerNotesOut', { notes: notesText(e.denominations.out) })}</p>
+                      )}
+                      {e.denominations && Object.keys(e.denominations.in).length > 0 && (
+                        <p className="text-xs text-gray-500">{t('ledgerNotesIn', { notes: notesText(e.denominations.in) })}</p>
+                      )}
                       {e.rejectionReason && <p className="text-xs text-red-600">{t('reasonLine', { reason: e.rejectionReason })}</p>}
                       {e.voidReason && <p className="text-xs text-gray-500">{t('reasonLine', { reason: e.voidReason })}</p>}
                     </td>

@@ -11,7 +11,8 @@ import { Modal } from '../../../components/ui/modal';
 import { Select } from '../../../components/ui/select';
 import { useToast } from '../../../components/ui/toast';
 import { roleLabel } from '../../../lib/i18n/labels';
-import type { Advance, EntryType, Settings } from './types';
+import { NotesFields, notesNetPaise } from './denominations';
+import type { Advance, CashInHand, CashNotes, EntryType, NoteCounts, Settings } from './types';
 import { todayYmd } from './types';
 import type { PettyLookups } from './use-lookups';
 
@@ -60,6 +61,8 @@ export function EntryModal({ request, lookups, settings, onClose, onSaved }: Pro
   const [receiptName, setReceiptName] = useState('');
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [notes, setNotes] = useState<CashNotes>({ in: {}, out: {} });
+  const [inHand, setInHand] = useState<NoteCounts | null>(null);
 
   const needsAdvance = type === 'RETURN';
   const mayAdvance = type === 'EXPENSE' || type === 'RETURN';
@@ -82,11 +85,28 @@ export function EntryModal({ request, lookups, settings, onClose, onSaved }: Pro
     if (picked) setAmount(picked.outstanding);
   }
 
+  const tracking = !!settings?.trackDenominations;
+  useEffect(() => {
+    if (!tracking) return;
+    api
+      .get<CashInHand>('/petty-cash/cash-in-hand')
+      .then((c) => setInHand(Object.fromEntries(c.notes.map((n) => [String(n.value), n.count]))))
+      .catch(() => {});
+  }, [tracking]);
+
   const amountNum = toAmount(amount);
   const threshold = settings ? toAmount(settings.approvalThreshold) : null;
   const receiptLimit = settings ? toAmount(settings.receiptRequiredAbove) : null;
   const needsApproval = threshold !== null && amountNum > threshold;
   const receiptRequired = type === 'EXPENSE' && receiptLimit !== null && amountNum > receiptLimit;
+
+  // Which way cash moves through the box; an expense paid from an advance moves none.
+  const direction: 'in' | 'out' | null =
+    type === 'TOP_UP' || type === 'RETURN' ? 'in' : type === 'DISBURSEMENT' || (type === 'EXPENSE' && !advanceId) ? 'out' : null;
+  const askNotes = tracking && direction !== null;
+  const amountPaise = Math.round(amountNum * 100);
+  const notesMoved = direction === 'out' ? -notesNetPaise(notes) : notesNetPaise(notes);
+  const notesOk = !askNotes || notesMoved === amountPaise;
 
   const activeCategories = lookups.categories.filter((c) => c.isActive);
   const activePayees = lookups.payees.filter((p) => p.isActive);
@@ -114,7 +134,8 @@ export function EntryModal({ request, lookups, settings, onClose, onSaved }: Pro
     (type !== 'DISBURSEMENT' || !!recipientId) &&
     (type !== 'EXPENSE' || !!categoryId) &&
     (!needsAdvance || !!advanceId) &&
-    (!receiptRequired || !!receiptKey);
+    (!receiptRequired || !!receiptKey) &&
+    notesOk;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -130,6 +151,7 @@ export function EntryModal({ request, lookups, settings, onClose, onSaved }: Pro
         ...(type === 'DISBURSEMENT' ? (kind === 'user' ? { recipientUserId: recipientId } : { payeeId: recipientId }) : {}),
         ...(advanceId && mayAdvance ? { settlesEntryId: advanceId } : {}),
         ...(receiptKey ? { receiptKey } : {}),
+        ...(askNotes ? { denominations: notes } : {}),
       });
       toast(entry.status === 'PENDING' ? t('submittedForApproval') : t('saved'), 'success');
       onSaved();
@@ -254,6 +276,10 @@ export function EntryModal({ request, lookups, settings, onClose, onSaved }: Pro
               </p>
             )}
           </div>
+        )}
+
+        {askNotes && direction && (
+          <NotesFields direction={direction} value={notes} onChange={setNotes} amountPaise={amountPaise} inHand={inHand} />
         )}
 
         {needsApproval && threshold !== null && (

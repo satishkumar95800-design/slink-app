@@ -26,6 +26,7 @@ import { TenantId } from '../../common/decorators/tenant.decorator';
 import type { ActiveUser } from '../../common/types/active-user.type';
 import {
   AdvanceQueryDto,
+  CashCountDto,
   CategoryQueryDto,
   CreateCategoryDto,
   CreateEntryDto,
@@ -149,6 +150,21 @@ export class PettyCashController {
   ) {
     if (!file) throw new BadRequestException('No file provided');
     return this.petty.uploadReceipt(tenantId, file, user);
+  }
+
+  /** Notes and coins in hand (schools that track them). */
+  @Get('cash-in-hand')
+  cashInHand(@TenantId() tenantId: string) {
+    return this.petty.cashInHand(tenantId);
+  }
+
+  @Post('cash-counts')
+  recordCount(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @Body() dto: CashCountDto,
+  ) {
+    return this.petty.recordCount(tenantId, user, dto);
   }
 
   @Get('advances')
