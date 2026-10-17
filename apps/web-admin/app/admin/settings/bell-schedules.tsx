@@ -64,7 +64,7 @@ function groupByTimings(list: ClassPeriodTiming[]): ClassGroup[] {
  * classes (e.g. a primary block that starts earlier). Drives the teacher app's
  * "Now / Next" strip and the class reminders.
  */
-export function BellSchedulesSection() {
+export function BellSchedulesSection({ onChanged }: { onChanged?: () => void }) {
   const t = useTranslations('periodTimings');
   const errorText = useErrorText();
   const { toast } = useToast();
@@ -108,6 +108,7 @@ export function BellSchedulesSection() {
     try {
       await api.put('/timetable/period-timings', { periods });
       toast(t('saved'), 'success');
+      onChanged?.();
     } catch (e) {
       toast(errorText(e), 'error');
     } finally {
@@ -146,6 +147,7 @@ export function BellSchedulesSection() {
       setClassTimings(latest);
       setEditing(null);
       toast(t('classSaved'), 'success');
+      onChanged?.();
     } catch (e) {
       toast(errorText(e), 'error');
     } finally {
@@ -160,17 +162,15 @@ export function BellSchedulesSection() {
         await api.put<ClassPeriodTiming[]>('/timetable/class-period-timings', { classIds: group.classIds, periods: [] }),
       );
       toast(t('classSaved'), 'success');
+      onChanged?.();
     } catch (e) {
       toast(errorText(e), 'error');
     }
   }
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-      <h2 className="text-base font-semibold text-gray-900">{t('title')}</h2>
-      <p className="mt-1 text-sm text-gray-500">{t('help')}</p>
-
-      <div className="mt-5">
+    <div>
+      <div>
         <h3 className="text-sm font-bold text-gray-900">{t('schoolTitle')}</h3>
         <p className="mt-0.5 text-xs text-gray-500">{t('schoolHelp')}</p>
         <PeriodGrid rows={schoolRows} onChange={setSchoolRows} />

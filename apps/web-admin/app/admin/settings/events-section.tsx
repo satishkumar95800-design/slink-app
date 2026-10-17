@@ -26,7 +26,7 @@ interface SchoolEvent {
 }
 
 /** Events and parent-teacher meetings shown on the mobile calendar next to holidays. */
-export function EventsSection() {
+export function EventsSection({ onChanged }: { onChanged?: () => void }) {
   const t = useTranslations('schoolEvents');
   const tConsent = useTranslations('consent');
   const errorText = useErrorText();
@@ -47,12 +47,13 @@ export function EventsSection() {
 
   const loadConsents = useCallback(() => {
     api.get<ConsentSummary[]>('/consent-forms').then(setConsents).catch(() => {});
-  }, []);
+    onChanged?.();
+  }, [onChanged]);
 
   useEffect(() => {
     api.get<SchoolEvent[]>('/calendar/events').then(setEvents).catch(() => {});
-    loadConsents();
-  }, [loadConsents]);
+    api.get<ConsentSummary[]>('/consent-forms').then(setConsents).catch(() => {});
+  }, []);
 
   const consentOf = (event: SchoolEvent) => consents.find((c) => c.event.id === event.id) ?? null;
 
@@ -80,6 +81,7 @@ export function EventsSection() {
       setVenue('');
       setDescription('');
       toast(t('added'), 'success');
+      onChanged?.();
       if (askConsent) {
         setAskConsent(false);
         setConsentFor(created);
@@ -97,6 +99,7 @@ export function EventsSection() {
       await api.delete(`/calendar/events/${event.id}`);
       setEvents((prev) => prev.filter((x) => x.id !== event.id));
       toast(t('removed'), 'success');
+      onChanged?.();
     } catch (err) {
       toast(errorText(err), 'error');
     }
@@ -105,11 +108,8 @@ export function EventsSection() {
   const typeLabel: Record<EventType, string> = { EVENT: t('typeEvent'), PTM: t('typePtm') };
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
-      <h2 className="text-base font-semibold text-gray-900">{t('sectionTitle')}</h2>
-      <p className="mt-1 text-sm text-gray-500">{t('sectionHelp')}</p>
-
-      <form onSubmit={add} className="mt-4 flex flex-wrap items-end gap-3">
+    <div>
+      <form onSubmit={add} className="flex flex-wrap items-end gap-3">
         <Select
           label={t('type')}
           value={type}

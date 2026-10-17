@@ -1,19 +1,23 @@
 'use client';
 
+import { BellRing, CalendarHeart, CalendarOff, Globe, ImageIcon, ListPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, apiUpload } from '../../../lib/api-client';
 import { useErrorText } from '../../../lib/i18n/errors';
 import { formatDateOnly } from '../../../lib/format';
+import { nativeName } from '../../../lib/i18n/languages';
+import { useLanguage } from '../../../lib/i18n/provider';
 import { LanguageSwitcher } from '../../../components/layout/language-switcher';
 import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
-import { Select } from '../../../components/ui/select';
 import { useToast } from '../../../components/ui/toast';
 import { getSession } from '../../../lib/auth';
 import { useTenantFeaturesState } from '../../../lib/tenant-features';
 import { BellSchedulesSection } from './bell-schedules';
+import { CustomFieldsSection, FieldDefinition } from './custom-fields-section';
 import { EventsSection } from './events-section';
+import { Holiday, HolidaysSection } from './holidays-section';
+import { SettingsGroup, SettingsSection } from './settings-section';
 
 interface TenantSelf {
   id: string;
@@ -27,286 +31,302 @@ interface UploadResult {
   publicUrl: string | null;
 }
 
-type Stage = 'idle' | 'uploading';
+type SectionId = 'language' | 'branding' | 'fields' | 'holidays' | 'events' | 'bells';
+const SECTION_IDS: SectionId[] = ['language', 'branding', 'fields', 'holidays', 'events', 'bells'];
+
+/** What the collapsed rows show; filled by small fetches when the page opens. */
+interface Summaries {
+  fields?: FieldDefinition[];
+  holidays?: Holiday[];
+  upcomingEvents?: number;
+  openConsents?: number;
+  periods?: number;
+  classGroups?: number;
+}
+
+function todayYmd(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Opened sections live in the URL hash (#holidays,events) so a link or a reload keeps them open. */
+function readHash(): Set<SectionId> {
+  if (typeof window === 'undefined') return new Set();
+  const ids = window.location.hash.replace(/^#/, '').split(',');
+  return new Set(SECTION_IDS.filter((id) => ids.includes(id)));
+}
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
-  const tPlans = useTranslations('plans');
-  const errorText = useErrorText();
-  const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const tHolidays = useTranslations('holidays');
+  const tFields = useTranslations('customFields');
+  const tEvents = useTranslations('schoolEvents');
+  const tBells = useTranslations('periodTimings');
   const { features, loaded } = useTenantFeaturesState();
-  const { calendar, timetable, customBranding } = features;
+  const { calendar, timetable } = features;
+  const { language } = useLanguage();
+  const isAdmin = getSession()?.role === 'admin';
 
   const [tenant, setTenant] = useState<TenantSelf | null>(null);
-  const [stage, setStage] = useState<Stage>('idle');
-  const fetched = useRef(false);
+  const [open, setOpen] = useState<Set<SectionId>>(new Set());
+  const [summaries, setSummaries] = useState<Summaries>({});
 
   useEffect(() => {
-    if (fetched.current) return;
-    fetched.current = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of the URL hash after hydration
+    setOpen(readHash());
     api.get<TenantSelf>('/tenant').then(setTenant).catch(() => setTenant(null));
   }, []);
 
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setStage('uploading');
-    try {
-      const uploaded = await apiUpload<UploadResult>('/files/upload', file, { category: 'background' });
-      const updated = await api.patch<TenantSelf>('/tenant', { backgroundImageKey: uploaded.key });
-      setTenant(updated);
-      toast(t('backgroundUpdated'), 'success');
-    } catch (err) {
-      toast(errorText(err, t('uploadFailed')), 'error');
-    } finally {
-      setStage('idle');
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  }
-
-  return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
-        <h2 className="text-base font-semibold text-gray-900">{t('yourLanguage')}</h2>
-        <p className="mt-1 text-sm text-gray-500">{t('yourLanguageHelp')}</p>
-        <div className="mt-4">
-          <LanguageSwitcher signedIn />
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
-        <h2 className="text-base font-semibold text-gray-900">{t('branding')}</h2>
-        <p className="mt-1 text-sm text-gray-500">{t('brandingHelp')}</p>
-
-        <div className="mt-5">
-          {tenant?.backgroundImageUrl ? (
-            <img
-              src={tenant.backgroundImageUrl}
-              alt={t('backgroundAlt')}
-              className="h-48 w-full rounded-md border object-cover"
-            />
-          ) : (
-            <div className="flex h-48 w-full items-center justify-center rounded-md border border-dashed text-sm text-gray-400">
-              {t('noBackground')}
-            </div>
-          )}
-        </div>
-
-        {!loaded ? null : !customBranding ? (
-          <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            {tPlans('brandingOff')}
-          </p>
-        ) : (
-          <>
-            <div className="mt-4 flex items-center gap-3">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleFileChange}
-                disabled={stage === 'uploading'}
-                className="block text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-teal/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-teal hover:file:bg-teal/20"
-              />
-              {stage === 'uploading' && <Button loading disabled>{t('uploading')}</Button>}
-            </div>
-            <p className="mt-2 text-xs text-gray-400">{t('fileHint')}</p>
-          </>
-        )}
-      </div>
-
-      {getSession()?.role === 'admin' && <CustomFieldsSection />}
-      {getSession()?.role === 'admin' && <HolidaysSection />}
-      {calendar && getSession()?.role === 'admin' && <EventsSection />}
-      {timetable && getSession()?.role === 'admin' && <BellSchedulesSection />}
-    </div>
-  );
-}
-
-interface Holiday {
-  id: string;
-  date: string;
-  name: string;
-}
-
-function HolidaysSection() {
-  const t = useTranslations('holidays');
-  const errorText = useErrorText();
-  const { toast } = useToast();
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [date, setDate] = useState('');
-  const [name, setName] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    api.get<Holiday[]>('/attendance/holidays').then(setHolidays).catch(() => {});
+  const loadFields = useCallback(() => {
+    api.get<FieldDefinition[]>('/custom-field-definitions').then((fields) => setSummaries((s) => ({ ...s, fields }))).catch(() => {});
+  }, []);
+  const loadHolidays = useCallback(() => {
+    api.get<Holiday[]>('/attendance/holidays').then((holidays) => setSummaries((s) => ({ ...s, holidays }))).catch(() => {});
+  }, []);
+  const loadEvents = useCallback(() => {
+    const today = todayYmd();
+    api
+      .get<{ startDate: string; endDate: string | null }[]>('/calendar/events')
+      .then((list) =>
+        setSummaries((s) => ({ ...s, upcomingEvents: list.filter((e) => (e.endDate ?? e.startDate) >= today).length })),
+      )
+      .catch(() => {});
+    api
+      .get<{ open: boolean }[]>('/consent-forms')
+      .then((list) => setSummaries((s) => ({ ...s, openConsents: list.filter((c) => c.open).length })))
+      .catch(() => {});
+  }, []);
+  const loadBells = useCallback(() => {
+    api
+      .get<unknown[]>('/timetable/period-timings')
+      .then((list) => setSummaries((s) => ({ ...s, periods: list.length })))
+      .catch(() => {});
+    api
+      .get<{ classId: string; periodNumber: number; startTime: string; endTime: string }[]>('/timetable/class-period-timings')
+      .then((list) => {
+        // Classes sharing the same times form one group, as the section shows them.
+        const byClass = new Map<string, string[]>();
+        for (const r of list) byClass.set(r.classId, [...(byClass.get(r.classId) ?? []), `${r.periodNumber}-${r.startTime}-${r.endTime}`]);
+        const groups = new Set([...byClass.values()].map((v) => v.sort().join('|')));
+        setSummaries((s) => ({ ...s, classGroups: groups.size }));
+      })
+      .catch(() => {});
   }, []);
 
-  async function add(e: React.FormEvent) {
-    e.preventDefault();
-    if (!date || !name.trim()) return;
-    setSaving(true);
-    try {
-      const created = await api.post<Holiday>('/attendance/holidays', { date, name: name.trim() });
-      setHolidays((prev) => [...prev, created].sort((a, b) => a.date.localeCompare(b.date)));
-      setDate('');
-      setName('');
-      toast(t('added'), 'success');
-    } catch (err) {
-      toast(errorText(err), 'error');
-    } finally {
-      setSaving(false);
-    }
+  useEffect(() => {
+    if (!loaded || !isAdmin) return;
+    loadFields();
+    loadHolidays();
+    if (calendar) loadEvents();
+    if (timetable) loadBells();
+  }, [loaded, isAdmin, calendar, timetable, loadFields, loadHolidays, loadEvents, loadBells]);
+
+  function toggle(id: SectionId) {
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      const hash = SECTION_IDS.filter((x) => next.has(x)).join(',');
+      window.history.replaceState(null, '', hash ? `#${hash}` : window.location.pathname + window.location.search);
+      return next;
+    });
   }
 
-  async function remove(holiday: Holiday) {
-    if (!confirm(t('confirmRemove', { name: holiday.name }))) return;
-    try {
-      await api.delete(`/attendance/holidays/${holiday.id}`);
-      setHolidays((prev) => prev.filter((x) => x.id !== holiday.id));
-      toast(t('removed'), 'success');
-    } catch (err) {
-      toast(errorText(err), 'error');
-    }
-  }
+  const today = todayYmd();
+  const nextHoliday = summaries.holidays?.filter((h) => h.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0];
+
+  const fieldsSummary = !summaries.fields
+    ? null
+    : summaries.fields.length === 0
+      ? t('summaryFieldsNone')
+      : t('summaryFields', { count: summaries.fields.length, names: summaries.fields.map((f) => f.label).join(', ') });
+
+  const holidaysSummary = !summaries.holidays
+    ? null
+    : summaries.holidays.length === 0
+      ? t('summaryHolidaysNone')
+      : nextHoliday
+        ? t('summaryHolidaysNext', {
+            count: summaries.holidays.length,
+            name: nextHoliday.name,
+            date: formatDateOnly(nextHoliday.date),
+          })
+        : t('summaryHolidays', { count: summaries.holidays.length });
+
+  const eventsSummary =
+    summaries.upcomingEvents === undefined
+      ? null
+      : [
+          summaries.upcomingEvents === 0 ? t('summaryEventsNone') : t('summaryEvents', { count: summaries.upcomingEvents }),
+          ...(summaries.openConsents ? [t('summaryConsentsOpen', { count: summaries.openConsents })] : []),
+        ].join(' · ');
+
+  const bellsSummary =
+    summaries.periods === undefined
+      ? null
+      : [
+          summaries.periods === 0 ? t('summaryPeriodsNone') : t('summaryPeriods', { count: summaries.periods }),
+          ...(summaries.classGroups ? [t('summaryClassTimes', { count: summaries.classGroups })] : []),
+        ].join(' · ');
+
+  const section = (id: SectionId) => ({ id, open: open.has(id), onToggle: () => toggle(id) });
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
-      <h2 className="text-base font-semibold text-gray-900">{t('sectionTitle')}</h2>
-      <p className="mt-1 text-sm text-gray-500">{t('sectionHelp')}</p>
+    <div className="mx-auto max-w-4xl space-y-8">
+      <div>
+        <h1 className="text-xl font-extrabold tracking-tight text-gray-900">{t('pageTitle')}</h1>
+        <p className="mt-1 text-sm text-gray-500">{t('pageHelp')}</p>
+      </div>
 
-      <form onSubmit={add} className="mt-4 flex flex-wrap items-end gap-3">
-        <Input label={t('date')} type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
-        <div className="min-w-48 flex-1">
-          <Input label={t('name')} required maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <Button type="submit" loading={saving} disabled={!date || !name.trim()}>
-          {t('add')}
-        </Button>
-      </form>
+      <SettingsGroup title={t('groupAccount')}>
+        <SettingsSection
+          {...section('language')}
+          icon={<Globe className="h-5 w-5" />}
+          accent="bg-sky-50 text-sky-700"
+          title={t('yourLanguage')}
+          summary={nativeName(language)}
+          help={t('yourLanguageHelp')}
+        >
+          <LanguageSwitcher signedIn />
+        </SettingsSection>
+      </SettingsGroup>
 
-      {holidays.length === 0 ? (
-        <p className="mt-4 text-sm text-gray-500">{t('empty')}</p>
-      ) : (
-        <ul className="mt-4 divide-y divide-gray-100">
-          {holidays.map((holiday) => (
-            <li key={holiday.id} className="flex items-center justify-between py-2">
-              <span className="text-sm text-gray-900">
-                <span className="mr-3 font-mono text-gray-500">{formatDateOnly(holiday.date)}</span>
-                {holiday.name}
-              </span>
-              <Button variant="ghost" size="sm" onClick={() => remove(holiday)}>
-                {t('remove')}
-              </Button>
-            </li>
-          ))}
-        </ul>
+      <SettingsGroup title={t('groupSchool')}>
+        <SettingsSection
+          {...section('branding')}
+          icon={<ImageIcon className="h-5 w-5" />}
+          accent="bg-coral/10 text-coral-dark"
+          title={t('branding')}
+          summary={tenant ? (tenant.backgroundImageUrl ? t('summaryBackgroundSet') : t('noBackground')) : null}
+          help={t('brandingHelp')}
+        >
+          <BrandingBody tenant={tenant} onChange={setTenant} canChange={loaded && !!features.customBranding} />
+        </SettingsSection>
+      </SettingsGroup>
+
+      {isAdmin && (
+        <SettingsGroup title={t('groupStudents')}>
+          <SettingsSection
+            {...section('fields')}
+            icon={<ListPlus className="h-5 w-5" />}
+            accent="bg-violet-50 text-violet-700"
+            title={tFields('sectionTitle')}
+            summary={fieldsSummary}
+            help={tFields('sectionHelp')}
+          >
+            <CustomFieldsSection onChanged={loadFields} />
+          </SettingsSection>
+        </SettingsGroup>
+      )}
+
+      {isAdmin && (
+        <SettingsGroup title={t('groupCalendar')}>
+          <SettingsSection
+            {...section('holidays')}
+            icon={<CalendarOff className="h-5 w-5" />}
+            accent="bg-amber-50 text-amber-700"
+            title={tHolidays('sectionTitle')}
+            summary={holidaysSummary}
+            help={tHolidays('sectionHelp')}
+          >
+            <HolidaysSection onChanged={loadHolidays} />
+          </SettingsSection>
+          {calendar && (
+            <SettingsSection
+              {...section('events')}
+              icon={<CalendarHeart className="h-5 w-5" />}
+              accent="bg-rose-50 text-rose-700"
+              title={tEvents('sectionTitle')}
+              summary={eventsSummary}
+              help={tEvents('sectionHelp')}
+            >
+              <EventsSection onChanged={loadEvents} />
+            </SettingsSection>
+          )}
+        </SettingsGroup>
+      )}
+
+      {isAdmin && timetable && (
+        <SettingsGroup title={t('groupTimetable')}>
+          <SettingsSection
+            {...section('bells')}
+            icon={<BellRing className="h-5 w-5" />}
+            accent="bg-emerald-50 text-emerald-700"
+            title={tBells('title')}
+            summary={bellsSummary}
+            help={tBells('help')}
+          >
+            <BellSchedulesSection onChanged={loadBells} />
+          </SettingsSection>
+        </SettingsGroup>
       )}
     </div>
   );
 }
 
-interface FieldDefinition {
-  id: string;
-  label: string;
-  fieldType: 'text' | 'number' | 'dropdown';
-}
-
-/** The school's own extra student fields (e.g. SATS Number) — schools without any see nothing extra elsewhere. */
-function CustomFieldsSection() {
-  const t = useTranslations('customFields');
-  const tCommon = useTranslations('common');
+/** Background image preview and upload (needs the customBranding plan flag). */
+function BrandingBody({
+  tenant,
+  onChange,
+  canChange,
+}: {
+  tenant: TenantSelf | null;
+  onChange: (t: TenantSelf) => void;
+  canChange: boolean;
+}) {
+  const t = useTranslations('settings');
+  const tPlans = useTranslations('plans');
   const errorText = useErrorText();
   const { toast } = useToast();
-  const [fields, setFields] = useState<FieldDefinition[]>([]);
-  const [label, setLabel] = useState('');
-  const [fieldType, setFieldType] = useState<'text' | 'number'>('text');
-  const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    api.get<FieldDefinition[]>('/custom-field-definitions').then(setFields).catch(() => {});
-  }, []);
-
-  async function add(e: React.FormEvent) {
-    e.preventDefault();
-    if (label.trim().length < 2) return;
-    setSaving(true);
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
     try {
-      const created = await api.post<FieldDefinition>('/custom-field-definitions', {
-        label: label.trim(),
-        fieldType,
-        sortOrder: fields.length,
-      });
-      setFields((prev) => [...prev, created]);
-      setLabel('');
-      toast(t('added'), 'success');
+      const uploaded = await apiUpload<UploadResult>('/files/upload', file, { category: 'background' });
+      onChange(await api.patch<TenantSelf>('/tenant', { backgroundImageKey: uploaded.key }));
+      toast(t('backgroundUpdated'), 'success');
     } catch (err) {
-      toast(errorText(err), 'error');
+      toast(errorText(err, t('uploadFailed')), 'error');
     } finally {
-      setSaving(false);
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   }
-
-  async function remove(field: FieldDefinition) {
-    if (!confirm(t('confirmRemove', { label: field.label }))) return;
-    try {
-      await api.delete(`/custom-field-definitions/${field.id}`);
-      setFields((prev) => prev.filter((x) => x.id !== field.id));
-      toast(t('removed'), 'success');
-    } catch (err) {
-      toast(errorText(err), 'error');
-    }
-  }
-
-  const typeLabel = { text: t('typeText'), number: t('typeNumber'), dropdown: t('typeText') };
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5">
-      <h2 className="text-base font-semibold text-gray-900">{t('sectionTitle')}</h2>
-      <p className="mt-1 text-sm text-gray-500">{t('sectionHelp')}</p>
-
-      <form onSubmit={add} className="mt-4 flex flex-wrap items-end gap-3">
-        <div className="min-w-48 flex-1">
-          <Input
-            label={t('label')}
-            required
-            minLength={2}
-            maxLength={100}
-            placeholder={t('labelPlaceholder')}
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-          />
-        </div>
-        <Select
-          label={t('type')}
-          value={fieldType}
-          onChange={(e) => setFieldType(e.target.value as 'text' | 'number')}
-          options={[
-            { value: 'text', label: t('typeText') },
-            { value: 'number', label: t('typeNumber') },
-          ]}
-        />
-        <Button type="submit" loading={saving} disabled={label.trim().length < 2}>
-          {t('add')}
-        </Button>
-      </form>
-
-      {fields.length === 0 ? (
-        <p className="mt-4 text-sm text-gray-500">{t('empty')}</p>
+    <div>
+      {tenant?.backgroundImageUrl ? (
+        <img src={tenant.backgroundImageUrl} alt={t('backgroundAlt')} className="h-48 w-full rounded-xl border object-cover" />
       ) : (
-        <ul className="mt-4 divide-y divide-gray-100">
-          {fields.map((field) => (
-            <li key={field.id} className="flex items-center justify-between py-2">
-              <span className="text-sm text-gray-900">
-                {field.label}
-                <span className="ml-2 text-xs text-gray-500">{typeLabel[field.fieldType]}</span>
-              </span>
-              <Button variant="ghost" size="sm" onClick={() => remove(field)}>
-                {tCommon('remove')}
+        <div className="flex h-48 w-full items-center justify-center rounded-xl border border-dashed text-sm text-gray-400">
+          {t('noBackground')}
+        </div>
+      )}
+      {!canChange ? (
+        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{tPlans('brandingOff')}</p>
+      ) : (
+        <>
+          <div className="mt-4 flex items-center gap-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleFileChange}
+              disabled={uploading}
+              className="block text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-teal/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-teal hover:file:bg-teal/20"
+            />
+            {uploading && (
+              <Button loading disabled>
+                {t('uploading')}
               </Button>
-            </li>
-          ))}
-        </ul>
+            )}
+          </div>
+          <p className="mt-2 text-xs text-gray-400">{t('fileHint')}</p>
+        </>
       )}
     </div>
   );
