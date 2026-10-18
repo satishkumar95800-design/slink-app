@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '../../../../lib/api-client';
 import { useErrorText } from '../../../../lib/i18n/errors';
@@ -242,14 +242,20 @@ function NotesTab({ studentId }: { studentId: string }) {
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Only the newest list request may update the screen: a slower, older response must not overwrite it.
+  const latestFetch = useRef(0);
+
   async function fetchNotes() {
+    const requestId = ++latestFetch.current;
+    const isLatest = () => requestId === latestFetch.current;
     try {
       setLoading(true);
-      setNotes(await api.get<StudentNote[]>(`/student-notes?studentId=${studentId}`));
+      const data = await api.get<StudentNote[]>(`/student-notes?studentId=${studentId}`);
+      if (isLatest()) setNotes(data);
     } catch (err) {
-      toast(errorText(err, t('notesCouldNotLoad')), 'error');
+      if (isLatest()) toast(errorText(err, t('notesCouldNotLoad')), 'error');
     } finally {
-      setLoading(false);
+      if (isLatest()) setLoading(false);
     }
   }
 
@@ -259,6 +265,7 @@ function NotesTab({ studentId }: { studentId: string }) {
   }, [studentId]);
 
   async function onSubmit() {
+    if (saving) return;
     if (!content.trim()) {
       toast(t('enterContent'), 'error');
       return;
@@ -313,14 +320,14 @@ function NotesTab({ studentId }: { studentId: string }) {
       ) : (
         <div className="space-y-3">
           {notes.map((n) => (
-            <div key={n.id} className="rounded-2xl border border-gray-100 bg-white shadow-sm p-4">
+            <div key={n.id} className="min-w-0 rounded-2xl border border-gray-100 bg-white shadow-sm p-4">
               <div className="flex items-center justify-between">
                 <Badge variant="blue">{NOTE_TYPES.includes(n.type) ? tType(n.type) : n.type}</Badge>
                 <span className="text-xs text-gray-500">
                   {n.author.name} · {formatDateTime(n.createdAt)}
                 </span>
               </div>
-              <p className="mt-2 whitespace-pre-wrap text-sm text-gray-800">{n.content}</p>
+              <p className="mt-2 whitespace-pre-wrap break-words text-sm text-gray-800 [overflow-wrap:anywhere]">{n.content}</p>
             </div>
           ))}
         </div>
