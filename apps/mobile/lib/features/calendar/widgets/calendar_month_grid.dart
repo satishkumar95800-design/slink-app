@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../calendar_models.dart';
 
-/// Monday-first month grid. Each day shows its number, up to three type markers
-/// beneath it, a ring when it is today and a tint when it is selected.
+/// Monday-first month grid. A holiday fills the day with the holiday colour;
+/// events and PTMs show as markers beneath the number. Today has a ring and the
+/// selected day a tint (on a holiday, a dark ring instead).
 class CalendarMonthGrid extends StatelessWidget {
   final DateTime month; // first day of the month
   final CalendarMonth data;
@@ -87,6 +88,13 @@ class _DayCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
+    final holiday = types.contains(CalendarItemType.holiday);
+    final markers = [for (final t in types) if (t != CalendarItemType.holiday) t];
+    final Border? border = today
+        ? Border.all(color: primary, width: 2)
+        : holiday && selected
+            ? Border.all(color: Colors.black54, width: 2)
+            : null;
     return Semantics(
       button: true,
       selected: selected,
@@ -100,9 +108,13 @@ class _DayCell extends StatelessWidget {
           customBorder: const CircleBorder(),
           child: Container(
             decoration: BoxDecoration(
-              color: selected ? primary.withValues(alpha: 0.15) : null,
+              color: holiday
+                  ? CalendarItemType.holiday.color
+                  : selected
+                      ? primary.withValues(alpha: 0.15)
+                      : null,
               shape: BoxShape.circle,
-              border: today ? Border.all(color: primary, width: 2) : null,
+              border: border,
             ),
             alignment: Alignment.center,
             child: Column(
@@ -110,7 +122,10 @@ class _DayCell extends StatelessWidget {
               children: [
                 Text(
                   '$day',
-                  style: TextStyle(fontWeight: today || selected ? FontWeight.bold : FontWeight.normal),
+                  style: TextStyle(
+                    fontWeight: today || selected || holiday ? FontWeight.bold : FontWeight.normal,
+                    color: holiday ? Colors.white : null,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 SizedBox(
@@ -118,12 +133,16 @@ class _DayCell extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      for (final t in types)
+                      for (final t in markers)
                         Container(
                           width: 6,
                           height: 6,
                           margin: const EdgeInsets.symmetric(horizontal: 1),
-                          decoration: BoxDecoration(color: t.color, shape: BoxShape.circle),
+                          decoration: BoxDecoration(
+                            color: t.color,
+                            shape: BoxShape.circle,
+                            border: holiday ? Border.all(color: Colors.white, width: 1) : null,
+                          ),
                         ),
                     ],
                   ),
