@@ -8,7 +8,7 @@ import { ChangePasswordModal } from '../../components/layout/change-password-mod
 import { getSession, isLoggedIn } from '../../lib/auth';
 import { formatDateOnly } from '../../lib/format';
 import { ToastProvider } from '../../components/ui/toast';
-import { api } from '../../lib/api-client';
+import { api, keepSessionAlive } from '../../lib/api-client';
 import { useTranslations } from 'next-intl';
 import { ConsoleI18nProvider } from '../../lib/i18n/provider';
 import { LanguageSwitcher } from '../../components/layout/language-switcher';
@@ -41,6 +41,9 @@ const ROUTE_TITLES = {
 
 /** Desktop sidebar collapsed to icons — remembered in this browser. */
 const COLLAPSED_KEY = 'slink_sidebar_collapsed';
+
+/** How often the console checks the session while it is open (background tabs are throttled; visibility/focus cover them). */
+const SESSION_CHECK_MS = 30_000;
 
 function readCollapsed(): boolean {
   if (typeof window === 'undefined') return false;
@@ -82,6 +85,28 @@ function AdminShell({ children }: { children: ReactNode }) {
       .catch(() => setTenant(null));
     setReady(true);
   }, [router]);
+
+  // Detect an expired session without waiting for a click or a page refresh.
+  useEffect(() => {
+    if (!ready) return;
+    const check = () => {
+      void keepSessionAlive();
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') check();
+    };
+    const timer = window.setInterval(check, SESSION_CHECK_MS);
+    window.addEventListener('focus', check);
+    window.addEventListener('online', check);
+    document.addEventListener('visibilitychange', onVisible);
+    check();
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', check);
+      window.removeEventListener('online', check);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [ready]);
 
   if (!ready) {
     return (

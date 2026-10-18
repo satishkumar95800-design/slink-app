@@ -23,6 +23,8 @@ function makeMockTx() {
     classTeacher: {
       upsert: jest.fn(),
       updateMany: jest.fn(),
+      findMany: jest.fn().mockResolvedValue([]),
+      deleteMany: jest.fn(),
     },
     feeStructure: {
       findFirst: jest.fn(),
@@ -39,7 +41,11 @@ function makeMockTx() {
     student: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
     studentParent: { findUnique: jest.fn(), create: jest.fn() },
     subject: { findUnique: jest.fn(), create: jest.fn() },
-    teacherSubject: { findUnique: jest.fn(), create: jest.fn() },
+    teacherSubject: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      count: jest.fn().mockResolvedValue(0),
+    },
   };
 }
 
@@ -370,14 +376,14 @@ describe('ImportsService.commit', () => {
     await service.commit(TENANT, ACTOR, 'onboarding.xlsx', buffer);
 
     // The new class teacher replaces the old one: the previous class teacher is
-    // demoted to co-teacher (never deleted), then this one is upserted.
-    expect(mockTx.classTeacher.updateMany).toHaveBeenCalledWith({
+    // released (co-teacher while they teach a subject here), then this one is upserted.
+    expect(mockTx.classTeacher.findMany).toHaveBeenCalledWith({
       where: {
         classId: 'class-1',
         isClassTeacher: true,
         teacherId: { not: 'teacher-2' },
       },
-      data: { isClassTeacher: false },
+      select: { teacherId: true },
     });
     expect(mockTx.classTeacher.upsert).toHaveBeenCalledWith({
       where: { classId_teacherId: { classId: 'class-1', teacherId: 'teacher-2' } },
@@ -424,14 +430,14 @@ describe('ImportsService.commit', () => {
 
     await service.commit(TENANT, ACTOR, 'onboarding.xlsx', buffer);
 
-    expect(mockTx.classTeacher.updateMany).toHaveBeenCalledTimes(1);
-    expect(mockTx.classTeacher.updateMany).toHaveBeenCalledWith({
+    expect(mockTx.classTeacher.findMany).toHaveBeenCalledTimes(1);
+    expect(mockTx.classTeacher.findMany).toHaveBeenCalledWith({
       where: {
         classId: 'class-1',
         isClassTeacher: true,
         teacherId: { not: 'asha' },
       },
-      data: { isClassTeacher: false },
+      select: { teacherId: true },
     });
     expect(mockTx.classTeacher.upsert).toHaveBeenCalledWith({
       where: { classId_teacherId: { classId: 'class-1', teacherId: 'ravi' } },

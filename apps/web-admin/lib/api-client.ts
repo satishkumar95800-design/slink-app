@@ -52,17 +52,67 @@ async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = localStorage.getItem('slink_refresh_token');
   if (!refreshToken) return null;
 
-  const res = await fetch(`${API_BASE}/auth/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken }),
-  });
-  if (!res.ok) return null;
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+  } catch {
+    // Could not reach the server: the refresh token may still be good, so the session is kept.
+    throw new ApiError(0, 'Network error — check your connection and try again.', undefined, 'NETWORK_ERROR');
+  }
+  // Only the server refusing the refresh token ends the session; any other failure is transient.
+  if (res.status === 401 || res.status === 403) return null;
+  if (!res.ok) throw new ApiError(res.status, `HTTP ${res.status}`, undefined, 'NETWORK_ERROR');
 
   const body = await res.json();
   localStorage.setItem('slink_token', body.accessToken);
   localStorage.setItem('slink_refresh_token', body.refreshToken);
   return body.accessToken as string;
+}
+
+/** One refresh at a time, shared by 401 retries and the proactive check. Null = session really over. */
+function refreshSession(): Promise<string | null> {
+  refreshPromise ??= refreshAccessToken().finally(() => {
+    refreshPromise = null;
+  });
+  return refreshPromise;
+}
+
+const REFRESH_AHEAD_MS = 60_000;
+
+/** Reads the `exp` claim of the access JWT. Not a security check — the server verifies every call. */
+function accessTokenExpiresAt(token: string): number | null {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return typeof payload.exp === 'number' ? payload.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Keeps the console session honest without waiting for a click: refreshes the access token shortly
+ * before it expires, and logs out as soon as the server refuses the refresh token. Cheap to call often;
+ * it only talks to the server near expiry. A network failure keeps the session and is retried later.
+ */
+export async function keepSessionAlive(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  const token = localStorage.getItem('slink_token');
+  if (!token) {
+    forceLogout();
+    return;
+  }
+  const expiresAt = accessTokenExpiresAt(token);
+  if (expiresAt === null || expiresAt - Date.now() > REFRESH_AHEAD_MS) return;
+  try {
+    const newToken = await refreshSession();
+    if (!newToken) forceLogout();
+  } catch {
+    // Offline or server hiccup: try again on the next check.
+  }
 }
 
 interface RequestOptions extends RequestInit {
@@ -89,12 +139,12 @@ export async function apiRequest<T>(
     },
   });
 
-  if (res.status === 401 && !isRetry && typeof window !== 'undefined') {
-    refreshPromise ??= refreshAccessToken().finally(() => {
-      refreshPromise = null;
-    });
-    const newToken = await refreshPromise;
-    if (newToken) return apiRequest<T>(path, options, true);
+  if (res.status === 401 && typeof window !== 'undefined') {
+    if (!isRetry) {
+      const newToken = await refreshSession();
+      if (newToken) return apiRequest<T>(path, options, true);
+    }
+    // Either the refresh was refused, or the fresh token was refused too: the session is over.
     forceLogout();
     throw new ApiError(401, 'Session expired — please log in again', undefined, 'SESSION_EXPIRED');
   }
