@@ -35,6 +35,7 @@ import {
   ValidTeacherRow,
   ValidUserRow,
 } from './types';
+import { releaseOtherClassTeachers } from '../students/class-teacher-links';
 
 const BCRYPT_ROUNDS = 12;
 /** Beyond this, a request-lifetime transaction risks timing out — the queue takes over */
@@ -832,17 +833,15 @@ export class ImportsService {
 
 /**
  * Makes this teacher the class's one class teacher: any other class teacher of
- * the class is demoted to co-teacher (still linked to the class).
+ * the class becomes a co-teacher while they teach a subject there, otherwise
+ * loses access to the class.
  */
 async function setClassTeacher(
   tx: Prisma.TransactionClient,
   classId: string,
   teacherId: string,
 ) {
-  await tx.classTeacher.updateMany({
-    where: { classId, isClassTeacher: true, teacherId: { not: teacherId } },
-    data: { isClassTeacher: false },
-  });
+  await releaseOtherClassTeachers(tx, classId, teacherId);
   await tx.classTeacher.upsert({
     where: { classId_teacherId: { classId, teacherId } },
     create: { classId, teacherId, isClassTeacher: true },

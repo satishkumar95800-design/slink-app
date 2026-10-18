@@ -11,6 +11,10 @@ import { ActiveUser } from '../../common/types/active-user.type';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
 import { AddClassTeacherDto } from './dto/add-class-teacher.dto';
+import {
+  releaseClassTeacher,
+  releaseOtherClassTeachers,
+} from './class-teacher-links';
 
 const classListSelect = {
   id: true,
@@ -130,17 +134,10 @@ export class ClassesService {
     }
 
     return this.prisma.$transaction(async (tx) => {
-      // One class teacher per class: the previous one stays on as a co-teacher
-      // (they may still teach a subject here) but loses class-teacher rights.
+      // One class teacher per class: the previous one stays linked only while
+      // they teach a subject here, otherwise their access to the class ends.
       if (isClassTeacher) {
-        await tx.classTeacher.updateMany({
-          where: {
-            classId,
-            isClassTeacher: true,
-            teacherId: { not: dto.teacherId },
-          },
-          data: { isClassTeacher: false },
-        });
+        await releaseOtherClassTeachers(tx, classId, dto.teacherId);
       }
       return existing
         ? tx.classTeacher.update({
@@ -161,9 +158,10 @@ export class ClassesService {
     });
     if (!existing) throw new NotFoundException('Teacher assignment not found');
 
-    await this.prisma.classTeacher.delete({
-      where: { classId_teacherId: { classId, teacherId } },
-    });
+    // A teacher who still teaches a subject here keeps access as a co-teacher.
+    await this.prisma.$transaction((tx) =>
+      releaseClassTeacher(tx, classId, teacherId),
+    );
   }
 
   /**

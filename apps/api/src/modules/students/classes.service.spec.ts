@@ -54,11 +54,14 @@ const mockPrisma = {
   },
   classTeacher: {
     findUnique: jest.fn(),
+    findMany: jest.fn().mockResolvedValue([]),
     create: jest.fn(),
     update: jest.fn(),
     updateMany: jest.fn(),
     delete: jest.fn(),
+    deleteMany: jest.fn(),
   },
+  teacherSubject: { count: jest.fn().mockResolvedValue(0) },
   $transaction: jest.fn(),
 };
 // Interactive transactions run against the same mock.
@@ -230,25 +233,53 @@ describe('ClassesService', () => {
       });
     });
 
-    it('replaces the current class teacher, keeping them as a co-teacher', async () => {
+    it('replaces the current class teacher, keeping them as a co-teacher while they teach a subject here', async () => {
       mockPrisma.class.findUnique.mockResolvedValue(baseClass);
       mockPrisma.user.findUnique.mockResolvedValue({ role: Role.teacher });
       mockPrisma.classTeacher.findUnique.mockResolvedValue(null);
+      mockPrisma.classTeacher.findMany.mockResolvedValueOnce([
+        { teacherId: 'teacher-1' },
+      ]);
+      mockPrisma.teacherSubject.count.mockResolvedValueOnce(1);
 
       await service.addTeacher(TENANT, CLASS_ID, {
         teacherId: 'teacher-2',
         isClassTeacher: true,
       });
 
-      expect(mockPrisma.classTeacher.updateMany).toHaveBeenCalledWith({
+      expect(mockPrisma.classTeacher.findMany).toHaveBeenCalledWith({
         where: {
           classId: CLASS_ID,
           isClassTeacher: true,
           teacherId: { not: 'teacher-2' },
         },
+        select: { teacherId: true },
+      });
+      expect(mockPrisma.classTeacher.updateMany).toHaveBeenCalledWith({
+        where: { classId: CLASS_ID, teacherId: 'teacher-1' },
         data: { isClassTeacher: false },
       });
+      expect(mockPrisma.classTeacher.deleteMany).not.toHaveBeenCalled();
       expect(mockPrisma.classTeacher.create).toHaveBeenCalled();
+    });
+
+    it('drops the replaced class teacher from the class when they teach no subject there', async () => {
+      mockPrisma.class.findUnique.mockResolvedValue(baseClass);
+      mockPrisma.user.findUnique.mockResolvedValue({ role: Role.teacher });
+      mockPrisma.classTeacher.findUnique.mockResolvedValue(null);
+      mockPrisma.classTeacher.findMany.mockResolvedValueOnce([
+        { teacherId: 'teacher-1' },
+      ]);
+      mockPrisma.teacherSubject.count.mockResolvedValueOnce(0);
+
+      await service.addTeacher(TENANT, CLASS_ID, {
+        teacherId: 'teacher-2',
+        isClassTeacher: true,
+      });
+
+      expect(mockPrisma.classTeacher.deleteMany).toHaveBeenCalledWith({
+        where: { classId: CLASS_ID, teacherId: 'teacher-1' },
+      });
     });
 
     it('promotes an existing co-teacher instead of rejecting them', async () => {
@@ -315,15 +346,31 @@ describe('ClassesService', () => {
         classId: CLASS_ID,
         teacherId: TEACHER_ID,
       });
-      mockPrisma.classTeacher.delete.mockResolvedValue({});
+      mockPrisma.teacherSubject.count.mockResolvedValueOnce(0);
 
       await service.removeTeacher(TENANT, CLASS_ID, TEACHER_ID);
 
-      expect(mockPrisma.classTeacher.delete).toHaveBeenCalledWith({
-        where: {
-          classId_teacherId: { classId: CLASS_ID, teacherId: TEACHER_ID },
-        },
+      expect(mockPrisma.classTeacher.deleteMany).toHaveBeenCalledWith({
+        where: { classId: CLASS_ID, teacherId: TEACHER_ID },
       });
+    });
+
+    it('keeps a removed class teacher as a co-teacher while they teach a subject there', async () => {
+      mockPrisma.class.findUnique.mockResolvedValue(baseClass);
+      mockPrisma.classTeacher.findUnique.mockResolvedValue({
+        classId: CLASS_ID,
+        teacherId: TEACHER_ID,
+        isClassTeacher: true,
+      });
+      mockPrisma.teacherSubject.count.mockResolvedValueOnce(2);
+
+      await service.removeTeacher(TENANT, CLASS_ID, TEACHER_ID);
+
+      expect(mockPrisma.classTeacher.updateMany).toHaveBeenCalledWith({
+        where: { classId: CLASS_ID, teacherId: TEACHER_ID },
+        data: { isClassTeacher: false },
+      });
+      expect(mockPrisma.classTeacher.deleteMany).not.toHaveBeenCalled();
     });
 
     it('throws NotFoundException when the teacher is not assigned to the class', async () => {
