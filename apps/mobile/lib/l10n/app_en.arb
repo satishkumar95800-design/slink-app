@@ -565,7 +565,7 @@
       }
     }
   },
-  "homeworkAddPhotoFirst": "Add at least one photo.",
+  "homeworkAddPhotoFirst": "Add a photo or write the homework.",
   "homeworkDefaultBody": "New homework has been posted.",
   "homeworkSent": "Homework sent",
   "homeworkCouldNotSend": "Could not send the homework. {reason}",
@@ -576,7 +576,7 @@
       }
     }
   },
-  "homeworkCaptionLabel": "Caption (optional)",
+  "homeworkCaptionLabel": "Homework / caption",
   "homeworkSubjectOptional": "Subject (optional)",
   "homeworkNoSubject": "No subject",
   "attachCamera": "Camera",

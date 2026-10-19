@@ -808,7 +808,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get homeworkAddPhotoFirst => 'Add at least one photo.';
+  String get homeworkAddPhotoFirst => 'Add a photo or write the homework.';
 
   @override
   String get homeworkDefaultBody => 'New homework has been posted.';
@@ -822,7 +822,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get homeworkCaptionLabel => 'Caption (optional)';
+  String get homeworkCaptionLabel => 'Homework / caption';
 
   @override
   String get homeworkSubjectOptional => 'Subject (optional)';

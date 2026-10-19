@@ -1459,7 +1459,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeworkAddPhotoFirst.
   ///
   /// In en, this message translates to:
-  /// **'Add at least one photo.'**
+  /// **'Add a photo or write the homework.'**
   String get homeworkAddPhotoFirst;
 
   /// No description provided for @homeworkDefaultBody.
@@ -1483,7 +1483,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeworkCaptionLabel.
   ///
   /// In en, this message translates to:
-  /// **'Caption (optional)'**
+  /// **'Homework / caption'**
   String get homeworkCaptionLabel;
 
   /// No description provided for @homeworkSubjectOptional.
