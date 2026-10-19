@@ -25,8 +25,16 @@ export class FeeRemindersModule implements OnModuleInit {
     @InjectQueue(FEE_REMINDERS_QUEUE) private readonly queue: Queue,
   ) {}
 
-  /** Repeatable jobs are keyed by name + cron in Redis, so every API instance registering it still yields one daily run. */
-  async onModuleInit() {
+  /**
+   * Repeatable jobs are keyed by name + cron in Redis, so every API instance registering it still yields one daily run.
+   * Not awaited: Nest runs this before app.listen(), and an unreachable Redis retries for several seconds, which
+   * tripped the host's 3-second listen() watchdog and kept the API down while it restarted.
+   */
+  onModuleInit() {
+    void this.schedule();
+  }
+
+  private async schedule() {
     try {
       await this.queue.add(
         'daily',
