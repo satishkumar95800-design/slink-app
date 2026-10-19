@@ -17,7 +17,7 @@ export class WebhookController {
 
   /**
    * Razorpay webhook endpoint. Must be @Public() — Razorpay sends no JWT.
-   * Raw body access is required for HMAC verification; enabled via rawBody: true in main.ts.
+   * Raw body access is required for HMAC verification; enabled via rawBody: true in server.ts.
    */
   @Post()
   @Public()
