@@ -43,6 +43,7 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
 import { ConsentFormsModule } from './modules/consent-forms/consent-forms.module';
 import { SyllabusModule } from './modules/syllabus/syllabus.module';
+import { SchoolBusModule } from './modules/school-bus/school-bus.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { PlatformDashboardModule } from './modules/platform-dashboard/platform-dashboard.module';
 import { HeadOfficeModule } from './modules/head-office/head-office.module';
@@ -56,6 +57,7 @@ import { PublicSiteModule } from './modules/public-site/public-site.module';
 import { TransferCertificatesModule } from './modules/transfer-certificates/transfer-certificates.module';
 import { FeeConcessionsModule } from './modules/fee-concessions/fee-concessions.module';
 import { ClassRemindersModule } from './modules/class-reminders/class-reminders.module';
+import { HolidayNoticesModule } from './modules/holiday-notices/holiday-notices.module';
 
 @Module({
   imports: [
@@ -103,6 +105,7 @@ import { ClassRemindersModule } from './modules/class-reminders/class-reminders.
     CalendarModule,
     ConsentFormsModule,
     SyllabusModule,
+    SchoolBusModule,
     SubscriptionsModule,
     PlatformDashboardModule,
     HeadOfficeModule,
@@ -116,6 +119,7 @@ import { ClassRemindersModule } from './modules/class-reminders/class-reminders.
     TransferCertificatesModule,
     FeeConcessionsModule,
     ClassRemindersModule,
+    HolidayNoticesModule,
   ],
 })
 export class AppModule implements NestModule {

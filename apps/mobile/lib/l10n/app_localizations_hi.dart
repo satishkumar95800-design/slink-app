@@ -1751,4 +1751,78 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get errSubscriptionExpired =>
       'इस स्कूल की Schoolinkd सदस्यता समाप्त हो गई है। कृपया स्कूल कार्यालय से संपर्क करें।';
+
+  @override
+  String get busTitle => 'स्कूल बस';
+
+  @override
+  String busNotOnRoute(String name) {
+    return '$name किसी स्कूल बस रूट पर नहीं है।';
+  }
+
+  @override
+  String busVehicle(String number) {
+    return 'वाहन $number';
+  }
+
+  @override
+  String get busStop => 'स्टॉप';
+
+  @override
+  String busPickup(String time) {
+    return 'पिक-अप $time';
+  }
+
+  @override
+  String busDrop(String time) {
+    return 'ड्रॉप $time';
+  }
+
+  @override
+  String get busNoStop => 'अभी स्टॉप तय नहीं है। स्कूल ऑफ़िस से पूछें।';
+
+  @override
+  String get busDriver => 'ड्राइवर';
+
+  @override
+  String get busAttendant => 'सहायक';
+
+  @override
+  String get busNoDriver => 'अभी ड्राइवर तय नहीं है।';
+
+  @override
+  String get busCall => 'कॉल करें';
+
+  @override
+  String busCallName(String name) {
+    return '$name को कॉल करें';
+  }
+
+  @override
+  String get busCouldNotCall => 'फ़ोन ऐप नहीं खुल सका।';
+
+  @override
+  String get errImageNotAllowed =>
+      'यह फ़ोटो नहीं भेजी जा सकती: यह स्कूल के लिए उपयुक्त नहीं लगती। लिखे हुए काम की फ़ोटो भेजें।';
+
+  @override
+  String get errImageCheckUnavailable =>
+      'फ़ोटो की जाँच नहीं हो सकी। थोड़ी देर में फिर कोशिश करें।';
+
+  @override
+  String get errImageTooLarge =>
+      'यह फ़ोटो जाँच के लिए बहुत बड़ी है। 5 MB से छोटी फ़ोटो लें।';
+
+  @override
+  String get errImageNotChecked =>
+      'इस फ़ोटो की जाँच नहीं हुई। इसे फिर से जोड़कर भेजें।';
+
+  @override
+  String get calendarPickMonth => 'महीना चुनें';
+
+  @override
+  String get calendarPrevYear => 'पिछला साल';
+
+  @override
+  String get calendarNextYear => 'अगला साल';
 }

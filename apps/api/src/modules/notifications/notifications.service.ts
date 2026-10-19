@@ -166,6 +166,7 @@ export class NotificationsService {
       return { queued: 0 };
     }
 
+    await this.files.assertImagesChecked(plan.attachments, tenantId);
     // Signing every key up front also proves each file exists and belongs to this school.
     const signedUrls = await Promise.all(
       plan.attachments.map((a) =>

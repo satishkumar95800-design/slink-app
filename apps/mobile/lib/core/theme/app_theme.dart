@@ -32,6 +32,7 @@ abstract final class FeatureColors {
   static const sent = Color(0xFF5B7083);
   static const documents = Color(0xFF6D5BD0);
   static const syllabus = Color(0xFF3F51B5);
+  static const bus = Color(0xFFD08700);
 }
 
 class AppThemeData {

@@ -4,6 +4,8 @@ import {
   ForbiddenException,
   Logger,
   NotFoundException,
+  ServiceUnavailableException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -14,10 +16,24 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
+import {
+  DetectModerationLabelsCommand,
+  RekognitionClient,
+} from '@aws-sdk/client-rekognition';
 import { randomUUID } from 'crypto';
 import { extname } from 'path';
 import type { Express } from 'express';
 import { FileCategory, ALLOWED_MIME, MAX_BYTES } from './dto/upload-file.dto';
+import {
+  CHECKED_IMAGE_TYPES,
+  MAX_CHECK_BYTES,
+  MIN_CONFIDENCE,
+  MODERATION_META,
+  MODERATION_PASSED,
+  blockedCategories,
+  imageModerationEnabled,
+  needsImageCheck,
+} from './image-moderation';
 
 /** Petty cash receipts (private/{tenant}/petty-cash/...) are reachable only through the petty-cash module. */
 export const isPettyCashKey = (key: string): boolean =>
@@ -70,6 +86,8 @@ export class FilesService {
   private readonly bucket: string;
   private readonly region: string;
   private readonly endpoint: string | undefined;
+  /** Null when photo screening is off (see image-moderation.ts). */
+  private readonly rekognition: RekognitionClient | null;
   private readonly logger = new Logger(FilesService.name);
 
   constructor(private readonly config: ConfigService) {
@@ -83,6 +101,12 @@ export class FilesService {
         ? { endpoint: this.endpoint, forcePathStyle: true }
         : {}),
     });
+    this.rekognition = imageModerationEnabled(
+      config.get<string>('IMAGE_MODERATION'),
+      this.endpoint,
+    )
+      ? new RekognitionClient({ region: this.region })
+      : null;
   }
 
   async upload(
@@ -92,6 +116,10 @@ export class FilesService {
     entityId?: string,
   ): Promise<UploadResult> {
     this.validateFile(file, category);
+    const moderation =
+      this.rekognition && needsImageCheck(category, file.mimetype)
+        ? await this.checkImage(tenantId, file)
+        : undefined;
 
     const key = this.buildKey(tenantId, category, file, entityId);
     const isPublic = key.startsWith('public/');
@@ -109,6 +137,7 @@ export class FilesService {
             tenantId,
             category,
             ...(entityId ? { entityId } : {}),
+            ...(moderation ? { [MODERATION_META]: moderation } : {}),
           },
         }),
       );
@@ -149,6 +178,36 @@ export class FilesService {
     return this.getSignedUrl(key, tenantId, STUDENT_PHOTO_URL_TTL, {
       verifyExists: false,
     });
+  }
+
+  /**
+   * Refuses photos that weren't screened on upload (sent with a broadcast).
+   * PDFs and text files pass; so does everything while screening is off.
+   */
+  async assertImagesChecked(
+    attachments: { key: string; contentType: string }[],
+    tenantId: string,
+  ): Promise<void> {
+    if (!this.rekognition) return;
+    for (const a of attachments) {
+      if (!CHECKED_IMAGE_TYPES.includes(a.contentType)) continue;
+      this.assertTenantOwnsKey(a.key, tenantId);
+      let meta: Record<string, string> | undefined;
+      try {
+        const head = await this.s3.send(
+          new HeadObjectCommand({ Bucket: this.bucket, Key: a.key }),
+        );
+        meta = head.Metadata;
+      } catch {
+        throw new NotFoundException(`File not found: ${a.key}`);
+      }
+      if (meta?.[MODERATION_META] !== MODERATION_PASSED) {
+        throw new UnprocessableEntityException({
+          code: 'IMAGE_NOT_CHECKED',
+          message: 'This photo was not checked. Add it again and resend.',
+        });
+      }
+    }
   }
 
   async getSignedUrl(
@@ -220,6 +279,50 @@ export class FilesService {
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────────
+
+  /** Screens a photo for parents; throws unless it is safe. */
+  private async checkImage(
+    tenantId: string,
+    file: Express.Multer.File,
+  ): Promise<string> {
+    if (file.size > MAX_CHECK_BYTES) {
+      throw new BadRequestException({
+        code: 'IMAGE_TOO_LARGE_TO_CHECK',
+        message: 'This photo is too large to check. Use a photo under 5 MB.',
+      });
+    }
+    let labels;
+    try {
+      const res = await this.rekognition!.send(
+        new DetectModerationLabelsCommand({
+          Image: { Bytes: file.buffer },
+          MinConfidence: MIN_CONFIDENCE,
+        }),
+      );
+      labels = res.ModerationLabels ?? [];
+    } catch (err) {
+      this.logger.error(
+        `Photo check failed for school ${tenantId}`,
+        err instanceof Error ? err.stack : String(err),
+      );
+      throw new ServiceUnavailableException({
+        code: 'IMAGE_CHECK_UNAVAILABLE',
+        message: "Couldn't check the photo. Try again in a moment.",
+      });
+    }
+    const blocked = blockedCategories(labels);
+    if (blocked.length > 0) {
+      this.logger.warn(
+        `Refused a photo for school ${tenantId}: ${blocked.join(', ')}`,
+      );
+      throw new UnprocessableEntityException({
+        code: 'IMAGE_NOT_ALLOWED',
+        message:
+          "This photo can't be sent: it looks unsuitable for school. Send a photo of the written work.",
+      });
+    }
+    return MODERATION_PASSED;
+  }
 
   private validateFile(
     file: Express.Multer.File,

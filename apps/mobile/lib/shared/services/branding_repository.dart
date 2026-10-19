@@ -54,3 +54,8 @@ final staffDocumentsEnabledProvider = Provider<bool>((ref) {
 final syllabusEnabledProvider = Provider<bool>((ref) {
   return ref.watch(brandingProvider).valueOrNull?.syllabusEnabled ?? false;
 });
+
+/// Whether the school's plan includes school bus routes.
+final schoolBusEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(brandingProvider).valueOrNull?.transportEnabled ?? false;
+});

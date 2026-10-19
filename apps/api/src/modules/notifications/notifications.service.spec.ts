@@ -74,6 +74,7 @@ const mockFiles = {
   getSignedUrl: jest
     .fn()
     .mockResolvedValue('https://signed.example.com/attachment.pdf'),
+  assertImagesChecked: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockTranslation = { translateNotice: jest.fn().mockResolvedValue(null) };

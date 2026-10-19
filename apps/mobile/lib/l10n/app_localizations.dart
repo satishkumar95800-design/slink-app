@@ -2987,6 +2987,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This school\'s Schoolinkd subscription has ended. Please contact the school office.'**
   String get errSubscriptionExpired;
+
+  /// No description provided for @busTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'School bus'**
+  String get busTitle;
+
+  /// No description provided for @busNotOnRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} isn\'t on a school bus route.'**
+  String busNotOnRoute(String name);
+
+  /// No description provided for @busVehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vehicle {number}'**
+  String busVehicle(String number);
+
+  /// No description provided for @busStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get busStop;
+
+  /// No description provided for @busPickup.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick-up {time}'**
+  String busPickup(String time);
+
+  /// No description provided for @busDrop.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop {time}'**
+  String busDrop(String time);
+
+  /// No description provided for @busNoStop.
+  ///
+  /// In en, this message translates to:
+  /// **'No stop set yet. Ask the school office.'**
+  String get busNoStop;
+
+  /// No description provided for @busDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Driver'**
+  String get busDriver;
+
+  /// No description provided for @busAttendant.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendant'**
+  String get busAttendant;
+
+  /// No description provided for @busNoDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'No driver assigned yet.'**
+  String get busNoDriver;
+
+  /// No description provided for @busCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get busCall;
+
+  /// No description provided for @busCallName.
+  ///
+  /// In en, this message translates to:
+  /// **'Call {name}'**
+  String busCallName(String name);
+
+  /// No description provided for @busCouldNotCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open the phone app.'**
+  String get busCouldNotCall;
+
+  /// No description provided for @errImageNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo can\'t be sent: it looks unsuitable for school. Send a photo of the written work.'**
+  String get errImageNotAllowed;
+
+  /// No description provided for @errImageCheckUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t check the photo. Try again in a moment.'**
+  String get errImageCheckUnavailable;
+
+  /// No description provided for @errImageTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo is too large to check. Use a photo under 5 MB.'**
+  String get errImageTooLarge;
+
+  /// No description provided for @errImageNotChecked.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo was not checked. Add it again and resend.'**
+  String get errImageNotChecked;
+
+  /// No description provided for @calendarPickMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a month'**
+  String get calendarPickMonth;
+
+  /// No description provided for @calendarPrevYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous year'**
+  String get calendarPrevYear;
+
+  /// No description provided for @calendarNextYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Next year'**
+  String get calendarNextYear;
 }
 
 class _AppLocalizationsDelegate

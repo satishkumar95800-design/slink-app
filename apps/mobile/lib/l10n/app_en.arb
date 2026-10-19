@@ -1247,5 +1247,60 @@
   "syllabusErrNotTeacher": "You don't teach this subject in this class.",
   "syllabusErrFutureDate": "A topic can't be marked covered on a future date.",
   "syllabusErrTopicGone": "This topic was removed. Pull down to refresh.",
-  "errSubscriptionExpired": "This school's Schoolinkd subscription has ended. Please contact the school office."
+  "errSubscriptionExpired": "This school's Schoolinkd subscription has ended. Please contact the school office.",
+  "busTitle": "School bus",
+  "busNotOnRoute": "{name} isn't on a school bus route.",
+  "@busNotOnRoute": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "busVehicle": "Vehicle {number}",
+  "@busVehicle": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "busStop": "Stop",
+  "busPickup": "Pick-up {time}",
+  "@busPickup": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "busDrop": "Drop {time}",
+  "@busDrop": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "busNoStop": "No stop set yet. Ask the school office.",
+  "busDriver": "Driver",
+  "busAttendant": "Attendant",
+  "busNoDriver": "No driver assigned yet.",
+  "busCall": "Call",
+  "busCallName": "Call {name}",
+  "@busCallName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "busCouldNotCall": "Couldn't open the phone app.",
+  "errImageNotAllowed": "This photo can't be sent: it looks unsuitable for school. Send a photo of the written work.",
+  "errImageCheckUnavailable": "Couldn't check the photo. Try again in a moment.",
+  "errImageTooLarge": "This photo is too large to check. Use a photo under 5 MB.",
+  "errImageNotChecked": "This photo was not checked. Add it again and resend.",
+  "calendarPickMonth": "Pick a month",
+  "calendarPrevYear": "Previous year",
+  "calendarNextYear": "Next year"
 }

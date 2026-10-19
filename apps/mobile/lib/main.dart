@@ -123,6 +123,9 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
         return (route: '/dashboard/routine', extra: null);
       case 'consent':
         return (route: '/consent', extra: null);
+      // Morning holiday push; the calendar is optional, the history is not.
+      case 'holiday':
+        return (route: '/dashboard/notifications', extra: null);
     }
 
     if (feeId != null && feeId is String && feeId.isNotEmpty) {

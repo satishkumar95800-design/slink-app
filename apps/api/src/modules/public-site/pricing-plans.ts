@@ -95,6 +95,7 @@ export const COMPARISON: ComparisonGroup[] = [
       ['School calendar with events and PTMs', false, true, true],
       ['Shared staff documents', false, true, true],
       ['Syllabus progress and head office view', false, true, true],
+      ['School bus routes, stops and driver contact', false, true, true],
     ],
   },
   {

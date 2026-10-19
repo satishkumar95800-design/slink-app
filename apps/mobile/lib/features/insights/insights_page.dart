@@ -89,14 +89,10 @@ class InsightsPage extends ConsumerWidget {
         onRefresh: () async => ref.invalidate(insightsProvider),
         child: async.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => ListView(children: [
-            EmptyState(icon: Icons.cloud_off_rounded, message: l.insightsCouldNotLoad, color: AppColors.coral),
-          ]),
+          error: (_, __) => EmptyState(icon: Icons.cloud_off_rounded, message: l.insightsCouldNotLoad, color: AppColors.coral),
           data: (alerts) {
             if (alerts.isEmpty) {
-              return ListView(children: [
-                EmptyState(icon: Icons.verified_rounded, message: l.insightsEmpty, color: FeatureColors.attendance),
-              ]);
+              return EmptyState(icon: Icons.verified_rounded, message: l.insightsEmpty, color: FeatureColors.attendance);
             }
             return ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),

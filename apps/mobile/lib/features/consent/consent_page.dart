@@ -53,10 +53,7 @@ class ConsentPage extends ConsumerWidget {
           ),
           data: (items) {
             if (items.isEmpty) {
-              return ListView(children: [
-                const SizedBox(height: 80),
-                EmptyState(icon: Icons.assignment_turned_in_rounded, message: l.consentEmpty, color: FeatureColors.notices),
-              ]);
+              return EmptyState(icon: Icons.assignment_turned_in_rounded, message: l.consentEmpty, color: FeatureColors.notices);
             }
             return ListView(
               padding: const EdgeInsets.all(16),

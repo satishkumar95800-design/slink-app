@@ -1752,4 +1752,78 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get errSubscriptionExpired =>
       'This school\'s Schoolinkd subscription has ended. Please contact the school office.';
+
+  @override
+  String get busTitle => 'School bus';
+
+  @override
+  String busNotOnRoute(String name) {
+    return '$name isn\'t on a school bus route.';
+  }
+
+  @override
+  String busVehicle(String number) {
+    return 'Vehicle $number';
+  }
+
+  @override
+  String get busStop => 'Stop';
+
+  @override
+  String busPickup(String time) {
+    return 'Pick-up $time';
+  }
+
+  @override
+  String busDrop(String time) {
+    return 'Drop $time';
+  }
+
+  @override
+  String get busNoStop => 'No stop set yet. Ask the school office.';
+
+  @override
+  String get busDriver => 'Driver';
+
+  @override
+  String get busAttendant => 'Attendant';
+
+  @override
+  String get busNoDriver => 'No driver assigned yet.';
+
+  @override
+  String get busCall => 'Call';
+
+  @override
+  String busCallName(String name) {
+    return 'Call $name';
+  }
+
+  @override
+  String get busCouldNotCall => 'Couldn\'t open the phone app.';
+
+  @override
+  String get errImageNotAllowed =>
+      'This photo can\'t be sent: it looks unsuitable for school. Send a photo of the written work.';
+
+  @override
+  String get errImageCheckUnavailable =>
+      'Couldn\'t check the photo. Try again in a moment.';
+
+  @override
+  String get errImageTooLarge =>
+      'This photo is too large to check. Use a photo under 5 MB.';
+
+  @override
+  String get errImageNotChecked =>
+      'This photo was not checked. Add it again and resend.';
+
+  @override
+  String get calendarPickMonth => 'Pick a month';
+
+  @override
+  String get calendarPrevYear => 'Previous year';
+
+  @override
+  String get calendarNextYear => 'Next year';
 }

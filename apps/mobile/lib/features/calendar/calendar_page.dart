@@ -9,6 +9,7 @@ import 'calendar_repository.dart';
 import 'widgets/calendar_item_tile.dart';
 import 'widgets/calendar_legend.dart';
 import 'widgets/calendar_month_grid.dart';
+import 'widgets/month_year_picker.dart';
 
 /// School calendar for parents and teachers: holidays, events and PTMs the admin
 /// set up, as a month grid with the tapped day's items listed below.
@@ -37,13 +38,20 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     _month = DateTime(today.year, today.month);
   }
 
-  void _shiftMonth(int delta) {
+  void _shiftMonth(int delta) => _showMonth(DateTime(_month.year, _month.month + delta));
+
+  void _showMonth(DateTime month) {
     setState(() {
-      _month = DateTime(_month.year, _month.month + delta);
+      _month = DateTime(month.year, month.month);
       final today = _dateOnly(DateTime.now());
       final inThisMonth = today.year == _month.year && today.month == _month.month;
       _selected = inThisMonth ? today : _month;
     });
+  }
+
+  Future<void> _pickMonth() async {
+    final picked = await showMonthYearPicker(context, current: _month, today: _dateOnly(DateTime.now()));
+    if (picked != null && mounted) _showMonth(picked);
   }
 
   @override
@@ -97,11 +105,31 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                               onPressed: () => _shiftMonth(-1),
                             ),
                             Expanded(
-                              child: Text(
-                                // Month name in the UI language, digits stay 0–9.
-                                DateFormat.yMMMM(language).format(_month),
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.titleMedium,
+                              // Tap the month to jump to any month and year.
+                              child: Tooltip(
+                                message: l.calendarPickMonth,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: _pickMonth,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            // Month name in the UI language, digits stay 0–9.
+                                            DateFormat.yMMMM(language).format(_month),
+                                            textAlign: TextAlign.center,
+                                            style: Theme.of(context).textTheme.titleMedium,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(Icons.arrow_drop_down_rounded),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                             IconButton(

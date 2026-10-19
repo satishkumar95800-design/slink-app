@@ -53,6 +53,11 @@ export class UpdatePlatformFeaturesDto extends UpdateFeaturesDto {
   @IsOptional()
   admissions?: boolean;
 
+  /** School bus routes (Premium). */
+  @IsBoolean()
+  @IsOptional()
+  transport?: boolean;
+
   /** Attendance report and fee reports with CSV export (Premium). */
   @IsBoolean()
   @IsOptional()

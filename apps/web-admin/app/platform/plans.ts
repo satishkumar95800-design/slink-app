@@ -53,6 +53,7 @@ export const MODULES = [
   { key: 'customBranding', group: 'premium', name: 'School background and colours', help: 'The school changes its own background, logo and colours.' },
   { key: 'syllabus', group: 'premium', name: 'Syllabus progress', help: 'Topic plans with target dates; teachers tick topics off, parents see coverage, the admin sees subjects running late.' },
   { key: 'admissions', group: 'premium', name: 'Admissions pipeline', help: 'Enquiry, campus tour, follow-up, registration and enrolment, with follow-up reminders and a funnel (also on the head office view).' },
+  { key: 'transport', group: 'premium', name: 'School bus routes', help: 'Bus routes with stops and times, a driver and attendant from ground staff, students per route; parents see their child’s bus and can call the driver.' },
   { key: 'hrms', group: 'premium_max', name: 'HR and payroll', help: 'Staff records, attendance, leave, pay runs with PF, ESI, PT and payslips. Add-on for Premium (₹18,000).' },
   { key: 'aiInsights', group: 'premium_max', name: 'AI features', help: 'AI assistant, notice translation, report remarks, early warnings and Monday summary. Add-on for Premium (₹15,000).' },
 ] as const satisfies readonly { key: string; group: ModuleGroup; name: string; help: string }[];

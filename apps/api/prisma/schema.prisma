@@ -242,6 +242,10 @@ model Tenant {
   pettyCashSetting         PettyCashSetting?
   pettyCashCategories      PettyCashCategory[]
   pettyCashPayees          PettyCashPayee[]
+  transportRoutes          TransportRoute[]
+  transportStops           TransportStop[]
+  studentTransports        StudentTransport[]
+  holidayNotices           HolidayNotice[]
   pettyCashEntries         PettyCashEntry[]
   pettyCashCounts          PettyCashCount[]
   syllabusTopics           SyllabusTopic[]
@@ -443,6 +447,7 @@ model Student {
   notes             StudentNote[]
   attendance        AttendanceRecord[]
   concessions       FeeConcession[]
+  transport         StudentTransport?
 
   @@unique([tenantId, admissionNo])
   @@index([tenantId])
@@ -1212,6 +1217,69 @@ model TransportSlab {
   @@map("transport_slabs")
 }
 
+// School bus routes (feature flag `transport`, Premium). The driver and the
+// optional attendant are ground staff from the petty cash payee list. Parents
+// see the route, their child's stop and the driver's phone only for a child
+// assigned to that route.
+model TransportRoute {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  name          String
+  vehicleNumber String?  @map("vehicle_number")
+  driverId      String?  @map("driver_id") @db.Uuid
+  attendantId   String?  @map("attendant_id") @db.Uuid
+  notes         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  driver    PettyCashPayee?    @relation("RouteDriver", fields: [driverId], references: [id], onDelete: SetNull)
+  attendant PettyCashPayee?    @relation("RouteAttendant", fields: [attendantId], references: [id], onDelete: SetNull)
+  stops     TransportStop[]
+  students  StudentTransport[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("transport_routes")
+}
+
+/// A stop on a route, in pick-up order; times are school-local HH:MM.
+model TransportStop {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  routeId    String   @map("route_id") @db.Uuid
+  name       String
+  sortOrder  Int      @map("sort_order")
+  pickupTime String?  @map("pickup_time") @db.VarChar(5)
+  dropTime   String?  @map("drop_time") @db.VarChar(5)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant   Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  route    TransportRoute     @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  students StudentTransport[]
+
+  @@index([routeId, sortOrder])
+  @@map("transport_stops")
+}
+
+/// A student on a school bus route (at most one), optionally at a stop.
+model StudentTransport {
+  studentId String   @id @map("student_id") @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  routeId   String   @map("route_id") @db.Uuid
+  stopId    String?  @map("stop_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant  Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  route   TransportRoute @relation(fields: [routeId], references: [id], onDelete: Restrict)
+  stop    TransportStop? @relation(fields: [stopId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, routeId])
+  @@map("student_transport")
+}
+
 // ─── Bulk Import ──────────────────────────────────────────────────────────────
 
 model ImportJob {
@@ -1305,6 +1373,20 @@ model SchoolHoliday {
 
   @@unique([tenantId, date])
   @@map("school_holidays")
+}
+
+/// One morning push to parents per run of school holidays, keyed by the run's
+/// first day, so a restart or a second API instance never sends it twice.
+model HolidayNotice {
+  tenantId  String   @map("tenant_id") @db.Uuid
+  date      DateTime @db.Date
+  sentCount Int      @default(0) @map("sent_count")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@id([tenantId, date])
+  @@map("holiday_notices")
 }
 
 enum SchoolEventType {
@@ -1668,8 +1750,10 @@ model PettyCashPayee {
   createdAt DateTime           @default(now()) @map("created_at")
   updatedAt DateTime           @updatedAt @map("updated_at")
 
-  tenant  Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  entries PettyCashEntry[]
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  entries         PettyCashEntry[]
+  drivenRoutes    TransportRoute[] @relation("RouteDriver")
+  attendantRoutes TransportRoute[] @relation("RouteAttendant")
 
   @@index([tenantId, isActive])
   @@map("petty_cash_payees")

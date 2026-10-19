@@ -1753,4 +1753,78 @@ class AppLocalizationsKn extends AppLocalizations {
   @override
   String get errSubscriptionExpired =>
       'ಈ ಶಾಲೆಯ Schoolinkd ಚಂದಾದಾರಿಕೆ ಮುಗಿದಿದೆ. ದಯವಿಟ್ಟು ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.';
+
+  @override
+  String get busTitle => 'ಶಾಲಾ ಬಸ್';
+
+  @override
+  String busNotOnRoute(String name) {
+    return '$name ಯಾವುದೇ ಶಾಲಾ ಬಸ್ ಮಾರ್ಗದಲ್ಲಿಲ್ಲ.';
+  }
+
+  @override
+  String busVehicle(String number) {
+    return 'ವಾಹನ $number';
+  }
+
+  @override
+  String get busStop => 'ನಿಲ್ದಾಣ';
+
+  @override
+  String busPickup(String time) {
+    return 'ಹತ್ತಿಸಿಕೊಳ್ಳುವುದು $time';
+  }
+
+  @override
+  String busDrop(String time) {
+    return 'ಇಳಿಸುವುದು $time';
+  }
+
+  @override
+  String get busNoStop => 'ಇನ್ನೂ ನಿಲ್ದಾಣ ನಿಗದಿಯಾಗಿಲ್ಲ. ಶಾಲಾ ಕಚೇರಿಯನ್ನು ಕೇಳಿ.';
+
+  @override
+  String get busDriver => 'ಚಾಲಕ';
+
+  @override
+  String get busAttendant => 'ಸಹಾಯಕ';
+
+  @override
+  String get busNoDriver => 'ಇನ್ನೂ ಚಾಲಕರನ್ನು ನಿಯೋಜಿಸಿಲ್ಲ.';
+
+  @override
+  String get busCall => 'ಕರೆ ಮಾಡಿ';
+
+  @override
+  String busCallName(String name) {
+    return '$name ಅವರಿಗೆ ಕರೆ ಮಾಡಿ';
+  }
+
+  @override
+  String get busCouldNotCall => 'ಫೋನ್ ಆ್ಯಪ್ ತೆರೆಯಲಾಗಲಿಲ್ಲ.';
+
+  @override
+  String get errImageNotAllowed =>
+      'ಈ ಫೋಟೋ ಕಳುಹಿಸಲಾಗದು: ಶಾಲೆಗೆ ಸೂಕ್ತವಲ್ಲ ಎನಿಸುತ್ತದೆ. ಬರೆದ ಕೆಲಸದ ಫೋಟೋ ಕಳುಹಿಸಿ.';
+
+  @override
+  String get errImageCheckUnavailable =>
+      'ಫೋಟೋ ಪರಿಶೀಲಿಸಲಾಗಲಿಲ್ಲ. ಸ್ವಲ್ಪ ಸಮಯದ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
+  String get errImageTooLarge =>
+      'ಈ ಫೋಟೋ ಪರಿಶೀಲಿಸಲು ತುಂಬಾ ದೊಡ್ಡದು. 5 MB ಗಿಂತ ಚಿಕ್ಕ ಫೋಟೋ ಬಳಸಿ.';
+
+  @override
+  String get errImageNotChecked =>
+      'ಈ ಫೋಟೋ ಪರಿಶೀಲನೆ ಆಗಿಲ್ಲ. ಮತ್ತೆ ಸೇರಿಸಿ ಕಳುಹಿಸಿ.';
+
+  @override
+  String get calendarPickMonth => 'ತಿಂಗಳು ಆರಿಸಿ';
+
+  @override
+  String get calendarPrevYear => 'ಹಿಂದಿನ ವರ್ಷ';
+
+  @override
+  String get calendarNextYear => 'ಮುಂದಿನ ವರ್ಷ';
 }

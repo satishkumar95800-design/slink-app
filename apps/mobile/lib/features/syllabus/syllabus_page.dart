@@ -55,22 +55,16 @@ class TeacherSyllabusPage extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             children: const [LoadingBlock(height: 110), SizedBox(height: 10), LoadingBlock(height: 110)],
           ),
-          error: (e, _) => ListView(children: [
-            const SizedBox(height: 80),
-            EmptyState(
-              icon: Icons.cloud_off_rounded,
-              message: describeError(e),
-              color: FeatureColors.sent,
-              actionLabel: l.commonRetry,
-              onAction: () => ref.invalidate(mySyllabusProvider),
-            ),
-          ]),
+          error: (e, _) => EmptyState(
+            icon: Icons.cloud_off_rounded,
+            message: describeError(e),
+            color: FeatureColors.sent,
+            actionLabel: l.commonRetry,
+            onAction: () => ref.invalidate(mySyllabusProvider),
+          ),
           data: (subjects) {
             if (subjects.isEmpty) {
-              return ListView(children: [
-                const SizedBox(height: 80),
-                EmptyState(icon: Icons.checklist_rounded, message: l.syllabusMineEmpty, color: FeatureColors.syllabus),
-              ]);
+              return EmptyState(icon: Icons.checklist_rounded, message: l.syllabusMineEmpty, color: FeatureColors.syllabus);
             }
             return ListView(
               padding: const EdgeInsets.all(16),
@@ -204,16 +198,13 @@ class _TeacherTopicsPageState extends ConsumerState<TeacherTopicsPage> {
         },
         child: plan == null
             ? async.hasError
-                ? ListView(children: [
-                    const SizedBox(height: 80),
-                    EmptyState(
-                      icon: Icons.cloud_off_rounded,
-                      message: describeError(async.error!),
-                      color: FeatureColors.sent,
-                      actionLabel: l.commonRetry,
-                      onAction: () => ref.invalidate(syllabusPlanProvider(_key)),
-                    ),
-                  ])
+                ? EmptyState(
+                    icon: Icons.cloud_off_rounded,
+                    message: describeError(async.error!),
+                    color: FeatureColors.sent,
+                    actionLabel: l.commonRetry,
+                    onAction: () => ref.invalidate(syllabusPlanProvider(_key)),
+                  )
                 : ListView(padding: const EdgeInsets.all(16), children: const [LoadingBlock(height: 100), SizedBox(height: 10), LoadingBlock(height: 300)])
             : ListView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
@@ -327,22 +318,16 @@ class ChildSyllabusPage extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             children: const [LoadingBlock(height: 90), SizedBox(height: 10), LoadingBlock(height: 90)],
           ),
-          error: (e, _) => ListView(children: [
-            const SizedBox(height: 80),
-            EmptyState(
-              icon: Icons.cloud_off_rounded,
-              message: describeError(e),
-              color: FeatureColors.sent,
-              actionLabel: l.commonRetry,
-              onAction: () => ref.invalidate(childSyllabusProvider(studentId)),
-            ),
-          ]),
+          error: (e, _) => EmptyState(
+            icon: Icons.cloud_off_rounded,
+            message: describeError(e),
+            color: FeatureColors.sent,
+            actionLabel: l.commonRetry,
+            onAction: () => ref.invalidate(childSyllabusProvider(studentId)),
+          ),
           data: (data) {
             if (data.subjects.isEmpty) {
-              return ListView(children: [
-                const SizedBox(height: 80),
-                EmptyState(icon: Icons.checklist_rounded, message: l.syllabusChildEmpty(data.studentName), color: FeatureColors.syllabus),
-              ]);
+              return EmptyState(icon: Icons.checklist_rounded, message: l.syllabusChildEmpty(data.studentName), color: FeatureColors.syllabus);
             }
             return ListView(
               padding: const EdgeInsets.all(16),

@@ -83,6 +83,10 @@ String? translateErrorCode(String? code) {
     'DATE_IN_FUTURE' => l.syllabusErrFutureDate,
     'TOPIC_NOT_FOUND' => l.syllabusErrTopicGone,
     'SUBSCRIPTION_EXPIRED' => l.errSubscriptionExpired,
+    'IMAGE_NOT_ALLOWED' => l.errImageNotAllowed,
+    'IMAGE_CHECK_UNAVAILABLE' => l.errImageCheckUnavailable,
+    'IMAGE_TOO_LARGE_TO_CHECK' => l.errImageTooLarge,
+    'IMAGE_NOT_CHECKED' => l.errImageNotChecked,
     _ => null,
   };
 }

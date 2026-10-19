@@ -11,6 +11,7 @@ import '../../features/hrms/leave_page.dart';
 import '../../features/hrms/payslips_page.dart';
 import '../../features/staff_docs/staff_docs_page.dart';
 import '../../features/syllabus/syllabus_page.dart';
+import '../../features/school_bus/school_bus_page.dart';
 import '../../features/dashboard/dashboard_page.dart';
 import '../../features/dashboard/my_classes_page.dart';
 import '../../features/fees/fees_list_page.dart';
@@ -94,6 +95,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/syllabus/child/:studentId',
         builder: (_, state) => ChildSyllabusPage(studentId: state.pathParameters['studentId']!),
+      ),
+      GoRoute(
+        path: '/school-bus/child/:studentId',
+        builder: (_, state) => ChildBusPage(studentId: state.pathParameters['studentId']!),
       ),
       GoRoute(path: '/dashboard/routine', builder: (_, __) => const WeeklyRoutinePage()),
       GoRoute(path: '/dashboard/insights', builder: (_, __) => const InsightsPage()),

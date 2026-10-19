@@ -20,6 +20,8 @@ export interface TenantFeatures {
   syllabus?: boolean;
   /** Admissions pipeline (Premium and Premium Max). */
   admissions?: boolean;
+  /** School bus routes (Premium and Premium Max). */
+  transport?: boolean;
 }
 
 // Keyed by school so signing in to another school in the same tab refetches.

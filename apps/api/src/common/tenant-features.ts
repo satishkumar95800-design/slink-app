@@ -26,7 +26,9 @@ export type OptionalFeature =
   /** Syllabus topics with target dates, ticked off by subject teachers (Premium). */
   | 'syllabus'
   /** Admissions pipeline: enquiry to enrolment (Premium). */
-  | 'admissions';
+  | 'admissions'
+  /** School bus routes, stops, drivers; parents see their child's bus (Premium). */
+  | 'transport';
 
 export async function isFeatureEnabled(
   prisma: PrismaService,

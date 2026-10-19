@@ -30,6 +30,7 @@ export const PLAN_MANAGED_FEATURES: OptionalFeature[] = [
   'pettyCash',
   'syllabus',
   'admissions',
+  'transport',
   'hrms',
   'aiInsights',
 ];
@@ -45,6 +46,7 @@ const PREMIUM: OptionalFeature[] = [
   'pettyCash',
   'syllabus',
   'admissions',
+  'transport',
 ];
 
 export const PLAN_PRESETS: Record<SubscriptionPlan, OptionalFeature[]> = {

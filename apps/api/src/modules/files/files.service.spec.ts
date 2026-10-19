@@ -13,6 +13,12 @@ jest.mock('@aws-sdk/client-s3', () => ({
   GetObjectCommand: jest.fn(),
 }));
 
+const mockRekognitionSend = jest.fn();
+jest.mock('@aws-sdk/client-rekognition', () => ({
+  RekognitionClient: jest.fn().mockImplementation(() => ({ send: mockRekognitionSend })),
+  DetectModerationLabelsCommand: jest.fn().mockImplementation((input) => ({ input })),
+}));
+
 jest.mock('@aws-sdk/s3-request-presigner', () => ({
   getSignedUrl: jest.fn().mockResolvedValue('https://s3.example.com/signed-url'),
 }));
@@ -171,5 +177,101 @@ describe('FilesService', () => {
       const key = `private/other-tenant/reports/r1/abc.pdf`;
       await expect(service.delete(key, TENANT_ID)).rejects.toThrow(ForbiddenException);
     });
+  });
+
+  // ── photo screening (homework / notice photos) ─────────────────────────────────
+
+  describe('photo screening', () => {
+    let screened: FilesService;
+    let send: jest.Mock;
+
+    beforeEach(async () => {
+      const module = await Test.createTestingModule({
+        providers: [
+          FilesService,
+          {
+            provide: ConfigService,
+            useValue: {
+              get: (key: string) =>
+                ({ S3_BUCKET_NAME: 'slink-assets', AWS_REGION: 'ap-south-1', IMAGE_MODERATION: 'on' })[key],
+            },
+          },
+        ],
+      }).compile();
+      screened = module.get(FilesService);
+      send = jest.fn().mockResolvedValue({});
+      (screened as any).s3 = { send };
+      mockRekognitionSend.mockReset();
+    });
+
+    const photo = () => makeFile({ mimetype: 'image/jpeg', originalname: 'hw.jpg', size: 2048 });
+
+    it('stores a safe homework photo marked as checked', async () => {
+      mockRekognitionSend.mockResolvedValue({ ModerationLabels: [] });
+      await screened.upload(TENANT_ID, photo(), FileCategory.ATTACHMENT);
+      expect(mockRekognitionSend).toHaveBeenCalledTimes(1);
+      const { PutObjectCommand } = jest.requireMock('@aws-sdk/client-s3');
+      const put = (PutObjectCommand as jest.Mock).mock.calls.at(-1)[0];
+      expect(put.Metadata.moderation).toBe('passed');
+    });
+
+    it('refuses an unsafe photo and stores nothing', async () => {
+      mockRekognitionSend.mockResolvedValue({
+        ModerationLabels: [{ Name: 'Explicit Nudity', ParentName: '', Confidence: 97 }],
+      });
+      await expect(screened.upload(TENANT_ID, photo(), FileCategory.ATTACHMENT)).rejects.toMatchObject({
+        response: { code: 'IMAGE_NOT_ALLOWED' },
+      });
+      expect(send).not.toHaveBeenCalled();
+    });
+
+    it('refuses the upload when the check cannot run', async () => {
+      mockRekognitionSend.mockRejectedValue(new Error('AccessDenied'));
+      await expect(screened.upload(TENANT_ID, photo(), FileCategory.ATTACHMENT)).rejects.toMatchObject({
+        response: { code: 'IMAGE_CHECK_UNAVAILABLE' },
+      });
+      expect(send).not.toHaveBeenCalled();
+    });
+
+    it('refuses a photo over 5 MB, which cannot be checked', async () => {
+      const big = makeFile({ mimetype: 'image/png', originalname: 'hw.png', size: 6 * 1024 * 1024 });
+      await expect(screened.upload(TENANT_ID, big, FileCategory.ATTACHMENT)).rejects.toMatchObject({
+        response: { code: 'IMAGE_TOO_LARGE_TO_CHECK' },
+      });
+      expect(mockRekognitionSend).not.toHaveBeenCalled();
+    });
+
+    it('does not screen PDFs or other categories', async () => {
+      await screened.upload(TENANT_ID, makeFile(), FileCategory.ATTACHMENT);
+      await screened.upload(TENANT_ID, photo(), FileCategory.STUDENT_PHOTO);
+      expect(mockRekognitionSend).not.toHaveBeenCalled();
+    });
+
+    it('a broadcast accepts only photos marked as checked', async () => {
+      const key = `private/${TENANT_ID}/attachments/a.jpg`;
+      send.mockResolvedValueOnce({ Metadata: { moderation: 'passed' } });
+      await expect(
+        screened.assertImagesChecked([{ key, contentType: 'image/jpeg' }], TENANT_ID),
+      ).resolves.toBeUndefined();
+      send.mockResolvedValueOnce({ Metadata: {} });
+      await expect(
+        screened.assertImagesChecked([{ key, contentType: 'image/jpeg' }], TENANT_ID),
+      ).rejects.toMatchObject({ response: { code: 'IMAGE_NOT_CHECKED' } });
+    });
+
+    it('a broadcast PDF needs no check', async () => {
+      await screened.assertImagesChecked(
+        [{ key: `private/${TENANT_ID}/attachments/a.pdf`, contentType: 'application/pdf' }],
+        TENANT_ID,
+      );
+      expect(send).not.toHaveBeenCalled();
+    });
+  });
+
+  it('screening is off with a local S3 endpoint (the default service above)', async () => {
+    mockRekognitionSend.mockReset();
+    await service.upload(TENANT_ID, makeFile({ mimetype: 'image/jpeg', originalname: 'p.jpg' }), FileCategory.ATTACHMENT);
+    await service.assertImagesChecked([{ key: `private/${TENANT_ID}/attachments/a.jpg`, contentType: 'image/jpeg' }], TENANT_ID);
+    expect(mockRekognitionSend).not.toHaveBeenCalled();
   });
 });
