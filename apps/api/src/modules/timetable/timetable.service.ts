@@ -72,6 +72,23 @@ export class TimetableService {
     }
     if (!subject) throw new NotFoundException('Subject not found');
 
+    // A teacher only teaches the subjects they are assigned for this class (TeacherSubject).
+    const assigned = await this.prisma.teacherSubject.findFirst({
+      where: {
+        tenantId,
+        teacherId: dto.teacherId,
+        subjectId: dto.subjectId,
+        classId: dto.classId,
+      },
+      select: { id: true },
+    });
+    if (!assigned) {
+      throw new BadRequestException({
+        code: 'TEACHER_NOT_ASSIGNED',
+        message: `${teacher.name} is not assigned to teach ${subject.name} in this class`,
+      });
+    }
+
     // Addendum 4 / A10 — a teacher can't be in two classes for the same period.
     const teacherConflict = await this.prisma.timetableSlot.findFirst({
       where: {

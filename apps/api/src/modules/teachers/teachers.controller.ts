@@ -14,6 +14,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { TenantId } from '../../common/decorators/tenant.decorator';
 import { TeachersService } from './teachers.service';
 import { CreateTeacherSubjectDto } from './dto/create-teacher-subject.dto';
+import { CreateTeacherSubjectsBulkDto } from './dto/create-teacher-subjects-bulk.dto';
 
 @Controller('teachers')
 export class TeachersController {
@@ -33,6 +34,16 @@ export class TeachersController {
     @Body() dto: CreateTeacherSubjectDto,
   ) {
     return this.teachersService.addSubject(tenantId, id, dto);
+  }
+
+  @Post(':id/subjects/bulk')
+  @Roles(Role.admin, Role.super_admin)
+  addSubjects(
+    @TenantId() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateTeacherSubjectsBulkDto,
+  ) {
+    return this.teachersService.addSubjects(tenantId, id, dto);
   }
 
   @Delete(':id/subjects/:assignmentId')

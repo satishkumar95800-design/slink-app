@@ -138,8 +138,33 @@ function TimetablePageContent() {
   }, [selectedClassId]);
 
   const classOptions = classes.map((c) => ({ value: c.id, label: classLabel(c) }));
-  const teacherOptions = teachers.map((teacher) => ({ value: teacher.id, label: teacher.name }));
-  const subjectOptions = subjects.map((s) => ({ value: s.id, label: s.name }));
+  // Who may teach what in THIS class, from the teacher assignments (TeacherSubject).
+  const classAssignments = teachers.flatMap((teacher) =>
+    teacher.taughtSubjects
+      .filter((ts) => ts.class.id === selectedClassId)
+      .map((ts) => ({ teacherId: teacher.id, subjectId: ts.subject.id })),
+  );
+  const teacherCanTeach = (teacherId: string, subjectId: string) =>
+    classAssignments.some((a) => a.teacherId === teacherId && a.subjectId === subjectId);
+  // Subjects offered: only those assigned in this class (and, once a teacher is picked, only theirs).
+  const subjectChoices = subjects.filter((s) =>
+    classAssignments.some((a) => a.subjectId === s.id && (!formTeacherId || a.teacherId === formTeacherId)),
+  );
+  // Teachers offered: only those assigned the chosen subject in this class.
+  const teacherChoices = teachers.filter((teacher) =>
+    classAssignments.some((a) => a.teacherId === teacher.id && (!formSubjectId || a.subjectId === formSubjectId)),
+  );
+  const teacherOptions = teacherChoices.map((teacher) => ({ value: teacher.id, label: teacher.name }));
+  const subjectOptions = subjectChoices.map((s) => ({ value: s.id, label: s.name }));
+  // A slot saved before this rule may hold a pair that is no longer offered: keep it visible so it can be fixed.
+  if (formTeacherId && !teacherOptions.some((o) => o.value === formTeacherId)) {
+    const current = teachers.find((teacher) => teacher.id === formTeacherId);
+    if (current) teacherOptions.push({ value: current.id, label: current.name });
+  }
+  if (formSubjectId && !subjectOptions.some((o) => o.value === formSubjectId)) {
+    const current = subjects.find((s) => s.id === formSubjectId);
+    if (current) subjectOptions.push({ value: current.id, label: current.name });
+  }
 
   function slotFor(dayOfWeek: number, periodNumber: number): TimetableSlot | undefined {
     return slots.find((s) => s.dayOfWeek === dayOfWeek && s.periodNumber === periodNumber);
@@ -324,19 +349,32 @@ function TimetablePageContent() {
         title={activeCell ? t('cellTitle', { day: activeDayLabel ?? '', n: activeCell.periodNumber }) : ''}
       >
         <div className="space-y-4">
+          {classAssignments.length === 0 && (
+            <div className="rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
+              {t('noAssignments', { className: selectedClassLabel ? classLabel(selectedClassLabel) : t('thisClass') })}
+            </div>
+          )}
           <Select
             label={t('subject')} required
             options={subjectOptions}
             placeholder={t('selectSubject')}
             value={formSubjectId}
-            onChange={(e) => setFormSubjectId(e.target.value)}
+            onChange={(e) => {
+              const subjectId = e.target.value;
+              setFormSubjectId(subjectId);
+              if (formTeacherId && subjectId && !teacherCanTeach(formTeacherId, subjectId)) setFormTeacherId('');
+            }}
           />
           <Select
             label={t('teacher')} required
             options={teacherOptions}
             placeholder={t('selectTeacher')}
             value={formTeacherId}
-            onChange={(e) => setFormTeacherId(e.target.value)}
+            onChange={(e) => {
+              const teacherId = e.target.value;
+              setFormTeacherId(teacherId);
+              if (formSubjectId && teacherId && !teacherCanTeach(teacherId, formSubjectId)) setFormSubjectId('');
+            }}
           />
           {isMismatch && (
             <div className="rounded-lg bg-amber-50 p-3 text-xs text-amber-800">

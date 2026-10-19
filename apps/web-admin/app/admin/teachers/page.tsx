@@ -40,7 +40,7 @@ interface Subject {
 const makeSchemas = (t: ReturnType<typeof useTranslations<'teachers'>>, tCommon: ReturnType<typeof useTranslations<'common'>>) => ({
   assign: z.object({
     subjectId: z.string().min(1, t('selectSubject')),
-    classId: z.string().min(1, tCommon('selectClass')),
+    classIds: z.array(z.string()).min(1, tCommon('selectClass')),
   }),
   subject: z.object({
     name: z.string().min(1, t('subjectNameRequired')),
@@ -75,8 +75,13 @@ export default function TeachersPage() {
     register: registerAssign,
     handleSubmit: handleAssignSubmit,
     reset: resetAssign,
+    watch: watchAssign,
+    setValue: setAssignValue,
     formState: { errors: assignErrors, isSubmitting: isAssignSubmitting },
-  } = useForm<AssignFormData>({ resolver: zodResolver(schemas.assign) });
+  } = useForm<AssignFormData>({
+    resolver: zodResolver(schemas.assign),
+    defaultValues: { subjectId: '', classIds: [] },
+  });
 
   const {
     register: registerSubject,
@@ -108,15 +113,29 @@ export default function TeachersPage() {
     fetchAll();
   }, []);
 
+  const assignSubjectId = watchAssign('subjectId');
+  const assignClassIds = watchAssign('classIds') ?? [];
+  // Classes this teacher already teaches the chosen subject in: shown, but can't be picked again.
+  const takenClassIds = new Set(
+    (assigningTeacher?.taughtSubjects ?? [])
+      .filter((ts) => ts.subject.id === assignSubjectId)
+      .map((ts) => ts.class.id),
+  );
+
+  function toggleAssignClass(classId: string, checked: boolean) {
+    const next = checked ? [...assignClassIds, classId] : assignClassIds.filter((id) => id !== classId);
+    setAssignValue('classIds', next, { shouldValidate: true });
+  }
+
   function openAssign(teacher: Teacher) {
     setAssigningTeacher(teacher);
-    resetAssign({ subjectId: '', classId: '' });
+    resetAssign({ subjectId: '', classIds: [] });
   }
 
   async function onAssignSubmit(data: AssignFormData) {
     if (!assigningTeacher) return;
     try {
-      await api.post(`/teachers/${assigningTeacher.id}/subjects`, data);
+      await api.post(`/teachers/${assigningTeacher.id}/subjects/bulk`, data);
       toast(t('assignmentAdded'), 'success');
       setAssigningTeacher(null);
       fetchAll();
@@ -151,7 +170,6 @@ export default function TeachersPage() {
   }
 
   const subjectOptions = subjects.map((s) => ({ value: s.id, label: s.name }));
-  const classOptions = classes.map((c) => ({ value: c.id, label: classLabel(c) }));
   // Newest year first, then Class 1, 2 … 10 in number order, then section.
   const sortedClassOptions = [...classes]
     .sort(
@@ -314,13 +332,33 @@ export default function TeachersPage() {
             error={assignErrors.subjectId?.message}
             {...registerAssign('subjectId')}
           />
-          <Select
-            label={t('class')} required
-            options={classOptions}
-            placeholder={tCommon('selectClass')}
-            error={assignErrors.classId?.message}
-            {...registerAssign('classId')}
-          />
+          <fieldset className="space-y-1.5">
+            <legend className="mb-1 block text-sm font-medium text-gray-700">
+              {t('classesLabel')}<span className="ml-0.5 text-red-500" aria-hidden="true">*</span>
+            </legend>
+            <div className="max-h-64 space-y-1 overflow-y-auto rounded-lg border border-gray-200 bg-white p-2">
+              {sortedClassOptions.map((c) => {
+                const taken = takenClassIds.has(c.value);
+                return (
+                  <label
+                    key={c.value}
+                    className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm ${taken ? 'text-gray-400' : 'text-gray-800 hover:bg-gray-50'}`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-teal"
+                      disabled={taken}
+                      checked={assignClassIds.includes(c.value)}
+                      onChange={(e) => toggleAssignClass(c.value, e.target.checked)}
+                    />
+                    <span>{c.label}</span>
+                    {taken && <span className="ml-auto text-xs">{t('alreadyAssigned')}</span>}
+                  </label>
+                );
+              })}
+            </div>
+            {assignErrors.classIds && <p className="text-xs text-red-600">{assignErrors.classIds.message}</p>}
+          </fieldset>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setAssigningTeacher(null)}>
               {tCommon('cancel')}

@@ -165,3 +165,52 @@ describe('TimetableService.findMine', () => {
     ]);
   });
 });
+
+describe('TimetableService upsert — teacher assignment', () => {
+  const teacher = { id: 'teacher-1', name: 'Abhishek Aryan', role: 'teacher' };
+  const prisma = {
+    class: { findUnique: jest.fn() },
+    user: { findUnique: jest.fn() },
+    subject: { findUnique: jest.fn() },
+    teacherSubject: { findFirst: jest.fn() },
+    timetableSlot: { findFirst: jest.fn(), upsert: jest.fn() },
+  };
+  const service = new TimetableService(prisma as never);
+  const dto = {
+    classId: 'class-1',
+    teacherId: 'teacher-1',
+    subjectId: 'subject-science',
+    dayOfWeek: 2,
+    periodNumber: 6,
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    prisma.class.findUnique.mockResolvedValue({ id: 'class-1' });
+    prisma.user.findUnique.mockResolvedValue(teacher);
+    prisma.subject.findUnique.mockResolvedValue({ id: 'subject-science', name: 'Science' });
+    prisma.timetableSlot.findFirst.mockResolvedValue(null);
+    prisma.timetableSlot.upsert.mockResolvedValue({ id: 'slot-1' });
+  });
+
+  it('rejects a teacher who is not assigned that subject in this class', async () => {
+    prisma.teacherSubject.findFirst.mockResolvedValue(null);
+
+    await expect(service.upsert('tenant-a', dto)).rejects.toMatchObject({
+      response: { code: 'TEACHER_NOT_ASSIGNED' },
+    });
+    expect(prisma.teacherSubject.findFirst).toHaveBeenCalledWith({
+      where: { tenantId: 'tenant-a', teacherId: 'teacher-1', subjectId: 'subject-science', classId: 'class-1' },
+      select: { id: true },
+    });
+    expect(prisma.timetableSlot.upsert).not.toHaveBeenCalled();
+  });
+
+  it('saves the slot when the teacher is assigned that subject in this class', async () => {
+    prisma.teacherSubject.findFirst.mockResolvedValue({ id: 'assignment-1' });
+
+    await service.upsert('tenant-a', dto);
+
+    expect(prisma.timetableSlot.upsert).toHaveBeenCalled();
+  });
+});

@@ -95,6 +95,7 @@ const KNOWN_CODES = [
   'NO_BRANCHES',
   'GROUP_NOT_FOUND',
   'STAFF_NOT_FOUND',
+  'TEACHER_NOT_ASSIGNED',
 ] as const;
 type KnownCode = (typeof KNOWN_CODES)[number];
 

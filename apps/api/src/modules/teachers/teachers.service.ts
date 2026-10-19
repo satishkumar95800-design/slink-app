@@ -2,6 +2,7 @@ import { Injectable, ConflictException, NotFoundException, BadRequestException }
 import { Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateTeacherSubjectDto } from './dto/create-teacher-subject.dto';
+import { CreateTeacherSubjectsBulkDto } from './dto/create-teacher-subjects-bulk.dto';
 
 @Injectable()
 export class TeachersService {
@@ -65,6 +66,37 @@ export class TeachersService {
       });
 
       return assignment;
+    });
+  }
+
+  /**
+   * Assigns one subject to a teacher in several classes at once. Classes the teacher
+   * already teaches that subject in are skipped, not treated as errors.
+   */
+  async addSubjects(tenantId: string, teacherId: string, dto: CreateTeacherSubjectsBulkDto) {
+    await this.requireTeacher(tenantId, teacherId);
+
+    const [subject, classes] = await Promise.all([
+      this.prisma.subject.findUnique({ where: { id: dto.subjectId, tenantId } }),
+      this.prisma.class.findMany({
+        where: { tenantId, id: { in: dto.classIds } },
+        select: { id: true },
+      }),
+    ]);
+    if (!subject) throw new NotFoundException('Subject not found');
+    if (classes.length !== dto.classIds.length) throw new NotFoundException('Class not found');
+
+    return this.prisma.$transaction(async (tx) => {
+      const created = await tx.teacherSubject.createMany({
+        data: dto.classIds.map((classId) => ({ tenantId, teacherId, subjectId: dto.subjectId, classId })),
+        skipDuplicates: true,
+      });
+      // Same class-access rule as the single-class assignment.
+      await tx.classTeacher.createMany({
+        data: dto.classIds.map((classId) => ({ classId, teacherId, isClassTeacher: false })),
+        skipDuplicates: true,
+      });
+      return { added: created.count };
     });
   }
 
