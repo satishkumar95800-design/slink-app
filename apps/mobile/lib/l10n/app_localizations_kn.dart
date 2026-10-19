@@ -811,7 +811,7 @@ class AppLocalizationsKn extends AppLocalizations {
   }
 
   @override
-  String get homeworkAddPhotoFirst => 'ಕನಿಷ್ಠ ಒಂದು ಫೋಟೋ ಸೇರಿಸಿ.';
+  String get homeworkAddPhotoFirst => 'ಫೋಟೋ ಸೇರಿಸಿ ಅಥವಾ ಮನೆಗೆಲಸ ಬರೆಯಿರಿ.';
 
   @override
   String get homeworkDefaultBody => 'ಹೊಸ ಮನೆಗೆಲಸ ಕಳುಹಿಸಲಾಗಿದೆ.';
@@ -825,7 +825,7 @@ class AppLocalizationsKn extends AppLocalizations {
   }
 
   @override
-  String get homeworkCaptionLabel => 'ವಿವರಣೆ (ಐಚ್ಛಿಕ)';
+  String get homeworkCaptionLabel => 'ಮನೆಗೆಲಸ / ವಿವರಣೆ';
 
   @override
   String get homeworkSubjectOptional => 'ವಿಷಯ (ಐಚ್ಛಿಕ)';

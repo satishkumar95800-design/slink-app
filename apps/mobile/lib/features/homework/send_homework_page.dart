@@ -37,7 +37,8 @@ class _SendHomeworkPageState extends ConsumerState<SendHomeworkPage> {
   }
 
   Future<void> _send(String classId) async {
-    if (_photos.isEmpty) {
+    // A photo or the typed homework is enough: many homeworks are written only.
+    if (_photos.isEmpty && _captionController.text.trim().isEmpty) {
       setState(() => _error = context.l10n.homeworkAddPhotoFirst);
       return;
     }

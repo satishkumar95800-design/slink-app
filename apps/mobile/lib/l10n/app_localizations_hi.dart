@@ -812,7 +812,7 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
-  String get homeworkAddPhotoFirst => 'कम से कम एक फ़ोटो जोड़ें।';
+  String get homeworkAddPhotoFirst => 'फ़ोटो जोड़ें या होमवर्क लिखें।';
 
   @override
   String get homeworkDefaultBody => 'नया होमवर्क दिया गया है।';
@@ -826,7 +826,7 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
-  String get homeworkCaptionLabel => 'विवरण (वैकल्पिक)';
+  String get homeworkCaptionLabel => 'होमवर्क / विवरण';
 
   @override
   String get homeworkSubjectOptional => 'विषय (वैकल्पिक)';
