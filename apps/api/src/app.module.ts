@@ -132,6 +132,11 @@ export class AppModule implements NestModule {
         { path: 'health', method: RequestMethod.GET },
         { path: 'payments/webhook', method: RequestMethod.POST },
         { path: 'auth/super-admin/login', method: RequestMethod.POST },
+        // The refresh token alone identifies the user and school; the console
+        // (incl. super admin and head office, who have no school) sends no
+        // X-Tenant-ID here, so these must not need one.
+        { path: 'auth/refresh', method: RequestMethod.POST },
+        { path: 'auth/logout', method: RequestMethod.POST },
         { path: 'tenants', method: RequestMethod.ALL },
         { path: 'tenants/:id', method: RequestMethod.ALL },
         { path: 'tenants/:id/users', method: RequestMethod.ALL },

@@ -63,8 +63,8 @@ async function refreshAccessToken(): Promise<string | null> {
     // Could not reach the server: the refresh token may still be good, so the session is kept.
     throw new ApiError(0, 'Network error — check your connection and try again.', undefined, 'NETWORK_ERROR');
   }
-  // Only the server refusing the refresh token ends the session; any other failure is transient.
-  if (res.status === 401 || res.status === 403) return null;
+  // A refusal (any 4xx but a timeout or rate limit) ends the session; a 5xx is transient.
+  if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) return null;
   if (!res.ok) throw new ApiError(res.status, `HTTP ${res.status}`, undefined, 'NETWORK_ERROR');
 
   const body = await res.json();
