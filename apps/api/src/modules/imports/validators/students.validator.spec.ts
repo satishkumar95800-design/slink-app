@@ -147,6 +147,21 @@ describe('validateStudentsTab', () => {
     expect(result.validRows[0].caste).toBe('General');
   });
 
+  it('reads an optional Gender column (Boy/Girl/Male/F…) and rejects anything else', () => {
+    const ok = validateStudentsTab(
+      makeTab([
+        baseRow({ Gender: 'Boy' }),
+        baseRow({ Gender: 'female', 'Admission Number': 'A2', 'Parent Mobile Number': '+919876543299' }),
+      ]),
+      CLASSES,
+    );
+    expect(ok.validRows.map((r) => r.gender)).toEqual(['male', 'female']);
+    const bad = validateStudentsTab(makeTab([baseRow({ Gender: 'Kid' })]), CLASSES);
+    expect(bad.errors.some((e) => e.column === 'Gender')).toBe(true);
+    const none = validateStudentsTab(makeTab([baseRow()]), CLASSES);
+    expect(none.validRows[0].gender).toBeUndefined();
+  });
+
   it('rejects an invalid Blood Group value', () => {
     const result = validateStudentsTab(
       makeTab([baseRow({ 'Blood Group': 'AB positive' })]),

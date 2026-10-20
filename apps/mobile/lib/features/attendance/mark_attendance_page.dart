@@ -46,7 +46,10 @@ class MarkAttendanceEntryPage extends ConsumerWidget {
                   child: ListTile(
                     minVerticalPadding: 16,
                     title: Text(c.label, style: Theme.of(context).textTheme.titleMedium),
-                    subtitle: Text(c.submitted ? l.attendanceDoneForToday : l.attendanceStudentCount(c.studentCount)),
+                    subtitle: Text([
+                      c.submitted ? l.attendanceDoneForToday : l.attendanceStudentCount(c.studentCount),
+                      if (c.firstPeriod) l.attendanceFirstPeriodNote,
+                    ].join('\n')),
                     trailing: c.submitted
                         ? const Icon(Icons.check_circle, color: AttendanceColors.present)
                         : const Icon(Icons.chevron_right),

@@ -189,6 +189,14 @@
       }
     }
   },
+  "myClassesGenderNotSet": "Gender not set: {count}",
+  "@myClassesGenderNotSet": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "myClassesRecentReports": "Recent reports",
   "myClassesRead": "Read",
   "myClassesUnread": "Unread",
@@ -274,7 +282,7 @@
   "attendanceAlreadySubmitted": "Already submitted today — you can still change it until midnight.",
   "attendanceReadOnlyDay": "Attendance for this day can only be changed by an admin.",
   "attendanceNoStudents": "No students in this class yet.",
-  "attendanceNoClassesToMark": "You're not the class teacher of any class yet.",
+  "attendanceNoClassesToMark": "No classes to mark today. A class's teacher, or the teacher of its first period, marks it.",
   "attendanceCouldNotLoad": "Could not load attendance.",
   "attendanceThisMonth": "This month: {present}/{marked} days",
   "@attendanceThisMonth": {
@@ -1302,5 +1310,41 @@
   "errImageNotChecked": "This photo was not checked. Add it again and resend.",
   "calendarPickMonth": "Pick a month",
   "calendarPrevYear": "Previous year",
-  "calendarNextYear": "Next year"
+  "calendarNextYear": "Next year",
+  "attendanceClassTitle": "Class attendance",
+  "attendanceClassCounts": "{present} present · {late} late · {absent} absent · {leave} leave",
+  "@attendanceClassCounts": {
+    "placeholders": {
+      "present": {
+        "type": "int"
+      },
+      "late": {
+        "type": "int"
+      },
+      "absent": {
+        "type": "int"
+      },
+      "leave": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceClassPercent": "{percent}%",
+  "@attendanceClassPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceClassAverage": "Class average: {percent}%",
+  "@attendanceClassAverage": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "attendanceClassEmpty": "No attendance marked this month.",
+  "attendanceFirstPeriodNote": "You take the first period today"
 }

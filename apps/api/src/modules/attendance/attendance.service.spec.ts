@@ -147,6 +147,88 @@ describe('AttendanceService', () => {
       expect(prisma.attendanceRecord.upsert).toHaveBeenCalled();
     });
 
+    describe('first period of the day (timetable)', () => {
+      // 08/10/2026 is a Thursday (day 4). The class's first period is 1.
+      const slots = (period: number) => {
+        prisma.tenant.findUnique.mockResolvedValue({
+          timezone: 'Asia/Kolkata',
+          features: { timetable: true },
+        });
+        Object.assign(prisma, {
+          timetableSlot: {
+            findMany: jest
+              .fn()
+              .mockResolvedValue([{ classId: CLASS_ID, periodNumber: period }]),
+            groupBy: jest
+              .fn()
+              .mockResolvedValue([
+                { classId: CLASS_ID, _min: { periodNumber: 1 } },
+              ]),
+          },
+        });
+      };
+      const present = [{ studentId: 's1', status: AttendanceStatus.present }];
+
+      it("lets the teacher who takes the class's first period mark it today", async () => {
+        slots(1);
+        await submit(SUBJECT_TEACHER, '2026-10-08', present);
+        expect(prisma.attendanceRecord.upsert).toHaveBeenCalled();
+      });
+
+      it('does not let a teacher of a later period mark', async () => {
+        slots(3);
+        await expect(
+          submit(SUBJECT_TEACHER, '2026-10-08', present),
+        ).rejects.toThrow(ForbiddenException);
+      });
+
+      it('gives the first-period teacher today only', async () => {
+        slots(1);
+        await expect(
+          submit(SUBJECT_TEACHER, '2026-10-07', present),
+        ).rejects.toThrow(ForbiddenException);
+      });
+
+      it('ignores the timetable when the school has no timetable module', async () => {
+        slots(1);
+        prisma.tenant.findUnique.mockResolvedValue({
+          timezone: 'Asia/Kolkata',
+        });
+        await expect(
+          submit(SUBJECT_TEACHER, '2026-10-08', present),
+        ).rejects.toThrow(ForbiddenException);
+      });
+    });
+
+    describe("class teacher's month view", () => {
+      it('shows the class teacher every student of the class', async () => {
+        const res = await service.getClassMonth(
+          SCHOOL_A,
+          CLASS_ID,
+          '2026-10',
+          CLASS_TEACHER,
+        );
+        expect(res.month).toBe('2026-10');
+        expect(res.students.length).toBeGreaterThan(0);
+        expect(prisma.attendanceRecord.groupBy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.objectContaining({
+              date: {
+                gte: new Date('2026-10-01T00:00:00.000Z'),
+                lte: new Date('2026-10-31T00:00:00.000Z'),
+              },
+            }),
+          }),
+        );
+      });
+
+      it('is refused to a subject teacher of the class', async () => {
+        await expect(
+          service.getClassMonth(SCHOOL_A, CLASS_ID, '2026-10', SUBJECT_TEACHER),
+        ).rejects.toThrow(ForbiddenException);
+      });
+    });
+
     it('blocks teachers not assigned to the class, and parents', async () => {
       prisma.class.findFirst.mockResolvedValue(classWithoutClassTeacher);
       await expect(

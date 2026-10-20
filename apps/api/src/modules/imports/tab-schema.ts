@@ -18,7 +18,7 @@ export const OPTIONAL_TAB_HEADERS: Partial<
     string[]
   >
 > = {
-  Students: ['Roll Number'],
+  Students: ['Roll Number', 'Gender'],
 };
 
 export const TAB_HEADERS: Record<
@@ -150,6 +150,8 @@ export const BLOOD_GROUP_TEMPLATE_OPTIONS = [
   'O+',
   'O-',
 ];
+/** Gender dropdown in the template; the validator also accepts Male/Female/M/F/B/G. */
+export const GENDER_TEMPLATE_OPTIONS = ['Boy', 'Girl', 'Other'];
 export const CASTE_TEMPLATE_OPTIONS = [
   'General',
   'OBC',

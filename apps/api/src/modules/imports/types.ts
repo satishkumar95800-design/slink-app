@@ -1,4 +1,9 @@
-import type { BloodGroup, Caste, GuardianRelation } from '@prisma/client';
+import type {
+  BloodGroup,
+  Caste,
+  Gender,
+  GuardianRelation,
+} from '@prisma/client';
 
 export interface RawRow {
   /** 1-based row number as it appears in the spreadsheet, for error reporting */
@@ -61,6 +66,7 @@ export interface ValidStudentRow {
   classKey: string;
   dob?: string;
   bloodGroup?: BloodGroup;
+  gender?: Gender;
   caste?: Caste;
   parentName: string;
   parentRelation: GuardianRelation;

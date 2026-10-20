@@ -293,6 +293,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String myClassesGenderNotSet(int count) {
+    return 'Gender not set: $count';
+  }
+
+  @override
   String get myClassesRecentReports => 'Recent reports';
 
   @override
@@ -401,7 +406,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get attendanceNoClassesToMark =>
-      'You\'re not the class teacher of any class yet.';
+      'No classes to mark today. A class\'s teacher, or the teacher of its first period, marks it.';
 
   @override
   String get attendanceCouldNotLoad => 'Could not load attendance.';
@@ -1826,4 +1831,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get calendarNextYear => 'Next year';
+
+  @override
+  String get attendanceClassTitle => 'Class attendance';
+
+  @override
+  String attendanceClassCounts(int present, int late, int absent, int leave) {
+    return '$present present · $late late · $absent absent · $leave leave';
+  }
+
+  @override
+  String attendanceClassPercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String attendanceClassAverage(int percent) {
+    return 'Class average: $percent%';
+  }
+
+  @override
+  String get attendanceClassEmpty => 'No attendance marked this month.';
+
+  @override
+  String get attendanceFirstPeriodNote => 'You take the first period today';
 }

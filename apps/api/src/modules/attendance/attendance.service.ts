@@ -13,6 +13,7 @@ import {
   Role,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { isFeatureEnabled } from '../../common/tenant-features';
 import { NotificationsService } from '../notifications/notifications.service';
 import type { ActiveUser } from '../../common/types/active-user.type';
 import {
@@ -71,6 +72,12 @@ function compareRoster(
   return a.name.localeCompare(b.name);
 }
 
+/** Mon=1 … Sun=7 for a YYYY-MM-DD, as in timetable_slots.day_of_week. */
+function weekdayOf(ymd: string): number {
+  const d = new Date(`${ymd}T00:00:00Z`).getUTCDay();
+  return d === 0 ? 7 : d;
+}
+
 function firstName(name: string) {
   return name.trim().split(/\s+/)[0] ?? name;
 }
@@ -93,7 +100,16 @@ export class AttendanceService {
     user: ActiveUser,
   ) {
     const cls = await this.requireClass(tenantId, classId);
-    const canMark = this.canMark(cls, user);
+    const timeZone = await this.timeZone(tenantId);
+    const today = todayIn(timeZone);
+    const day = date ?? today;
+    this.assertValidDate(day);
+    const firstPeriod =
+      day === today &&
+      (await this.firstPeriodClassIds(tenantId, user, today, [classId])).has(
+        classId,
+      );
+    const canMark = this.canMark(cls, user, firstPeriod);
     if (
       !canMark &&
       !this.isAssigned(cls, user) &&
@@ -101,11 +117,6 @@ export class AttendanceService {
     ) {
       throw new ForbiddenException(t.notYourClass);
     }
-
-    const timeZone = await this.timeZone(tenantId);
-    const today = todayIn(timeZone);
-    const day = date ?? today;
-    this.assertValidDate(day);
 
     const [students, records, holiday] = await Promise.all([
       this.prisma.student.findMany({
@@ -155,11 +166,16 @@ export class AttendanceService {
 
   async submit(tenantId: string, dto: SubmitAttendanceDto, user: ActiveUser) {
     const cls = await this.requireClass(tenantId, dto.classId);
-    if (!this.canMark(cls, user)) throw new ForbiddenException(t.notYourClass);
-
     this.assertValidDate(dto.date);
     const timeZone = await this.timeZone(tenantId);
     const today = todayIn(timeZone);
+    const firstPeriod =
+      dto.date === today &&
+      (
+        await this.firstPeriodClassIds(tenantId, user, today, [dto.classId])
+      ).has(dto.classId);
+    if (!this.canMark(cls, user, firstPeriod))
+      throw new ForbiddenException(t.notYourClass);
     if (dto.date > today) throw new BadRequestException(t.futureDate);
     if (!this.withinEditWindow(user, dto.date, today))
       throw new ForbiddenException(t.teacherTodayOnly);
@@ -378,7 +394,17 @@ export class AttendanceService {
     const classes = await this.prisma.class.findMany({
       where: ADMIN_ROLES.includes(user.role)
         ? { tenantId }
-        : { tenantId, teachers: { some: { teacherId: user.id } } },
+        : {
+            tenantId,
+            OR: [
+              { teachers: { some: { teacherId: user.id } } },
+              {
+                timetableSlots: {
+                  some: { teacherId: user.id, dayOfWeek: weekdayOf(today) },
+                },
+              },
+            ],
+          },
       select: {
         id: true,
         name: true,
@@ -388,8 +414,15 @@ export class AttendanceService {
       },
       orderBy: [{ name: 'asc' }, { section: 'asc' }],
     });
+    const firstPeriod = await this.firstPeriodClassIds(
+      tenantId,
+      user,
+      today,
+      classes.map((c) => c.id),
+    );
     const markable = classes.filter(
-      (c) => this.canMark(c, user) && c._count.students > 0,
+      (c) =>
+        this.canMark(c, user, firstPeriod.has(c.id)) && c._count.students > 0,
     );
 
     const [marked, holiday] = await Promise.all([
@@ -417,6 +450,10 @@ export class AttendanceService {
         section: c.section,
         studentCount: c._count.students,
         submitted: submitted.has(c.id),
+        /** The caller is its class teacher: can open the class's month view. */
+        classTeacher: this.isClassTeacherOf(c, user),
+        /** Markable only because the caller takes its first period today. */
+        firstPeriod: firstPeriod.has(c.id) && !this.canMark(c, user),
       })),
     };
   }
@@ -656,6 +693,31 @@ export class AttendanceService {
     return { from: query.from, to: query.to, data: rows };
   }
 
+  /**
+   * A class teacher's (or admin's) month view of their whole class: each
+   * student's present / late / absent / leave days and percentage.
+   */
+  async getClassMonth(
+    tenantId: string,
+    classId: string,
+    month: string | undefined,
+    user: ActiveUser,
+  ) {
+    const cls = await this.requireClass(tenantId, classId);
+    if (!ADMIN_ROLES.includes(user.role) && !this.isClassTeacherOf(cls, user))
+      throw new ForbiddenException(t.notYourClass);
+    const today = todayIn(await this.timeZone(tenantId));
+    const m = month ?? today.slice(0, 7);
+    const { from, to } = monthRange(m);
+    const report = await this.getReport(tenantId, { classId, from, to });
+    return {
+      class: { id: cls.id, name: cls.name, section: cls.section },
+      month: m,
+      today,
+      students: report.data,
+    };
+  }
+
   // ── Holidays ───────────────────────────────────────────────────────────────
 
   async listHolidays(tenantId: string, from?: string, to?: string) {
@@ -747,18 +809,72 @@ export class AttendanceService {
   }
 
   /**
-   * Admins mark any class. A teacher marks a class they're the class teacher of;
-   * if the class has no class teacher flagged, any teacher assigned to it may.
+   * Admins mark any class. A teacher marks a class they're the class teacher of
+   * (if none is flagged, any teacher assigned to it), and, for today only, a
+   * class whose first period today they take ([firstPeriodToday], from the
+   * timetable; see firstPeriodClassIds).
    */
   private canMark(
     cls: { teachers: { teacherId: string; isClassTeacher: boolean }[] },
     user: ActiveUser,
+    firstPeriodToday = false,
   ) {
     if (ADMIN_ROLES.includes(user.role)) return true;
+    if (user.role !== Role.teacher) return false;
+    return firstPeriodToday || this.isClassTeacherOf(cls, user);
+  }
+
+  /** The class teacher, or any assigned teacher of a class with none flagged. */
+  private isClassTeacherOf(
+    cls: { teachers: { teacherId: string; isClassTeacher: boolean }[] },
+    user: ActiveUser,
+  ) {
     if (user.role !== Role.teacher) return false;
     const classTeachers = cls.teachers.filter((ct) => ct.isClassTeacher);
     const eligible = classTeachers.length > 0 ? classTeachers : cls.teachers;
     return eligible.some((ct) => ct.teacherId === user.id);
+  }
+
+  /**
+   * Classes (of [classIds]) whose first period on [today] the teacher takes:
+   * their timetable slot is the class's lowest period number that weekday.
+   * Empty for non-teachers and for schools without the timetable module.
+   */
+  private async firstPeriodClassIds(
+    tenantId: string,
+    user: ActiveUser,
+    today: string,
+    classIds: string[],
+  ): Promise<Set<string>> {
+    if (user.role !== Role.teacher || classIds.length === 0) return new Set();
+    if (!(await isFeatureEnabled(this.prisma, tenantId, 'timetable')))
+      return new Set();
+    const dayOfWeek = weekdayOf(today);
+    const mine = await this.prisma.timetableSlot.findMany({
+      where: {
+        tenantId,
+        teacherId: user.id,
+        dayOfWeek,
+        classId: { in: classIds },
+      },
+      select: { classId: true, periodNumber: true },
+    });
+    if (mine.length === 0) return new Set();
+    const firsts = await this.prisma.timetableSlot.groupBy({
+      by: ['classId'],
+      where: {
+        tenantId,
+        dayOfWeek,
+        classId: { in: [...new Set(mine.map((m) => m.classId))] },
+      },
+      _min: { periodNumber: true },
+    });
+    const first = new Map(firsts.map((f) => [f.classId, f._min.periodNumber]));
+    return new Set(
+      mine
+        .filter((m) => first.get(m.classId) === m.periodNumber)
+        .map((m) => m.classId),
+    );
   }
 
   private isAssigned(

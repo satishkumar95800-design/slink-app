@@ -83,6 +83,7 @@
   "myClassesEmpty": "ನಿಮಗೆ ಇನ್ನೂ ಯಾವುದೇ ತರಗತಿ ಜೋಡಿಸಿಲ್ಲ.",
   "myClassesCouldNotLoad": "ನಿಮ್ಮ ತರಗತಿಗಳು ಲೋಡ್ ಆಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಲು ಕೆಳಗೆ ಎಳೆಯಿರಿ.",
   "myClassesStrength": "ಹುಡುಗರು: {boys} · ಹುಡುಗಿಯರು: {girls} · ಒಟ್ಟು: {total}",
+  "myClassesGenderNotSet": "ಲಿಂಗ ನಮೂದಿಸಿಲ್ಲ: {count}",
   "myClassesRecentReports": "ಇತ್ತೀಚಿನ ವರದಿಗಳು",
   "myClassesRead": "ಓದಿದೆ",
   "myClassesUnread": "ಓದಿಲ್ಲ",
@@ -111,7 +112,7 @@
   "attendanceAlreadySubmitted": "ಇಂದು ಈಗಾಗಲೇ ಸಲ್ಲಿಸಲಾಗಿದೆ — ಮಧ್ಯರಾತ್ರಿಯವರೆಗೆ ಬದಲಿಸಬಹುದು.",
   "attendanceReadOnlyDay": "ಈ ದಿನದ ಹಾಜರಾತಿಯನ್ನು ನಿರ್ವಾಹಕರು ಮಾತ್ರ ಬದಲಿಸಬಹುದು.",
   "attendanceNoStudents": "ಈ ತರಗತಿಯಲ್ಲಿ ಇನ್ನೂ ವಿದ್ಯಾರ್ಥಿಗಳಿಲ್ಲ.",
-  "attendanceNoClassesToMark": "ನೀವು ಇನ್ನೂ ಯಾವುದೇ ತರಗತಿಯ ತರಗತಿ ಶಿಕ್ಷಕರಲ್ಲ.",
+  "attendanceNoClassesToMark": "ಇಂದು ಗುರುತಿಸಲು ತರಗತಿಗಳಿಲ್ಲ. ತರಗತಿ ಶಿಕ್ಷಕರು ಅಥವಾ ಮೊದಲ ಅವಧಿಯ ಶಿಕ್ಷಕರು ಹಾಜರಾತಿ ಗುರುತಿಸುತ್ತಾರೆ.",
   "attendanceCouldNotLoad": "ಹಾಜರಾತಿ ಲೋಡ್ ಆಗಲಿಲ್ಲ.",
   "attendanceThisMonth": "ಈ ತಿಂಗಳು: {present}/{marked} ದಿನಗಳು",
   "attendanceYearPercentage": "ಶೈಕ್ಷಣಿಕ ವರ್ಷ {year}: {percent}",
@@ -500,5 +501,11 @@
   "errImageNotChecked": "ಈ ಫೋಟೋ ಪರಿಶೀಲನೆ ಆಗಿಲ್ಲ. ಮತ್ತೆ ಸೇರಿಸಿ ಕಳುಹಿಸಿ.",
   "calendarPickMonth": "ತಿಂಗಳು ಆರಿಸಿ",
   "calendarPrevYear": "ಹಿಂದಿನ ವರ್ಷ",
-  "calendarNextYear": "ಮುಂದಿನ ವರ್ಷ"
+  "calendarNextYear": "ಮುಂದಿನ ವರ್ಷ",
+  "attendanceClassTitle": "ತರಗತಿ ಹಾಜರಾತಿ",
+  "attendanceClassCounts": "{present} ಹಾಜರು · {late} ತಡ · {absent} ಗೈರು · {leave} ರಜೆ",
+  "attendanceClassPercent": "{percent}%",
+  "attendanceClassAverage": "ತರಗತಿ ಸರಾಸರಿ: {percent}%",
+  "attendanceClassEmpty": "ಈ ತಿಂಗಳು ಹಾಜರಾತಿ ಗುರುತಿಸಿಲ್ಲ.",
+  "attendanceFirstPeriodNote": "ಇಂದು ಮೊದಲ ಅವಧಿ ನಿಮ್ಮದು"
 }

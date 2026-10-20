@@ -117,6 +117,7 @@ export class TeacherDashboardService {
     const classLinks = await this.prisma.classTeacher.findMany({
       where: { teacherId, class: { tenantId } },
       select: {
+        isClassTeacher: true,
         class: {
           select: { id: true, name: true, section: true, academicYear: true },
         },
@@ -124,7 +125,7 @@ export class TeacherDashboardService {
     });
 
     return Promise.all(
-      classLinks.map(async ({ class: cls }) => {
+      classLinks.map(async ({ class: cls, isClassTeacher }) => {
         const [genderCounts, subjects, recentReports] = await Promise.all([
           this.prisma.student.groupBy({
             by: ['gender'],
@@ -159,6 +160,8 @@ export class TeacherDashboardService {
 
         return {
           class: cls,
+          /** Class teachers also get the class's month attendance view. */
+          isClassTeacher,
           strength: {
             male,
             female,

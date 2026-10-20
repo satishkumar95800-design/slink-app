@@ -1,4 +1,4 @@
-import { Caste, GuardianRelation } from '@prisma/client';
+import { Caste, Gender, GuardianRelation } from '@prisma/client';
 import {
   ParsedTab,
   TabValidation,
@@ -16,6 +16,7 @@ import {
 } from './shared';
 import {
   BLOOD_GROUP_TEMPLATE_OPTIONS,
+  GENDER_TEMPLATE_OPTIONS,
   CASTE_TEMPLATE_OPTIONS,
   GUARDIAN_RELATION_TEMPLATE_OPTIONS,
 } from '../tab-schema';
@@ -23,6 +24,15 @@ import { BLOOD_GROUP_DISPLAY_TO_ENUM } from '../../../common/blood-group';
 
 const TAB = 'Students' as const;
 const CASTE_SET = new Set<string>(CASTE_TEMPLATE_OPTIONS);
+
+/** "Boy", "Girl", "Male", "F", … (any case) to the stored value; undefined if unknown. */
+export function parseGender(raw: string): Gender | undefined {
+  const v = raw.trim().toLowerCase();
+  if (['boy', 'male', 'm', 'b'].includes(v)) return Gender.male;
+  if (['girl', 'female', 'f', 'g'].includes(v)) return Gender.female;
+  if (v === 'other') return Gender.other;
+  return undefined;
+}
 const GUARDIAN_RELATION_SET = new Set<string>(
   GUARDIAN_RELATION_TEMPLATE_OPTIONS,
 );
@@ -60,6 +70,7 @@ export function validateStudentsTab(
     const guardian2Profession = row.cells['Guardian 2 Profession'];
     const bloodGroupRaw = row.cells['Blood Group'];
     const casteRaw = row.cells['Caste'];
+    const genderRaw = row.cells['Gender'] ?? '';
     const rollNo = row.cells['Roll Number'] ?? '';
     pushLowercaseNameWarning(
       warnings,
@@ -223,6 +234,17 @@ export function validateStudentsTab(
       );
       hasError = true;
     }
+    if (genderRaw && !parseGender(genderRaw)) {
+      errors.push(
+        issue(
+          TAB,
+          row.rowNumber,
+          'Gender',
+          `must be one of ${GENDER_TEMPLATE_OPTIONS.join(', ')}`,
+        ),
+      );
+      hasError = true;
+    }
     if (casteRaw && !CASTE_SET.has(casteRaw)) {
       errors.push(
         issue(
@@ -294,6 +316,7 @@ export function validateStudentsTab(
       bloodGroup: bloodGroupRaw
         ? BLOOD_GROUP_DISPLAY_TO_ENUM[bloodGroupRaw]
         : undefined,
+      gender: genderRaw ? parseGender(genderRaw) : undefined,
       caste: casteRaw ? (casteRaw as Caste) : undefined,
       parentName,
       parentRelation: parseGuardianRelation(parentRelationRaw),

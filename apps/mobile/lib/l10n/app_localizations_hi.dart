@@ -295,6 +295,11 @@ class AppLocalizationsHi extends AppLocalizations {
   }
 
   @override
+  String myClassesGenderNotSet(int count) {
+    return 'लिंग दर्ज नहीं: $count';
+  }
+
+  @override
   String get myClassesRecentReports => 'हाल की रिपोर्ट';
 
   @override
@@ -402,7 +407,7 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get attendanceNoClassesToMark =>
-      'आप अभी किसी कक्षा के कक्षा शिक्षक नहीं हैं।';
+      'आज हाज़िरी लगाने के लिए कोई कक्षा नहीं। कक्षा अध्यापक या पहले पीरियड के अध्यापक हाज़िरी लगाते हैं।';
 
   @override
   String get attendanceCouldNotLoad => 'उपस्थिति लोड नहीं हो सकी।';
@@ -1825,4 +1830,28 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get calendarNextYear => 'अगला साल';
+
+  @override
+  String get attendanceClassTitle => 'कक्षा की हाज़िरी';
+
+  @override
+  String attendanceClassCounts(int present, int late, int absent, int leave) {
+    return '$present उपस्थित · $late देर · $absent अनुपस्थित · $leave छुट्टी';
+  }
+
+  @override
+  String attendanceClassPercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String attendanceClassAverage(int percent) {
+    return 'कक्षा का औसत: $percent%';
+  }
+
+  @override
+  String get attendanceClassEmpty => 'इस महीने हाज़िरी नहीं लगी।';
+
+  @override
+  String get attendanceFirstPeriodNote => 'आज पहला पीरियड आपका है';
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/l10n/l10n.dart';
 import '../../shared/models/teacher_class_overview.dart';
 import '../reports/report_labels.dart';
@@ -81,11 +82,25 @@ class _ClassOverviewCard extends StatelessWidget {
                         context.l10n.myClassesStrength(strength.male, strength.female, strength.total),
                         style: theme.textTheme.bodySmall,
                       ),
+                      // Without this the boys + girls can look wrong against the total.
+                      if (strength.unspecified > 0)
+                        Text(
+                          context.l10n.myClassesGenderNotSet(strength.unspecified),
+                          style: theme.textTheme.bodySmall?.copyWith(color: AppColors.muted),
+                        ),
                     ],
                   ),
                 ),
               ],
             ),
+            if (overview.isClassTeacher) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () => context.push('/attendance/class/${overview.studentClass.id}'),
+                icon: const Icon(Icons.fact_check_rounded, size: 18),
+                label: Text(context.l10n.attendanceClassTitle),
+              ),
+            ],
             if (overview.subjects.isNotEmpty) ...[
               const SizedBox(height: 14),
               Wrap(

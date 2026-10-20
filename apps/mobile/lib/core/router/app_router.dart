@@ -35,6 +35,7 @@ import '../../shared/services/secure_storage_service.dart';
 import '../../features/attendance/attendance_calendar_page.dart';
 import '../l10n/l10n.dart';
 import '../../features/attendance/mark_attendance_page.dart';
+import '../../features/attendance/class_attendance_page.dart';
 import '../../features/homework/homework_list_page.dart';
 import '../../features/notices/notices_list_page.dart';
 import '../../features/broadcasts/sent_items_page.dart';
@@ -138,6 +139,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/attendance/mark/:classId',
         builder: (_, state) => MarkAttendancePage(classId: state.pathParameters['classId']!),
+      ),
+      GoRoute(
+        path: '/attendance/class/:classId',
+        builder: (_, state) => ClassAttendancePage(classId: state.pathParameters['classId']!),
       ),
       GoRoute(
         path: '/attendance/student/:studentId',

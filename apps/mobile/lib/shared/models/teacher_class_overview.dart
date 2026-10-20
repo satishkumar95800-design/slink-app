@@ -90,12 +90,16 @@ class TeacherClassRecentReport {
 
 class TeacherClassOverview {
   final TeacherClassOverviewClassInfo studentClass;
+
+  /// The teacher is this class's class teacher (gets the month attendance view).
+  final bool isClassTeacher;
   final ClassStrength strength;
   final List<TeacherClassSubject> subjects;
   final List<TeacherClassRecentReport> recentReports;
 
   const TeacherClassOverview({
     required this.studentClass,
+    this.isClassTeacher = false,
     required this.strength,
     required this.subjects,
     required this.recentReports,
@@ -104,6 +108,7 @@ class TeacherClassOverview {
   factory TeacherClassOverview.fromJson(Map<String, dynamic> json) => TeacherClassOverview(
         studentClass:
             TeacherClassOverviewClassInfo.fromJson(json['class'] as Map<String, dynamic>),
+        isClassTeacher: json['isClassTeacher'] as bool? ?? false,
         strength: ClassStrength.fromJson(json['strength'] as Map<String, dynamic>),
         subjects: (json['subjects'] as List<dynamic>? ?? [])
             .map((e) => TeacherClassSubject.fromJson(e as Map<String, dynamic>))

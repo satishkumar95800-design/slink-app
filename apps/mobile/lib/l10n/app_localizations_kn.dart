@@ -293,6 +293,11 @@ class AppLocalizationsKn extends AppLocalizations {
   }
 
   @override
+  String myClassesGenderNotSet(int count) {
+    return 'ಲಿಂಗ ನಮೂದಿಸಿಲ್ಲ: $count';
+  }
+
+  @override
   String get myClassesRecentReports => 'ಇತ್ತೀಚಿನ ವರದಿಗಳು';
 
   @override
@@ -401,7 +406,7 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get attendanceNoClassesToMark =>
-      'ನೀವು ಇನ್ನೂ ಯಾವುದೇ ತರಗತಿಯ ತರಗತಿ ಶಿಕ್ಷಕರಲ್ಲ.';
+      'ಇಂದು ಗುರುತಿಸಲು ತರಗತಿಗಳಿಲ್ಲ. ತರಗತಿ ಶಿಕ್ಷಕರು ಅಥವಾ ಮೊದಲ ಅವಧಿಯ ಶಿಕ್ಷಕರು ಹಾಜರಾತಿ ಗುರುತಿಸುತ್ತಾರೆ.';
 
   @override
   String get attendanceCouldNotLoad => 'ಹಾಜರಾತಿ ಲೋಡ್ ಆಗಲಿಲ್ಲ.';
@@ -1827,4 +1832,28 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get calendarNextYear => 'ಮುಂದಿನ ವರ್ಷ';
+
+  @override
+  String get attendanceClassTitle => 'ತರಗತಿ ಹಾಜರಾತಿ';
+
+  @override
+  String attendanceClassCounts(int present, int late, int absent, int leave) {
+    return '$present ಹಾಜರು · $late ತಡ · $absent ಗೈರು · $leave ರಜೆ';
+  }
+
+  @override
+  String attendanceClassPercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String attendanceClassAverage(int percent) {
+    return 'ತರಗತಿ ಸರಾಸರಿ: $percent%';
+  }
+
+  @override
+  String get attendanceClassEmpty => 'ಈ ತಿಂಗಳು ಹಾಜರಾತಿ ಗುರುತಿಸಿಲ್ಲ.';
+
+  @override
+  String get attendanceFirstPeriodNote => 'ಇಂದು ಮೊದಲ ಅವಧಿ ನಿಮ್ಮದು';
 }

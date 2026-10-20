@@ -13,6 +13,15 @@ class AttendanceRepository {
     return MyAttendanceClasses.fromJson(response.data!);
   }
 
+  /// GET /attendance/class/:classId/month: class teachers and admins.
+  Future<ClassMonthAttendance> getClassMonth(String classId, {String? month}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/attendance/class/$classId/month',
+      queryParameters: {if (month != null) 'month': month},
+    );
+    return ClassMonthAttendance.fromJson(response.data!);
+  }
+
   Future<AttendanceRoster> getRoster(String classId, {String? date}) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '/attendance/roster',
@@ -53,6 +62,11 @@ class AttendanceRepository {
 
 final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
   return AttendanceRepository(ref.watch(apiClientProvider));
+});
+
+final classMonthProvider =
+    FutureProvider.autoDispose.family<ClassMonthAttendance, ({String classId, String? month})>((ref, args) {
+  return ref.watch(attendanceRepositoryProvider).getClassMonth(args.classId, month: args.month);
 });
 
 final myAttendanceClassesProvider = FutureProvider.autoDispose<MyAttendanceClasses>((ref) {

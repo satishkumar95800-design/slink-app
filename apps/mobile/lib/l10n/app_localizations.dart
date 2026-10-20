@@ -598,6 +598,12 @@ abstract class AppLocalizations {
   /// **'Boys: {boys} · Girls: {girls} · Total: {total}'**
   String myClassesStrength(int boys, int girls, int total);
 
+  /// No description provided for @myClassesGenderNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender not set: {count}'**
+  String myClassesGenderNotSet(int count);
+
   /// No description provided for @myClassesRecentReports.
   ///
   /// In en, this message translates to:
@@ -769,7 +775,7 @@ abstract class AppLocalizations {
   /// No description provided for @attendanceNoClassesToMark.
   ///
   /// In en, this message translates to:
-  /// **'You\'re not the class teacher of any class yet.'**
+  /// **'No classes to mark today. A class\'s teacher, or the teacher of its first period, marks it.'**
   String get attendanceNoClassesToMark;
 
   /// No description provided for @attendanceCouldNotLoad.
@@ -3107,6 +3113,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Next year'**
   String get calendarNextYear;
+
+  /// No description provided for @attendanceClassTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Class attendance'**
+  String get attendanceClassTitle;
+
+  /// No description provided for @attendanceClassCounts.
+  ///
+  /// In en, this message translates to:
+  /// **'{present} present · {late} late · {absent} absent · {leave} leave'**
+  String attendanceClassCounts(int present, int late, int absent, int leave);
+
+  /// No description provided for @attendanceClassPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String attendanceClassPercent(int percent);
+
+  /// No description provided for @attendanceClassAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Class average: {percent}%'**
+  String attendanceClassAverage(int percent);
+
+  /// No description provided for @attendanceClassEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No attendance marked this month.'**
+  String get attendanceClassEmpty;
+
+  /// No description provided for @attendanceFirstPeriodNote.
+  ///
+  /// In en, this message translates to:
+  /// **'You take the first period today'**
+  String get attendanceFirstPeriodNote;
 }
 
 class _AppLocalizationsDelegate

@@ -21,6 +21,7 @@ import { nameCaseWarning } from '../../../lib/names';
 
 const BLOOD_GROUP_VALUES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const;
 const CASTE_VALUES = ['General', 'OBC', 'SC', 'ST', 'EWS', 'Other'] as const;
+const GENDER_VALUES = ['male', 'female', 'other'] as const;
 
 // The API stores/returns Prisma-safe identifiers (A_POSITIVE, etc.) since "+"/"-"
 // aren't valid enum identifiers; translate back to "A+"/"A-" for display here.
@@ -42,6 +43,7 @@ interface Student {
   rollNo?: string | null;
   dob: string | null;
   bloodGroup: string | null;
+  gender?: (typeof GENDER_VALUES)[number] | null;
   caste: string | null;
   photoUrl?: string | null;
   classId: string;
@@ -76,6 +78,7 @@ const makeSchemas = (t: ReturnType<typeof useTranslations<'students'>>, tCommon:
     rollNo: z.string().max(20).optional(),
     dob: z.string().optional(),
     bloodGroup: z.enum(BLOOD_GROUP_VALUES).optional(),
+    gender: z.enum(GENDER_VALUES).optional(),
     caste: z.enum(CASTE_VALUES).optional(),
     classId: z.string().min(1, tCommon('classRequired')),
     parentPhone: z.string().min(10, t('invalidPhone')),
@@ -87,6 +90,7 @@ const makeSchemas = (t: ReturnType<typeof useTranslations<'students'>>, tCommon:
     classId: z.string().min(1, tCommon('classRequired')),
     dob: z.string().optional(),
     bloodGroup: z.enum(BLOOD_GROUP_VALUES).optional(),
+    gender: z.enum(GENDER_VALUES).optional(),
     caste: z.enum(CASTE_VALUES).optional(),
     parentProfession: z.string().optional(),
   }),
@@ -201,6 +205,7 @@ export default function StudentsPage() {
         rollNo: data.rollNo?.trim() || undefined,
         dob: data.dob || undefined,
         bloodGroup: data.bloodGroup || undefined,
+        gender: data.gender || undefined,
         caste: data.caste || undefined,
         parentRelation: data.parentRelation || undefined,
       });
@@ -258,6 +263,7 @@ export default function StudentsPage() {
       bloodGroup: student.bloodGroup
         ? (BLOOD_GROUP_ENUM_TO_DISPLAY[student.bloodGroup] as (typeof BLOOD_GROUP_VALUES)[number])
         : undefined,
+      gender: student.gender ?? undefined,
       caste: (student.caste as (typeof CASTE_VALUES)[number]) || undefined,
       parentProfession: primaryParent?.profession ?? '',
     });
@@ -273,6 +279,7 @@ export default function StudentsPage() {
         classId: data.classId,
         dob: data.dob || undefined,
         bloodGroup: data.bloodGroup || undefined,
+        gender: data.gender || undefined,
         caste: data.caste || undefined,
       });
 
@@ -306,6 +313,7 @@ export default function StudentsPage() {
   const relationOptions = (['father', 'mother', 'guardian'] as const).map((value) => ({ value, label: tRelation(value) }));
 
   const bloodGroupOptions = BLOOD_GROUP_VALUES.map((v) => ({ value: v, label: v }));
+  const genderOptions = GENDER_VALUES.map((v) => ({ value: v, label: t(`gender_${v}`) }));
   const casteOptions = CASTE_VALUES.map((v) => ({ value: v, label: tCaste(v) }));
 
   return (
@@ -466,6 +474,13 @@ export default function StudentsPage() {
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Select
+              label={t('gender')}
+              options={genderOptions}
+              placeholder={t('selectGender')}
+              error={errors.gender?.message}
+              {...register('gender')}
+            />
+            <Select
               label={t('bloodGroup')}
               options={bloodGroupOptions}
               placeholder={t('selectBloodGroup')}
@@ -534,15 +549,24 @@ export default function StudentsPage() {
               {...registerEdit('bloodGroup')}
             />
           </div>
-          {!isTeacher && (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Select
-              label={t('caste')}
-              options={casteOptions}
-              placeholder={t('selectCaste')}
-              error={editErrors.caste?.message}
-              {...registerEdit('caste')}
+              label={t('gender')}
+              options={genderOptions}
+              placeholder={t('selectGender')}
+              error={editErrors.gender?.message}
+              {...registerEdit('gender')}
             />
-          )}
+            {!isTeacher && (
+              <Select
+                label={t('caste')}
+                options={casteOptions}
+                placeholder={t('selectCaste')}
+                error={editErrors.caste?.message}
+                {...registerEdit('caste')}
+              />
+            )}
+          </div>
                <div className="border-t pt-4">
            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">{t('photo')}</p>
            <div className="flex items-center gap-4">

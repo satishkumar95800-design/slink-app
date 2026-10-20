@@ -90,6 +90,7 @@ const ALIASES: Record<string, string[]> = {
   ],
   'Parent Email': ['email', 'parentemail', 'emailid'],
   'Blood Group': ['bloodgroup', 'bg'],
+  Gender: ['gender', 'sex'],
   'Full Name': ['name', 'fullname', 'staffname'],
   'Phone Number': ['phone', 'mobile', 'mobileno', 'phoneno', 'contact'],
   'Teacher Name': ['name', 'teacher', 'teachername'],

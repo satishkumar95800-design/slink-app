@@ -3,6 +3,7 @@ import ExcelJS from 'exceljs';
 import {
   ALLOWED_ROLES,
   BLOOD_GROUP_TEMPLATE_OPTIONS,
+  GENDER_TEMPLATE_OPTIONS,
   CASTE_TEMPLATE_OPTIONS,
   COMMON_FEE_COMPONENTS,
   DISPLAY_HEADERS,
@@ -146,6 +147,7 @@ export class TemplateGeneratorService {
       'A+',
       'General',
       '12',
+      'Boy',
     ]);
 
     const guardian1RelationColumn =
@@ -177,6 +179,14 @@ export class TemplateGeneratorService {
 
     const casteColumn = TAB_HEADERS.Students.indexOf('Caste') + 1;
     this.applyDropdown(sheet, casteColumn, CASTE_TEMPLATE_OPTIONS, {
+      blocking: true,
+    });
+
+    const genderColumn =
+      TAB_HEADERS.Students.length +
+      (OPTIONAL_TAB_HEADERS.Students ?? []).indexOf('Gender') +
+      1;
+    this.applyDropdown(sheet, genderColumn, GENDER_TEMPLATE_OPTIONS, {
       blocking: true,
     });
   }

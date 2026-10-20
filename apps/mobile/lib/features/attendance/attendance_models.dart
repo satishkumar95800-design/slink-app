@@ -46,12 +46,16 @@ class AttendanceClass {
   final int studentCount;
   final bool submitted;
 
+  /// Markable only because this teacher takes the class's first period today.
+  final bool firstPeriod;
+
   const AttendanceClass({
     required this.id,
     required this.name,
     this.section,
     required this.studentCount,
     required this.submitted,
+    this.firstPeriod = false,
   });
 
   String get label => [name, if (section != null && section!.isNotEmpty) section].join(' ');
@@ -62,7 +66,72 @@ class AttendanceClass {
         section: json['section'] as String?,
         studentCount: json['studentCount'] as int,
         submitted: json['submitted'] as bool,
+        firstPeriod: json['firstPeriod'] as bool? ?? false,
       );
+}
+
+/// One student's month in GET /attendance/class/:classId/month.
+class ClassMonthStudent {
+  final String studentId;
+  final String name;
+  final String? rollNo;
+  final int present;
+  final int late;
+  final int absent;
+  final int leave;
+  final int daysMarked;
+  final double? percentage;
+
+  const ClassMonthStudent({
+    required this.studentId,
+    required this.name,
+    this.rollNo,
+    required this.present,
+    required this.late,
+    required this.absent,
+    required this.leave,
+    required this.daysMarked,
+    this.percentage,
+  });
+
+  factory ClassMonthStudent.fromJson(Map<String, dynamic> json) => ClassMonthStudent(
+        studentId: json['studentId'] as String,
+        name: json['studentName'] as String,
+        rollNo: json['rollNo'] as String?,
+        present: json['present'] as int? ?? 0,
+        late: json['late'] as int? ?? 0,
+        absent: json['absent'] as int? ?? 0,
+        leave: json['leave'] as int? ?? 0,
+        daysMarked: json['daysMarked'] as int? ?? 0,
+        percentage: (json['percentage'] as num?)?.toDouble(),
+      );
+}
+
+/// A class teacher's month view of their whole class.
+class ClassMonthAttendance {
+  final String classLabel;
+  final String month;
+  final List<ClassMonthStudent> students;
+
+  const ClassMonthAttendance({required this.classLabel, required this.month, required this.students});
+
+  /// Days attended over days marked, across the class; null if nothing marked.
+  double? get average {
+    final marked = students.fold<int>(0, (n, s) => n + s.daysMarked);
+    if (marked == 0) return null;
+    final attended = students.fold<int>(0, (n, s) => n + s.present + s.late);
+    return attended * 100 / marked;
+  }
+
+  factory ClassMonthAttendance.fromJson(Map<String, dynamic> json) {
+    final cls = json['class'] as Map<String, dynamic>;
+    final section = cls['section'] as String?;
+    return ClassMonthAttendance(
+      classLabel: [cls['name'] as String, if (section != null && section.isNotEmpty) section].join(' '),
+      month: json['month'] as String,
+      students: [for (final e in json['students'] as List<dynamic>) ClassMonthStudent.fromJson(e as Map<String, dynamic>)],
+    );
+  }
 }
 
 /// GET /attendance/roster

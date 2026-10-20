@@ -83,6 +83,7 @@
   "myClassesEmpty": "आप अभी किसी कक्षा से नहीं जुड़े हैं।",
   "myClassesCouldNotLoad": "आपकी कक्षाएँ लोड नहीं हो सकीं। फिर से कोशिश करने के लिए नीचे खींचें।",
   "myClassesStrength": "लड़के: {boys} · लड़कियाँ: {girls} · कुल: {total}",
+  "myClassesGenderNotSet": "लिंग दर्ज नहीं: {count}",
   "myClassesRecentReports": "हाल की रिपोर्ट",
   "myClassesRead": "पढ़ी गई",
   "myClassesUnread": "नहीं पढ़ी",
@@ -111,7 +112,7 @@
   "attendanceAlreadySubmitted": "आज पहले ही जमा हो चुकी है — आधी रात तक बदल सकते हैं।",
   "attendanceReadOnlyDay": "इस दिन की उपस्थिति केवल एडमिन बदल सकते हैं।",
   "attendanceNoStudents": "इस कक्षा में अभी कोई छात्र नहीं है।",
-  "attendanceNoClassesToMark": "आप अभी किसी कक्षा के कक्षा शिक्षक नहीं हैं।",
+  "attendanceNoClassesToMark": "आज हाज़िरी लगाने के लिए कोई कक्षा नहीं। कक्षा अध्यापक या पहले पीरियड के अध्यापक हाज़िरी लगाते हैं।",
   "attendanceCouldNotLoad": "उपस्थिति लोड नहीं हो सकी।",
   "attendanceThisMonth": "इस महीने: {present}/{marked} दिन",
   "attendanceYearPercentage": "शैक्षणिक वर्ष {year}: {percent}",
@@ -500,5 +501,11 @@
   "errImageNotChecked": "इस फ़ोटो की जाँच नहीं हुई। इसे फिर से जोड़कर भेजें।",
   "calendarPickMonth": "महीना चुनें",
   "calendarPrevYear": "पिछला साल",
-  "calendarNextYear": "अगला साल"
+  "calendarNextYear": "अगला साल",
+  "attendanceClassTitle": "कक्षा की हाज़िरी",
+  "attendanceClassCounts": "{present} उपस्थित · {late} देर · {absent} अनुपस्थित · {leave} छुट्टी",
+  "attendanceClassPercent": "{percent}%",
+  "attendanceClassAverage": "कक्षा का औसत: {percent}%",
+  "attendanceClassEmpty": "इस महीने हाज़िरी नहीं लगी।",
+  "attendanceFirstPeriodNote": "आज पहला पीरियड आपका है"
 }

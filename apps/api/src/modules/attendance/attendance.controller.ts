@@ -71,6 +71,23 @@ export class AttendanceController {
     return this.attendanceService.submit(tenantId, dto, user);
   }
 
+  /** The class teacher's month view of the whole class (also admins). */
+  @Get('class/:classId/month')
+  @Roles(Role.teacher, Role.admin, Role.super_admin)
+  classMonth(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @Param('classId', ParseUUIDPipe) classId: string,
+    @Query() query: StudentSummaryQueryDto,
+  ) {
+    return this.attendanceService.getClassMonth(
+      tenantId,
+      classId,
+      query.month,
+      user,
+    );
+  }
+
   @Get('student/:studentId/summary')
   @Roles(Role.parent, Role.teacher, Role.admin, Role.super_admin)
   studentSummary(
