@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/models/active_user.dart';
+import '../../shared/models/api_exception.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
 import '../../shared/widgets/ui_kit.dart';
 import '../auth/session_controller.dart';
@@ -25,11 +26,91 @@ class DashboardPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(sessionControllerProvider).user;
-    final isTeacher = user?.role == UserRole.teacher;
-
     return AuthenticatedScaffold(
       appBar: statusBarOnly(context),
-      body: isTeacher ? _TeacherDashboardBody(user: user!) : _ParentDashboardBody(user: user),
+      body: switch (user?.role) {
+        UserRole.teacher => _TeacherDashboardBody(user: user!),
+        // Office staff use the app for their own leave, payslips and the
+        // calendar; they run the school from the console.
+        UserRole.admin || UserRole.accounts || UserRole.superAdmin => _StaffDashboardBody(user: user!),
+        _ => _ParentDashboardBody(user: user),
+      },
+    );
+  }
+}
+
+/// Home for admin and accounts staff: their own HR self-service and the
+/// school calendar and documents, with a pointer to the console.
+class _StaffDashboardBody extends ConsumerWidget {
+  final ActiveUser user;
+
+  const _StaffDashboardBody({required this.user});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        HeroHeader(overlap: _overlap, child: HomeHeader(name: user.name)),
+        OverlapUp(
+          by: _overlap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SoftCard(
+                  child: Row(
+                    children: [
+                      const IconBadge(icon: Icons.desktop_windows_rounded, color: FeatureColors.classes),
+                      const SizedBox(width: 14),
+                      Expanded(child: Text(l.staffHomeConsoleHint, style: Theme.of(context).textTheme.bodyMedium)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                FeatureGrid(tiles: [
+                  if (ref.watch(calendarEnabledProvider))
+                    FeatureTile(
+                      icon: Icons.calendar_month_rounded,
+                      label: l.calendarTitle,
+                      color: FeatureColors.calendar,
+                      onTap: () => context.push('/calendar'),
+                    ),
+                  if (ref.watch(hrmsEnabledProvider)) ...[
+                    FeatureTile(
+                      icon: Icons.receipt_long_rounded,
+                      label: l.hrmsPayslipsTitle,
+                      color: FeatureColors.payroll,
+                      onTap: () => context.push('/hrms/payslips'),
+                    ),
+                    FeatureTile(
+                      icon: Icons.beach_access_rounded,
+                      label: l.hrmsLeaveTitle,
+                      color: FeatureColors.attendance,
+                      onTap: () => context.push('/hrms/leave'),
+                    ),
+                  ],
+                  if (ref.watch(staffDocumentsEnabledProvider))
+                    FeatureTile(
+                      icon: Icons.folder_shared_rounded,
+                      label: l.staffDocsTitle,
+                      color: FeatureColors.documents,
+                      onTap: () => context.push('/staff-docs'),
+                    ),
+                  FeatureTile(
+                    icon: Icons.notifications_rounded,
+                    label: l.notificationsTitle,
+                    color: FeatureColors.notifications,
+                    onTap: () => context.push('/dashboard/notifications'),
+                  ),
+                ]),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -74,7 +155,7 @@ class _ParentDashboardBody extends ConsumerWidget {
         LoadingBlock(height: 220),
       ])),
       error: (error, _) => withHeader(
-        Text('${l.dashboardCouldNotLoadChildren}\n$error', textAlign: TextAlign.center),
+        Text('${l.dashboardCouldNotLoadChildren}\n${describeError(error)}', textAlign: TextAlign.center),
       ),
     );
   }

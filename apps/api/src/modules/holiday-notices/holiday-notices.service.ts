@@ -4,7 +4,7 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { NotificationChannel, Prisma, Role } from '@prisma/client';
+import { NotificationChannel, Prisma } from '@prisma/client';
 import { effectiveLanguage } from '../../common/i18n/languages';
 import { PrismaService } from '../../prisma/prisma.service';
 import { fromDbDate, toDbDate, todayIn } from '../attendance/attendance-dates';
@@ -119,7 +119,7 @@ export class HolidayNoticesService implements OnModuleInit, OnModuleDestroy {
     const parents = await this.prisma.user.findMany({
       where: {
         tenantId: tenant.id,
-        role: Role.parent,
+        // Anyone linked to a student, so staff who are parents get it too.
         linkedStudents: { some: {} },
       },
       select: { id: true, preferredLanguage: true },

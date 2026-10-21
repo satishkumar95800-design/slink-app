@@ -43,10 +43,12 @@ import '../../features/student_notes/add_student_note_page.dart';
 
 const _authRoutes = ['/onboarding/tenant', '/login/phone', '/login/otp'];
 
-/// Recreated whenever session status changes (login/logout/bootstrap resolves),
-/// which intentionally resets the navigation stack at exactly those moments.
+/// Recreated whenever session status changes (login/logout/bootstrap resolves)
+/// or a staff member switches between Staff and Parent, which intentionally
+/// resets the navigation stack at exactly those moments.
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final sessionState = ref.watch(sessionControllerProvider);
+  ref.watch(sessionControllerProvider.select((s) => (s.status, s.actingAsParent)));
+  final sessionState = ref.read(sessionControllerProvider);
   // Captured synchronously, before any `await` — the redirect callback below
   // is async, and if session status changes while it's mid-flight, this whole
   // provider rebuilds and disposes `ref`. Calling `ref.read(...)` again after

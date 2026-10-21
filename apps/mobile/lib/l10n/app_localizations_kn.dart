@@ -1856,4 +1856,26 @@ class AppLocalizationsKn extends AppLocalizations {
 
   @override
   String get attendanceFirstPeriodNote => 'ಇಂದು ಮೊದಲ ಅವಧಿ ನಿಮ್ಮದು';
+
+  @override
+  String get staffHomeConsoleHint =>
+      'ಶಾಲೆಯ ನಿರ್ವಹಣೆಗೆ schoolinkd.in ಕನ್ಸೋಲ್ ಬಳಸಿ. ಇಲ್ಲಿ ನಿಮ್ಮ ರಜೆ, ವೇತನ ಚೀಟಿ ಮತ್ತು ಶಾಲಾ ಕ್ಯಾಲೆಂಡರ್ ಇವೆ.';
+
+  @override
+  String get modeStaff => 'ಸಿಬ್ಬಂದಿ';
+
+  @override
+  String get modeParent => 'ಪೋಷಕರು';
+
+  @override
+  String get errNoChildren => 'ನಿಮ್ಮ ಖಾತೆಗೆ ಈಗ ಯಾವುದೇ ಮಕ್ಕಳು ಸಂಪರ್ಕಗೊಂಡಿಲ್ಲ.';
+
+  @override
+  String get authCountryCode => 'ದೇಶದ ಕೋಡ್';
+
+  @override
+  String get authSearchCountry => 'ದೇಶ ಅಥವಾ ಕೋಡ್ ಹುಡುಕಿ';
+
+  @override
+  String get authInvalidMobileIntl => 'ಈ ದೇಶಕ್ಕೆ ಸರಿಯಾದ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ.';
 }

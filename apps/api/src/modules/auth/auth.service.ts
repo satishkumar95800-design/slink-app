@@ -34,6 +34,8 @@ export interface AuthResult {
     preferredLanguage: string | null;
     /** What the apps should show right after sign-in, even on a new device. */
     language: Language;
+    /** Staff with children in the school can switch the app to parent mode. */
+    hasChildren: boolean;
   };
 }
 
@@ -209,6 +211,7 @@ export class AuthService {
       ...user,
       preferredLanguage: row.preferredLanguage,
       language: await this.languageFor({ tenantId: user.tenantId, preferredLanguage: row.preferredLanguage }),
+      hasChildren: await this.hasChildren(user.id, user.tenantId),
     };
   }
 
@@ -272,8 +275,17 @@ export class AuthService {
         tenantId: user.tenantId,
         preferredLanguage: user.preferredLanguage,
         language: await this.languageFor(user),
+        hasChildren: await this.hasChildren(user.id, user.tenantId),
       },
     };
+  }
+
+  /** Whether the user is linked as a parent to any student of their school. */
+  async hasChildren(userId: string, tenantId: string): Promise<boolean> {
+    const n = await this.prisma.studentParent.count({
+      where: { parentId: userId, student: { tenantId } },
+    });
+    return n > 0;
   }
 
   /** Effective interface language for a user: their pick, else their school's default, else English. */

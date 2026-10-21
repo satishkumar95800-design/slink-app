@@ -12,11 +12,17 @@ class SecureStorageService {
   static const _refreshTokenKey = 'refresh_token';
   static const _tenantIdKey = 'tenant_id';
   static const _userJsonKey = 'active_user';
+  static const _actAsKey = 'act_as';
 
   Future<String?> readAccessToken() => _storage.read(key: _accessTokenKey);
   Future<String?> readRefreshToken() => _storage.read(key: _refreshTokenKey);
   Future<String?> readTenantId() => _storage.read(key: _tenantIdKey);
   Future<String?> readUserJson() => _storage.read(key: _userJsonKey);
+
+  /// 'parent' while a staff member uses parent mode, else null.
+  Future<String?> readActAs() => _storage.read(key: _actAsKey);
+  Future<void> writeActAs(String? value) =>
+      value == null ? _storage.delete(key: _actAsKey) : _storage.write(key: _actAsKey, value: value);
 
   Future<void> writeAccessToken(String value) => _storage.write(key: _accessTokenKey, value: value);
   Future<void> writeRefreshToken(String value) => _storage.write(key: _refreshTokenKey, value: value);

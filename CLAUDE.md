@@ -77,7 +77,7 @@ pnpm db:generate   # regenerates the Prisma client
 |---|---|---|
 | health | done | GET /health |
 | tenants | done | Tenant CRUD, branding, feature flags, super_admin + admin self-management |
-| auth | done | Phone OTP via Firebase, JWT issue/refresh/revoke |
+| auth | done | Phone OTP via Firebase, JWT issue/refresh/revoke. Parent mode: a teacher/admin/accounts user linked as a parent (`student_parents`) sends `X-Act-As: parent` and `JwtStrategy` runs the request with the parent role (own children only); anyone else gets 403 `NO_CHILDREN`. Login and `/auth/me` return `hasChildren`; the mobile home shows a Staff \| Parent switch. The mobile sign-in takes a country code (India default) |
 | users | done | User profiles |
 | students | done | Student records, parent linkage |
 | fees | done | Fee structures, student fee assignments, offline payments, adjustments |

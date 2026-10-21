@@ -87,6 +87,7 @@ String? translateErrorCode(String? code) {
     'IMAGE_CHECK_UNAVAILABLE' => l.errImageCheckUnavailable,
     'IMAGE_TOO_LARGE_TO_CHECK' => l.errImageTooLarge,
     'IMAGE_NOT_CHECKED' => l.errImageNotChecked,
+    'NO_CHILDREN' => l.errNoChildren,
     _ => null,
   };
 }

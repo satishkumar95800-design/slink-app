@@ -447,9 +447,10 @@ export class NotificationsService {
       return deduplicateById(links.map((l) => l.parent));
     }
 
-    // all_parents in tenant
+    // all_parents in tenant: anyone linked to a student, so staff who are
+    // also parents get it too
     return this.prisma.user.findMany({
-      where: { tenantId, role: Role.parent },
+      where: { tenantId, linkedStudents: { some: {} } },
       select: TARGET_USER_SELECT,
     });
   }

@@ -3149,6 +3149,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You take the first period today'**
   String get attendanceFirstPeriodNote;
+
+  /// No description provided for @staffHomeConsoleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage the school from the console at schoolinkd.in. Here you have your own leave, payslips and the school calendar.'**
+  String get staffHomeConsoleHint;
+
+  /// Home switch: use the app as a staff member
+  ///
+  /// In en, this message translates to:
+  /// **'Staff'**
+  String get modeStaff;
+
+  /// Home switch: use the app as a parent of your own children
+  ///
+  /// In en, this message translates to:
+  /// **'Parent'**
+  String get modeParent;
+
+  /// Parent mode refused because no students are linked to the staff account
+  ///
+  /// In en, this message translates to:
+  /// **'No children are linked to your account any more.'**
+  String get errNoChildren;
+
+  /// Opens the list of country calling codes on the sign-in screen
+  ///
+  /// In en, this message translates to:
+  /// **'Country code'**
+  String get authCountryCode;
+
+  /// Search box in the country code list
+  ///
+  /// In en, this message translates to:
+  /// **'Search country or code'**
+  String get authSearchCountry;
+
+  /// Sign-in number has the wrong length for the chosen country
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid mobile number for this country.'**
+  String get authInvalidMobileIntl;
 }
 
 class _AppLocalizationsDelegate

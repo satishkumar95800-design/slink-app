@@ -1854,4 +1854,27 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get attendanceFirstPeriodNote => 'आज पहला पीरियड आपका है';
+
+  @override
+  String get staffHomeConsoleHint =>
+      'स्कूल का प्रबंधन schoolinkd.in कंसोल से करें। यहाँ आपकी छुट्टी, वेतन पर्ची और स्कूल कैलेंडर हैं।';
+
+  @override
+  String get modeStaff => 'स्टाफ़';
+
+  @override
+  String get modeParent => 'अभिभावक';
+
+  @override
+  String get errNoChildren => 'आपके खाते से अब कोई बच्चा जुड़ा नहीं है।';
+
+  @override
+  String get authCountryCode => 'देश का कोड';
+
+  @override
+  String get authSearchCountry => 'देश या कोड खोजें';
+
+  @override
+  String get authInvalidMobileIntl =>
+      'इस देश के लिए सही मोबाइल नंबर दर्ज करें।';
 }

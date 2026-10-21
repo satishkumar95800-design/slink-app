@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/l10n/language_controller.dart';
@@ -10,13 +11,25 @@ enum SessionStatus { unknown, loggedOut, loggedIn }
 
 class SessionState {
   final SessionStatus status;
-  final ActiveUser? user;
 
-  const SessionState._(this.status, this.user);
+  /// The signed-in account (its real role).
+  final ActiveUser? account;
+
+  /// A staff member who is also a parent, using the app as a parent.
+  final bool actingAsParent;
+
+  const SessionState._(this.status, this.account, {this.actingAsParent = false});
 
   const SessionState.unknown() : this._(SessionStatus.unknown, null);
   const SessionState.loggedOut() : this._(SessionStatus.loggedOut, null);
-  const SessionState.loggedIn(ActiveUser user) : this._(SessionStatus.loggedIn, user);
+  const SessionState.loggedIn(ActiveUser user, {bool actingAsParent = false})
+      : this._(SessionStatus.loggedIn, user, actingAsParent: actingAsParent);
+
+  /// Who the app is acting as: the account, with the parent role in parent mode.
+  ActiveUser? get user => actingAsParent ? account?.copyWith(role: UserRole.parent) : account;
+
+  /// Staff linked to children of the school get the Staff | Parent switch.
+  bool get canSwitchToParent => account != null && account!.role != UserRole.parent && account!.hasChildren;
 }
 
 /// Single source of truth for auth state. The router watches this to decide
@@ -49,13 +62,54 @@ class SessionController extends StateNotifier<SessionState> {
       return;
     }
 
+    final ActiveUser user;
     try {
-      final user = ActiveUser.fromJson(jsonDecode(userJson) as Map<String, dynamic>);
-      state = SessionState.loggedIn(user);
+      user = ActiveUser.fromJson(jsonDecode(userJson) as Map<String, dynamic>);
     } catch (_) {
       await storage.clearAll();
       state = const SessionState.loggedOut();
+      return;
     }
+    final actAs = await storage.readActAs().catchError((_) => null);
+    state = SessionState.loggedIn(user, actingAsParent: actAs == 'parent' && user.role != UserRole.parent);
+    if (user.role != UserRole.parent) unawaited(refreshAccount());
+  }
+
+  /// Re-reads the account from /auth/me (staff: whether children are linked,
+  /// which a sign-in from an older app version didn't store). Called outside
+  /// parent mode only, since /auth/me answers with the role in use.
+  Future<void> refreshAccount() async {
+    final current = state;
+    if (current.status != SessionStatus.loggedIn || current.actingAsParent) return;
+    try {
+      final me = await _ref.read(authRepositoryProvider).getMe();
+      final account = state.account;
+      if (account?.id != me.id || state.actingAsParent || account?.hasChildren == me.hasChildren) return;
+      await _ref.read(secureStorageServiceProvider).writeUserJson(jsonEncode(me.toJson()));
+      state = SessionState.loggedIn(me);
+    } catch (_) {
+      // Offline or signed out meanwhile: keep what we have.
+    }
+  }
+
+  /// Staff | Parent switch. Requests then carry `X-Act-As: parent`.
+  Future<void> setActingAsParent(bool asParent) async {
+    final account = state.account;
+    if (state.status != SessionStatus.loggedIn || account == null) return;
+    if (asParent && !state.canSwitchToParent) return;
+    await _ref.read(secureStorageServiceProvider).writeActAs(asParent ? 'parent' : null);
+    state = SessionState.loggedIn(account, actingAsParent: asParent);
+  }
+
+  /// The server refused parent mode (children unlinked): back to staff.
+  Future<void> parentModeRefused() async {
+    final account = state.account;
+    if (!state.actingAsParent || account == null) return;
+    final staff = account.copyWith(hasChildren: false);
+    final storage = _ref.read(secureStorageServiceProvider);
+    await storage.writeActAs(null);
+    await storage.writeUserJson(jsonEncode(staff.toJson()));
+    state = SessionState.loggedIn(staff);
   }
 
   Future<void> completeLogin(AuthResult result) async {
@@ -63,6 +117,7 @@ class SessionController extends StateNotifier<SessionState> {
     await storage.writeAccessToken(result.accessToken);
     await storage.writeRefreshToken(result.refreshToken);
     await storage.writeUserJson(jsonEncode(result.user.toJson()));
+    await storage.writeActAs(null);
 
     // Best-effort — a failed FCM registration shouldn't block login. Read
     // before flipping session state: the router watches this state and

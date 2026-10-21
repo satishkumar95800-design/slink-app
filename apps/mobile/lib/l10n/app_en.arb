@@ -1346,5 +1346,18 @@
     }
   },
   "attendanceClassEmpty": "No attendance marked this month.",
-  "attendanceFirstPeriodNote": "You take the first period today"
+  "attendanceFirstPeriodNote": "You take the first period today",
+  "staffHomeConsoleHint": "Manage the school from the console at schoolinkd.in. Here you have your own leave, payslips and the school calendar.",
+  "modeStaff": "Staff",
+  "@modeStaff": {"description": "Home switch: use the app as a staff member"},
+  "modeParent": "Parent",
+  "@modeParent": {"description": "Home switch: use the app as a parent of your own children"},
+  "errNoChildren": "No children are linked to your account any more.",
+  "@errNoChildren": {"description": "Parent mode refused because no students are linked to the staff account"},
+  "authCountryCode": "Country code",
+  "@authCountryCode": {"description": "Opens the list of country calling codes on the sign-in screen"},
+  "authSearchCountry": "Search country or code",
+  "@authSearchCountry": {"description": "Search box in the country code list"},
+  "authInvalidMobileIntl": "Enter a valid mobile number for this country.",
+  "@authInvalidMobileIntl": {"description": "Sign-in number has the wrong length for the chosen country"}
 }

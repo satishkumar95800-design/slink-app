@@ -37,7 +37,7 @@ export class CalendarController {
 
   /** Unified, date-sorted feed for the mobile calendar. */
   @Get()
-  @Roles(Role.parent, Role.teacher, Role.admin, Role.super_admin)
+  @Roles(Role.parent, Role.teacher, Role.admin, Role.accounts, Role.super_admin)
   async list(@TenantId() tenantId: string, @Query() query: CalendarQueryDto) {
     await assertFeatureEnabled(this.prisma, tenantId, 'calendar');
     return this.calendarService.list(tenantId, query.from, query.to);

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../features/auth/session_controller.dart';
 import 'secure_storage_service.dart';
 
 const _rawBaseUrl = String.fromEnvironment('API_BASE_URL');
@@ -51,6 +52,9 @@ class _AuthInterceptor extends Interceptor {
 
     if (token != null) options.headers['Authorization'] = 'Bearer $token';
     if (tenantId != null) options.headers['X-Tenant-ID'] = tenantId;
+    // Parent mode for staff who are also parents: the API then treats the
+    // request as the parent role (own children only).
+    if (await storage.readActAs() == 'parent') options.headers['X-Act-As'] = 'parent';
 
     handler.next(options);
   }
@@ -62,6 +66,12 @@ class _AuthInterceptor extends Interceptor {
         path.contains('/auth/phone/verify') ||
         path.contains('/auth/email/login');
     final alreadyRetried = err.requestOptions.extra['retried'] == true;
+
+    // Parent mode refused (the children were unlinked): back to staff.
+    if (err.response?.statusCode == 403 && err.requestOptions.headers['X-Act-As'] == 'parent' && _errorCode(err) == 'NO_CHILDREN') {
+      await _ref.read(sessionControllerProvider.notifier).parentModeRefused();
+      return handler.next(err);
+    }
 
     if (err.response?.statusCode != 401 || isAuthEndpoint || alreadyRetried) {
       return handler.next(err);
@@ -83,6 +93,12 @@ class _AuthInterceptor extends Interceptor {
     } catch (_) {
       handler.next(err);
     }
+  }
+
+  static String? _errorCode(DioException err) {
+    final data = err.response?.data;
+    final error = data is Map ? data['error'] : null;
+    return error is Map && error['code'] is String ? error['code'] as String : null;
   }
 
   Future<bool> _refreshToken() async {

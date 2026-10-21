@@ -1855,4 +1855,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get attendanceFirstPeriodNote => 'You take the first period today';
+
+  @override
+  String get staffHomeConsoleHint =>
+      'Manage the school from the console at schoolinkd.in. Here you have your own leave, payslips and the school calendar.';
+
+  @override
+  String get modeStaff => 'Staff';
+
+  @override
+  String get modeParent => 'Parent';
+
+  @override
+  String get errNoChildren =>
+      'No children are linked to your account any more.';
+
+  @override
+  String get authCountryCode => 'Country code';
+
+  @override
+  String get authSearchCountry => 'Search country or code';
+
+  @override
+  String get authInvalidMobileIntl =>
+      'Enter a valid mobile number for this country.';
 }

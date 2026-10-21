@@ -507,5 +507,12 @@
   "attendanceClassPercent": "{percent}%",
   "attendanceClassAverage": "ತರಗತಿ ಸರಾಸರಿ: {percent}%",
   "attendanceClassEmpty": "ಈ ತಿಂಗಳು ಹಾಜರಾತಿ ಗುರುತಿಸಿಲ್ಲ.",
-  "attendanceFirstPeriodNote": "ಇಂದು ಮೊದಲ ಅವಧಿ ನಿಮ್ಮದು"
+  "attendanceFirstPeriodNote": "ಇಂದು ಮೊದಲ ಅವಧಿ ನಿಮ್ಮದು",
+  "staffHomeConsoleHint": "ಶಾಲೆಯ ನಿರ್ವಹಣೆಗೆ schoolinkd.in ಕನ್ಸೋಲ್ ಬಳಸಿ. ಇಲ್ಲಿ ನಿಮ್ಮ ರಜೆ, ವೇತನ ಚೀಟಿ ಮತ್ತು ಶಾಲಾ ಕ್ಯಾಲೆಂಡರ್ ಇವೆ.",
+  "modeStaff": "ಸಿಬ್ಬಂದಿ",
+  "modeParent": "ಪೋಷಕರು",
+  "errNoChildren": "ನಿಮ್ಮ ಖಾತೆಗೆ ಈಗ ಯಾವುದೇ ಮಕ್ಕಳು ಸಂಪರ್ಕಗೊಂಡಿಲ್ಲ.",
+  "authCountryCode": "ದೇಶದ ಕೋಡ್",
+  "authSearchCountry": "ದೇಶ ಅಥವಾ ಕೋಡ್ ಹುಡುಕಿ",
+  "authInvalidMobileIntl": "ಈ ದೇಶಕ್ಕೆ ಸರಿಯಾದ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ."
 }

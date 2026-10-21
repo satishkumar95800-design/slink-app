@@ -49,7 +49,10 @@ describe('HolidayNoticesService', () => {
     expect(notifications.send.mock.calls[1][0].title).toBe('ಇಂದು ಶಾಲೆಗೆ ರಜೆ');
     expect(prisma.user.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ role: 'parent', tenantId: 't1' }),
+        where: expect.objectContaining({
+          tenantId: 't1',
+          linkedStudents: { some: {} },
+        }),
       }),
     );
     expect(prisma.holidayNotice.update).toHaveBeenCalledWith(

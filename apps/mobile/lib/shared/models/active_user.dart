@@ -29,6 +29,10 @@ class ActiveUser {
   /// What to show after sign-in: [preferredLanguage], else the school default.
   final String? language;
 
+  /// Staff only: students of the school are linked to this account as its
+  /// children, so the app offers the Staff | Parent switch.
+  final bool hasChildren;
+
   const ActiveUser({
     required this.id,
     required this.name,
@@ -36,7 +40,18 @@ class ActiveUser {
     required this.tenantId,
     this.preferredLanguage,
     this.language,
+    this.hasChildren = false,
   });
+
+  ActiveUser copyWith({UserRole? role, bool? hasChildren}) => ActiveUser(
+        id: id,
+        name: name,
+        role: role ?? this.role,
+        tenantId: tenantId,
+        preferredLanguage: preferredLanguage,
+        language: language,
+        hasChildren: hasChildren ?? this.hasChildren,
+      );
 
   factory ActiveUser.fromJson(Map<String, dynamic> json) => ActiveUser(
         id: json['id'] as String,
@@ -45,6 +60,7 @@ class ActiveUser {
         tenantId: json['tenantId'] as String,
         preferredLanguage: json['preferredLanguage'] as String?,
         language: json['language'] as String?,
+        hasChildren: json['hasChildren'] == true,
       );
 
   Map<String, dynamic> toJson() => {
@@ -54,6 +70,7 @@ class ActiveUser {
         'tenantId': tenantId,
         'preferredLanguage': preferredLanguage,
         'language': language,
+        'hasChildren': hasChildren,
       };
 }
 

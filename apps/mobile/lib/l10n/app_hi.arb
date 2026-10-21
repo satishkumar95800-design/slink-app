@@ -507,5 +507,12 @@
   "attendanceClassPercent": "{percent}%",
   "attendanceClassAverage": "कक्षा का औसत: {percent}%",
   "attendanceClassEmpty": "इस महीने हाज़िरी नहीं लगी।",
-  "attendanceFirstPeriodNote": "आज पहला पीरियड आपका है"
+  "attendanceFirstPeriodNote": "आज पहला पीरियड आपका है",
+  "staffHomeConsoleHint": "स्कूल का प्रबंधन schoolinkd.in कंसोल से करें। यहाँ आपकी छुट्टी, वेतन पर्ची और स्कूल कैलेंडर हैं।",
+  "modeStaff": "स्टाफ़",
+  "modeParent": "अभिभावक",
+  "errNoChildren": "आपके खाते से अब कोई बच्चा जुड़ा नहीं है।",
+  "authCountryCode": "देश का कोड",
+  "authSearchCountry": "देश या कोड खोजें",
+  "authInvalidMobileIntl": "इस देश के लिए सही मोबाइल नंबर दर्ज करें।"
 }

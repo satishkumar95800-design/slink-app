@@ -37,6 +37,9 @@ const prismaMock = {
     update: jest.fn(),
     updateMany: jest.fn(),
   },
+  studentParent: {
+    count: jest.fn().mockResolvedValue(0),
+  },
 };
 
 const firebaseMock = {
