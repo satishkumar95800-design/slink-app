@@ -55,6 +55,8 @@ export const MODULES = [
   { key: 'admissions', group: 'premium', name: 'Admissions pipeline', help: 'Enquiry, campus tour, follow-up, registration and enrolment, with follow-up reminders and a funnel (also on the head office view).' },
   { key: 'transport', group: 'premium', name: 'School bus routes', help: 'Bus routes with stops and times, a driver and attendant from ground staff, students per route; parents see their child’s bus and can call the driver.' },
   { key: 'hrms', group: 'premium_max', name: 'HR and payroll', help: 'Staff records, attendance, leave, pay runs with PF, ESI, PT and payslips. Add-on for Premium (₹18,000).' },
+  { key: 'busTracking', group: 'premium_max', name: 'Live bus tracking', help: 'The driver starts a trip in the app and parents see the bus move on a map. Needs School bus routes.' },
+  { key: 'library', group: 'premium_max', name: 'Library', help: 'Book catalogue with copies, issue and return at the desk, overdue list and fines; parents see their child’s borrowed books.' },
   { key: 'aiInsights', group: 'premium_max', name: 'AI features', help: 'AI assistant, notice translation, report remarks, early warnings and Monday summary. Add-on for Premium (₹15,000).' },
 ] as const satisfies readonly { key: string; group: ModuleGroup; name: string; help: string }[];
 

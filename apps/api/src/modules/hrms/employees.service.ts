@@ -34,7 +34,13 @@ import {
 import { hrmsStrings as t } from './hrms.strings';
 import { Db, audit, fail, todayFor, withLock } from './hrms.shared';
 
-const STAFF_ROLES: Role[] = [Role.teacher, Role.admin, Role.accounts];
+const STAFF_ROLES: Role[] = [
+  Role.teacher,
+  Role.admin,
+  Role.accounts,
+  Role.librarian,
+  Role.receptionist,
+];
 
 const DEFAULT_DESIGNATION: Record<string, string> = {
   teacher: 'Teacher',

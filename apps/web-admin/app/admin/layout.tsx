@@ -6,6 +6,8 @@ import { usePathname } from 'next/navigation';
 import { Sidebar } from '../../components/layout/sidebar';
 import { ChangePasswordModal } from '../../components/layout/change-password-modal';
 import { getSession, isLoggedIn } from '../../lib/auth';
+import { homeFor, isDeskRole } from '../../lib/roles';
+import { roleLabel } from '../../lib/i18n/labels';
 import { formatDateOnly } from '../../lib/format';
 import { ToastProvider } from '../../components/ui/toast';
 import { api, keepSessionAlive } from '../../lib/api-client';
@@ -79,12 +81,15 @@ function AdminShell({ children }: { children: ReactNode }) {
       router.replace('/login');
       return;
     }
+    // Front desk and library logins have their own home instead of the dashboard.
+    const role = getSession()?.role as string | undefined;
+    if (pathname === '/admin' && isDeskRole(role)) router.replace(homeFor(role!));
 
     api.get<TenantBrand>('/tenant')
       .then(setTenant)
       .catch(() => setTenant(null));
     setReady(true);
-  }, [router]);
+  }, [router, pathname]);
 
   // Detect an expired session without waiting for a click or a page refresh.
   useEffect(() => {
@@ -231,12 +236,6 @@ function LogoutButton() {
       <ChangePasswordModal open={showChangePassword} onClose={() => setShowChangePassword(false)} />
     </div>
   );
-}
-
-const ROLE_KEYS = ['parent', 'teacher', 'admin', 'accounts', 'super_admin'] as const;
-
-function roleLabel(t: ReturnType<typeof useTranslations<'roles'>>, role: string) {
-  return (ROLE_KEYS as readonly string[]).includes(role) ? t(role as (typeof ROLE_KEYS)[number]) : role;
 }
 
 /** Admin and accounts see this during the 7 days after the subscription's end date. */

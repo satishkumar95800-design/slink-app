@@ -7,6 +7,12 @@ export enum Role {
   DEVELOPER = 'developer',
   /** Read-only view of a group of schools (docs/SPEC-subscriptions.md 6). */
   HEAD_OFFICE = 'head_office',
+  /** School bus driver (mobile app): shares GPS during a trip. */
+  DRIVER = 'driver',
+  /** Library desk (console). */
+  LIBRARIAN = 'librarian',
+  /** Front desk (console): enquiries, follow-ups, visitors, calls. */
+  RECEPTIONIST = 'receptionist',
 }
 
 export enum FeeStatus {

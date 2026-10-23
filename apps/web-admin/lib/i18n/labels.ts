@@ -12,7 +12,7 @@ export function reportTypeLabel(t: T<'reportType'>, type: string): string {
   return has(REPORT_TYPES, type) ? t(type) : type;
 }
 
-const ROLES = ['parent', 'teacher', 'admin', 'accounts', 'super_admin'] as const;
+const ROLES = ['parent', 'teacher', 'admin', 'accounts', 'super_admin', 'librarian', 'receptionist', 'driver'] as const;
 export function roleLabel(t: T<'roles'>, role: string): string {
   return has(ROLES, role) ? t(role) : role;
 }

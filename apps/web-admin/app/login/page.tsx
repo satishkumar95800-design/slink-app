@@ -16,6 +16,7 @@ import { ApiError } from '../../lib/api-client';
 import { useErrorText } from '../../lib/i18n/errors';
 import { useLanguage } from '../../lib/i18n/provider';
 import { LanguageSwitcher } from '../../components/layout/language-switcher';
+import { homeFor } from '../../lib/roles';
 
 const makeSchema = (t: ReturnType<typeof useTranslations<'login'>>) =>
   z.object({
@@ -87,9 +88,7 @@ export default function LoginPage() {
       );
       applyAccountLanguage(user);
 
-      router.push(
-        user.role === 'super_admin' ? '/platform/dashboard' : (user.role as string) === 'head_office' ? '/head-office' : '/admin',
-      );
+      router.push(homeFor(user.role as string));
     } catch {
       setError(errorText(new ApiError(0, '', undefined, 'NETWORK_ERROR')));
     }

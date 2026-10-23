@@ -22,6 +22,10 @@ export interface TenantFeatures {
   admissions?: boolean;
   /** School bus routes (Premium and Premium Max). */
   transport?: boolean;
+  /** Live bus GPS from the driver's phone (Premium Max). */
+  busTracking?: boolean;
+  /** Library management (Premium Max). */
+  library?: boolean;
 }
 
 // Keyed by school so signing in to another school in the same tab refetches.

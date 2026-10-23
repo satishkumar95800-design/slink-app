@@ -9,7 +9,13 @@ import {
 import { Role } from '@prisma/client';
 import { CleanName } from '../../../common/decorators/clean-name.decorator';
 
-const STAFF_ROLES = [Role.teacher, Role.admin, Role.accounts] as const;
+const STAFF_ROLES = [
+  Role.teacher,
+  Role.admin,
+  Role.accounts,
+  Role.librarian,
+  Role.receptionist,
+] as const;
 type StaffRole = (typeof STAFF_ROLES)[number];
 
 export class UpdateUserDto {

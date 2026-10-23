@@ -11,11 +11,15 @@ import { Input } from '../../../components/ui/input';
 import { Spinner } from '../../../components/ui/spinner';
 import { useToast } from '../../../components/ui/toast';
 import { EnquiryFields, FormValues, emptyForm, formValid, toBody } from './enquiry-form';
+import { DeskPanel } from './desk-panel';
 import { EnquiryDetail, STAGES, STAGE_VARIANT, Stage } from './types';
+
+const DESK_ACTIVITY = ['follow_up', 'follow_up_done', 'follow_up_reopened', 'payment', 'payment_void', 'call'] as const;
 
 /** One enquiry: edit details, move it along the pipeline, add notes, see the timeline. */
 export function EnquiryDrawerBody({ id, onChanged }: { id: string; onChanged: () => void }) {
   const t = useTranslations('admissions');
+  const tDesk = useTranslations('reception');
   const errorText = useErrorText();
   const { toast } = useToast();
   const [data, setData] = useState<EnquiryDetail | null>(null);
@@ -30,13 +34,15 @@ export function EnquiryDrawerBody({ id, onChanged }: { id: string; onChanged: ()
     setForm(emptyForm(d));
   }, []);
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     api
       .get<EnquiryDetail>(`/admissions/${id}`)
       .then(apply)
       .catch((e) => toast(errorText(e), 'error'));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  useEffect(reload, [reload]);
 
   async function run(fn: () => Promise<EnquiryDetail>, done: string) {
     setSaving(true);
@@ -113,6 +119,14 @@ export function EnquiryDrawerBody({ id, onChanged }: { id: string; onChanged: ()
         )}
       </section>
 
+      <DeskPanel
+        enquiryId={id}
+        onChanged={() => {
+          reload();
+          onChanged();
+        }}
+      />
+
       <section className="rounded-2xl border border-black/5 bg-white p-4">
         <EnquiryFields value={form} onChange={setForm} showTour />
         <div className="mt-3 flex justify-end">
@@ -153,7 +167,9 @@ export function EnquiryDrawerBody({ id, onChanged }: { id: string; onChanged: ()
                     ? t('activity.stage', { from: a.fromStage ? t(`stages.${a.fromStage}`) : '', to: t(`stages.${a.toStage}`) })
                     : a.kind === 'edited'
                       ? t('activity.edited')
-                      : t('activity.note')}
+                      : (DESK_ACTIVITY as readonly string[]).includes(a.kind)
+                        ? tDesk(`activity.${a.kind as (typeof DESK_ACTIVITY)[number]}`)
+                        : t('activity.note')}
               </p>
               {a.note && <p className="text-gray-600">{a.note}</p>}
               <p className="text-xs text-gray-500">{t('activity.by', { name: a.by, date: formatDateTime(a.createdAt) })}</p>

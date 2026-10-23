@@ -36,19 +36,21 @@ interface User {
 
 type TCommon = ReturnType<typeof useTranslations<'common'>>;
 
+const STAFF_ROLES = ['teacher', 'admin', 'accounts', 'librarian', 'receptionist'] as const;
+
 const makeSchemas = (t: TCommon) => ({
   create: z.object({
     name: z.string().min(1, t('nameRequired')),
     email: z.string().email(t('invalidEmail')),
     phone: z.string().optional(),
     password: z.string().min(8, t('passwordTooShort')),
-    role: z.enum(['teacher', 'admin', 'accounts']),
+    role: z.enum(STAFF_ROLES),
   }),
   edit: z.object({
     name: z.string().min(1, t('nameRequired')),
     email: z.string().email(t('invalidEmail')).optional().or(z.literal('')),
     phone: z.string().optional(),
-    role: z.enum(['teacher', 'admin', 'accounts']).optional(),
+    role: z.enum(STAFF_ROLES).optional(),
   }),
   resetPassword: z.object({
     newPassword: z.string().min(8, t('passwordTooShort')),
@@ -60,15 +62,14 @@ type FormData = z.infer<Schemas['create']>;
 type EditFormData = z.infer<Schemas['edit']>;
 type ResetPasswordFormData = z.infer<Schemas['resetPassword']>;
 
-const STAFF_ROLES = ['teacher', 'admin', 'accounts'] as const;
 /** Role filter on the list: everyone, or one role. */
-const FILTER_ROLES = ['parent', 'teacher', 'admin', 'accounts'] as const;
+const FILTER_ROLES = ['parent', 'teacher', 'admin', 'accounts', 'librarian', 'receptionist', 'driver'] as const;
 const PAGE_SIZE = 50;
 
-// The role field can only ever change between these three — parent (and any
-// platform role like developer/super_admin) isn't reassignable from this form.
-function isStaffRole(role: string): role is 'teacher' | 'admin' | 'accounts' {
-  return role === 'teacher' || role === 'admin' || role === 'accounts';
+// The role field can only change between the staff roles — parent, driver
+// (made from the School bus page) and platform roles aren't reassignable here.
+function isStaffRole(role: string): role is (typeof STAFF_ROLES)[number] {
+  return (STAFF_ROLES as readonly string[]).includes(role);
 }
 
 const roleVariant = (role: string): 'blue' | 'green' | 'orange' | 'gray' => {

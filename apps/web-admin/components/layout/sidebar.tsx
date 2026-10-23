@@ -30,16 +30,19 @@ import {
   Bus,
   ListChecks,
   UserPlus,
+  ConciergeBell,
+  Library,
 } from 'lucide-react';
 import { getSession } from '../../lib/auth';
 import { TenantFeatures, useTenantFeatures } from '../../lib/tenant-features';
 import { useTranslations } from 'next-intl';
 import { strings } from '../../lib/strings';
 import { LanguageSwitcher } from './language-switcher';
+import { isDeskRole } from '../../lib/roles';
 
 interface NavItem {
   /** Key into messages "nav". */
-  label: 'dashboard' | 'users' | 'students' | 'classes' | 'teachers' | 'fees' | 'studentFees' | 'payments' | 'feeReports' | 'reports' | 'attendance' | 'documents' | 'timetable' | 'paymentClaims' | 'pettyCash' | 'hr' | 'absence' | 'payslips' | 'sharedDocs' | 'syllabus' | 'admissions' | 'schoolBus' | 'import' | 'settings';
+  label: 'dashboard' | 'users' | 'students' | 'classes' | 'teachers' | 'fees' | 'studentFees' | 'payments' | 'feeReports' | 'reports' | 'attendance' | 'documents' | 'timetable' | 'paymentClaims' | 'pettyCash' | 'hr' | 'absence' | 'payslips' | 'sharedDocs' | 'syllabus' | 'admissions' | 'schoolBus' | 'reception' | 'library' | 'import' | 'settings';
   href: string;
   icon: LucideIcon;
   /** Roles that should not see this item in the sidebar (still reachable by direct URL if the API allows it). */
@@ -67,9 +70,11 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'attendance', href: '/admin/attendance', icon: CalendarCheck, hiddenForRoles: ['accounts'] },
       { label: 'absence', href: '/admin/absence', icon: CalendarX2, onlyRoles: ['teacher'] },
       { label: 'timetable', href: '/admin/timetable', icon: CalendarDays, hiddenForRoles: ['teacher'], feature: 'timetable' },
-      { label: 'admissions', href: '/admin/admissions', icon: UserPlus, onlyRoles: ['admin', 'accounts'], feature: 'admissions' },
+      { label: 'reception', href: '/admin/reception', icon: ConciergeBell, onlyRoles: ['receptionist', 'admin', 'accounts'], feature: 'admissions' },
+      { label: 'admissions', href: '/admin/admissions', icon: UserPlus, onlyRoles: ['admin', 'accounts', 'receptionist'], feature: 'admissions' },
       { label: 'syllabus', href: '/admin/syllabus', icon: ListChecks, onlyRoles: ['admin', 'teacher'], feature: 'syllabus' },
       { label: 'schoolBus', href: '/admin/school-bus', icon: Bus, onlyRoles: ['admin', 'accounts'], feature: 'transport' },
+      { label: 'library', href: '/admin/library', icon: Library, onlyRoles: ['librarian', 'admin'], feature: 'library' },
       { label: 'reports', href: '/admin/reports', icon: ChartColumn },
       { label: 'documents', href: '/admin/documents', icon: FolderOpen, hiddenForRoles: ['teacher'] },
       { label: 'sharedDocs', href: '/admin/shared-documents', icon: Folders, onlyRoles: ['teacher', 'admin', 'accounts'], feature: 'staffDocuments' },
@@ -117,6 +122,8 @@ export function Sidebar({ tenant, open = false, onClose, collapsed = false, onTo
     ...g,
     items: g.items.filter(
       (item) =>
+        // Desk logins see only the pages that name them.
+        (!isDeskRole(role) || !!item.onlyRoles?.includes(role!)) &&
         (!role || !item.hiddenForRoles?.includes(role)) &&
         (!item.onlyRoles || (!!role && item.onlyRoles.includes(role))) &&
         (!item.feature || features[item.feature] === true),
