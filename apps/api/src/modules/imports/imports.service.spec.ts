@@ -58,6 +58,8 @@ function makeMockPrisma(tx: ReturnType<typeof makeMockTx>) {
       update: jest.fn<Promise<unknown>, [UpdateArgs]>().mockResolvedValue({}),
       findUnique: jest.fn(),
     },
+    // No admission numbering: Admission Number stays required.
+    tenant: { findUnique: jest.fn().mockResolvedValue(null) },
     $transaction: jest.fn(
       (callback: (tx: ReturnType<typeof makeMockTx>) => unknown) =>
         callback(tx),

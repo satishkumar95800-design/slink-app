@@ -24,10 +24,14 @@ export class CreateStudentDto {
   @MaxLength(150)
   name: string;
 
+  /** Blank: the next number from the school's admission numbering (Settings). */
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @IsString()
-  @MinLength(1)
   @MaxLength(50)
-  admissionNo: string;
+  @IsOptional()
+  admissionNo?: string;
 
   /** Optional class roll number, e.g. "12". Attendance lists sort by it. */
   @IsString()

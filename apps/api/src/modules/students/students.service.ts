@@ -15,6 +15,16 @@ import { UpdateStudentDto } from './dto/update-student.dto';
 import { LinkParentDto } from './dto/link-parent.dto';
 import { StudentQueryDto } from './dto/student-query.dto';
 import { BulkCreateStudentsDto } from './dto/bulk-create-students.dto';
+import { AdmissionNumberingDto } from './dto/admission-numbering.dto';
+import {
+  currentNumber,
+  formatAdmissionNo,
+  patternProblem,
+  readNumbering,
+  takeAdmissionNo,
+  yearKey,
+} from './admission-number';
+import { todayIn } from '../attendance/attendance-dates';
 import { SetCustomFieldValuesDto } from '../custom-fields/dto/set-custom-field-values.dto';
 
 // Reusable include shape for student queries
@@ -127,30 +137,43 @@ export class StudentsService {
   async create(tenantId: string, dto: CreateStudentDto) {
     await this.requireClass(tenantId, dto.classId);
 
-    const existing = await this.prisma.student.findUnique({
-      where: {
-        tenantId_admissionNo: { tenantId, admissionNo: dto.admissionNo },
-      },
-    });
-    if (existing)
-      throw new ConflictException(
-        `Admission number "${dto.admissionNo}" is already in use`,
-      );
+    const typed = dto.admissionNo?.trim();
+    if (typed) {
+      const existing = await this.prisma.student.findUnique({
+        where: {
+          tenantId_admissionNo: { tenantId, admissionNo: typed },
+        },
+      });
+      if (existing)
+        throw new ConflictException(
+          `Admission number "${typed}" is already in use`,
+        );
+    }
 
-    const student = await this.prisma.student.create({
-      data: {
-        tenantId,
-        name: dto.name,
-        admissionNo: dto.admissionNo,
-        rollNo: dto.rollNo?.trim() || null,
-        dob: dto.dob ? new Date(dto.dob) : null,
-        gender: dto.gender ?? null,
-        bloodGroup: dto.bloodGroup ?? null,
-        caste: dto.caste ?? null,
-        photoUrl: this.photoToStore(tenantId, dto.photoUrl) ?? null,
-        classId: dto.classId,
-      },
-      include: studentInclude,
+    // Left blank: the school's next number, taken with the student's row.
+    const student = await this.prisma.$transaction(async (tx) => {
+      const admissionNo = typed || (await takeAdmissionNo(tx, tenantId));
+      if (!admissionNo)
+        throw new BadRequestException({
+          code: 'ADMISSION_NO_REQUIRED',
+          message:
+            'Enter an admission number, or set up automatic numbering in Settings',
+        });
+      return tx.student.create({
+        data: {
+          tenantId,
+          name: dto.name,
+          admissionNo,
+          rollNo: dto.rollNo?.trim() || null,
+          dob: dto.dob ? new Date(dto.dob) : null,
+          gender: dto.gender ?? null,
+          bloodGroup: dto.bloodGroup ?? null,
+          caste: dto.caste ?? null,
+          photoUrl: this.photoToStore(tenantId, dto.photoUrl) ?? null,
+          classId: dto.classId,
+        },
+        include: studentInclude,
+      });
     });
 
     if (dto.parentPhone) {
@@ -169,6 +192,90 @@ export class StudentsService {
       }),
       tenantId,
     );
+  }
+
+  // ─── Admission numbering (Settings) ──────────────────────────────────────────
+
+  /** The rule, the next three numbers it gives, and the latest numbers in use. */
+  async admissionNumbering(tenantId: string) {
+    const [tenant, latest] = await Promise.all([
+      this.prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { admissionNumbering: true, timezone: true },
+      }),
+      this.prisma.student.findMany({
+        where: { tenantId },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: { admissionNo: true },
+      }),
+    ]);
+    const cfg = readNumbering(tenant?.admissionNumbering);
+    const today = todayIn(tenant?.timezone || 'Asia/Kolkata');
+    const n = cfg ? currentNumber(cfg, today) : 0;
+    return {
+      numbering: cfg,
+      upcoming: cfg
+        ? [0, 1, 2].map((i) => formatAdmissionNo(cfg, n + i, today))
+        : [],
+      latest: latest.map((s) => s.admissionNo),
+      today,
+    };
+  }
+
+  async saveAdmissionNumbering(
+    tenantId: string,
+    actorId: string,
+    dto: AdmissionNumberingDto,
+  ) {
+    let value: Prisma.InputJsonValue | typeof Prisma.DbNull = Prisma.DbNull;
+    if (dto.enabled) {
+      const problem = patternProblem(dto.pattern);
+      if (problem)
+        throw new BadRequestException({
+          code: problem,
+          message: 'This pattern cannot be used for admission numbers',
+        });
+      const tenant = await this.prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { timezone: true },
+      });
+      const year = yearKey(
+        dto.pattern,
+        todayIn(tenant?.timezone || 'Asia/Kolkata'),
+      );
+      if (dto.resetEachYear && !year)
+        throw new BadRequestException({
+          code: 'RESET_NEEDS_YEAR',
+          message: 'Add {YYYY}, {YY} or {AY} to restart the numbers each year',
+        });
+      value = {
+        pattern: dto.pattern,
+        digits: dto.digits,
+        next: dto.next,
+        resetEachYear: dto.resetEachYear,
+        year,
+      };
+    }
+    await this.prisma.$transaction([
+      this.prisma.tenant.update({
+        where: { id: tenantId },
+        data: { admissionNumbering: value },
+      }),
+      this.prisma.auditLog.create({
+        data: {
+          tenantId,
+          actorId,
+          action: 'students.admission_numbering_saved',
+          entityType: 'tenant',
+          entityId: tenantId,
+          diff: dto.enabled
+            ? (value as Prisma.InputJsonValue)
+            : { enabled: false },
+        },
+      }),
+    ]);
+    return this.admissionNumbering(tenantId);
   }
 
   // ─── Bulk create ─────────────────────────────────────────────────────────────

@@ -13,6 +13,7 @@ import { WorkbookParserService } from './workbook-parser.service';
 import { validateClassesTab } from './validators/classes.validator';
 import { validateUsersTab } from './validators/users.validator';
 import { validateStudentsTab } from './validators/students.validator';
+import { readNumbering, takeAdmissionNo } from '../students/admission-number';
 import { validateFeeStructuresTab } from './validators/fee-structures.validator';
 import { validateTeachersTab } from './validators/teachers.validator';
 import { classKey, normalizedName } from './validators/shared';
@@ -63,8 +64,8 @@ export class ImportsService {
     private readonly importsQueue: Queue<ImportJobQueuePayload>,
   ) {}
 
-  async validate(buffer: Buffer): Promise<ValidationReport> {
-    const { report } = await this.runValidation(buffer);
+  async validate(buffer: Buffer, tenantId?: string): Promise<ValidationReport> {
+    const { report } = await this.runValidation(buffer, tenantId);
     return report;
   }
 
@@ -81,7 +82,7 @@ export class ImportsService {
     buffer: Buffer,
   ): Promise<CommitResult> {
     const { report, classes, users, students, feeStructures, teachers } =
-      await this.runValidation(buffer);
+      await this.runValidation(buffer, tenantId);
 
     if (report.totalErrors > 0) {
       throw new UnprocessableEntityException(report);
@@ -144,7 +145,7 @@ export class ImportsService {
     buffer: Buffer,
   ): Promise<void> {
     const { report, classes, users, students, feeStructures, teachers } =
-      await this.runValidation(buffer);
+      await this.runValidation(buffer, tenantId);
 
     if (report.totalErrors > 0) {
       await this.prisma.importJob.update({
@@ -274,8 +275,22 @@ export class ImportsService {
 
   // ─── Shared parse + validate ─────────────────────────────────────────────────
 
-  private async runValidation(buffer: Buffer): Promise<RunValidationResult> {
+  private async runValidation(
+    buffer: Buffer,
+    tenantId?: string,
+  ): Promise<RunValidationResult> {
     const workbook = await this.parser.parse(buffer);
+    // With admission numbering set up (Settings), a blank number is assigned.
+    const autoNumber = tenantId
+      ? !!readNumbering(
+          (
+            await this.prisma.tenant.findUnique({
+              where: { id: tenantId },
+              select: { admissionNumbering: true },
+            })
+          )?.admissionNumbering,
+        )
+      : false;
 
     const classes = validateClassesTab(workbook.classes);
     const classNames = new Set(
@@ -283,7 +298,11 @@ export class ImportsService {
     );
 
     const users = validateUsersTab(workbook.users, classNames);
-    const students = validateStudentsTab(workbook.students, classes.validRows);
+    const students = validateStudentsTab(
+      workbook.students,
+      classes.validRows,
+      autoNumber,
+    );
     const feeStructures = validateFeeStructuresTab(
       workbook.feeStructures,
       classes.validRows,
@@ -626,11 +645,17 @@ export class ImportsService {
       const classInfo = classKeyToId.get(row.classKey);
       if (!classInfo) continue; // resolved during validation; a miss here would indicate a bug upstream
 
-      const existing = await tx.student.findUnique({
-        where: {
-          tenantId_admissionNo: { tenantId, admissionNo: row.admissionNo },
-        },
-      });
+      // Blank number (automatic numbering on): always a new student.
+      const admissionNo =
+        row.admissionNo || (await takeAdmissionNo(tx, tenantId));
+      if (!admissionNo) continue; // validation refuses blanks without numbering
+      const existing = row.admissionNo
+        ? await tx.student.findUnique({
+            where: {
+              tenantId_admissionNo: { tenantId, admissionNo },
+            },
+          })
+        : null;
 
       let studentId: string;
       if (existing) {
@@ -653,7 +678,7 @@ export class ImportsService {
           data: {
             tenantId,
             name: row.name,
-            admissionNo: row.admissionNo,
+            admissionNo,
             classId: classInfo.id,
             dob: row.dob ? new Date(row.dob) : null,
             bloodGroup: row.bloodGroup ?? null,

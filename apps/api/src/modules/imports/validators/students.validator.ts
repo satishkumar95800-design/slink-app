@@ -42,9 +42,14 @@ function parseGuardianRelation(raw: string): GuardianRelation {
   return (raw ? raw.toLowerCase() : 'guardian') as GuardianRelation;
 }
 
+/**
+ * [autoNumber]: the school has admission numbering (Settings), so a blank
+ * Admission Number is allowed and assigned when the file is imported.
+ */
 export function validateStudentsTab(
   tab: ParsedTab,
   classes: ValidClassRow[],
+  autoNumber = false,
 ): TabValidation<ValidStudentRow> {
   const errors: TabValidation<ValidStudentRow>['errors'] = [];
   const warnings: TabValidation<ValidStudentRow>['warnings'] = [];
@@ -100,7 +105,7 @@ export function validateStudentsTab(
       errors.push(issue(TAB, row.rowNumber, 'Student Name', 'is required'));
       hasError = true;
     }
-    if (!admissionNo) {
+    if (!admissionNo && !autoNumber) {
       errors.push(issue(TAB, row.rowNumber, 'Admission Number', 'is required'));
       hasError = true;
     }
@@ -287,7 +292,7 @@ export function validateStudentsTab(
 
     if (hasError || !classKey) continue;
 
-    if (seenAdmissionNos.has(admissionNo.trim().toLowerCase())) {
+    if (admissionNo && seenAdmissionNos.has(admissionNo.trim().toLowerCase())) {
       errors.push(
         issue(
           TAB,
@@ -298,7 +303,7 @@ export function validateStudentsTab(
       );
       continue;
     }
-    seenAdmissionNos.add(admissionNo.trim().toLowerCase());
+    if (admissionNo) seenAdmissionNos.add(admissionNo.trim().toLowerCase());
 
     if (parentPhone) {
       const rows = parentPhoneRows.get(parentPhone) ?? [];
@@ -309,7 +314,7 @@ export function validateStudentsTab(
     validRows.push({
       row: row.rowNumber,
       name,
-      admissionNo,
+      admissionNo: admissionNo || '',
       rollNo: rollNo || undefined,
       classKey,
       dob: dob || undefined,

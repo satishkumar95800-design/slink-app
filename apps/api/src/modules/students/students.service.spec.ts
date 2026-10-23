@@ -59,8 +59,17 @@ const prismaMock = {
     findUnique: jest.fn(),
     create: jest.fn(),
   },
-  $transaction: jest.fn((args: unknown[]) => Promise.all(args)),
+  tenant: {
+    findUnique: jest.fn(),
+    update: jest.fn(),
+  },
+  $executeRaw: jest.fn(),
+  $transaction: jest.fn((arg: unknown[] | ((tx: unknown) => unknown)) =>
+    // Interactive transactions run against this same mock.
+    typeof arg === 'function' ? arg(txClient) : Promise.all(arg),
+  ),
 };
+const txClient: unknown = prismaMock;
 
 describe('StudentsService', () => {
   let service: StudentsService;
@@ -212,6 +221,29 @@ describe('StudentsService', () => {
       expect(prismaMock.student.create).toHaveBeenCalledTimes(1);
       expect(prismaMock.studentParent.create).not.toHaveBeenCalled();
       expect(result.id).toBe(STUDENT_ID);
+    });
+
+    it("gives a student without a number the school's next admission number", async () => {
+      prismaMock.tenant.findUnique.mockResolvedValue({
+        admissionNumbering: { pattern: 'ADM{N}', digits: 4, next: 41, resetEachYear: false, year: null },
+        timezone: 'Asia/Kolkata',
+      });
+      prismaMock.student.findMany.mockResolvedValue([{ admissionNo: 'ADM0041' }]);
+      await service.create(TENANT, { name: 'Alice', classId: CLASS_ID });
+      expect(prismaMock.student.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ admissionNo: 'ADM0042' }) }),
+      );
+      expect(prismaMock.tenant.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { admissionNumbering: expect.objectContaining({ next: 43 }) } }),
+      );
+    });
+
+    it('needs a number when the school has no numbering', async () => {
+      prismaMock.tenant.findUnique.mockResolvedValue({ admissionNumbering: null, timezone: 'Asia/Kolkata' });
+      await expect(service.create(TENANT, { name: 'Alice', classId: CLASS_ID })).rejects.toMatchObject({
+        response: { code: 'ADMISSION_NO_REQUIRED' },
+      });
+      expect(prismaMock.student.create).not.toHaveBeenCalled();
     });
 
     it('creates a student and links an existing parent by phone', async () => {

@@ -71,10 +71,15 @@ function classLabel(c: Class) {
   return `${c.name}${c.section ? ` ${c.section}` : ''} (${c.academicYear})`;
 }
 
-const makeSchemas = (t: ReturnType<typeof useTranslations<'students'>>, tCommon: ReturnType<typeof useTranslations<'common'>>) => ({
+const makeSchemas = (
+  t: ReturnType<typeof useTranslations<'students'>>,
+  tCommon: ReturnType<typeof useTranslations<'common'>>,
+  /** The school numbers new students itself (Settings), so it may be left blank. */
+  autoNumber = false,
+) => ({
   create: z.object({
     name: z.string().min(1, tCommon('nameRequired')),
-    admissionNo: z.string().min(1, t('admissionRequired')),
+    admissionNo: autoNumber ? z.string().optional() : z.string().min(1, t('admissionRequired')),
     rollNo: z.string().max(20).optional(),
     dob: z.string().optional(),
     bloodGroup: z.enum(BLOOD_GROUP_VALUES).optional(),
@@ -105,7 +110,9 @@ export default function StudentsPage() {
   const tCaste = useTranslations('caste');
   const tRelation = useTranslations('relation');
   const errorText = useErrorText();
-  const schemas = useMemo(() => makeSchemas(t, tCommon), [t, tCommon]);
+  /** The number a student gets when the field is left blank (null: numbers are typed). */
+  const [nextAdmission, setNextAdmission] = useState<string | null>(null);
+  const schemas = useMemo(() => makeSchemas(t, tCommon, !!nextAdmission), [t, tCommon, nextAdmission]);
   const { toast } = useToast();
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
@@ -196,12 +203,18 @@ export default function StudentsPage() {
     // New students default to the class being viewed.
     reset({ classId: classFilter || '' } as Partial<FormData>);
     setShowModal(true);
+    api
+      .get<{ upcoming: string[] }>('/students/admission-numbering')
+      .then((r) => setNextAdmission(r.upcoming[0] ?? null))
+      .catch(() => setNextAdmission(null));
   }
 
   async function onSubmit(data: FormData) {
     try {
       await api.post('/students', {
         ...data,
+        // Blank: the server gives the school's next number.
+        admissionNo: data.admissionNo?.trim() || undefined,
         rollNo: data.rollNo?.trim() || undefined,
         dob: data.dob || undefined,
         bloodGroup: data.bloodGroup || undefined,
@@ -459,7 +472,14 @@ export default function StudentsPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input label={t('fullName')} required error={errors.name?.message} warning={nameCaseWarning(nameValue, tCommon('nameLowercaseWarning'))} {...register('name')} />
-            <Input label={t('admissionNo')} required error={errors.admissionNo?.message} {...register('admissionNo')} />
+            <Input
+              label={t('admissionNo')}
+              required={!nextAdmission}
+              placeholder={nextAdmission ?? undefined}
+              helpText={nextAdmission ? t('admissionAuto', { next: nextAdmission }) : undefined}
+              error={errors.admissionNo?.message}
+              {...register('admissionNo')}
+            />
             <Input label={t('rollNo')} placeholder={t('rollNoPlaceholder')} error={errors.rollNo?.message} {...register('rollNo')} />
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

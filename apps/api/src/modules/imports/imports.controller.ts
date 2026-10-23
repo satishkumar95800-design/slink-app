@@ -58,8 +58,11 @@ export class ImportsController {
    */
   @Post('validate')
   @UseInterceptors(uploadInterceptor)
-  async validate(@UploadedFile() file: Express.Multer.File) {
-    return this.importsService.validate(this.requireXlsx(file));
+  async validate(
+    @UploadedFile() file: Express.Multer.File,
+    @TenantId() tenantId: string,
+  ) {
+    return this.importsService.validate(this.requireXlsx(file), tenantId);
   }
 
   /**

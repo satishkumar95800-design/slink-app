@@ -1,6 +1,6 @@
 'use client';
 
-import { BellRing, CalendarHeart, CalendarOff, Globe, ImageIcon, ListPlus } from 'lucide-react';
+import { BellRing, CalendarHeart, CalendarOff, Globe, Hash, ImageIcon, ListPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, apiUpload } from '../../../lib/api-client';
@@ -13,6 +13,7 @@ import { Button } from '../../../components/ui/button';
 import { useToast } from '../../../components/ui/toast';
 import { getSession } from '../../../lib/auth';
 import { useTenantFeaturesState } from '../../../lib/tenant-features';
+import { AdmissionNumbering, AdmissionNumberingSection } from './admission-numbering-section';
 import { BellSchedulesSection } from './bell-schedules';
 import { CustomFieldsSection, FieldDefinition } from './custom-fields-section';
 import { EventsSection } from './events-section';
@@ -31,8 +32,8 @@ interface UploadResult {
   publicUrl: string | null;
 }
 
-type SectionId = 'language' | 'branding' | 'fields' | 'holidays' | 'events' | 'bells';
-const SECTION_IDS: SectionId[] = ['language', 'branding', 'fields', 'holidays', 'events', 'bells'];
+type SectionId = 'language' | 'branding' | 'admissionNo' | 'fields' | 'holidays' | 'events' | 'bells';
+const SECTION_IDS: SectionId[] = ['language', 'branding', 'admissionNo', 'fields', 'holidays', 'events', 'bells'];
 
 /** What the collapsed rows show; filled by small fetches when the page opens. */
 interface Summaries {
@@ -70,6 +71,7 @@ export default function SettingsPage() {
   const [tenant, setTenant] = useState<TenantSelf | null>(null);
   const [open, setOpen] = useState<Set<SectionId>>(new Set());
   const [summaries, setSummaries] = useState<Summaries>({});
+  const [numbering, setNumbering] = useState<AdmissionNumbering | null>(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of the URL hash after hydration
@@ -115,6 +117,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!loaded || !isAdmin) return;
+    api.get<AdmissionNumbering>('/students/admission-numbering').then(setNumbering).catch(() => {});
     loadFields();
     loadHolidays();
     if (calendar) loadEvents();
@@ -206,6 +209,16 @@ export default function SettingsPage() {
 
       {isAdmin && (
         <SettingsGroup title={t('groupStudents')}>
+          <SettingsSection
+            {...section('admissionNo')}
+            icon={<Hash className="h-5 w-5" />}
+            accent="bg-amber-50 text-amber-700"
+            title={t('admissionNumbers')}
+            summary={numbering ? (numbering.numbering ? t('summaryAdmissionNext', { next: numbering.upcoming[0] ?? '' }) : t('summaryAdmissionManual')) : null}
+            help={t('admissionNumbersHelp')}
+          >
+            <AdmissionNumberingSection data={numbering} onSaved={setNumbering} />
+          </SettingsSection>
           <SettingsSection
             {...section('fields')}
             icon={<ListPlus className="h-5 w-5" />}

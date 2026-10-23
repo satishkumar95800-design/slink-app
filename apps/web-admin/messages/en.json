@@ -164,7 +164,14 @@
     "ALREADY_VOID": "This receipt is already void.",
     "DOCUMENT_UNKNOWN": "Unknown document.",
     "IMPORT_CHANGED": "Bus routes changed while importing. Check the file again.",
-    "FORM_NOT_FOUND": "This form has been removed."
+    "FORM_NOT_FOUND": "This form has been removed.",
+    "ADMISSION_NO_REQUIRED": "Enter an admission number, or switch on automatic numbering in Settings.",
+    "ADMISSION_NUMBERS_USED_UP": "No free admission number found. Check the numbering in Settings.",
+    "RESET_NEEDS_YEAR": "Add the year or the academic year to the format to restart each year.",
+    "PATTERN_LENGTH": "Enter a format of up to 30 characters",
+    "PATTERN_NEEDS_N": "The format needs the running number exactly once",
+    "PATTERN_UNKNOWN_TOKEN": "Only the buttons below can be used inside curly brackets",
+    "PATTERN_CHARACTERS": "Use letters, digits, spaces and / - . _ only"
   },
   "language": {
     "label": "Language",
@@ -447,7 +454,8 @@
     "classFilter": "Class",
     "allClasses": "All classes",
     "classOption": "{name} · {count, plural, =1 {1 student} other {# students}}",
-    "colParent": "Parent"
+    "colParent": "Parent",
+    "admissionAuto": "Leave blank to give the next number: {next}"
   },
   "noteType": {
     "note": "Note",
@@ -875,7 +883,11 @@
     "summaryConsentsOpen": "{count, plural, =1 {1 consent form open} other {# consent forms open}}",
     "summaryPeriodsNone": "Period times not set yet",
     "summaryPeriods": "{count, plural, =1 {1 period a day} other {# periods a day}}",
-    "summaryClassTimes": "{count, plural, =1 {1 class group with its own times} other {# class groups with their own times}}"
+    "summaryClassTimes": "{count, plural, =1 {1 class group with its own times} other {# class groups with their own times}}",
+    "admissionNumbers": "Admission numbers",
+    "admissionNumbersHelp": "The format of new admission numbers and where they start.",
+    "summaryAdmissionNext": "Automatic · next {next}",
+    "summaryAdmissionManual": "Typed by hand"
   },
   "holidays": {
     "sectionTitle": "School holidays",
@@ -2675,6 +2687,38 @@
       "ACCESSION_TOO_LONG": "Accession number \"{value}\" is longer than 30 characters",
       "ACCESSION_REPEATED": "Accession number {value} is in the file twice",
       "ACCESSION_TAKEN": "Accession number {value} is already in the library"
+    }
+  },
+  "admissionNumbering": {
+    "enable": "Give new students an admission number automatically",
+    "enableHelp": "When adding a student or importing from Excel, leave the admission number blank and Schoolinkd gives the next one. A number can still be typed by hand.",
+    "pattern": "Format",
+    "token": {
+      "N": "running number",
+      "YYYY": "year {year}",
+      "YY": "short year {short}",
+      "AY": "academic year {ay}"
+    },
+    "presets": "Examples:",
+    "digits": "Digits in the number",
+    "digitsNone": "As it is (7, 8 … 125)",
+    "digitsOption": "{count} digits ({example})",
+    "next": "Next number",
+    "nextHelp": "The number the next student gets. If the school already has numbers, start after the last one.",
+    "latest": "Latest in use: {numbers}. Start after these.",
+    "nextInvalid": "Enter a whole number from 1",
+    "reset": "Start again at 1 every year",
+    "resetHelp": "When the year in the format changes (on 1 June for the academic year), the number restarts at 1.",
+    "resetNeedsYear": "Add the year or the academic year to the format to restart each year.",
+    "preview": "Next admission numbers",
+    "previewHelp": "A number already used by a student is skipped.",
+    "save": "Save",
+    "saved": "Admission numbering saved",
+    "errors": {
+      "PATTERN_LENGTH": "Enter a format of up to 30 characters",
+      "PATTERN_NEEDS_N": "The format needs the running number exactly once",
+      "PATTERN_UNKNOWN_TOKEN": "Only the buttons below can be used inside curly brackets",
+      "PATTERN_CHARACTERS": "Use letters, digits, spaces and / - . _ only"
     }
   }
 }

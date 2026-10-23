@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
@@ -18,6 +19,7 @@ import { UpdateStudentDto } from './dto/update-student.dto';
 import { LinkParentDto } from './dto/link-parent.dto';
 import { StudentQueryDto } from './dto/student-query.dto';
 import { BulkCreateStudentsDto } from './dto/bulk-create-students.dto';
+import { AdmissionNumberingDto } from './dto/admission-numbering.dto';
 import { SetCustomFieldValuesDto } from '../custom-fields/dto/set-custom-field-values.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -46,8 +48,28 @@ export class StudentsController {
   /** Convenience endpoint for parents to get their own children without query params. */
   @Roles(Role.parent)
   @Get('me')
-  findMyChildren(@TenantId() tenantId: string, @CurrentUser() user: ActiveUser) {
+  findMyChildren(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+  ) {
     return this.studentsService.findMyChildren(tenantId, user.id);
+  }
+
+  /** The school's admission numbering, the next numbers and the latest used. */
+  @Roles(Role.admin, Role.accounts, Role.super_admin)
+  @Get('admission-numbering')
+  admissionNumbering(@TenantId() tenantId: string) {
+    return this.studentsService.admissionNumbering(tenantId);
+  }
+
+  @Roles(Role.admin, Role.super_admin)
+  @Put('admission-numbering')
+  saveAdmissionNumbering(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @Body() dto: AdmissionNumberingDto,
+  ) {
+    return this.studentsService.saveAdmissionNumbering(tenantId, user.id, dto);
   }
 
   @Get(':id')
@@ -84,7 +106,10 @@ export class StudentsController {
   @Roles(Role.admin, Role.super_admin)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@TenantId() tenantId: string, @Param('id', ParseUUIDPipe) id: string) {
+  async remove(
+    @TenantId() tenantId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     await this.studentsService.remove(tenantId, id);
   }
 

@@ -79,7 +79,7 @@ pnpm db:generate   # regenerates the Prisma client
 | tenants | done | Tenant CRUD, branding, feature flags, super_admin + admin self-management |
 | auth | done | Phone OTP via Firebase, JWT issue/refresh/revoke. Parent mode: a teacher/admin/accounts user linked as a parent (`student_parents`) sends `X-Act-As: parent` and `JwtStrategy` runs the request with the parent role (own children only); anyone else gets 403 `NO_CHILDREN`. Login and `/auth/me` return `hasChildren`; the mobile home shows a Staff \| Parent switch. The mobile sign-in takes a country code (India default) |
 | users | done | User profiles |
-| students | done | Student records, parent linkage |
+| students | done | Student records, parent linkage. Admission numbering (`admission-number.ts`, `tenants.admission_numbering`, Settings → Admission numbers, `GET|PUT /students/admission-numbering`): pattern with `{N}` and optional `{YYYY}`/`{YY}`/`{AY}` (academic year from 1 June), padding, next number (set after the school's existing ones) and optional yearly restart. A student created, or an onboarding-import row, with a blank admission number gets the next free one (`takeAdmissionNo`, per-school advisory lock, numbers already used are skipped); without a rule the number stays required (`ADMISSION_NO_REQUIRED`) |
 | fees | done | Fee structures, student fee assignments, offline payments, adjustments |
 | payments | done | Razorpay gateway, webhook handler, idempotency |
 | reports | done | Teacher → student → parent progress reports, read receipts |
