@@ -58,3 +58,115 @@ class ChildBusInfo {
         bus: json['bus'] is Map<String, dynamic> ? ChildBus.fromJson(json['bus'] as Map<String, dynamic>) : null,
       );
 }
+
+/// The bus's latest GPS fix.
+class BusPosition {
+  final double lat;
+  final double lng;
+  final double? speed;
+  final double? heading;
+  final DateTime at;
+
+  const BusPosition({required this.lat, required this.lng, this.speed, this.heading, required this.at});
+
+  static BusPosition? fromJson(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    return BusPosition(
+      lat: (json['lat'] as num).toDouble(),
+      lng: (json['lng'] as num).toDouble(),
+      speed: (json['speed'] as num?)?.toDouble(),
+      heading: (json['heading'] as num?)?.toDouble(),
+      at: DateTime.parse(json['at'] as String).toLocal(),
+    );
+  }
+}
+
+/// A trip a driver is running: [stale] when no fix came for a few minutes.
+class LiveTrip {
+  final String id;
+  final String direction;
+  final DateTime startedAt;
+  final bool stale;
+  final BusPosition? position;
+  final String? routeId;
+
+  const LiveTrip({required this.id, required this.direction, required this.startedAt, required this.stale, this.position, this.routeId});
+
+  bool get isPickup => direction == 'pickup';
+
+  static LiveTrip? fromJson(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    return LiveTrip(
+      id: json['id'] as String,
+      direction: json['direction'] as String,
+      startedAt: DateTime.parse(json['startedAt'] as String).toLocal(),
+      stale: json['state'] == 'stale',
+      position: BusPosition.fromJson(json['position']),
+      routeId: json['routeId'] as String?,
+    );
+  }
+}
+
+/// GET /transport/child/:studentId/live.
+class ChildBusLive {
+  final ChildBus? bus;
+  final LiveTrip? trip;
+
+  const ChildBusLive({this.bus, this.trip});
+
+  factory ChildBusLive.fromJson(Map<String, dynamic> json) => ChildBusLive(
+        bus: json['bus'] is Map<String, dynamic> ? ChildBus.fromJson(json['bus'] as Map<String, dynamic>) : null,
+        trip: LiveTrip.fromJson(json['trip']),
+      );
+}
+
+/// One route on GET /transport/live (admin).
+class LiveRoute {
+  final String id;
+  final String name;
+  final String? vehicleNumber;
+  final BusContact? driver;
+  final LiveTrip? trip;
+
+  const LiveRoute({required this.id, required this.name, this.vehicleNumber, this.driver, this.trip});
+
+  factory LiveRoute.fromJson(Map<String, dynamic> json) => LiveRoute(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        vehicleNumber: json['vehicleNumber'] as String?,
+        driver: BusContact.fromJson(json['driver']),
+        trip: LiveTrip.fromJson(json['trip']),
+      );
+}
+
+/// A route the signed-in driver drives.
+class DriverRoute {
+  final String id;
+  final String name;
+  final String? vehicleNumber;
+  final List<BusStop> stops;
+  final int studentCount;
+
+  const DriverRoute({required this.id, required this.name, this.vehicleNumber, required this.stops, required this.studentCount});
+
+  factory DriverRoute.fromJson(Map<String, dynamic> json) => DriverRoute(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        vehicleNumber: json['vehicleNumber'] as String?,
+        stops: [for (final s in json['stops'] as List) BusStop.fromJson(s)!],
+        studentCount: json['studentCount'] as int,
+      );
+}
+
+/// GET /transport/driver/me.
+class DriverHome {
+  final List<DriverRoute> routes;
+  final LiveTrip? trip;
+
+  const DriverHome({required this.routes, this.trip});
+
+  factory DriverHome.fromJson(Map<String, dynamic> json) => DriverHome(
+        routes: [for (final r in json['routes'] as List) DriverRoute.fromJson(r as Map<String, dynamic>)],
+        trip: LiveTrip.fromJson(json['trip']),
+      );
+}

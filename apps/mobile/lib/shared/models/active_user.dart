@@ -1,20 +1,22 @@
-enum UserRole { parent, teacher, admin, accounts, superAdmin }
+enum UserRole { parent, teacher, admin, accounts, superAdmin, driver, librarian, receptionist }
+
+/// The API's name for each role (also what the session stores).
+const _wire = {
+  UserRole.parent: 'parent',
+  UserRole.teacher: 'teacher',
+  UserRole.admin: 'admin',
+  UserRole.accounts: 'accounts',
+  UserRole.superAdmin: 'super_admin',
+  UserRole.driver: 'driver',
+  UserRole.librarian: 'librarian',
+  UserRole.receptionist: 'receptionist',
+};
 
 UserRole _parseRole(String raw) {
-  switch (raw) {
-    case 'parent':
-      return UserRole.parent;
-    case 'teacher':
-      return UserRole.teacher;
-    case 'admin':
-      return UserRole.admin;
-    case 'accounts':
-      return UserRole.accounts;
-    case 'super_admin':
-      return UserRole.superAdmin;
-    default:
-      throw ArgumentError('Unknown role: $raw');
+  for (final e in _wire.entries) {
+    if (e.value == raw || e.key.name == raw) return e.key;
   }
+  throw ArgumentError('Unknown role: $raw');
 }
 
 class ActiveUser {
@@ -66,7 +68,7 @@ class ActiveUser {
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
-        'role': role.name,
+        'role': _wire[role],
         'tenantId': tenantId,
         'preferredLanguage': preferredLanguage,
         'language': language,

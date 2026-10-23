@@ -1877,4 +1877,314 @@ class AppLocalizationsHi extends AppLocalizations {
   @override
   String get authInvalidMobileIntl =>
       'इस देश के लिए सही मोबाइल नंबर दर्ज करें।';
+
+  @override
+  String get roleDriver => 'बस चालक';
+
+  @override
+  String get roleLibrarian => 'पुस्तकालयाध्यक्ष';
+
+  @override
+  String get roleReceptionist => 'रिसेप्शनिस्ट';
+
+  @override
+  String get consoleOnlyMessage =>
+      'आपका काम schoolinkd.in स्कूल कंसोल में है। वहाँ अपने ईमेल और पासवर्ड से साइन इन करें।';
+
+  @override
+  String get adminAttendanceToday => 'आज की उपस्थिति';
+
+  @override
+  String adminPresentPercent(int percent) {
+    return '$percent% उपस्थित';
+  }
+
+  @override
+  String get adminNotMarkedYet => 'अभी दर्ज नहीं';
+
+  @override
+  String get adminAbsent => 'अनुपस्थित';
+
+  @override
+  String adminMarkedOf(int marked, int total) {
+    return '$total में से $marked छात्र दर्ज';
+  }
+
+  @override
+  String adminClassesNotMarked(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count कक्षाएँ अभी दर्ज नहीं',
+      one: '1 कक्षा अभी दर्ज नहीं',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String adminHolidayToday(String name) {
+    return 'आज छुट्टी: $name';
+  }
+
+  @override
+  String get adminCollectedToday => 'आज वसूली गई फ़ीस';
+
+  @override
+  String adminReceiptsAndMonth(int count, String month) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count रसीदें',
+      one: '1 रसीद',
+    );
+    return '$_temp0 · इस महीने $month';
+  }
+
+  @override
+  String get adminWaitingTitle => 'आपका इंतज़ार';
+
+  @override
+  String get adminNothingWaiting => 'आपकी मंज़ूरी के लिए कुछ बाकी नहीं है।';
+
+  @override
+  String get adminWaitingClaims => 'जाँचने के लिए भुगतान प्रमाण';
+
+  @override
+  String get adminWaitingLeave => 'छुट्टी के अनुरोध';
+
+  @override
+  String get adminWaitingPettyCash => 'पेटी कैश प्रविष्टियाँ';
+
+  @override
+  String get adminApproveInConsole => 'इन्हें कंसोल में मंज़ूर करें।';
+
+  @override
+  String get adminStaffOnLeave => 'छुट्टी पर कर्मचारी';
+
+  @override
+  String get adminNewEnquiries => 'इस सप्ताह नई पूछताछ';
+
+  @override
+  String get adminFollowUpsDue => 'बाकी प्रवेश फ़ॉलो-अप';
+
+  @override
+  String get adminAlerts => 'शुरुआती चेतावनियाँ';
+
+  @override
+  String get adminBusesMoving => 'यात्रा पर बसें';
+
+  @override
+  String adminBusesValue(int moving, int total) {
+    return '$total में से $moving';
+  }
+
+  @override
+  String get adminLibraryOverdue => 'देर वाली पुस्तकालय किताबें';
+
+  @override
+  String get adminLiveBuses => 'लाइव बसें';
+
+  @override
+  String get adminConsoleHint =>
+      'विवरण और मंज़ूरी के लिए schoolinkd.in कंसोल खोलें।';
+
+  @override
+  String get busTrackLive => 'बस को लाइव देखें';
+
+  @override
+  String get busLiveTitle => 'नक्शे पर बस';
+
+  @override
+  String get busLiveNoRoute => 'आपका बच्चा किसी बस रूट पर नहीं है।';
+
+  @override
+  String get busLiveNotRunning =>
+      'बस अभी यात्रा पर नहीं है। चालक के यात्रा शुरू करने पर यहाँ दिखेगी।';
+
+  @override
+  String get busLiveNotRunningShort => 'यात्रा पर नहीं';
+
+  @override
+  String get busLiveWaitingGps =>
+      'यात्रा शुरू हो गई है। बस की लोकेशन का इंतज़ार…';
+
+  @override
+  String get busLiveWaitingGpsShort => 'लोकेशन का इंतज़ार';
+
+  @override
+  String get busLiveNoSignal => 'सिग्नल नहीं';
+
+  @override
+  String get busLiveOnWayPickup => 'पिक-अप के लिए आ रही है';
+
+  @override
+  String get busLiveOnWayDrop => 'ड्रॉप के लिए जा रही है';
+
+  @override
+  String busLiveStop(String stop, String time) {
+    return 'स्टॉप: $stop · $time';
+  }
+
+  @override
+  String busUpdatedSeconds(int seconds) {
+    String _temp0 = intl.Intl.pluralLogic(
+      seconds,
+      locale: localeName,
+      other: '$seconds सेकंड पहले अपडेट',
+      one: '1 सेकंड पहले अपडेट',
+      zero: 'अभी अपडेट हुआ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String busUpdatedMinutes(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes मिनट पहले अपडेट',
+      one: '1 मिनट पहले अपडेट',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String busUpdatedAt(String time) {
+    return '$time पर अपडेट';
+  }
+
+  @override
+  String busCallDriver(String name) {
+    return '$name को कॉल करें';
+  }
+
+  @override
+  String get busNoneMoving => 'अभी कोई बस यात्रा पर नहीं है।';
+
+  @override
+  String get busMoving => 'चल रही है';
+
+  @override
+  String get busTripPickup => 'सुबह पिक-अप';
+
+  @override
+  String get busTripDrop => 'दोपहर ड्रॉप';
+
+  @override
+  String get driverNoRoutes =>
+      'आपको अभी कोई बस रूट नहीं दिया गया है। स्कूल कार्यालय से पूछें।';
+
+  @override
+  String driverStopsAndChildren(int stops, int children) {
+    String _temp0 = intl.Intl.pluralLogic(
+      stops,
+      locale: localeName,
+      other: '$stops स्टॉप',
+      one: '1 स्टॉप',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      children,
+      locale: localeName,
+      other: '$children बच्चे',
+      one: '1 बच्चा',
+    );
+    return '$_temp0 · $_temp1';
+  }
+
+  @override
+  String driverFirstStop(String stop, String time) {
+    return 'पहला स्टॉप: $stop · $time';
+  }
+
+  @override
+  String get driverStartPickup => 'सुबह का पिक-अप शुरू करें';
+
+  @override
+  String get driverStartDrop => 'दोपहर का ड्रॉप शुरू करें';
+
+  @override
+  String get driverSharingNow => 'बस की लोकेशन साझा हो रही है';
+
+  @override
+  String get driverWaitingGps => 'GPS का इंतज़ार…';
+
+  @override
+  String driverLastSent(String time) {
+    return 'आखिरी बार भेजा $time';
+  }
+
+  @override
+  String get driverEndTrip => 'यात्रा समाप्त करें';
+
+  @override
+  String get driverEndTripTitle => 'यह यात्रा समाप्त करें?';
+
+  @override
+  String get driverEndTripBody =>
+      'अभिभावकों को नक्शे पर बस दिखना बंद हो जाएगा।';
+
+  @override
+  String get driverTip =>
+      'यात्रा के दौरान ऐप चालू रखें। फ़ोन लॉक कर सकते हैं; ऐप बंद न करें।';
+
+  @override
+  String get driverSharingTitle => 'बस यात्रा चल रही है';
+
+  @override
+  String get driverSharingText => 'अभिभावक बस को नक्शे पर देख सकते हैं।';
+
+  @override
+  String get driverLocationOff =>
+      'इस फ़ोन में लोकेशन बंद है। बस साझा करने के लिए इसे चालू करें।';
+
+  @override
+  String get driverLocationDenied =>
+      'अभिभावक बस देख सकें, इसके लिए लोकेशन की अनुमति दें।';
+
+  @override
+  String get driverLocationBlocked =>
+      'इस ऐप के लिए लोकेशन बंद है। सेटिंग्स में अनुमति दें।';
+
+  @override
+  String get driverOpenSettings => 'सेटिंग्स खोलें';
+
+  @override
+  String get libraryTitle => 'पुस्तकालय';
+
+  @override
+  String get libraryWithChild => 'आपके बच्चे के पास किताबें';
+
+  @override
+  String get libraryNoneOut => 'अभी घर पर कोई पुस्तकालय किताब नहीं है।';
+
+  @override
+  String get libraryNothingBorrowed =>
+      'आपके बच्चे ने अभी तक कोई पुस्तकालय किताब नहीं ली है।';
+
+  @override
+  String libraryReturnBy(String date) {
+    return '$date तक लौटाएँ';
+  }
+
+  @override
+  String libraryOverdueBy(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days दिन देर',
+      one: '1 दिन देर',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get libraryRecentlyReturned => 'हाल में लौटाई गईं';
+
+  @override
+  String libraryFineDue(String amount) {
+    return 'जुर्माना $amount';
+  }
+
+  @override
+  String get mapAttribution => '© OpenStreetMap contributors';
 }

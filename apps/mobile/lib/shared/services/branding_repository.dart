@@ -59,3 +59,13 @@ final syllabusEnabledProvider = Provider<bool>((ref) {
 final schoolBusEnabledProvider = Provider<bool>((ref) {
   return ref.watch(brandingProvider).valueOrNull?.transportEnabled ?? false;
 });
+
+/// Whether parents can follow the bus live and drivers share GPS (Premium Max).
+final busTrackingEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(brandingProvider).valueOrNull?.busTrackingEnabled ?? false;
+});
+
+/// Whether the school has the library (Premium Max).
+final libraryEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(brandingProvider).valueOrNull?.libraryEnabled ?? false;
+});

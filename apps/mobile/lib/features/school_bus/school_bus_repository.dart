@@ -13,6 +13,37 @@ class SchoolBusRepository {
     final r = await _dio.get<Map<String, dynamic>>('/transport/child/$studentId');
     return ChildBusInfo.fromJson(r.data!);
   }
+
+  /// The child's bus while a trip runs (Premium Max, busTracking).
+  Future<ChildBusLive> childLive(String studentId) async {
+    final r = await _dio.get<Map<String, dynamic>>('/transport/child/$studentId/live');
+    return ChildBusLive.fromJson(r.data!);
+  }
+
+  /// Admin: every route with its running trip.
+  Future<List<LiveRoute>> live() async {
+    final r = await _dio.get<List<dynamic>>('/transport/live');
+    return [for (final x in r.data!) LiveRoute.fromJson(x as Map<String, dynamic>)];
+  }
+
+  // ── Driver ──
+  Future<DriverHome> driverHome() async {
+    final r = await _dio.get<Map<String, dynamic>>('/transport/driver/me');
+    return DriverHome.fromJson(r.data!);
+  }
+
+  Future<LiveTrip> startTrip(String routeId, String direction) async {
+    final r = await _dio.post<Map<String, dynamic>>('/transport/driver/trips', data: {'routeId': routeId, 'direction': direction});
+    return LiveTrip.fromJson(r.data!)!;
+  }
+
+  Future<void> sendPosition(String tripId, Map<String, dynamic> fix) async {
+    await _dio.post<void>('/transport/driver/trips/$tripId/position', data: fix);
+  }
+
+  Future<void> endTrip(String tripId) async {
+    await _dio.post<void>('/transport/driver/trips/$tripId/end');
+  }
 }
 
 final schoolBusRepositoryProvider = Provider<SchoolBusRepository>((ref) => SchoolBusRepository(ref.watch(apiClientProvider)));

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/l10n/l10n.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/models/api_exception.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
+import '../../shared/services/branding_repository.dart';
 import '../../shared/widgets/ui_kit.dart';
 import 'school_bus_models.dart';
 import 'school_bus_repository.dart';
@@ -43,6 +45,15 @@ class ChildBusPage extends ConsumerWidget {
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                if (ref.watch(busTrackingEnabledProvider)) ...[
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+                    onPressed: () => context.push('/school-bus/live/$studentId'),
+                    icon: const Icon(Icons.near_me_rounded),
+                    label: Text(l.busTrackLive),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 _RouteCard(bus: bus),
                 const SizedBox(height: 12),
                 _StopCard(stop: bus.stop),

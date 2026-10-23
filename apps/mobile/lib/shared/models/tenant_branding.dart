@@ -33,6 +33,12 @@ class TenantBranding {
   /// Plan module (Premium and Premium Max): school bus routes.
   bool get transportEnabled => features['transport'] == true;
 
+  /// Premium Max: live bus GPS from the driver's phone (on top of transport).
+  bool get busTrackingEnabled => transportEnabled && features['busTracking'] == true;
+
+  /// Premium Max: library (parents see their child's borrowed books).
+  bool get libraryEnabled => features['library'] == true;
+
   factory TenantBranding.fromJson(Map<String, dynamic> json) => TenantBranding(
         id: json['id'] as String,
         name: json['name'] as String,

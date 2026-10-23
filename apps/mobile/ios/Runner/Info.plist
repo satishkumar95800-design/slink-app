@@ -43,7 +43,13 @@
 		<key>NSCameraUsageDescription</key>
 		<string>Used to take a photo when sending homework to a class.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>Your location may be used by our payment provider to help verify transactions and prevent fraud when you pay school fees.</string>
+		<string>School bus drivers share the bus's location with parents while a trip is running. Your location may also be used by our payment provider to help prevent fraud when you pay school fees.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>School bus drivers keep sharing the bus's location with parents while a trip is running, even with the screen off. Sharing stops when the driver ends the trip.</string>
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>location</string>
+		</array>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>Used to attach a photo from your library as proof of payment or when sending homework to a class.</string>
 		<key>UIApplicationSceneManifest</key>

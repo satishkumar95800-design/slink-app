@@ -118,5 +118,8 @@ class ProfilePage extends ConsumerWidget {
         UserRole.admin => l.roleAdmin,
         UserRole.accounts => l.roleAccounts,
         UserRole.superAdmin => l.roleSuperAdmin,
+        UserRole.driver => l.roleDriver,
+        UserRole.librarian => l.roleLibrarian,
+        UserRole.receptionist => l.roleReceptionist,
       };
 }

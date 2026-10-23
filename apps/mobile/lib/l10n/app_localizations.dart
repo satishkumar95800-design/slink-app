@@ -3191,6 +3191,450 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter a valid mobile number for this country.'**
   String get authInvalidMobileIntl;
+
+  /// No description provided for @roleDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus driver'**
+  String get roleDriver;
+
+  /// No description provided for @roleLibrarian.
+  ///
+  /// In en, this message translates to:
+  /// **'Librarian'**
+  String get roleLibrarian;
+
+  /// No description provided for @roleReceptionist.
+  ///
+  /// In en, this message translates to:
+  /// **'Receptionist'**
+  String get roleReceptionist;
+
+  /// No description provided for @consoleOnlyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your work is in the school console at schoolinkd.in. Sign in there with your email and password.'**
+  String get consoleOnlyMessage;
+
+  /// No description provided for @adminAttendanceToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance today'**
+  String get adminAttendanceToday;
+
+  /// No description provided for @adminPresentPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% present'**
+  String adminPresentPercent(int percent);
+
+  /// No description provided for @adminNotMarkedYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not marked yet'**
+  String get adminNotMarkedYet;
+
+  /// No description provided for @adminAbsent.
+  ///
+  /// In en, this message translates to:
+  /// **'absent'**
+  String get adminAbsent;
+
+  /// No description provided for @adminMarkedOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{marked} of {total} students marked'**
+  String adminMarkedOf(int marked, int total);
+
+  /// No description provided for @adminClassesNotMarked.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 class not marked yet} other{{count} classes not marked yet}}'**
+  String adminClassesNotMarked(int count);
+
+  /// No description provided for @adminHolidayToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Holiday today: {name}'**
+  String adminHolidayToday(String name);
+
+  /// No description provided for @adminCollectedToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Fees collected today'**
+  String get adminCollectedToday;
+
+  /// No description provided for @adminReceiptsAndMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 receipt} other{{count} receipts}} · this month {month}'**
+  String adminReceiptsAndMonth(int count, String month);
+
+  /// No description provided for @adminWaitingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for you'**
+  String get adminWaitingTitle;
+
+  /// No description provided for @adminNothingWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is waiting for your approval.'**
+  String get adminNothingWaiting;
+
+  /// No description provided for @adminWaitingClaims.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment proofs to check'**
+  String get adminWaitingClaims;
+
+  /// No description provided for @adminWaitingLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave requests'**
+  String get adminWaitingLeave;
+
+  /// No description provided for @adminWaitingPettyCash.
+  ///
+  /// In en, this message translates to:
+  /// **'Petty cash entries'**
+  String get adminWaitingPettyCash;
+
+  /// No description provided for @adminApproveInConsole.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve these in the console.'**
+  String get adminApproveInConsole;
+
+  /// No description provided for @adminStaffOnLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff on leave'**
+  String get adminStaffOnLeave;
+
+  /// No description provided for @adminNewEnquiries.
+  ///
+  /// In en, this message translates to:
+  /// **'New enquiries this week'**
+  String get adminNewEnquiries;
+
+  /// No description provided for @adminFollowUpsDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission follow-ups due'**
+  String get adminFollowUpsDue;
+
+  /// No description provided for @adminAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Early warnings'**
+  String get adminAlerts;
+
+  /// No description provided for @adminBusesMoving.
+  ///
+  /// In en, this message translates to:
+  /// **'Buses on a trip'**
+  String get adminBusesMoving;
+
+  /// No description provided for @adminBusesValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{moving} of {total}'**
+  String adminBusesValue(int moving, int total);
+
+  /// No description provided for @adminLibraryOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Library books overdue'**
+  String get adminLibraryOverdue;
+
+  /// No description provided for @adminLiveBuses.
+  ///
+  /// In en, this message translates to:
+  /// **'Live buses'**
+  String get adminLiveBuses;
+
+  /// No description provided for @adminConsoleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'For details and approvals, open the console at schoolinkd.in.'**
+  String get adminConsoleHint;
+
+  /// No description provided for @busTrackLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Track the bus live'**
+  String get busTrackLive;
+
+  /// No description provided for @busLiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus on the map'**
+  String get busLiveTitle;
+
+  /// No description provided for @busLiveNoRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Your child is not on a bus route.'**
+  String get busLiveNoRoute;
+
+  /// No description provided for @busLiveNotRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'The bus is not on a trip right now. It shows here when the driver starts the trip.'**
+  String get busLiveNotRunning;
+
+  /// No description provided for @busLiveNotRunningShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Not on a trip'**
+  String get busLiveNotRunningShort;
+
+  /// No description provided for @busLiveWaitingGps.
+  ///
+  /// In en, this message translates to:
+  /// **'The trip has started. Waiting for the bus\'s location…'**
+  String get busLiveWaitingGps;
+
+  /// No description provided for @busLiveWaitingGpsShort.
+  ///
+  /// In en, this message translates to:
+  /// **'waiting for location'**
+  String get busLiveWaitingGpsShort;
+
+  /// No description provided for @busLiveNoSignal.
+  ///
+  /// In en, this message translates to:
+  /// **'No signal'**
+  String get busLiveNoSignal;
+
+  /// No description provided for @busLiveOnWayPickup.
+  ///
+  /// In en, this message translates to:
+  /// **'On the way to pick up'**
+  String get busLiveOnWayPickup;
+
+  /// No description provided for @busLiveOnWayDrop.
+  ///
+  /// In en, this message translates to:
+  /// **'On the way to drop'**
+  String get busLiveOnWayDrop;
+
+  /// No description provided for @busLiveStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop: {stop} · {time}'**
+  String busLiveStop(String stop, String time);
+
+  /// No description provided for @busUpdatedSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds, plural, =0{updated just now} =1{updated 1 second ago} other{updated {seconds} seconds ago}}'**
+  String busUpdatedSeconds(int seconds);
+
+  /// No description provided for @busUpdatedMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =1{updated 1 minute ago} other{updated {minutes} minutes ago}}'**
+  String busUpdatedMinutes(int minutes);
+
+  /// No description provided for @busUpdatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'updated at {time}'**
+  String busUpdatedAt(String time);
+
+  /// No description provided for @busCallDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'Call {name}'**
+  String busCallDriver(String name);
+
+  /// No description provided for @busNoneMoving.
+  ///
+  /// In en, this message translates to:
+  /// **'No bus is on a trip right now.'**
+  String get busNoneMoving;
+
+  /// No description provided for @busMoving.
+  ///
+  /// In en, this message translates to:
+  /// **'Moving'**
+  String get busMoving;
+
+  /// No description provided for @busTripPickup.
+  ///
+  /// In en, this message translates to:
+  /// **'Morning pick-up'**
+  String get busTripPickup;
+
+  /// No description provided for @busTripDrop.
+  ///
+  /// In en, this message translates to:
+  /// **'Afternoon drop'**
+  String get busTripDrop;
+
+  /// No description provided for @driverNoRoutes.
+  ///
+  /// In en, this message translates to:
+  /// **'No bus route is assigned to you yet. Ask the school office.'**
+  String get driverNoRoutes;
+
+  /// No description provided for @driverStopsAndChildren.
+  ///
+  /// In en, this message translates to:
+  /// **'{stops, plural, =1{1 stop} other{{stops} stops}} · {children, plural, =1{1 child} other{{children} children}}'**
+  String driverStopsAndChildren(int stops, int children);
+
+  /// No description provided for @driverFirstStop.
+  ///
+  /// In en, this message translates to:
+  /// **'First stop: {stop} · {time}'**
+  String driverFirstStop(String stop, String time);
+
+  /// No description provided for @driverStartPickup.
+  ///
+  /// In en, this message translates to:
+  /// **'Start morning pick-up'**
+  String get driverStartPickup;
+
+  /// No description provided for @driverStartDrop.
+  ///
+  /// In en, this message translates to:
+  /// **'Start afternoon drop'**
+  String get driverStartDrop;
+
+  /// No description provided for @driverSharingNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing the bus location'**
+  String get driverSharingNow;
+
+  /// No description provided for @driverWaitingGps.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for GPS…'**
+  String get driverWaitingGps;
+
+  /// No description provided for @driverLastSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Last sent at {time}'**
+  String driverLastSent(String time);
+
+  /// No description provided for @driverEndTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'End trip'**
+  String get driverEndTrip;
+
+  /// No description provided for @driverEndTripTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'End this trip?'**
+  String get driverEndTripTitle;
+
+  /// No description provided for @driverEndTripBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Parents stop seeing the bus on the map.'**
+  String get driverEndTripBody;
+
+  /// No description provided for @driverTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the app running during the trip. You can lock the phone; don\'t close the app.'**
+  String get driverTip;
+
+  /// No description provided for @driverSharingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus trip running'**
+  String get driverSharingTitle;
+
+  /// No description provided for @driverSharingText.
+  ///
+  /// In en, this message translates to:
+  /// **'Parents can see the bus on the map.'**
+  String get driverSharingText;
+
+  /// No description provided for @driverLocationOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Location is switched off on this phone. Switch it on to share the bus.'**
+  String get driverLocationOff;
+
+  /// No description provided for @driverLocationDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow location so parents can see the bus.'**
+  String get driverLocationDenied;
+
+  /// No description provided for @driverLocationBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Location is blocked for this app. Allow it in Settings.'**
+  String get driverLocationBlocked;
+
+  /// No description provided for @driverOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get driverOpenSettings;
+
+  /// No description provided for @libraryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Library'**
+  String get libraryTitle;
+
+  /// No description provided for @libraryWithChild.
+  ///
+  /// In en, this message translates to:
+  /// **'Books with your child'**
+  String get libraryWithChild;
+
+  /// No description provided for @libraryNoneOut.
+  ///
+  /// In en, this message translates to:
+  /// **'No library books at home right now.'**
+  String get libraryNoneOut;
+
+  /// No description provided for @libraryNothingBorrowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Your child hasn\'t borrowed any library books yet.'**
+  String get libraryNothingBorrowed;
+
+  /// No description provided for @libraryReturnBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Return by {date}'**
+  String libraryReturnBy(String date);
+
+  /// No description provided for @libraryOverdueBy.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{1 day late} other{{days} days late}}'**
+  String libraryOverdueBy(int days);
+
+  /// No description provided for @libraryRecentlyReturned.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently returned'**
+  String get libraryRecentlyReturned;
+
+  /// No description provided for @libraryFineDue.
+  ///
+  /// In en, this message translates to:
+  /// **'Fine {amount}'**
+  String libraryFineDue(String amount);
+
+  /// Map data credit required by OpenStreetMap; keep in English
+  ///
+  /// In en, this message translates to:
+  /// **'© OpenStreetMap contributors'**
+  String get mapAttribution;
 }
 
 class _AppLocalizationsDelegate

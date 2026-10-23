@@ -17,6 +17,8 @@ import '../attendance/attendance_outbox.dart';
 import '../attendance/attendance_repository.dart';
 import '../../shared/services/ai_repository.dart';
 import '../../shared/services/branding_repository.dart';
+import '../admin_home/admin_home_body.dart';
+import '../driver/driver_home_body.dart';
 
 const _overlap = 36.0;
 
@@ -30,9 +32,13 @@ class DashboardPage extends ConsumerWidget {
       appBar: statusBarOnly(context),
       body: switch (user?.role) {
         UserRole.teacher => _TeacherDashboardBody(user: user!),
+        // The admin's phone: today at a glance; details stay in the console.
+        UserRole.admin => AdminHomeBody(user: user!),
+        UserRole.driver => DriverHomeBody(user: user!),
         // Office staff use the app for their own leave, payslips and the
         // calendar; they run the school from the console.
-        UserRole.admin || UserRole.accounts || UserRole.superAdmin => _StaffDashboardBody(user: user!),
+        UserRole.accounts || UserRole.superAdmin => _StaffDashboardBody(user: user!),
+        UserRole.librarian || UserRole.receptionist => _ConsoleOnlyBody(user: user!),
         _ => _ParentDashboardBody(user: user),
       },
     );
@@ -108,6 +114,35 @@ class _StaffDashboardBody extends ConsumerWidget {
                 ]),
               ],
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Librarians and receptionists work in the console; the app only says so.
+class _ConsoleOnlyBody extends StatelessWidget {
+  final ActiveUser user;
+
+  const _ConsoleOnlyBody({required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        HeroHeader(child: HomeHeader(name: user.name)),
+        Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              const SizedBox(height: 24),
+              const IconBadge(icon: Icons.desktop_windows_rounded, color: FeatureColors.classes, size: 84),
+              const SizedBox(height: 20),
+              Text(l.consoleOnlyMessage, textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium),
+            ],
           ),
         ),
       ],
