@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
-import { CalendarClock, DoorOpen, LogOut, PhoneCall, PhoneIncoming, PhoneOutgoing, Plus, UserPlus, Users } from 'lucide-react';
+import { CalendarClock, ChevronRight, DoorOpen, LogOut, PhoneCall, PhoneIncoming, PhoneOutgoing, Plus, UserPlus, Users } from 'lucide-react';
 import { api } from '../../../lib/api-client';
 import { formatDateOnly, formatDateTime, formatRupees } from '../../../lib/format';
 import { useErrorText } from '../../../lib/i18n/errors';
@@ -52,6 +52,9 @@ function FrontDesk() {
   const [adding, setAdding] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
   const [logging, setLogging] = useState(false);
+  const [newList, setNewList] = useState(false);
+  /** Today-tab section a card pointed at, briefly outlined. */
+  const [highlight, setHighlight] = useState<'followUps' | 'inside' | null>(null);
 
   const load = useCallback(() => {
     api
@@ -62,12 +65,20 @@ function FrontDesk() {
 
   useEffect(load, [load]);
 
+  /** Today tab, scrolled to the section, outlined for a moment. */
+  const showSection = (section: 'followUps' | 'inside') => {
+    setTab('today');
+    setHighlight(section);
+    window.setTimeout(() => document.getElementById(`desk-${section}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    window.setTimeout(() => setHighlight(null), 1600);
+  };
+
   const stats = today
     ? [
-        { icon: CalendarClock, label: t('statFollowUps'), value: today.followUps.length, tone: 'bg-coral/10 text-coral-dark' },
-        { icon: DoorOpen, label: t('statInside'), value: today.visitorsInside.length, tone: 'bg-teal/10 text-teal' },
-        { icon: PhoneCall, label: t('statCalls'), value: today.counts.callsToday, tone: 'bg-purple-100 text-purple-800' },
-        { icon: UserPlus, label: t('statNewEnquiries'), value: today.counts.newEnquiriesToday, tone: 'bg-green-100 text-green-800' },
+        { icon: CalendarClock, label: t('statFollowUps'), value: today.followUps.length, tone: 'bg-coral/10 text-coral-dark', onClick: () => showSection('followUps') },
+        { icon: DoorOpen, label: t('statInside'), value: today.visitorsInside.length, tone: 'bg-teal/10 text-teal', onClick: () => showSection('inside') },
+        { icon: PhoneCall, label: t('statCalls'), value: today.counts.callsToday, tone: 'bg-purple-100 text-purple-800', onClick: () => setTab('calls') },
+        { icon: UserPlus, label: t('statNewEnquiries'), value: today.counts.newEnquiriesToday, tone: 'bg-green-100 text-green-800', onClick: () => setNewList(true) },
       ]
     : [];
 
@@ -94,13 +105,21 @@ function FrontDesk() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {today
           ? stats.map((s) => (
-              <div key={s.label} className="rounded-2xl border border-black/5 bg-white p-4 shadow-sm">
-                <span className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${s.tone}`}>
-                  <s.icon className="h-5 w-5" />
+              <button
+                key={s.label}
+                type="button"
+                onClick={s.onClick}
+                className="group cursor-pointer rounded-2xl border border-black/5 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-teal/40"
+              >
+                <span className="flex items-start justify-between">
+                  <span className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${s.tone}`}>
+                    <s.icon className="h-5 w-5" />
+                  </span>
+                  <ChevronRight className="h-4 w-4 text-gray-300 transition group-hover:translate-x-0.5 group-hover:text-gray-500" />
                 </span>
-                <p className="mt-3 text-2xl font-extrabold text-gray-900">{s.value}</p>
-                <p className="text-xs text-gray-500">{s.label}</p>
-              </div>
+                <span className="mt-3 block text-2xl font-extrabold text-gray-900">{s.value}</span>
+                <span className="block text-xs text-gray-500">{s.label}</span>
+              </button>
             ))
           : [0, 1, 2, 3].map((i) => <div key={i} className="h-28 animate-pulse rounded-2xl bg-gray-100" />)}
       </div>
@@ -122,6 +141,7 @@ function FrontDesk() {
       {tab === 'today' && (
         <TodayTab
           today={today}
+          highlight={highlight}
           onOpen={(e) => setOpen(e)}
           onChanged={load}
         />
@@ -138,6 +158,17 @@ function FrontDesk() {
         icon={<UserPlus className="h-5 w-5" />}
       >
         {open && <EnquiryDrawerBody key={open.id} id={open.id} onChanged={load} />}
+      </Drawer>
+
+      <Drawer open={newList} onClose={() => setNewList(false)} title={t('newTodayTitle')} subtitle={today ? formatDateOnly(today.date) : ''} icon={<UserPlus className="h-5 w-5" />}>
+        {newList && (
+          <NewToday
+            onOpen={(e) => {
+              setNewList(false);
+              setOpen(e);
+            }}
+          />
+        )}
       </Drawer>
 
       {adding && (
@@ -172,12 +203,66 @@ function FrontDesk() {
   );
 }
 
+/** Enquiries made today, each opening its own drawer. */
+function NewToday({ onOpen }: { onOpen: (e: EnquiryRef) => void }) {
+  const t = useTranslations('reception');
+  const tAdm = useTranslations('admissions');
+  const errorText = useErrorText();
+  const { toast } = useToast();
+  const [rows, setRows] = useState<EnquiryRef[] | null>(null);
+
+  useEffect(() => {
+    api
+      .get<{ data: EnquiryRef[] }>('/admissions?created=today&limit=100')
+      .then((r) => setRows(r.data))
+      .catch((e) => toast(errorText(e), 'error'));
+  }, [errorText, toast]);
+
+  if (!rows)
+    return (
+      <div className="flex h-40 items-center justify-center">
+        <Spinner className="h-8 w-8 text-teal" />
+      </div>
+    );
+  return (
+    <div className="space-y-4">
+      {rows.length === 0 ? (
+        <p className="rounded-2xl bg-white p-5 text-center text-sm text-gray-500">{t('newTodayNone')}</p>
+      ) : (
+        <ul className="divide-y divide-gray-100 rounded-2xl border border-black/5 bg-white">
+          {rows.map((e) => (
+            <li key={e.id}>
+              <button type="button" onClick={() => onOpen(e)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-cream/60">
+                <span className="min-w-0 flex-1">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-gray-900">{e.childName}</span>
+                    <Badge variant={STAGE_VARIANT[e.stage]}>{tAdm(`stages.${e.stage}`)}</Badge>
+                  </span>
+                  <span className="block text-sm text-gray-600">
+                    {[e.parentName, e.phone, e.classSought].filter(Boolean).join(' · ')}
+                  </span>
+                </span>
+                <ChevronRight className="h-4 w-4 flex-shrink-0 text-gray-400" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <a href="/admin/admissions" className="inline-block text-sm font-semibold text-teal hover:underline">
+        {t('openAdmissions')}
+      </a>
+    </div>
+  );
+}
+
 function TodayTab({
   today,
+  highlight,
   onOpen,
   onChanged,
 }: {
   today: Today | null;
+  highlight: 'followUps' | 'inside' | null;
   onOpen: (e: EnquiryRef) => void;
   onChanged: () => void;
 }) {
@@ -209,7 +294,7 @@ function TodayTab({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-      <section className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
+      <section id="desk-followUps" className={`scroll-mt-4 rounded-2xl border border-black/5 bg-white p-5 shadow-sm transition-shadow ${highlight === 'followUps' ? 'ring-2 ring-coral' : ''}`}>
         <h2 className="text-base font-bold text-gray-900">{t('followUpsDue')}</h2>
         <p className="text-xs text-gray-500">{t('followUpsDueHint')}</p>
         {today.followUps.length === 0 ? (
@@ -246,7 +331,7 @@ function TodayTab({
       </section>
 
       <div className="space-y-6">
-        <section className="rounded-2xl border border-black/5 bg-white p-5 shadow-sm">
+        <section id="desk-inside" className={`scroll-mt-4 rounded-2xl border border-black/5 bg-white p-5 shadow-sm transition-shadow ${highlight === 'inside' ? 'ring-2 ring-teal' : ''}`}>
           <h2 className="text-base font-bold text-gray-900">{t('inBuilding')}</h2>
           {today.visitorsInside.length === 0 ? (
             <p className="mt-4 text-sm text-gray-500">{t('nobodyInside')}</p>

@@ -173,6 +173,11 @@ export class EnquiryQueryDto {
   @IsOptional()
   due?: 'today' | 'overdue';
 
+  /** Enquiries made today (school-local day): the front desk's count. */
+  @IsIn(['today'])
+  @IsOptional()
+  created?: 'today';
+
   @IsString()
   @MaxLength(100)
   @IsOptional()

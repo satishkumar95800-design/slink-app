@@ -2503,7 +2503,10 @@
       "payment": "डेस्क पर भुगतान",
       "payment_void": "डेस्क रसीद रद्द",
       "call": "कॉल"
-    }
+    },
+    "newTodayTitle": "आज की नई पूछताछ",
+    "newTodayNone": "आज अभी तक कोई नई पूछताछ नहीं।",
+    "openAdmissions": "सभी एडमिशन खोलें"
   },
   "library": {
     "title": "पुस्तकालय",

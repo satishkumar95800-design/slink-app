@@ -90,6 +90,26 @@ describe('AdmissionsService', () => {
     source: 'walk_in' as const,
   };
 
+  it("lists the enquiries made today, by the school's own day", async () => {
+    const { service } = setup();
+    const prisma = (service as unknown as { prisma: Row }).prisma;
+    prisma.admissionEnquiry.count = jest.fn().mockResolvedValue(0);
+    prisma.admissionEnquiry.findMany = jest.fn().mockResolvedValue([]);
+    await service.list('t1', { created: 'today' });
+    expect(prisma.admissionEnquiry.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          tenantId: 't1',
+          // 17/10 in India: 16/10 18:30 to 17/10 18:30 UTC.
+          createdAt: {
+            gte: new Date('2026-10-16T18:30:00Z'),
+            lt: new Date('2026-10-17T18:30:00Z'),
+          },
+        },
+      }),
+    );
+  });
+
   it('records the enquiry and a created activity', async () => {
     const { service, activities } = setup();
     const e = await service.create(

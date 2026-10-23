@@ -2503,7 +2503,10 @@
       "payment": "Paid at the desk",
       "payment_void": "Desk receipt voided",
       "call": "Call"
-    }
+    },
+    "newTodayTitle": "New enquiries today",
+    "newTodayNone": "No new enquiries yet today.",
+    "openAdmissions": "Open all admissions"
   },
   "library": {
     "title": "Library",

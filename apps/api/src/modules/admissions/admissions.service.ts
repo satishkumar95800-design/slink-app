@@ -18,6 +18,7 @@ import {
   MoveStageDto,
   UpdateEnquiryDto,
 } from './dto/admissions.dto';
+import { localDayRange } from '../reception/reception.math';
 import { academicYearStart, funnelOf, furthestStage } from './admissions.math';
 
 const err = (code: string, message: string) => ({ code, message });
@@ -86,7 +87,8 @@ export class AdmissionsService {
   }
 
   async list(tenantId: string, q: EnquiryQueryDto) {
-    const today = await this.today(tenantId);
+    const tz = await this.timeZone(tenantId);
+    const today = todayIn(tz);
     const page = q.page ?? 1;
     const limit = q.limit ?? 50;
     const search = q.q?.trim();
@@ -98,6 +100,7 @@ export class AdmissionsService {
         nextFollowUpOn:
           q.due === 'today' ? toDbDate(today) : { lt: toDbDate(today) },
       }),
+      ...(q.created === 'today' && { createdAt: localDayRange(today, tz) }),
       ...(search && {
         OR: [
           { childName: { contains: search, mode: 'insensitive' } },
@@ -378,11 +381,15 @@ export class AdmissionsService {
   }
 
   private async today(tenantId: string) {
+    return todayIn(await this.timeZone(tenantId));
+  }
+
+  private async timeZone(tenantId: string) {
     const t = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
       select: { timezone: true },
     });
-    return todayIn(t?.timezone || 'Asia/Kolkata');
+    return t?.timezone || 'Asia/Kolkata';
   }
 }
 
