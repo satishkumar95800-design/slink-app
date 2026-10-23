@@ -2194,6 +2194,16 @@ class AppLocalizationsHi extends AppLocalizations {
   String get busPushTrack => 'देखें';
 
   @override
+  String get busTrackLink => 'बस ट्रैक करें';
+
+  @override
+  String get busTrackLinkHint => 'बस कंपनी का ट्रैकिंग पेज खुलेगा';
+
+  @override
+  String get busTrackLinkFailed =>
+      'ट्रैकिंग लिंक नहीं खुल सका। कृपया फिर से कोशिश करें।';
+
+  @override
   String get libraryTitle => 'पुस्तकालय';
 
   @override

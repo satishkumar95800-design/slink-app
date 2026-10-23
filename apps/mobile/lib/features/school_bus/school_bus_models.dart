@@ -42,7 +42,10 @@ class ChildBus {
   final BusContact? driver;
   final BusContact? attendant;
 
-  const ChildBus({required this.routeName, this.vehicleNumber, this.stop, this.driver, this.attendant});
+  /// The bus company's own tracking page, when the school added one.
+  final String? trackingUrl;
+
+  const ChildBus({required this.routeName, this.vehicleNumber, this.stop, this.driver, this.attendant, this.trackingUrl});
 
   factory ChildBus.fromJson(Map<String, dynamic> json) => ChildBus(
         routeName: json['routeName'] as String,
@@ -50,6 +53,7 @@ class ChildBus {
         stop: BusStop.fromJson(json['stop']),
         driver: BusContact.fromJson(json['driver']),
         attendant: BusContact.fromJson(json['attendant']),
+        trackingUrl: json['trackingUrl'] as String?,
       );
 }
 

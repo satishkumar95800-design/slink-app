@@ -3648,6 +3648,24 @@ abstract class AppLocalizations {
   /// **'Track'**
   String get busPushTrack;
 
+  /// No description provided for @busTrackLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Track the bus'**
+  String get busTrackLink;
+
+  /// No description provided for @busTrackLinkHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens the bus company\'s tracking page'**
+  String get busTrackLinkHint;
+
+  /// No description provided for @busTrackLinkFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open the tracking link. Please try again.'**
+  String get busTrackLinkFailed;
+
   /// No description provided for @libraryTitle.
   ///
   /// In en, this message translates to:

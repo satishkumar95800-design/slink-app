@@ -1253,6 +1253,9 @@ model TransportRoute {
   driverId      String?  @map("driver_id") @db.Uuid
   attendantId   String?  @map("attendant_id") @db.Uuid
   notes         String?
+  /// The bus company's own GPS tracking page, shown to parents of the route
+  /// (for schools that don't use the app's live tracking).
+  trackingUrl   String?  @map("tracking_url") @db.VarChar(500)
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 

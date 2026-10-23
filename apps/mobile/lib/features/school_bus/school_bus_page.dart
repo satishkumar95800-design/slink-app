@@ -42,16 +42,23 @@ class ChildBusPage extends ConsumerWidget {
             if (bus == null) {
               return EmptyState(icon: Icons.directions_bus_rounded, message: l.busNotOnRoute(info.studentName), color: FeatureColors.bus);
             }
+            final inApp = ref.watch(busTrackingEnabledProvider);
+            final link = _webLink(bus.trackingUrl);
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                if (ref.watch(busTrackingEnabledProvider)) ...[
+                if (inApp) ...[
                   FilledButton.icon(
                     style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
                     onPressed: () => context.push('/school-bus/live/$studentId'),
                     icon: const Icon(Icons.near_me_rounded),
                     label: Text(l.busTrackLive),
                   ),
+                  const SizedBox(height: 12),
+                ],
+                // Schools whose bus company has its own GPS tracking page.
+                if (link != null) ...[
+                  _TrackLinkButton(link: link, primary: !inApp),
                   const SizedBox(height: 12),
                 ],
                 _RouteCard(bus: bus),
@@ -71,6 +78,44 @@ class ChildBusPage extends ConsumerWidget {
           },
         ),
       ),
+    );
+  }
+}
+
+/// Only web links open (the school typed this in the console).
+Uri? _webLink(String? url) {
+  final uri = url == null ? null : Uri.tryParse(url.trim());
+  return uri != null && (uri.scheme == 'https' || uri.scheme == 'http') && uri.host.isNotEmpty ? uri : null;
+}
+
+/// Opens the bus company's tracking page in the browser.
+class _TrackLinkButton extends StatelessWidget {
+  final Uri link;
+  final bool primary;
+
+  const _TrackLinkButton({required this.link, required this.primary});
+
+  Future<void> _open(BuildContext context) async {
+    final ok = await launchUrl(link, mode: LaunchMode.externalApplication).catchError((_) => false);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.busTrackLinkFailed)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    const style = ButtonStyle(minimumSize: WidgetStatePropertyAll(Size.fromHeight(52)));
+    const icon = Icon(Icons.open_in_new_rounded);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        primary
+            ? FilledButton.icon(style: style, onPressed: () => _open(context), icon: icon, label: Text(l.busTrackLink))
+            : OutlinedButton.icon(style: style, onPressed: () => _open(context), icon: icon, label: Text(l.busTrackLink)),
+        const SizedBox(height: 4),
+        Text(l.busTrackLinkHint, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.muted)),
+      ],
     );
   }
 }

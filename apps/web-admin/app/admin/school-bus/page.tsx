@@ -1,6 +1,6 @@
 'use client';
 
-import { Bus, Phone, Plus } from 'lucide-react';
+import { Bus, Link2, Phone, Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../../lib/api-client';
@@ -121,6 +121,12 @@ function SchoolBus({ tracking }: { tracking: boolean }) {
                     <p className="text-amber-700">{t('noDriverYet')}</p>
                   )}
                   <p className="text-gray-500">{t('stopCount', { count: r.stops.length })}</p>
+                  {r.trackingUrl && (
+                    <p className="flex items-center gap-1.5 text-teal">
+                      <Link2 className="h-3.5 w-3.5" />
+                      {t('trackingLinkSet')}
+                    </p>
+                  )}
                 </div>
               </button>
             ))}

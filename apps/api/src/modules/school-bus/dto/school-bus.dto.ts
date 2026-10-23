@@ -7,6 +7,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUrl,
   IsUUID,
   Matches,
   Max,
@@ -92,6 +93,16 @@ export class RouteInputDto {
   @MaxLength(500)
   @IsOptional()
   notes?: string | null;
+
+  /** The bus company's tracking page (https), shown to the route's parents. */
+  @emptyToNull()
+  @IsUrl(
+    { protocols: ['https', 'http'], require_protocol: true },
+    { message: 'trackingUrl must be a web link starting with https://' },
+  )
+  @MaxLength(500)
+  @IsOptional()
+  trackingUrl?: string | null;
 
   /** In pick-up order. */
   @IsArray()

@@ -22,6 +22,8 @@ export interface RouteValues {
   driverId: string;
   attendantId: string;
   notes: string;
+  /** The bus company's tracking page; empty for none. */
+  trackingUrl: string;
   stops: StopValue[];
 }
 
@@ -58,11 +60,14 @@ export const emptyRoute = (r?: Route): RouteValues => ({
   driverId: r?.driverId ?? '',
   attendantId: r?.attendantId ?? '',
   notes: r?.notes ?? '',
+  trackingUrl: r?.trackingUrl ?? '',
   stops: r?.stops.map((s) => ({ id: s.id, name: s.name, pickupTime: s.pickupTime ?? '', dropTime: s.dropTime ?? '', location: showLocation(s.lat, s.lng) })) ?? [],
 });
 
+const linkValid = (url: string) => !url.trim() || /^https?:\/\/[^\s/$.?#].[^\s]*$/i.test(url.trim());
+
 export const routeValid = (v: RouteValues) =>
-  v.name.trim().length > 0 && v.stops.every((s) => s.name.trim().length > 0 && parseLocation(s.location) !== 'invalid');
+  v.name.trim().length > 0 && linkValid(v.trackingUrl) && v.stops.every((s) => s.name.trim().length > 0 && parseLocation(s.location) !== 'invalid');
 
 export const toBody = (v: RouteValues) => ({
   name: v.name.trim(),
@@ -70,6 +75,7 @@ export const toBody = (v: RouteValues) => ({
   driverId: v.driverId,
   attendantId: v.attendantId,
   notes: v.notes.trim(),
+  trackingUrl: v.trackingUrl.trim(),
   stops: v.stops.map((s) => {
     const at = parseLocation(s.location);
     return {
@@ -105,6 +111,17 @@ export function RouteFields({ value, onChange, staff }: { value: RouteValues; on
       </div>
       {staff.length === 0 && <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">{t('noStaffHint')}</p>}
       <Input label={t('notes')} maxLength={500} value={value.notes} onChange={(e) => set({ notes: e.target.value })} />
+      <Input
+        label={t('trackingUrl')}
+        type="url"
+        inputMode="url"
+        maxLength={500}
+        placeholder={t('trackingUrlPlaceholder')}
+        value={value.trackingUrl}
+        error={linkValid(value.trackingUrl) ? undefined : t('trackingUrlInvalid')}
+        helpText={t('trackingUrlHelp')}
+        onChange={(e) => set({ trackingUrl: e.target.value })}
+      />
 
       <div>
         <div className="flex items-center justify-between">

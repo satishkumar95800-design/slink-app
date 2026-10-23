@@ -94,6 +94,7 @@ describe('SchoolBusService', () => {
             route: {
               name: 'Route 1',
               vehicleNumber: 'KA01AB1234',
+              trackingUrl: 'https://track.example-buses.in/v/KA01AB1234',
               driver: {
                 id: 'd1',
                 name: 'Ramesh',
@@ -114,6 +115,7 @@ describe('SchoolBusService', () => {
       expect(res.bus).toEqual({
         routeName: 'Route 1',
         vehicleNumber: 'KA01AB1234',
+        trackingUrl: 'https://track.example-buses.in/v/KA01AB1234',
         stop: { name: 'MG Road', pickupTime: '07:40', dropTime: '15:50' },
         driver: { name: 'Ramesh', phone: '+919800000001' },
         attendant: null,

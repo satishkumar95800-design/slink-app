@@ -447,6 +447,7 @@ export class SchoolBusService {
                   select: {
                     name: true,
                     vehicleNumber: true,
+                    trackingUrl: true,
                     driver: PERSON,
                     attendant: PERSON,
                   },
@@ -469,6 +470,7 @@ export class SchoolBusService {
       bus: {
         routeName: route.name,
         vehicleNumber: route.vehicleNumber,
+        trackingUrl: route.trackingUrl,
         stop,
         driver: contact(route.driver),
         attendant: contact(route.attendant),
@@ -556,6 +558,7 @@ const routeFields = (dto: RouteInputDto) => ({
   driverId: dto.driverId ?? null,
   attendantId: dto.attendantId ?? null,
   notes: dto.notes ?? null,
+  trackingUrl: dto.trackingUrl ?? null,
 });
 
 const stopFields = (s: RouteInputDto['stops'][number]) => ({

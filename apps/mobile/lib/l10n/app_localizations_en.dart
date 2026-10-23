@@ -2195,6 +2195,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get busPushTrack => 'Track';
 
   @override
+  String get busTrackLink => 'Track the bus';
+
+  @override
+  String get busTrackLinkHint => 'Opens the bus company\'s tracking page';
+
+  @override
+  String get busTrackLinkFailed =>
+      'Couldn\'t open the tracking link. Please try again.';
+
+  @override
   String get libraryTitle => 'Library';
 
   @override

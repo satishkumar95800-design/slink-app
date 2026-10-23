@@ -20,6 +20,7 @@ export interface Route {
   name: string;
   vehicleNumber: string | null;
   notes: string | null;
+  trackingUrl: string | null;
   driverId: string | null;
   attendantId: string | null;
   driver: Person | null;

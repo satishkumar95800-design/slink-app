@@ -71,4 +71,25 @@ void main() {
     expect(find.text('No driver assigned yet.'), findsOneWidget);
     expect(find.text('Call'), findsNothing);
   });
+
+  testWidgets("shows the bus company's tracking link, and only a web link", (tester) async {
+    Map<String, dynamic> withLink(String? url) => {
+          'student': {'id': 'st1', 'name': 'Asha'},
+          'bus': {'routeName': 'Route 1', 'stop': null, 'driver': null, 'attendant': null, 'trackingUrl': url},
+        };
+    await _pump(tester, withLink('https://gps.example-buses.in/track/KA01AB1234'));
+    expect(find.text('Track the bus'), findsOneWidget);
+    expect(find.text("Opens the bus company's tracking page"), findsOneWidget);
+    // Bus tracking in the app is off for this school.
+    expect(find.text('Track the bus live'), findsNothing);
+    expect(tester.takeException(), isNull);
+
+    // A fresh ProviderScope for each case.
+    await tester.pumpWidget(const SizedBox());
+    await _pump(tester, withLink('javascript:alert(1)'));
+    expect(find.text('Track the bus'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    await _pump(tester, withLink(null));
+    expect(find.text('Track the bus'), findsNothing);
+  });
 }

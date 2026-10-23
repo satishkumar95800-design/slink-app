@@ -2194,6 +2194,16 @@ class AppLocalizationsKn extends AppLocalizations {
   String get busPushTrack => 'ನೋಡಿ';
 
   @override
+  String get busTrackLink => 'ಬಸ್ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ';
+
+  @override
+  String get busTrackLinkHint => 'ಬಸ್ ಕಂಪನಿಯ ಟ್ರ್ಯಾಕಿಂಗ್ ಪುಟ ತೆರೆಯುತ್ತದೆ';
+
+  @override
+  String get busTrackLinkFailed =>
+      'ಟ್ರ್ಯಾಕಿಂಗ್ ಲಿಂಕ್ ತೆರೆಯಲಾಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
   String get libraryTitle => 'ಗ್ರಂಥಾಲಯ';
 
   @override
