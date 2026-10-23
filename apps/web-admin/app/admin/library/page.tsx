@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertTriangle, BookCheck, BookOpen, BookUp, Coins, Library as LibraryIcon, Plus, Search } from 'lucide-react';
+import { AlertTriangle, BookCheck, BookOpen, BookUp, Coins, FileSpreadsheet, Library as LibraryIcon, Plus, Search } from 'lucide-react';
 import { api } from '../../../lib/api-client';
 import { formatDateOnly, formatRupees } from '../../../lib/format';
 import { useErrorText } from '../../../lib/i18n/errors';
@@ -17,6 +17,7 @@ import { Modal } from '../../../components/ui/modal';
 import { Select } from '../../../components/ui/select';
 import { Spinner } from '../../../components/ui/spinner';
 import { useToast } from '../../../components/ui/toast';
+import { ImportBooksDialog } from './import-dialog';
 import { Book, Borrower, COPY_STATUSES, CopyLookup, Loan, Page, Settings, Summary } from './types';
 
 type Tab = 'desk' | 'catalogue' | 'loans' | 'settings';
@@ -396,6 +397,7 @@ function CatalogueTab({ onChanged }: { onChanged: () => void }) {
   const [page, setPage] = useState(1);
   const [data, setData] = useState<Page<Book> | null>(null);
   const [adding, setAdding] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [open, setOpen] = useState<Book | null>(null);
 
   const load = useCallback(() => {
@@ -431,9 +433,14 @@ function CatalogueTab({ onChanged }: { onChanged: () => void }) {
             placeholder={t('searchPlaceholder')}
           />
         </div>
-        <Button onClick={() => setAdding(true)}>
-          <Plus className="h-4 w-4" /> {t('addBook')}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={() => setImporting(true)}>
+            <FileSpreadsheet className="h-4 w-4" /> {t('importExcel')}
+          </Button>
+          <Button onClick={() => setAdding(true)}>
+            <Plus className="h-4 w-4" /> {t('addBook')}
+          </Button>
+        </div>
       </div>
       {!data ? (
         <Spinner className="mx-auto mt-8 h-6 w-6 text-teal" />
@@ -482,6 +489,16 @@ function CatalogueTab({ onChanged }: { onChanged: () => void }) {
         </div>
       )}
 
+      {importing && (
+        <ImportBooksDialog
+          onClose={() => setImporting(false)}
+          onDone={() => {
+            setImporting(false);
+            load();
+            onChanged();
+          }}
+        />
+      )}
       {adding && (
         <BookModal
           onClose={() => setAdding(false)}

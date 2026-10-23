@@ -2572,6 +2572,33 @@
     "maxStaffBooks": "कर्मचारी एक साथ कितनी किताबें ले",
     "finePerDay": "हर दिन देर का जुर्माना (₹)",
     "finePerDayHint": "जुर्माना न लगाने के लिए 0 रखें। किताब लौटने पर जुर्माना गिना जाता है।",
-    "settingsSaved": "पुस्तकालय सेटिंग्स सहेजी गईं"
+    "settingsSaved": "पुस्तकालय सेटिंग्स सहेजी गईं",
+    "importExcel": "Excel से इम्पोर्ट करें",
+    "importTitle": "Excel से किताबें इम्पोर्ट करें",
+    "importHelp": "हर किताब के लिए एक पंक्ति: शीर्षक (ज़रूरी), लेखक, प्रकाशक, ISBN, श्रेणी, भाषा, शेल्फ़, प्रतियाँ, और अगर प्रतियों पर पहले से नंबर हैं तो एक्सेशन नंबर। कैटलॉग में पहले से मौजूद किताब में नई प्रतियाँ जुड़ जाती हैं।",
+    "downloadTemplate": "टेम्पलेट डाउनलोड करें",
+    "chooseFile": "Excel फ़ाइल चुनें",
+    "chooseAnother": "दूसरी फ़ाइल चुनें",
+    "importHasErrors": "{count, plural, =1 {इम्पोर्ट से पहले 1 समस्या ठीक करें} other {इम्पोर्ट से पहले # समस्याएँ ठीक करें}}:",
+    "importRow": "पंक्ति {row}: {text}",
+    "importReady": "इम्पोर्ट के लिए तैयार:",
+    "importNewBooks": "{count, plural, =1 {1 नई किताब} other {# नई किताबें}}",
+    "importExistingBooks": "{count, plural, =1 {कैटलॉग की 1 किताब की और प्रतियाँ} other {कैटलॉग की # किताबों की और प्रतियाँ}}",
+    "importCopies": "{count, plural, =1 {कुल 1 प्रति} other {कुल # प्रतियाँ}}",
+    "importNumbering": "बिना एक्सेशन नंबर वाली प्रतियों को अगले खाली नंबर मिलते हैं।",
+    "importCommit": "इम्पोर्ट करें",
+    "importDone": "{count, plural, =1 {एक प्रति इम्पोर्ट हुई} other {# प्रतियाँ इम्पोर्ट हुईं}}",
+    "importError": {
+      "FILE_UNREADABLE": "फ़ाइल पढ़ी नहीं जा सकी। .xlsx फ़ाइल अपलोड करें।",
+      "HEADERS_MISSING": "कॉलम नहीं है: {value}",
+      "TOO_MANY_ROWS": "बहुत ज़्यादा पंक्तियाँ (अधिकतम {value})",
+      "TITLE_MISSING": "शीर्षक खाली है",
+      "TOO_LONG": "{value} बहुत लंबा है",
+      "COPIES_INVALID": "प्रतियाँ \"{value}\" 1 से 200 के बीच की संख्या होनी चाहिए",
+      "COPIES_MISMATCH": "प्रतियाँ और एक्सेशन नंबर मेल नहीं खाते ({value})",
+      "ACCESSION_TOO_LONG": "एक्सेशन नंबर \"{value}\" 30 अक्षरों से लंबा है",
+      "ACCESSION_REPEATED": "एक्सेशन नंबर {value} फ़ाइल में दो बार है",
+      "ACCESSION_TAKEN": "एक्सेशन नंबर {value} पहले से लाइब्रेरी में है"
+    }
   }
 }

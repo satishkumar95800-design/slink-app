@@ -2572,6 +2572,33 @@
     "maxStaffBooks": "Books a staff member can have at once",
     "finePerDay": "Fine per day late (₹)",
     "finePerDayHint": "Use 0 for no fines. A fine is worked out when the book comes back.",
-    "settingsSaved": "Library settings saved"
+    "settingsSaved": "Library settings saved",
+    "importExcel": "Import from Excel",
+    "importTitle": "Import books from Excel",
+    "importHelp": "One row per book: Title (required), Author, Publisher, ISBN, Category, Language, Shelf, Copies, and Accession numbers if your copies already have them. A book already in the catalogue gets the new copies added to it.",
+    "downloadTemplate": "Download template",
+    "chooseFile": "Choose Excel file",
+    "chooseAnother": "Choose another file",
+    "importHasErrors": "{count, plural, =1 {1 problem to fix} other {# problems to fix}} before importing:",
+    "importRow": "Row {row}: {text}",
+    "importReady": "Ready to import:",
+    "importNewBooks": "{count, plural, =1 {1 new book} other {# new books}}",
+    "importExistingBooks": "{count, plural, =1 {More copies of 1 book already in the catalogue} other {More copies of # books already in the catalogue}}",
+    "importCopies": "{count, plural, =1 {1 copy in all} other {# copies in all}}",
+    "importNumbering": "Copies without accession numbers get the next free numbers.",
+    "importCommit": "Import",
+    "importDone": "{count, plural, =1 {Imported 1 copy} other {Imported # copies}}",
+    "importError": {
+      "FILE_UNREADABLE": "The file could not be read. Upload an .xlsx file.",
+      "HEADERS_MISSING": "Column missing: {value}",
+      "TOO_MANY_ROWS": "Too many rows (at most {value})",
+      "TITLE_MISSING": "Title is empty",
+      "TOO_LONG": "{value} is too long",
+      "COPIES_INVALID": "Copies \"{value}\" must be a number from 1 to 200",
+      "COPIES_MISMATCH": "Copies and accession numbers don't match ({value})",
+      "ACCESSION_TOO_LONG": "Accession number \"{value}\" is longer than 30 characters",
+      "ACCESSION_REPEATED": "Accession number {value} is in the file twice",
+      "ACCESSION_TAKEN": "Accession number {value} is already in the library"
+    }
   }
 }

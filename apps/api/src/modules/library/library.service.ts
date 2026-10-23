@@ -27,6 +27,13 @@ import {
   LibrarySettingsDto,
   LoansQueryDto,
 } from './dto/library.dto';
+import { randomUUID } from 'node:crypto';
+import {
+  BookRow as ImportRow,
+  bookKey,
+  ImportError,
+  parseBooksWorkbook,
+} from './library-import';
 import {
   addDays,
   daysLate,
@@ -787,6 +794,152 @@ export class LibraryService {
     return loanView(row, today);
   }
 
+  // ── Excel import ───────────────────────────────────────────────────────────
+
+  /** Checks every row against the file and the catalogue; nothing is written. */
+  async validateImport(tenantId: string, buffer: Buffer) {
+    const plan = await this.planImport(this.prisma, tenantId, buffer);
+    return {
+      rows: plan.rows,
+      errors: plan.errors,
+      newBooks: plan.books.filter((b) => !b.existingId).length,
+      existingBooks: plan.books.filter((b) => b.existingId).length,
+      copies: plan.books.reduce((n, b) => n + b.given.length + b.auto, 0),
+    };
+  }
+
+  /**
+   * Adds the file's books and copies in one go. Rows for a book already in
+   * the catalogue (or repeated in the file) add copies to that one book.
+   * Copies without numbers get the next free ones, as in "Add book".
+   */
+  async commitImport(tenantId: string, actorId: string, buffer: Buffer) {
+    return this.prisma.$transaction(
+      async (tx) => {
+        // Same lock as automatic numbering: nobody adds copies meanwhile.
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'library:' + tenantId}))`;
+        const plan = await this.planImport(tx, tenantId, buffer);
+        if (plan.errors.length)
+          throw new BadRequestException(
+            err(
+              'IMPORT_ROWS_INVALID',
+              'Fix the rows with problems and upload again',
+            ),
+          );
+        const existing = await tx.libraryCopy.findMany({
+          where: { tenantId },
+          select: { accessionNo: true },
+        });
+        const given = plan.books.flatMap((b) => b.given);
+        const autoCount = plan.books.reduce((n, b) => n + b.auto, 0);
+        const auto = nextAccessionNumbers(
+          [...existing.map((c) => c.accessionNo), ...given],
+          autoCount,
+        );
+
+        const newBooks = plan.books
+          .filter((b) => !b.existingId)
+          .map((b) => ({ ...b, id: randomUUID() }));
+        await tx.libraryBook.createMany({
+          data: newBooks.map((b) => ({ id: b.id, tenantId, ...b.fields })),
+        });
+        const idOf = new Map(newBooks.map((b) => [b.key, b.id]));
+        let next = 0;
+        const copies = plan.books.flatMap((b) => {
+          const bookId = b.existingId ?? idOf.get(b.key)!;
+          const numbers = [...b.given, ...auto.slice(next, next + b.auto)];
+          next += b.auto;
+          return numbers.map((accessionNo) => ({
+            tenantId,
+            bookId,
+            accessionNo,
+          }));
+        });
+        await tx.libraryCopy.createMany({ data: copies });
+
+        const summary = {
+          newBooks: newBooks.length,
+          existingBooks: plan.books.length - newBooks.length,
+          copies: copies.length,
+        };
+        await audit(tx, tenantId, actorId, 'library.import', null, {
+          ...summary,
+          rows: plan.rows,
+        });
+        return summary;
+      },
+      { timeout: 60_000 },
+    );
+  }
+
+  /** Rows grouped by book, matched to the catalogue, with every problem found. */
+  private async planImport(db: Db, tenantId: string, buffer: Buffer) {
+    const parsed = await parseBooksWorkbook(buffer);
+    const errors: ImportError[] = [...parsed.errors];
+
+    // The same accession number twice in the file, or already in use.
+    const firstRow = new Map<string, number>();
+    const usable: ImportRow[] = [];
+    for (const r of parsed.rows) {
+      const clash = r.accessionNos.find((a) => firstRow.has(a));
+      if (clash) {
+        errors.push({ row: r.row, code: 'ACCESSION_REPEATED', value: clash });
+        continue;
+      }
+      r.accessionNos.forEach((a) => firstRow.set(a, r.row));
+      usable.push(r);
+    }
+    const allGiven = [...firstRow.keys()];
+    const taken = allGiven.length
+      ? await db.libraryCopy.findMany({
+          where: { tenantId, accessionNo: { in: allGiven } },
+          select: { accessionNo: true },
+        })
+      : [];
+    const takenRows = new Set<number>();
+    for (const t of taken) {
+      const row = firstRow.get(t.accessionNo)!;
+      errors.push({ row, code: 'ACCESSION_TAKEN', value: t.accessionNo });
+      takenRows.add(row);
+    }
+
+    const catalogue = await db.libraryBook.findMany({
+      where: { tenantId },
+      select: { id: true, title: true, author: true, isbn: true },
+    });
+    const existingByKey = new Map(catalogue.map((b) => [bookKey(b), b.id]));
+    const books = new Map<
+      string,
+      {
+        key: string;
+        existingId: string | null;
+        fields: ReturnType<typeof importFields>;
+        given: string[];
+        auto: number;
+      }
+    >();
+    for (const r of usable) {
+      if (takenRows.has(r.row)) continue;
+      const key = bookKey(r);
+      const b = books.get(key) ?? {
+        key,
+        existingId: existingByKey.get(key) ?? null,
+        fields: importFields(r),
+        given: [],
+        auto: 0,
+      };
+      if (r.accessionNos.length) b.given.push(...r.accessionNos);
+      else b.auto += r.copies;
+      books.set(key, b);
+    }
+    errors.sort((a, b) => a.row - b.row);
+    return {
+      rows: parsed.rows.length + parsed.errors.filter((e) => e.row > 1).length,
+      errors,
+      books: [...books.values()],
+    };
+  }
+
   /** Copies from given accession numbers, or [count] numbered after the highest. */
   private async insertCopies(
     tx: Prisma.TransactionClient,
@@ -829,6 +982,16 @@ export class LibraryService {
     return numbers;
   }
 }
+
+const importFields = (r: ImportRow) => ({
+  title: r.title,
+  author: r.author,
+  isbn: r.isbn,
+  publisher: r.publisher,
+  category: r.category,
+  language: r.language,
+  shelf: r.shelf,
+});
 
 const bookFields = (dto: BookInputDto) => ({
   title: dto.title,

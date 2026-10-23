@@ -11,8 +11,16 @@ import {
   Post,
   Put,
   Query,
+  Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
+  BadRequestException,
+  StreamableFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Express, Response } from 'express';
+import { memoryStorage } from 'multer';
 import { Role } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -32,15 +40,60 @@ import {
   LoansQueryDto,
   ReturnDto,
 } from './dto/library.dto';
+import { buildBooksTemplate } from './library-import';
 import { LibraryService } from './library.service';
 
 const DESK = [Role.librarian, Role.admin, Role.super_admin] as const;
+
+const upload = FileInterceptor('file', {
+  storage: memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
 
 /** Library (flag `library`, Premium Max). */
 @Controller('library')
 @UseGuards(FeatureGuard('library'))
 export class LibraryController {
   constructor(private readonly library: LibraryService) {}
+
+  /** Excel import of the catalogue: template, check, then add. */
+  @Get('import/template')
+  @Roles(...DESK)
+  async importTemplate(@Res({ passthrough: true }) res: Response) {
+    res.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition':
+        'attachment; filename="library-books-template.xlsx"',
+    });
+    // A file, not JSON (a returned Buffer would be serialised).
+    return new StreamableFile(await buildBooksTemplate());
+  }
+
+  @Post('import/validate')
+  @HttpCode(HttpStatus.OK)
+  @Roles(...DESK)
+  @UseInterceptors(upload)
+  validateImport(
+    @TenantId() tenantId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('No file provided');
+    return this.library.validateImport(tenantId, file.buffer);
+  }
+
+  @Post('import/commit')
+  @HttpCode(HttpStatus.OK)
+  @Roles(...DESK)
+  @UseInterceptors(upload)
+  commitImport(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('No file provided');
+    return this.library.commitImport(tenantId, user.id, file.buffer);
+  }
 
   @Get('summary')
   @Roles(...DESK)

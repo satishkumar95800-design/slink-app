@@ -14,6 +14,7 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  StreamableFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Role } from '@prisma/client';
@@ -86,7 +87,8 @@ export class SyllabusController {
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': 'attachment; filename="syllabus-template.xlsx"',
     });
-    return buildSyllabusTemplate();
+    // A file, not JSON (a returned Buffer would be serialised).
+    return new StreamableFile(await buildSyllabusTemplate());
   }
 
   @Post('import/validate')
