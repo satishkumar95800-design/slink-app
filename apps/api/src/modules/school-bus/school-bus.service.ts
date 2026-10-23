@@ -4,12 +4,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PettyCashPayeeType, Prisma } from '@prisma/client';
+import { PettyCashPayeeType, Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   AssignStudentsDto,
+  GroundStaffDto,
   RouteInputDto,
   UnassignStudentsDto,
+  UpdateGroundStaffDto,
 } from './dto/school-bus.dto';
 
 type Db = PrismaService | Prisma.TransactionClient;
@@ -75,6 +77,108 @@ export class SchoolBusService {
       orderBy: { name: 'asc' },
       select: { id: true, name: true, phone: true },
     });
+  }
+
+  // ── Ground staff (drivers and attendants) ───────────────────────────────
+  // The same records petty cash keeps as GROUND_STAFF payees, so a school
+  // without petty cash (Premium) can still keep its drivers here.
+
+  /** All ground staff, active first, with whether each has a driver login. */
+  async groundStaff(tenantId: string) {
+    const rows = await this.prisma.pettyCashPayee.findMany({
+      where: { tenantId, type: PettyCashPayeeType.GROUND_STAFF },
+      orderBy: [{ isActive: 'desc' }, { name: 'asc' }],
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        notes: true,
+        isActive: true,
+        userId: true,
+      },
+    });
+    return rows.map(({ userId, ...r }) => ({ ...r, hasAppAccess: !!userId }));
+  }
+
+  async addGroundStaff(tenantId: string, actorId: string, dto: GroundStaffDto) {
+    const row = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.pettyCashPayee.create({
+        data: {
+          tenantId,
+          type: PettyCashPayeeType.GROUND_STAFF,
+          name: dto.name,
+          phone: compactPhone(dto.phone),
+          notes: dto.notes ?? null,
+        },
+      });
+      await this.audit(
+        tx,
+        tenantId,
+        actorId,
+        'transport.ground_staff_added',
+        created.id,
+        {
+          name: created.name,
+        },
+      );
+      return created;
+    });
+    return { id: row.id };
+  }
+
+  /** Edit or (de)activate. Deactivating also removes their driver login. */
+  async updateGroundStaff(
+    tenantId: string,
+    actorId: string,
+    id: string,
+    dto: UpdateGroundStaffDto,
+  ) {
+    const existing = await this.prisma.pettyCashPayee.findFirst({
+      where: { id, tenantId, type: PettyCashPayeeType.GROUND_STAFF },
+    });
+    if (!existing)
+      throw new NotFoundException(
+        err('DRIVER_NOT_FOUND', 'Ground staff member not found'),
+      );
+    const phone = dto.phone === undefined ? undefined : compactPhone(dto.phone);
+    const dropLogin =
+      !!existing.userId &&
+      (dto.isActive === false ||
+        (phone !== undefined && phone !== existing.phone));
+    await this.prisma.$transaction(async (tx) => {
+      await tx.pettyCashPayee.update({
+        where: { id },
+        data: {
+          ...(dto.name !== undefined && { name: dto.name }),
+          ...(phone !== undefined && { phone }),
+          ...(dto.notes !== undefined && { notes: dto.notes }),
+          ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+          ...(dropLogin && { userId: null }),
+        },
+      });
+      // A new phone or leaving the school: the old driver login goes.
+      if (dropLogin)
+        await tx.user.deleteMany({
+          where: { id: existing.userId!, tenantId, role: Role.driver },
+        });
+      await this.audit(
+        tx,
+        tenantId,
+        actorId,
+        'transport.ground_staff_updated',
+        id,
+        {
+          before: {
+            name: existing.name,
+            phone: existing.phone,
+            isActive: existing.isActive,
+          },
+          changes: { ...dto, ...(phone !== undefined && { phone }) },
+          driverLoginRemoved: dropLogin,
+        },
+      );
+    });
+    return { id };
   }
 
   async createRoute(tenantId: string, actorId: string, dto: RouteInputDto) {
@@ -462,3 +566,8 @@ const stopFields = (s: RouteInputDto['stops'][number]) => ({
 const contact = (
   p: { name: string; phone: string | null; isActive: boolean } | null,
 ) => (p && p.isActive ? { name: p.name, phone: p.phone } : null);
+
+/** "+91 98450 77788" -> "+919845077788", the form the driver app signs in with. */
+function compactPhone(phone: string | null | undefined): string | null {
+  return phone ? phone.replace(/[\s()-]/g, '') : null;
+}

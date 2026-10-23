@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsOptional,
   IsString,
   IsUUID,
@@ -111,4 +112,49 @@ export class UnassignStudentsDto {
 export class StudentsQueryDto {
   @IsUUID()
   classId: string;
+}
+
+/** A driver or attendant (ground staff) added from the School bus page. */
+export class GroundStaffDto {
+  @trim()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(100)
+  name: string;
+
+  /** With country code, e.g. +919876543210 (spaces are removed). */
+  @emptyToNull()
+  @Matches(/^\+?[0-9\s()-]{6,20}$/, { message: 'phone looks invalid' })
+  @IsOptional()
+  phone?: string | null;
+
+  @emptyToNull()
+  @IsString()
+  @MaxLength(500)
+  @IsOptional()
+  notes?: string | null;
+}
+
+export class UpdateGroundStaffDto {
+  @trim()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(100)
+  @IsOptional()
+  name?: string;
+
+  @emptyToNull()
+  @Matches(/^\+?[0-9\s()-]{6,20}$/, { message: 'phone looks invalid' })
+  @IsOptional()
+  phone?: string | null;
+
+  @emptyToNull()
+  @IsString()
+  @MaxLength(500)
+  @IsOptional()
+  notes?: string | null;
+
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 }

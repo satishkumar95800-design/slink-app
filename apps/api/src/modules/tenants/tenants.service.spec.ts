@@ -85,7 +85,7 @@ describe('TenantsService', () => {
       expect(data.subscriptionPlan).toBe('premium');
       expect(data.subscriptionStartsOn).toEqual(new Date('2026-10-17T00:00:00Z'));
       expect(data.subscriptionEndsOn).toEqual(new Date('2027-10-16T00:00:00Z'));
-      expect(data.features).toMatchObject({ transportFeeModule: true, calendar: true, syllabus: true, hrms: false });
+      expect(data.features).toMatchObject({ transportFeeModule: true, calendar: true, syllabus: false, hrms: false });
     });
 
     it('applies defaults for timezone and colors', async () => {

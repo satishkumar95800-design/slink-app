@@ -48,10 +48,17 @@ describe('subscription rules', () => {
   it('sets every plan-managed flag from the preset', () => {
     expect(presetFlags('basic').timetable).toBe(false);
     expect(presetFlags('premium')).toMatchObject({
-      syllabus: true,
+      timetable: true,
+      transport: true,
+      syllabus: false,
+      admissions: false,
+      pettyCash: false,
       hrms: false,
     });
     expect(presetFlags('premium_max')).toMatchObject({
+      syllabus: true,
+      admissions: true,
+      pettyCash: true,
       hrms: true,
       aiInsights: true,
     });

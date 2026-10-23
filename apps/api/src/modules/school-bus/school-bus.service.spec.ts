@@ -30,7 +30,14 @@ function makePrisma() {
     },
     student: { count: jest.fn(), findMany: jest.fn() },
     studentParent: { findFirst: jest.fn() },
-    pettyCashPayee: { count: jest.fn(), findMany: jest.fn() },
+    pettyCashPayee: {
+      count: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    user: { deleteMany: jest.fn() },
     auditLog: { create: jest.fn() },
   };
   prisma.$transaction = jest.fn((fn: (tx: unknown) => unknown) => fn(prisma));
@@ -233,6 +240,74 @@ describe('SchoolBusService', () => {
         data: expect.objectContaining({
           action: 'transport.students_assigned',
         }),
+      });
+    });
+  });
+
+  describe('ground staff', () => {
+    it('adds a driver with the phone stored without spaces, audit-logged', async () => {
+      prisma.pettyCashPayee.create.mockResolvedValue({
+        id: 'p1',
+        name: 'Raju',
+      });
+      await service.addGroundStaff(T, ACTOR, {
+        name: 'Raju',
+        phone: '+91 98450 77788',
+      });
+      expect(prisma.pettyCashPayee.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          type: 'GROUND_STAFF',
+          phone: '+919845077788',
+        }),
+      });
+      expect(prisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: 'transport.ground_staff_added',
+          }),
+        }),
+      );
+    });
+
+    it('deactivating removes their driver login', async () => {
+      prisma.pettyCashPayee.findFirst.mockResolvedValue({
+        id: 'p1',
+        name: 'Raju',
+        phone: '+919845077788',
+        isActive: true,
+        userId: 'u1',
+      });
+      await service.updateGroundStaff(T, ACTOR, 'p1', { isActive: false });
+      expect(prisma.pettyCashPayee.update).toHaveBeenCalledWith({
+        where: { id: 'p1' },
+        data: expect.objectContaining({ isActive: false, userId: null }),
+      });
+      expect(prisma.user.deleteMany).toHaveBeenCalledWith({
+        where: { id: 'u1', tenantId: T, role: 'driver' },
+      });
+    });
+
+    it('a name change keeps the driver login', async () => {
+      prisma.pettyCashPayee.findFirst.mockResolvedValue({
+        id: 'p1',
+        name: 'Raju',
+        phone: '+919845077788',
+        isActive: true,
+        userId: 'u1',
+      });
+      await service.updateGroundStaff(T, ACTOR, 'p1', { name: 'Raju K' });
+      expect(prisma.user.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it("refuses another school's record", async () => {
+      prisma.pettyCashPayee.findFirst.mockResolvedValue(null);
+      await expect(
+        service.updateGroundStaff(T, ACTOR, 'p9', { name: 'X' }),
+      ).rejects.toMatchObject({
+        response: { code: 'DRIVER_NOT_FOUND' },
+      });
+      expect(prisma.pettyCashPayee.findFirst).toHaveBeenCalledWith({
+        where: { id: 'p9', tenantId: T, type: 'GROUND_STAFF' },
       });
     });
   });

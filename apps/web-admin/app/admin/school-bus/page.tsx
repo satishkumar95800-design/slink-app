@@ -15,7 +15,8 @@ import { Spinner } from '../../../components/ui/spinner';
 import { useToast } from '../../../components/ui/toast';
 import { RouteFields, RouteValues, emptyRoute, routeValid, toBody } from './route-form';
 import { RouteStudents } from './route-students';
-import { Tracking } from './tracking';
+import { GroundStaffCard } from './ground-staff';
+import { LiveBuses } from './tracking';
 import { Person, Route } from './types';
 
 /** School bus routes (flag `transport`): admin and accounts. */
@@ -53,10 +54,13 @@ function SchoolBus({ tracking }: { tracking: boolean }) {
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  const loadStaff = useCallback(() => {
+    api.get<Person[]>('/transport/drivers').then(setStaff).catch(() => {});
+  }, []);
   useEffect(() => {
     load();
-    api.get<Person[]>('/transport/drivers').then(setStaff).catch(() => {});
-  }, [load]);
+    loadStaff();
+  }, [load, loadStaff]);
 
   const open = routes?.find((r) => r.id === openId) ?? null;
   const riders = routes?.reduce((n, r) => n + r.studentCount, 0) ?? 0;
@@ -124,7 +128,10 @@ function SchoolBus({ tracking }: { tracking: boolean }) {
         </>
       )}
 
-      {tracking && <Tracking />}
+      <div className={`grid gap-5 ${tracking ? 'lg:grid-cols-2' : ''}`}>
+        {tracking && <LiveBuses />}
+        <GroundStaffCard tracking={tracking} onChanged={loadStaff} />
+      </div>
 
       <Drawer open={!!open} onClose={() => setOpenId(null)} title={open?.name ?? ''} subtitle={open ? t('drawerSubtitle', { students: open.studentCount, stops: open.stops.length }) : ''} icon={<Bus className="h-5 w-5" />} accent="bg-amber-100 text-amber-700">
         {open && <RouteDrawer key={open.id} route={open} staff={staff} onChanged={load} onDeleted={() => setOpenId(null)} />}

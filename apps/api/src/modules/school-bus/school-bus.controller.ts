@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -20,9 +21,11 @@ import { FeatureGuard } from '../../common/guards/feature.guard';
 import type { ActiveUser } from '../../common/types/active-user.type';
 import {
   AssignStudentsDto,
+  GroundStaffDto,
   RouteInputDto,
   StudentsQueryDto,
   UnassignStudentsDto,
+  UpdateGroundStaffDto,
 } from './dto/school-bus.dto';
 import { SchoolBusService } from './school-bus.service';
 
@@ -45,6 +48,33 @@ export class SchoolBusController {
   @Roles(...STAFF)
   drivers(@TenantId() tenantId: string) {
     return this.transport.drivers(tenantId);
+  }
+
+  @Get('ground-staff')
+  @Roles(...STAFF)
+  groundStaff(@TenantId() tenantId: string) {
+    return this.transport.groundStaff(tenantId);
+  }
+
+  @Post('ground-staff')
+  @Roles(...STAFF)
+  addGroundStaff(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @Body() dto: GroundStaffDto,
+  ) {
+    return this.transport.addGroundStaff(tenantId, user.id, dto);
+  }
+
+  @Patch('ground-staff/:id')
+  @Roles(...STAFF)
+  updateGroundStaff(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateGroundStaffDto,
+  ) {
+    return this.transport.updateGroundStaff(tenantId, user.id, id, dto);
   }
 
   @Post('routes')
