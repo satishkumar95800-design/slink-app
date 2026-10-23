@@ -35,6 +35,7 @@ export const PLAN_MANAGED_FEATURES: OptionalFeature[] = [
   'aiInsights',
   'busTracking',
   'library',
+  'photoAlbums',
 ];
 
 const PREMIUM: OptionalFeature[] = [
@@ -60,6 +61,7 @@ export const PLAN_PRESETS: Record<SubscriptionPlan, OptionalFeature[]> = {
     'aiInsights',
     'busTracking',
     'library',
+    'photoAlbums',
   ],
 };
 

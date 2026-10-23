@@ -150,7 +150,7 @@ export const strings = {
             'Everything in Premium',
             'Admissions pipeline and front desk',
             'Syllabus progress and petty cash',
-            'Live bus tracking and library',
+            'Live bus tracking, library and photo albums',
             'HR and payroll with payslips',
             'Staff leave in the app',
             'AI assistant and notice translation',

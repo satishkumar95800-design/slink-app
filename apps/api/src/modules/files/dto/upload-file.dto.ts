@@ -13,6 +13,8 @@ export enum FileCategory {
   HR_DOCUMENT = 'hr_document', // private/{tenantId}/hr/{employeeId}/ — admin/accounts only, via /hrms/employees/:id/documents
   STAFF_DOCUMENT = 'staff_document', // private/{tenantId}/staff-docs/{folderId}/ — staff only, via /staff-documents
   RECEPTION_FORM = 'reception_form', // private/{tenantId}/reception-forms/ — front desk only, via /reception/forms
+  ALBUM_PHOTO = 'album_photo', // private/{tenantId}/albums/{albumId}/ — via /albums only; screened like attachments
+  ALBUM_THUMB = 'album_thumb', // private/{tenantId}/albums/{albumId}/thumbs/ — the device-made thumbnail of an album photo
 }
 
 export const ALLOWED_MIME: Record<FileCategory, string[]> = {
@@ -56,6 +58,9 @@ export const ALLOWED_MIME: Record<FileCategory, string[]> = {
   [FileCategory.HR_DOCUMENT]: ['image/jpeg', 'image/png', 'application/pdf'],
   // Printable at the desk: PDF or a photo/scan of the form.
   [FileCategory.RECEPTION_FORM]: ['application/pdf', 'image/jpeg', 'image/png'],
+  // Only the types the image check reads (no WebP), so every photo is screened.
+  [FileCategory.ALBUM_PHOTO]: ['image/jpeg', 'image/png'],
+  [FileCategory.ALBUM_THUMB]: ['image/jpeg', 'image/png'],
   [FileCategory.STAFF_DOCUMENT]: [
     'application/pdf',
     'image/jpeg',
@@ -86,6 +91,9 @@ export const MAX_BYTES: Record<FileCategory, number> = {
   [FileCategory.HR_DOCUMENT]: 10 * 1024 * 1024, // 10 MB
   [FileCategory.STAFF_DOCUMENT]: 20 * 1024 * 1024, // 20 MB
   [FileCategory.RECEPTION_FORM]: 15 * 1024 * 1024, // 15 MB
+  // Resized on the device to about 1600 px (300-500 KB); the cap allows an unresized PNG.
+  [FileCategory.ALBUM_PHOTO]: 5 * 1024 * 1024,
+  [FileCategory.ALBUM_THUMB]: 512 * 1024,
 };
 
 export class UploadFileDto {

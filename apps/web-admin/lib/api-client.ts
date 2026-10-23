@@ -184,11 +184,14 @@ export async function apiUpload<T>(
   file: File,
   fields?: Record<string, string>,
   tenantOverride?: string,
+  /** The file's form field (default "file") and more files to send with it. */
+  opts?: { fileField?: string; extraFiles?: Record<string, File> },
 ): Promise<T> {
   const { token, tenantId } = getAuth();
   const effectiveTenant = tenantOverride ?? tenantId;
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append(opts?.fileField ?? 'file', file);
+  for (const [key, extra] of Object.entries(opts?.extraFiles ?? {})) formData.append(key, extra);
   if (fields) {
     for (const [key, value] of Object.entries(fields)) formData.append(key, value);
   }

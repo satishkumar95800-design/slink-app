@@ -26,6 +26,8 @@ export interface TenantFeatures {
   busTracking?: boolean;
   /** Library management (Premium Max). */
   library?: boolean;
+  /** Activity photo albums for parents (Premium Max). */
+  photoAlbums?: boolean;
 }
 
 // Keyed by school so signing in to another school in the same tab refetches.

@@ -61,7 +61,7 @@ export const PLANS: Plan[] = [
     highlights: [
       'Everything in Premium',
       'Admissions, front desk and syllabus progress',
-      'Petty cash, live bus tracking and library',
+      'Petty cash, bus tracking, library, photo albums',
       'HR and payroll: PF, ESI, PT, payslips and leave',
       'AI assistant, notice translation, report remarks',
       'Early warnings and a Monday summary',
@@ -95,7 +95,7 @@ export const COMPARISON: ComparisonGroup[] = [
       ['School calendar with events and PTMs', false, true, true],
       ['Shared staff documents', false, true, true],
       ['School bus routes, stops and driver contact', false, true, true],
-      ['Live bus tracking and library', false, false, true],
+      ['Live bus tracking, library and photo albums', false, false, true],
     ],
   },
   {

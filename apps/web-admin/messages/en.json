@@ -171,7 +171,20 @@
     "PATTERN_LENGTH": "Enter a format of up to 30 characters",
     "PATTERN_NEEDS_N": "The format needs the running number exactly once",
     "PATTERN_UNKNOWN_TOKEN": "Only the buttons below can be used inside curly brackets",
-    "PATTERN_CHARACTERS": "Use letters, digits, spaces and / - . _ only"
+    "PATTERN_CHARACTERS": "Use letters, digits, spaces and / - . _ only",
+    "ALBUM_NOT_FOUND": "Album not found.",
+    "ALBUM_EXPIRED": "This album has expired and its photos have been deleted.",
+    "ALBUM_FULL": "An album holds up to 100 photos.",
+    "ALBUM_STORAGE_FULL": "The school's photo storage is full until older albums expire.",
+    "ALBUM_PUBLISHED": "This album is already published.",
+    "ALBUM_EMPTY": "Add photos before publishing.",
+    "ALBUM_NOT_LIVE": "Only a shared album that has not expired can be extended.",
+    "ALBUM_EXTENDED": "This album has already been extended once.",
+    "ALBUM_NO_AUDIENCE": "Choose at least one class or child.",
+    "ALBUM_AUDIENCE_INVALID": "A class or child is not in this school.",
+    "NOT_YOUR_CLASS": "Teachers can share albums only with the classes they teach.",
+    "PHOTO_NOT_FOUND": "Photo not found.",
+    "ADMIN_ONLY": "Only an admin can do this."
   },
   "language": {
     "label": "Language",
@@ -212,7 +225,8 @@
     "admissions": "Admissions",
     "schoolBus": "School bus",
     "reception": "Front desk",
-    "library": "Library"
+    "library": "Library",
+    "albums": "Photo albums"
   },
   "header": {
     "changePassword": "Change Password",
@@ -2720,5 +2734,55 @@
       "PATTERN_UNKNOWN_TOKEN": "Only the buttons below can be used inside curly brackets",
       "PATTERN_CHARACTERS": "Use letters, digits, spaces and / - . _ only"
     }
+  },
+  "albums": {
+    "title": "Photo albums",
+    "intro": "Share photos of an activity with the parents of whole classes or chosen children. Parents can view and save them for 30 days; after that the photos are deleted.",
+    "offTitle": "Photo albums are not on",
+    "offBody": "Photo albums for parents are part of the Premium Max plan. Ask Schoolinkd to switch them on.",
+    "newAlbum": "New album",
+    "emptyTitle": "No albums yet",
+    "emptyBody": "Make an album for an activity, add photos and publish it to the parents.",
+    "status": {
+      "draft": "Draft",
+      "live": "Shared",
+      "expired": "Expired"
+    },
+    "photoCount": "{count, plural, =1 {1 photo} other {# photos}}",
+    "until": "Until {date}",
+    "savedBy": "{count, plural, =0 {no one has saved yet} =1 {saved by 1 parent} other {saved by # parents}}",
+    "savedOf": "saved by {saved} of {total} parents",
+    "edit": "Edit",
+    "albumTitle": "Album name",
+    "albumTitlePlaceholder": "e.g. Sports Day 2026",
+    "eventDate": "Date of the activity",
+    "description": "Note for parents (optional)",
+    "whoSees": "Who sees it",
+    "whoSeesHelp": "Every child of the classes you pick, plus any children you add below.",
+    "audienceLocked": "Who sees it can't change after the album is shared.",
+    "children": "Children",
+    "findChild": "Add a child by name or admission number",
+    "create": "Create album",
+    "created": "Album created. Add photos, then publish it.",
+    "saved": "Album saved",
+    "sharedWith": "For: {who}",
+    "draftHint": "Not shared yet. Publishing tells {count, plural, =1 {1 parent} other {# parents}} with a notification.",
+    "publish": "Publish to parents",
+    "published": "Published. {count, plural, =1 {1 parent} other {# parents}} will get a notification.",
+    "extend": "Keep 30 days longer",
+    "extended": "The album stays 30 days longer",
+    "delete": "Delete album",
+    "confirmDelete": "Delete \"{title}\" and all its photos? Parents won't see it any more.",
+    "deleted": "Album deleted",
+    "expiredHint": "This album has expired and its photos have been deleted.",
+    "photosOf": "Photos ({count} of {max})",
+    "addPhotos": "Add photos",
+    "tooMany": "An album holds up to {max} photos; the extra ones were left out.",
+    "uploading": "Uploading {done} of {total}…",
+    "uploadFailed": "{count, plural, =1 {1 photo failed} other {# photos failed}}",
+    "noPhotos": "No photos yet. Add photos from this computer; they are made smaller before upload.",
+    "removePhoto": "Remove photo",
+    "photoRemoved": "Photo removed",
+    "storage": "School photo storage in use: {used} GB of {total} GB. Space comes back as albums expire."
   }
 }

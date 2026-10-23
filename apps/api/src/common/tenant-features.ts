@@ -32,7 +32,9 @@ export type OptionalFeature =
   /** Live bus GPS from the driver's phone during a trip (Premium Max; needs transport). */
   | 'busTracking'
   /** Library: books, copies, issue/return, overdue and fines (Premium Max). */
-  | 'library';
+  | 'library'
+  /** Activity photo albums for parents, kept 30 days (Premium Max). */
+  | 'photoAlbums';
 
 export async function isFeatureEnabled(
   prisma: PrismaService,

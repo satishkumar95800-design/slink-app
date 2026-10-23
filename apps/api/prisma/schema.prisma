@@ -262,6 +262,7 @@ model Tenant {
   visitors                 Visitor[]
   callLogs                 CallLog[]
   receptionForms           ReceptionForm[]
+  photoAlbums              PhotoAlbum[]
   transportStops           TransportStop[]
   studentTransports        StudentTransport[]
   holidayNotices           HolidayNotice[]
@@ -2526,4 +2527,70 @@ model PayRunLineItem {
 
   @@index([lineId])
   @@map("pay_run_line_items")
+}
+
+// ─── Photo albums (Premium Max, flag photoAlbums) ────────────────────────────
+
+/// Photos of an activity for the parents of chosen classes or children. A
+/// draft until published; parents can view and save them for 30 days, then
+/// the files are deleted (`expiredAt`) and the album stays as a dated entry.
+model PhotoAlbum {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  title         String    @db.VarChar(120)
+  description   String?   @db.VarChar(500)
+  eventDate     DateTime? @map("event_date") @db.Date
+  /// Who sees it: every child of these classes, plus these children.
+  classIds      String[]  @map("class_ids") @db.Uuid
+  studentIds    String[]  @map("student_ids") @db.Uuid
+  createdBy     String    @map("created_by") @db.Uuid
+  publishedAt   DateTime? @map("published_at")
+  expiresAt     DateTime? @map("expires_at")
+  /// Extended once by an admin.
+  extended      Boolean   @default(false)
+  reminderSentAt DateTime? @map("reminder_sent_at")
+  /// Files deleted at expiry.
+  expiredAt     DateTime? @map("expired_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  photos    AlbumPhoto[]
+  downloads AlbumDownload[]
+
+  @@index([tenantId, createdAt])
+  @@index([expiresAt])
+  @@map("photo_albums")
+}
+
+/// One photo (resized on the device) and its thumbnail, both in S3.
+model AlbumPhoto {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  albumId   String   @map("album_id") @db.Uuid
+  key       String
+  thumbKey  String   @map("thumb_key")
+  /// Bytes of the photo and thumbnail together (storage allowance).
+  size      Int
+  width     Int?
+  height    Int?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  album PhotoAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+
+  @@index([albumId, createdAt])
+  @@index([tenantId])
+  @@map("album_photos")
+}
+
+/// A parent saved photos from an album (for "x of y parents saved" and the reminder).
+model AlbumDownload {
+  albumId String   @map("album_id") @db.Uuid
+  userId  String   @map("user_id") @db.Uuid
+  at      DateTime @default(now())
+
+  album PhotoAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+
+  @@id([albumId, userId])
+  @@map("album_downloads")
 }

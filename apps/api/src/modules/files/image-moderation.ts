@@ -25,7 +25,8 @@ export const MODERATION_META = 'moderation';
 export const MODERATION_PASSED = 'passed';
 
 export const needsImageCheck = (category: FileCategory, mimetype: string) =>
-  category === FileCategory.ATTACHMENT &&
+  (category === FileCategory.ATTACHMENT ||
+    category === FileCategory.ALBUM_PHOTO) &&
   CHECKED_IMAGE_TYPES.includes(mimetype);
 
 export function imageModerationEnabled(

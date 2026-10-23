@@ -50,6 +50,7 @@ import { HeadOfficeModule } from './modules/head-office/head-office.module';
 import { AdmissionsModule } from './modules/admissions/admissions.module';
 import { LibraryModule } from './modules/library/library.module';
 import { ReceptionModule } from './modules/reception/reception.module';
+import { PhotoAlbumsModule } from './modules/photo-albums/photo-albums.module';
 import { AdminHomeModule } from './modules/admin-home/admin-home.module';
 import { PettyCashModule } from './modules/petty-cash/petty-cash.module';
 import { HrmsModule } from './modules/hrms/hrms.module';
@@ -115,6 +116,7 @@ import { HolidayNoticesModule } from './modules/holiday-notices/holiday-notices.
     AdmissionsModule,
     LibraryModule,
     ReceptionModule,
+    PhotoAlbumsModule,
     AdminHomeModule,
     PettyCashModule,
     HrmsModule,

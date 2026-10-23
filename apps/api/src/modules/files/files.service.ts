@@ -50,12 +50,17 @@ export const isStaffDocKey = (key: string): boolean =>
 export const isReceptionFormKey = (key: string): boolean =>
   key.split('/')[2] === 'reception-forms';
 
+/** Photo albums (private/{tenant}/albums/...) are reachable only through the photo-albums module. */
+export const isAlbumKey = (key: string): boolean =>
+  key.split('/')[2] === 'albums';
+
 /** Keys the generic /files routes must never serve, sign or delete. */
 export const isModuleOwnedKey = (key: string): boolean =>
   isPettyCashKey(key) ||
   isHrKey(key) ||
   isStaffDocKey(key) ||
-  isReceptionFormKey(key);
+  isReceptionFormKey(key) ||
+  isAlbumKey(key);
 
 /**
  * The S3 key of one of this school's student photos, from either the stored
@@ -399,6 +404,10 @@ export class FilesService {
         return `private/${tenantId}/staff-docs/${entityId ?? uuid}/${uuid}${ext}`;
       case FileCategory.RECEPTION_FORM:
         return `private/${tenantId}/reception-forms/${uuid}${ext}`;
+      case FileCategory.ALBUM_PHOTO:
+        return `private/${tenantId}/albums/${entityId ?? uuid}/${uuid}${ext}`;
+      case FileCategory.ALBUM_THUMB:
+        return `private/${tenantId}/albums/${entityId ?? uuid}/thumbs/${uuid}${ext}`;
     }
   }
 

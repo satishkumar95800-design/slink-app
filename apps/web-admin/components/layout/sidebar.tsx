@@ -34,6 +34,7 @@ import {
   UserPlus,
   ConciergeBell,
   Library,
+  Images,
 } from 'lucide-react';
 import { getSession } from '../../lib/auth';
 import { TenantFeatures, useTenantFeatures } from '../../lib/tenant-features';
@@ -44,7 +45,7 @@ import { isDeskRole } from '../../lib/roles';
 
 interface NavItem {
   /** Key into messages "nav". */
-  label: 'dashboard' | 'users' | 'students' | 'classes' | 'teachers' | 'fees' | 'studentFees' | 'payments' | 'feeReports' | 'reports' | 'attendance' | 'documents' | 'timetable' | 'paymentClaims' | 'pettyCash' | 'hr' | 'absence' | 'payslips' | 'sharedDocs' | 'syllabus' | 'admissions' | 'schoolBus' | 'reception' | 'library' | 'import' | 'settings';
+  label: 'dashboard' | 'albums' | 'users' | 'students' | 'classes' | 'teachers' | 'fees' | 'studentFees' | 'payments' | 'feeReports' | 'reports' | 'attendance' | 'documents' | 'timetable' | 'paymentClaims' | 'pettyCash' | 'hr' | 'absence' | 'payslips' | 'sharedDocs' | 'syllabus' | 'admissions' | 'schoolBus' | 'reception' | 'library' | 'import' | 'settings';
   href: string;
   icon: LucideIcon;
   /** Roles that should not see this item in the sidebar (still reachable by direct URL if the API allows it). */
@@ -74,6 +75,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'absence', href: '/admin/absence', icon: CalendarX2, onlyRoles: ['teacher'] },
       { label: 'reports', href: '/admin/reports', icon: ChartColumn },
       { label: 'syllabus', href: '/admin/syllabus', icon: ListChecks, onlyRoles: ['admin', 'teacher'], feature: 'syllabus' },
+      { label: 'albums', href: '/admin/albums', icon: Images, onlyRoles: ['admin', 'teacher'], feature: 'photoAlbums' },
     ],
   },
   {

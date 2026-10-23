@@ -68,6 +68,11 @@ export class UpdatePlatformFeaturesDto extends UpdateFeaturesDto {
   @IsOptional()
   library?: boolean;
 
+  /** Activity photo albums for parents (Premium Max). */
+  @IsBoolean()
+  @IsOptional()
+  photoAlbums?: boolean;
+
   /** Attendance report and fee reports with CSV export (Premium). */
   @IsBoolean()
   @IsOptional()
