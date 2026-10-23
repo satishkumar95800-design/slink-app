@@ -147,6 +147,12 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
       // Morning holiday push; the calendar is optional, the history is not.
       case 'holiday':
         return (route: '/dashboard/notifications', extra: null);
+      // A photo album shared (or about to be removed): open it for that child.
+      case 'album':
+        final studentId = data['studentId'];
+        final albumId = data['albumId'];
+        if (studentId != null && albumId != null) return (route: '/photos/child/$studentId/$albumId', extra: null);
+        break;
       // School bus started / about 5 minutes away: the child's bus on the map.
       case 'bus_started':
       case 'bus_arriving':

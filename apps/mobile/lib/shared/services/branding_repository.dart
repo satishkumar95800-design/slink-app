@@ -65,6 +65,11 @@ final busTrackingEnabledProvider = Provider<bool>((ref) {
   return ref.watch(brandingProvider).valueOrNull?.busTrackingEnabled ?? false;
 });
 
+/// Whether the school shares activity photo albums (Premium Max).
+final photoAlbumsEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(brandingProvider).valueOrNull?.photoAlbumsEnabled ?? false;
+});
+
 /// Whether the school has the library (Premium Max).
 final libraryEnabledProvider = Provider<bool>((ref) {
   return ref.watch(brandingProvider).valueOrNull?.libraryEnabled ?? false;

@@ -307,6 +307,13 @@ class _TeacherDashboardBody extends ConsumerWidget {
                         color: FeatureColors.syllabus,
                         onTap: () => context.push('/syllabus'),
                       ),
+                    if (ref.watch(photoAlbumsEnabledProvider))
+                      FeatureTile(
+                        icon: Icons.photo_library_rounded,
+                        label: l.albumsTitle,
+                        color: FeatureColors.notifications,
+                        onTap: () => context.push('/albums'),
+                      ),
                     if (ref.watch(staffDocumentsEnabledProvider))
                       FeatureTile(
                         icon: Icons.folder_shared_rounded,

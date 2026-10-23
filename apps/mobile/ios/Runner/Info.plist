@@ -50,6 +50,8 @@
 		<array>
 			<string>location</string>
 		</array>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>Used to save the school's activity photos of your child to your photos.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>Used to attach a photo from your library as proof of payment or when sending homework to a class.</string>
 		<key>UIApplicationSceneManifest</key>

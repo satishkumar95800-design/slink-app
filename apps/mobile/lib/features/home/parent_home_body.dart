@@ -155,6 +155,13 @@ class _ParentHomeBodyState extends ConsumerState<ParentHomeBody> {
                         color: FeatureColors.bus,
                         onTap: () => context.push('/school-bus/child/${child.id}'),
                       ),
+                    if (ref.watch(photoAlbumsEnabledProvider))
+                      FeatureTile(
+                        icon: Icons.photo_library_rounded,
+                        label: l.albumsTile,
+                        color: FeatureColors.notifications,
+                        onTap: () => context.push('/photos/child/${child.id}'),
+                      ),
                     if (ref.watch(libraryEnabledProvider))
                       FeatureTile(
                         icon: Icons.menu_book_rounded,

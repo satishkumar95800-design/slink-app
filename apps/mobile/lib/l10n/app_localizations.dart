@@ -3719,6 +3719,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'© OpenStreetMap contributors'**
   String get mapAttribution;
+
+  /// No description provided for @albumsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo albums'**
+  String get albumsTitle;
+
+  /// No description provided for @albumsTile.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get albumsTile;
+
+  /// No description provided for @albumsEmptyParent.
+  ///
+  /// In en, this message translates to:
+  /// **'No photos yet. When the school shares photos of an activity, they show here.'**
+  String get albumsEmptyParent;
+
+  /// No description provided for @albumsUntil.
+  ///
+  /// In en, this message translates to:
+  /// **'Until {date}'**
+  String albumsUntil(String date);
+
+  /// No description provided for @albumsExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed'**
+  String get albumsExpired;
+
+  /// No description provided for @albumsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get albumsSaved;
+
+  /// No description provided for @albumsPhotoCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo} other{{count} photos}}'**
+  String albumsPhotoCount(int count);
+
+  /// No description provided for @albumsSaveAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Save all'**
+  String get albumsSaveAll;
+
+  /// No description provided for @albumsSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving {done} of {total}…'**
+  String albumsSaving(int done, int total);
+
+  /// No description provided for @albumsSavedAll.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo saved to your gallery} other{{count} photos saved to your gallery}}'**
+  String albumsSavedAll(int count);
+
+  /// No description provided for @albumsSaveOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to gallery'**
+  String get albumsSaveOne;
+
+  /// No description provided for @albumsSavedOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to your gallery'**
+  String get albumsSavedOne;
+
+  /// No description provided for @albumsSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save. Allow access to photos and try again.'**
+  String get albumsSaveFailed;
+
+  /// No description provided for @albumsLeaveNote.
+  ///
+  /// In en, this message translates to:
+  /// **'These photos are removed on {date}. Save the ones you want to keep.'**
+  String albumsLeaveNote(String date);
+
+  /// No description provided for @albumsExpiredNote.
+  ///
+  /// In en, this message translates to:
+  /// **'These photos have been removed.'**
+  String get albumsExpiredNote;
+
+  /// No description provided for @albumsNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New album'**
+  String get albumsNew;
+
+  /// No description provided for @albumsEmptyStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'No albums yet. Make one for an activity, add photos and share it with parents.'**
+  String get albumsEmptyStaff;
+
+  /// No description provided for @albumsName.
+  ///
+  /// In en, this message translates to:
+  /// **'Album name'**
+  String get albumsName;
+
+  /// No description provided for @albumsNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Sports Day 2026'**
+  String get albumsNameHint;
+
+  /// No description provided for @albumsShareWith.
+  ///
+  /// In en, this message translates to:
+  /// **'Share with'**
+  String get albumsShareWith;
+
+  /// No description provided for @albumsCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get albumsCreate;
+
+  /// No description provided for @albumsStatusDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get albumsStatusDraft;
+
+  /// No description provided for @albumsStatusLive.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared'**
+  String get albumsStatusLive;
+
+  /// No description provided for @albumsAddPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Add photos'**
+  String get albumsAddPhotos;
+
+  /// No description provided for @albumsUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading {done} of {total}…'**
+  String albumsUploading(int done, int total);
+
+  /// No description provided for @albumsUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo could not be uploaded} other{{count} photos could not be uploaded}}'**
+  String albumsUploadFailed(int count);
+
+  /// No description provided for @albumsPublish.
+  ///
+  /// In en, this message translates to:
+  /// **'Share with parents'**
+  String get albumsPublish;
+
+  /// No description provided for @albumsPublishTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share this album?'**
+  String get albumsPublishTitle;
+
+  /// No description provided for @albumsPublishBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Parents of the chosen classes get a notification and can save the photos for 30 days.'**
+  String get albumsPublishBody;
+
+  /// No description provided for @albumsPublished.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with parents'**
+  String get albumsPublished;
+
+  /// No description provided for @albumsLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos ({count} of {max})'**
+  String albumsLimit(int count, int max);
+
+  /// No description provided for @albumsRemovePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get albumsRemovePhoto;
+
+  /// No description provided for @albumsSavedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved by {saved} of {total} parents'**
+  String albumsSavedBy(int saved, int total);
+
+  /// No description provided for @albumsDraftNoPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Add photos, then share the album with parents.'**
+  String get albumsDraftNoPhotos;
 }
 
 class _AppLocalizationsDelegate

@@ -2242,4 +2242,147 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get mapAttribution => '© OpenStreetMap contributors';
+
+  @override
+  String get albumsTitle => 'फ़ोटो एल्बम';
+
+  @override
+  String get albumsTile => 'फ़ोटो';
+
+  @override
+  String get albumsEmptyParent =>
+      'अभी कोई फ़ोटो नहीं। स्कूल किसी गतिविधि की फ़ोटो साझा करेगा तो यहाँ दिखेंगी।';
+
+  @override
+  String albumsUntil(String date) {
+    return '$date तक';
+  }
+
+  @override
+  String get albumsExpired => 'हटा दी गईं';
+
+  @override
+  String get albumsSaved => 'सेव किया';
+
+  @override
+  String albumsPhotoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count फ़ोटो',
+      one: 'एक फ़ोटो',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get albumsSaveAll => 'सभी सेव करें';
+
+  @override
+  String albumsSaving(int done, int total) {
+    return '$total में से $done सेव हो रही हैं…';
+  }
+
+  @override
+  String albumsSavedAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count फ़ोटो गैलरी में सेव हुईं',
+      one: 'एक फ़ोटो गैलरी में सेव हुई',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get albumsSaveOne => 'गैलरी में सेव करें';
+
+  @override
+  String get albumsSavedOne => 'आपकी गैलरी में सेव हुई';
+
+  @override
+  String get albumsSaveFailed =>
+      'सेव नहीं हो सका। फ़ोटो की अनुमति दें और फिर कोशिश करें।';
+
+  @override
+  String albumsLeaveNote(String date) {
+    return 'ये फ़ोटो $date को हटा दी जाएँगी। जो रखनी हों, सेव कर लें।';
+  }
+
+  @override
+  String get albumsExpiredNote => 'ये फ़ोटो हटा दी गई हैं।';
+
+  @override
+  String get albumsNew => 'नया एल्बम';
+
+  @override
+  String get albumsEmptyStaff =>
+      'अभी कोई एल्बम नहीं। किसी गतिविधि का एल्बम बनाएँ, फ़ोटो जोड़ें और माता-पिता से साझा करें।';
+
+  @override
+  String get albumsName => 'एल्बम का नाम';
+
+  @override
+  String get albumsNameHint => 'जैसे खेल दिवस 2026';
+
+  @override
+  String get albumsShareWith => 'किसके साथ साझा करें';
+
+  @override
+  String get albumsCreate => 'बनाएँ';
+
+  @override
+  String get albumsStatusDraft => 'ड्राफ़्ट';
+
+  @override
+  String get albumsStatusLive => 'साझा किया गया';
+
+  @override
+  String get albumsAddPhotos => 'फ़ोटो जोड़ें';
+
+  @override
+  String albumsUploading(int done, int total) {
+    return '$total में से $done अपलोड हो रही हैं…';
+  }
+
+  @override
+  String albumsUploadFailed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count फ़ोटो अपलोड नहीं हुईं',
+      one: 'एक फ़ोटो अपलोड नहीं हुई',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get albumsPublish => 'माता-पिता से साझा करें';
+
+  @override
+  String get albumsPublishTitle => 'यह एल्बम साझा करें?';
+
+  @override
+  String get albumsPublishBody =>
+      'चुनी कक्षाओं के माता-पिता को सूचना जाएगी और वे 30 दिन तक फ़ोटो सेव कर सकेंगे।';
+
+  @override
+  String get albumsPublished => 'माता-पिता से साझा किया गया';
+
+  @override
+  String albumsLimit(int count, int max) {
+    return 'फ़ोटो ($max में से $count)';
+  }
+
+  @override
+  String get albumsRemovePhoto => 'फ़ोटो हटाएँ';
+
+  @override
+  String albumsSavedBy(int saved, int total) {
+    return '$total में से $saved अभिभावकों ने सेव किया';
+  }
+
+  @override
+  String get albumsDraftNoPhotos =>
+      'फ़ोटो जोड़ें, फिर एल्बम माता-पिता से साझा करें।';
 }

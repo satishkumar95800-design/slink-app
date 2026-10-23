@@ -38,6 +38,7 @@ class TenantBranding {
 
   /// Premium Max: library (parents see their child's borrowed books).
   bool get libraryEnabled => features['library'] == true;
+  bool get photoAlbumsEnabled => features['photoAlbums'] == true;
 
   factory TenantBranding.fromJson(Map<String, dynamic> json) => TenantBranding(
         id: json['id'] as String,

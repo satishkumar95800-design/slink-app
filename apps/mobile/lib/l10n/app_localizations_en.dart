@@ -2243,4 +2243,147 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mapAttribution => '© OpenStreetMap contributors';
+
+  @override
+  String get albumsTitle => 'Photo albums';
+
+  @override
+  String get albumsTile => 'Photos';
+
+  @override
+  String get albumsEmptyParent =>
+      'No photos yet. When the school shares photos of an activity, they show here.';
+
+  @override
+  String albumsUntil(String date) {
+    return 'Until $date';
+  }
+
+  @override
+  String get albumsExpired => 'Removed';
+
+  @override
+  String get albumsSaved => 'Saved';
+
+  @override
+  String albumsPhotoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count photos',
+      one: '1 photo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get albumsSaveAll => 'Save all';
+
+  @override
+  String albumsSaving(int done, int total) {
+    return 'Saving $done of $total…';
+  }
+
+  @override
+  String albumsSavedAll(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count photos saved to your gallery',
+      one: '1 photo saved to your gallery',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get albumsSaveOne => 'Save to gallery';
+
+  @override
+  String get albumsSavedOne => 'Saved to your gallery';
+
+  @override
+  String get albumsSaveFailed =>
+      'Couldn\'t save. Allow access to photos and try again.';
+
+  @override
+  String albumsLeaveNote(String date) {
+    return 'These photos are removed on $date. Save the ones you want to keep.';
+  }
+
+  @override
+  String get albumsExpiredNote => 'These photos have been removed.';
+
+  @override
+  String get albumsNew => 'New album';
+
+  @override
+  String get albumsEmptyStaff =>
+      'No albums yet. Make one for an activity, add photos and share it with parents.';
+
+  @override
+  String get albumsName => 'Album name';
+
+  @override
+  String get albumsNameHint => 'e.g. Sports Day 2026';
+
+  @override
+  String get albumsShareWith => 'Share with';
+
+  @override
+  String get albumsCreate => 'Create';
+
+  @override
+  String get albumsStatusDraft => 'Draft';
+
+  @override
+  String get albumsStatusLive => 'Shared';
+
+  @override
+  String get albumsAddPhotos => 'Add photos';
+
+  @override
+  String albumsUploading(int done, int total) {
+    return 'Uploading $done of $total…';
+  }
+
+  @override
+  String albumsUploadFailed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count photos could not be uploaded',
+      one: '1 photo could not be uploaded',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get albumsPublish => 'Share with parents';
+
+  @override
+  String get albumsPublishTitle => 'Share this album?';
+
+  @override
+  String get albumsPublishBody =>
+      'Parents of the chosen classes get a notification and can save the photos for 30 days.';
+
+  @override
+  String get albumsPublished => 'Shared with parents';
+
+  @override
+  String albumsLimit(int count, int max) {
+    return 'Photos ($count of $max)';
+  }
+
+  @override
+  String get albumsRemovePhoto => 'Remove photo';
+
+  @override
+  String albumsSavedBy(int saved, int total) {
+    return 'Saved by $saved of $total parents';
+  }
+
+  @override
+  String get albumsDraftNoPhotos =>
+      'Add photos, then share the album with parents.';
 }

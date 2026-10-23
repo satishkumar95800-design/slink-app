@@ -13,6 +13,8 @@ import '../../features/staff_docs/staff_docs_page.dart';
 import '../../features/syllabus/syllabus_page.dart';
 import '../../features/school_bus/school_bus_page.dart';
 import '../../features/school_bus/live_bus_page.dart';
+import '../../features/albums/child_albums_page.dart';
+import '../../features/albums/staff_albums_page.dart';
 import '../../features/library/child_library_page.dart';
 import '../../features/dashboard/dashboard_page.dart';
 import '../../features/dashboard/my_classes_page.dart';
@@ -110,6 +112,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => LiveBusPage(studentId: state.pathParameters['studentId']!),
       ),
       GoRoute(path: '/buses/live', builder: (_, __) => const AdminLiveBusesPage()),
+      GoRoute(
+        path: '/photos/child/:studentId',
+        builder: (_, state) => ChildAlbumsPage(studentId: state.pathParameters['studentId']!),
+      ),
+      GoRoute(
+        path: '/photos/child/:studentId/:albumId',
+        builder: (_, state) => AlbumPhotosPage(
+          studentId: state.pathParameters['studentId']!,
+          albumId: state.pathParameters['albumId']!,
+        ),
+      ),
+      GoRoute(path: '/albums', builder: (_, __) => const StaffAlbumsPage()),
+      GoRoute(
+        path: '/albums/:id',
+        builder: (_, state) => StaffAlbumPage(albumId: state.pathParameters['id']!),
+      ),
       GoRoute(
         path: '/library/child/:studentId',
         builder: (_, state) => ChildLibraryPage(studentId: state.pathParameters['studentId']!),
