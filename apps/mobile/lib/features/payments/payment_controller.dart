@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../shared/models/api_exception.dart';
 import '../../shared/models/payment_order.dart';
+import '../../shared/models/tenant_branding.dart';
+import '../../shared/services/branding_repository.dart';
 import 'payments_repository.dart';
 import '../../core/l10n/l10n.dart';
 
@@ -41,7 +43,7 @@ class PaymentController extends StateNotifier<PaymentState> {
         );
         return;
       }
-      _openCheckout(order, parentPhone);
+      _openCheckout(order, parentPhone, await _school());
     } catch (e) {
       state = PaymentState(
         status: PaymentStatus.failed,
@@ -50,7 +52,18 @@ class PaymentController extends StateNotifier<PaymentState> {
     }
   }
 
-  void _openCheckout(PaymentOrder order, String? parentPhone) {
+  /// The school, for the checkout header: parents pay the school, not us.
+  Future<TenantBranding?> _school() async {
+    try {
+      return await _ref.read(brandingProvider.future);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _openCheckout(PaymentOrder order, String? parentPhone, TenantBranding? school) {
+    final schoolName = school?.name.trim() ?? '';
+    final logo = school?.logoUrl;
     final razorpay = Razorpay();
     _razorpay = razorpay;
     state = const PaymentState(status: PaymentStatus.awaitingCheckout);
@@ -72,7 +85,8 @@ class PaymentController extends StateNotifier<PaymentState> {
       'amount': order.amountInPaise,
       'currency': order.currency,
       'order_id': order.gatewayOrderId,
-      'name': currentL10n.appName,
+      'name': schoolName.isNotEmpty ? schoolName : currentL10n.appName,
+      if (logo != null && logo.startsWith('https://')) 'image': logo,
       'description': currentL10n.checkoutDescription(order.studentFee.studentName),
       if (parentPhone != null) 'prefill': {'contact': parentPhone},
     });
