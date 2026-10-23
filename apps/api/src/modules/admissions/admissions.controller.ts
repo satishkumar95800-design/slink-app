@@ -27,7 +27,7 @@ import { AdmissionsService } from './admissions.service';
 
 /** Admissions pipeline (flag `admissions`): the school office. */
 @Controller('admissions')
-@Roles(Role.admin, Role.accounts, Role.super_admin)
+@Roles(Role.admin, Role.accounts, Role.receptionist, Role.super_admin)
 @UseGuards(FeatureGuard('admissions'))
 export class AdmissionsController {
   constructor(private readonly admissions: AdmissionsService) {}

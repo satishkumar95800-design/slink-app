@@ -33,6 +33,8 @@ export const PLAN_MANAGED_FEATURES: OptionalFeature[] = [
   'transport',
   'hrms',
   'aiInsights',
+  'busTracking',
+  'library',
 ];
 
 const PREMIUM: OptionalFeature[] = [
@@ -52,7 +54,7 @@ const PREMIUM: OptionalFeature[] = [
 export const PLAN_PRESETS: Record<SubscriptionPlan, OptionalFeature[]> = {
   basic: [],
   premium: PREMIUM,
-  premium_max: [...PREMIUM, 'hrms', 'aiInsights'],
+  premium_max: [...PREMIUM, 'hrms', 'aiInsights', 'busTracking', 'library'],
 };
 
 /** The flags a plan switches on and off, ready to merge into tenants.features. */

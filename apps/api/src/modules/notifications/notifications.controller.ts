@@ -51,7 +51,7 @@ export class NotificationsController {
    * to check back on something they missed or dismissed when it first arrived.
    */
   @Get('me')
-  @Roles(Role.parent, Role.teacher, Role.admin, Role.accounts)
+  @Roles(Role.parent, Role.teacher, Role.admin, Role.accounts, Role.driver)
   findMine(
     @TenantId() tenantId: string,
     @CurrentUser() user: ActiveUser,
@@ -65,7 +65,7 @@ export class NotificationsController {
    * Any authenticated role can call this (parent, teacher, admin).
    */
   @Post('fcm-token')
-  @Roles(Role.parent, Role.teacher, Role.admin, Role.accounts)
+  @Roles(Role.parent, Role.teacher, Role.admin, Role.accounts, Role.driver)
   @HttpCode(HttpStatus.NO_CONTENT)
   registerFcmToken(
     @CurrentUser() user: ActiveUser,
@@ -78,7 +78,7 @@ export class NotificationsController {
    * Mobile app removes its FCM token on logout.
    */
   @Delete('fcm-token')
-  @Roles(Role.parent, Role.teacher, Role.admin, Role.accounts)
+  @Roles(Role.parent, Role.teacher, Role.admin, Role.accounts, Role.driver)
   @HttpCode(HttpStatus.NO_CONTENT)
   removeFcmToken(
     @CurrentUser() user: ActiveUser,

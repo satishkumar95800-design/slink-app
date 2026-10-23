@@ -28,7 +28,11 @@ export type OptionalFeature =
   /** Admissions pipeline: enquiry to enrolment (Premium). */
   | 'admissions'
   /** School bus routes, stops, drivers; parents see their child's bus (Premium). */
-  | 'transport';
+  | 'transport'
+  /** Live bus GPS from the driver's phone during a trip (Premium Max; needs transport). */
+  | 'busTracking'
+  /** Library: books, copies, issue/return, overdue and fines (Premium Max). */
+  | 'library';
 
 export async function isFeatureEnabled(
   prisma: PrismaService,

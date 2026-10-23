@@ -1,7 +1,11 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Role } from '@prisma/client';
-import { ROLES_KEY } from '../decorators/roles.decorator';
+import {
+  NARROW_ROLES,
+  ROLES_KEY,
+  SELF_SERVICE_KEY,
+} from '../decorators/roles.decorator';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -19,9 +23,19 @@ export class RolesGuard implements CanActivate {
 
     // A head office login is read-only and cross-school: it may only reach
     // routes that name it explicitly, never a school's open routes
-    // (docs/SPEC-subscriptions.md 6.2).
-    if (user?.role === Role.head_office) {
-      return !!requiredRoles?.includes(Role.head_office);
+    // (docs/SPEC-subscriptions.md 6.2). Drivers, librarians and receptionists
+    // are kept to their own screens the same way, plus their own account.
+    if (user?.role && NARROW_ROLES.includes(user.role)) {
+      if (requiredRoles?.includes(user.role)) return true;
+      const selfService = this.reflector.getAllAndOverride<boolean>(
+        SELF_SERVICE_KEY,
+        [context.getHandler(), context.getClass()],
+      );
+      return (
+        !!selfService &&
+        !requiredRoles?.length &&
+        user.role !== Role.head_office
+      );
     }
 
     if (!requiredRoles || requiredRoles.length === 0) {

@@ -1,3 +1,4 @@
+import { SelfService } from '../../common/decorators/roles.decorator';
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
 import { Request } from 'express';
 import type { ActiveUser } from '../../common/types/active-user.type';
@@ -82,6 +83,7 @@ export class AuthController {
    * Revoke all refresh tokens for the authenticated user (logout everywhere).
    */
   @Post('logout/all')
+  @SelfService()
   @HttpCode(HttpStatus.NO_CONTENT)
   async logoutAll(@CurrentUser() user: { id: string }) {
     await this.authService.logoutAll(user.id);
@@ -91,6 +93,7 @@ export class AuthController {
    * Return the current authenticated user's profile.
    */
   @Get('me')
+  @SelfService()
   async me(@CurrentUser() user: ActiveUser) {
     return { success: true, data: await this.authService.me(user) };
   }

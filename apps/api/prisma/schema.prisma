@@ -18,6 +18,12 @@ enum Role {
   developer
   /// Head office of a group of schools: read-only view of its branches (docs/SPEC-subscriptions.md 6).
   head_office
+  /// School bus driver (mobile app, phone OTP): shares GPS during a trip. Only routes naming it.
+  driver
+  /// Library desk (console): books, issue and return. Only routes naming it.
+  librarian
+  /// Front desk (console): enquiries, follow-ups, visitors, calls. Only routes naming it.
+  receptionist
 }
 
 enum FeeStatus {
@@ -243,6 +249,16 @@ model Tenant {
   pettyCashCategories      PettyCashCategory[]
   pettyCashPayees          PettyCashPayee[]
   transportRoutes          TransportRoute[]
+  busTrips                 BusTrip[]
+  libraryBooks             LibraryBook[]
+  libraryCopies            LibraryCopy[]
+  libraryLoans             LibraryLoan[]
+  librarySettings          LibrarySettings?
+  admissionFollowUps       AdmissionFollowUp[]
+  admissionDocuments       AdmissionDocument[]
+  admissionPayments        AdmissionPayment[]
+  visitors                 Visitor[]
+  callLogs                 CallLog[]
   transportStops           TransportStop[]
   studentTransports        StudentTransport[]
   holidayNotices           HolidayNotice[]
@@ -387,6 +403,9 @@ model User {
   classReminderSetting ClassReminderSetting?
   pettyCashReceived    PettyCashEntry[] @relation("PettyCashRecipient")
   employee             Employee?
+  driverOf             PettyCashPayee?       @relation("DriverLogin")
+  busTrips             BusTrip[]
+  libraryLoans         LibraryLoan[]
 
   @@unique([tenantId, phone])
   @@unique([tenantId, email])
@@ -448,6 +467,7 @@ model Student {
   attendance        AttendanceRecord[]
   concessions       FeeConcession[]
   transport         StudentTransport?
+  libraryLoans      LibraryLoan[]
 
   @@unique([tenantId, admissionNo])
   @@index([tenantId])
@@ -631,6 +651,10 @@ model AdmissionEnquiry {
 
   tenant     Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   activities AdmissionActivity[]
+  followUps  AdmissionFollowUp[]
+  documents  AdmissionDocument[]
+  payments   AdmissionPayment[]
+  calls      CallLog[]
 
   @@index([tenantId, stage])
   @@index([tenantId, createdAt])
@@ -1237,6 +1261,7 @@ model TransportRoute {
   attendant PettyCashPayee?    @relation("RouteAttendant", fields: [attendantId], references: [id], onDelete: SetNull)
   stops     TransportStop[]
   students  StudentTransport[]
+  trips     BusTrip[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
@@ -1278,6 +1303,276 @@ model StudentTransport {
 
   @@index([tenantId, routeId])
   @@map("student_transport")
+}
+
+enum BusTripDirection {
+  pickup
+  drop
+}
+
+/// A bus run a driver started from the app. Only the latest position is kept
+/// (no trail). One open trip per route (partial unique index in the migration).
+model BusTrip {
+  id           String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String           @map("tenant_id") @db.Uuid
+  routeId      String           @map("route_id") @db.Uuid
+  driverUserId String           @map("driver_user_id") @db.Uuid
+  direction    BusTripDirection
+  startedAt    DateTime         @default(now()) @map("started_at")
+  endedAt      DateTime?        @map("ended_at")
+  lat          Float?
+  lng          Float?
+  /// Metres per second, degrees, metres (as the phone reports them).
+  speed        Float?
+  heading      Float?
+  accuracy     Float?
+  positionAt   DateTime?        @map("position_at")
+
+  tenant Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  route  TransportRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  driver User           @relation(fields: [driverUserId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, routeId, startedAt])
+  @@index([driverUserId, endedAt])
+  @@map("bus_trips")
+}
+
+// ─── Library (Premium Max, flag library) ─────────────────────────────────────
+
+/// A title in the catalogue; the physical books are its copies.
+model LibraryBook {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  title     String
+  author    String?
+  isbn      String?
+  publisher String?
+  category  String?
+  language  String?
+  shelf     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  copies LibraryCopy[]
+
+  @@index([tenantId, title])
+  @@map("library_books")
+}
+
+/// Not "issued": a copy is out when it has an open loan (derived, never stored).
+enum LibraryCopyStatus {
+  available
+  lost
+  damaged
+  withdrawn
+}
+
+/// One physical book, labelled with its accession number.
+model LibraryCopy {
+  id          String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String            @map("tenant_id") @db.Uuid
+  bookId      String            @map("book_id") @db.Uuid
+  accessionNo String            @map("accession_no")
+  status      LibraryCopyStatus @default(available)
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  tenant Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  book   LibraryBook   @relation(fields: [bookId], references: [id], onDelete: Restrict)
+  loans  LibraryLoan[]
+
+  @@unique([tenantId, accessionNo])
+  @@index([bookId])
+  @@map("library_copies")
+}
+
+enum LibraryFineStatus {
+  none
+  due
+  paid
+  waived
+}
+
+/// A copy lent to a student or a staff member (exactly one of the two). One
+/// open loan per copy (partial unique index in the migration).
+model LibraryLoan {
+  id         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String            @map("tenant_id") @db.Uuid
+  copyId     String            @map("copy_id") @db.Uuid
+  studentId  String?           @map("student_id") @db.Uuid
+  userId     String?           @map("user_id") @db.Uuid
+  issuedOn   DateTime          @map("issued_on") @db.Date
+  dueOn      DateTime          @map("due_on") @db.Date
+  returnedOn DateTime?         @map("returned_on") @db.Date
+  /// Set at return: days late x the school's fine per day.
+  fineAmount Decimal           @default(0) @map("fine_amount") @db.Decimal(12, 2)
+  fineStatus LibraryFineStatus @default(none) @map("fine_status")
+  issuedBy   String            @map("issued_by") @db.Uuid
+  returnedBy String?           @map("returned_by") @db.Uuid
+  createdAt  DateTime          @default(now()) @map("created_at")
+
+  tenant  Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  copy    LibraryCopy @relation(fields: [copyId], references: [id], onDelete: Restrict)
+  student Student?    @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  user    User?       @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, returnedOn, dueOn])
+  @@index([studentId])
+  @@index([userId])
+  @@map("library_loans")
+}
+
+model LibrarySettings {
+  tenantId        String   @id @map("tenant_id") @db.Uuid
+  studentLoanDays Int      @default(14) @map("student_loan_days")
+  staffLoanDays   Int      @default(30) @map("staff_loan_days")
+  maxStudentBooks Int      @default(2) @map("max_student_books")
+  maxStaffBooks   Int      @default(5) @map("max_staff_books")
+  finePerDay      Decimal  @default(0) @map("fine_per_day") @db.Decimal(12, 2)
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("library_settings")
+}
+
+// ─── Front desk (receptionist; part of the admissions flag) ──────────────────
+
+enum FollowUpKind {
+  call
+  visit
+  whatsapp
+  email
+  other
+}
+
+/// A to-do on an enquiry (call back, campus visit...). The enquiry's
+/// next_follow_up_on mirrors the earliest open one.
+model AdmissionFollowUp {
+  id        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String       @map("tenant_id") @db.Uuid
+  enquiryId String       @map("enquiry_id") @db.Uuid
+  dueOn     DateTime     @map("due_on") @db.Date
+  kind      FollowUpKind
+  note      String?
+  doneAt    DateTime?    @map("done_at")
+  doneBy    String?      @map("done_by") @db.Uuid
+  outcome   String?
+  createdBy String       @map("created_by") @db.Uuid
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  tenant  Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  enquiry AdmissionEnquiry @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, doneAt, dueOn])
+  @@index([enquiryId])
+  @@map("admission_follow_ups")
+}
+
+/// A document received for an enquiry; a kind with no row is still pending.
+/// Kinds are fixed in code (reception.constants.ts).
+model AdmissionDocument {
+  enquiryId  String   @map("enquiry_id") @db.Uuid
+  kind       String
+  tenantId   String   @map("tenant_id") @db.Uuid
+  receivedAt DateTime @default(now()) @map("received_at")
+  receivedBy String   @map("received_by") @db.Uuid
+  note       String?
+
+  tenant  Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  enquiry AdmissionEnquiry @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+
+  @@id([enquiryId, kind])
+  @@map("admission_documents")
+}
+
+enum DeskPaymentMode {
+  cash
+  upi
+  card
+  cheque
+  bank_transfer
+}
+
+/// Money taken at the front desk for an enquiry (registration fee, form).
+/// Receipt numbers run per school; a mistake is voided with a reason, never deleted.
+model AdmissionPayment {
+  id         String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String          @map("tenant_id") @db.Uuid
+  enquiryId  String          @map("enquiry_id") @db.Uuid
+  receiptNo  Int             @map("receipt_no")
+  purpose    String
+  amount     Decimal         @db.Decimal(12, 2)
+  mode       DeskPaymentMode
+  reference  String?
+  receivedOn DateTime        @map("received_on") @db.Date
+  receivedBy String          @map("received_by") @db.Uuid
+  voidedAt   DateTime?       @map("voided_at")
+  voidedBy   String?         @map("voided_by") @db.Uuid
+  voidReason String?         @map("void_reason")
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  tenant  Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  enquiry AdmissionEnquiry @relation(fields: [enquiryId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, receiptNo])
+  @@index([enquiryId])
+  @@map("admission_payments")
+}
+
+enum VisitorPurpose {
+  admission_enquiry
+  parent_meeting
+  interview
+  vendor
+  delivery
+  official
+  other
+}
+
+/// Front-desk visitor book: signed in, then signed out.
+model Visitor {
+  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String         @map("tenant_id") @db.Uuid
+  name       String
+  phone      String?
+  purpose    VisitorPurpose
+  whomToMeet String?        @map("whom_to_meet")
+  people     Int            @default(1)
+  note       String?
+  inAt       DateTime       @default(now()) @map("in_at")
+  outAt      DateTime?      @map("out_at")
+  createdBy  String         @map("created_by") @db.Uuid
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, inAt])
+  @@map("visitors")
+}
+
+enum CallDirection {
+  incoming
+  outgoing
+}
+
+/// A phone call taken or made at the desk, optionally about an enquiry.
+model CallLog {
+  id        String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String        @map("tenant_id") @db.Uuid
+  direction CallDirection
+  name      String?
+  phone     String
+  enquiryId String?       @map("enquiry_id") @db.Uuid
+  purpose   String?
+  note      String?
+  at        DateTime      @default(now())
+  createdBy String        @map("created_by") @db.Uuid
+
+  tenant  Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  enquiry AdmissionEnquiry? @relation(fields: [enquiryId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, at])
+  @@map("call_logs")
 }
 
 // ─── Bulk Import ──────────────────────────────────────────────────────────────
@@ -1747,10 +2042,13 @@ model PettyCashPayee {
   phone     String?
   notes     String?
   isActive  Boolean            @default(true) @map("is_active")
+  /// Driver app access: the driver-role login made for this ground staff member.
+  userId    String?            @unique @map("user_id") @db.Uuid
   createdAt DateTime           @default(now()) @map("created_at")
   updatedAt DateTime           @updatedAt @map("updated_at")
 
   tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user            User?            @relation("DriverLogin", fields: [userId], references: [id], onDelete: SetNull)
   entries         PettyCashEntry[]
   drivenRoutes    TransportRoute[] @relation("RouteDriver")
   attendantRoutes TransportRoute[] @relation("RouteAttendant")
@@ -1820,7 +2118,6 @@ model PettyCashCount {
   @@index([tenantId, countedAt])
   @@map("petty_cash_counts")
 }
-
 
 // ─── HR & Payroll (admin console + staff mobile; feature flag `hrms`) ─────────
 // Money is NUMERIC(12,2) here and integer paise in application code. Sensitive

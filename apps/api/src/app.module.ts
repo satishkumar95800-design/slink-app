@@ -48,6 +48,9 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
 import { PlatformDashboardModule } from './modules/platform-dashboard/platform-dashboard.module';
 import { HeadOfficeModule } from './modules/head-office/head-office.module';
 import { AdmissionsModule } from './modules/admissions/admissions.module';
+import { LibraryModule } from './modules/library/library.module';
+import { ReceptionModule } from './modules/reception/reception.module';
+import { AdminHomeModule } from './modules/admin-home/admin-home.module';
 import { PettyCashModule } from './modules/petty-cash/petty-cash.module';
 import { HrmsModule } from './modules/hrms/hrms.module';
 import { ParentModule } from './modules/parent/parent.module';
@@ -110,6 +113,9 @@ import { HolidayNoticesModule } from './modules/holiday-notices/holiday-notices.
     PlatformDashboardModule,
     HeadOfficeModule,
     AdmissionsModule,
+    LibraryModule,
+    ReceptionModule,
+    AdminHomeModule,
     PettyCashModule,
     HrmsModule,
     ParentModule,

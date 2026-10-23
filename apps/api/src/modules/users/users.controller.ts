@@ -20,7 +20,7 @@ import { UpdateLanguageDto } from './dto/update-language.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UserQueryDto } from './dto/user-query.dto';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { Roles, SelfService } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { TenantId } from '../../common/decorators/tenant.decorator';
 import type { ActiveUser } from '../../common/types/active-user.type';
@@ -32,11 +32,13 @@ export class UsersController {
   // ─── Self endpoints — declared first to avoid shadowing by :id ────────────────
 
   @Get('me')
+  @SelfService()
   getMe(@CurrentUser() user: ActiveUser) {
     return this.usersService.getMe(user.id);
   }
 
   @Patch('me')
+  @SelfService()
   updateMe(
     @CurrentUser() user: ActiveUser,
     @TenantId() tenantId: string,
@@ -47,11 +49,13 @@ export class UsersController {
 
   /** Saves the caller's interface language (any role) — applies on every device at next sign-in. */
   @Patch('me/language')
+  @SelfService()
   updateMyLanguage(@CurrentUser() user: ActiveUser, @Body() dto: UpdateLanguageDto) {
     return this.usersService.updateMyLanguage(user.id, dto.language);
   }
 
   @Post('me/change-password')
+  @SelfService()
   @HttpCode(HttpStatus.NO_CONTENT)
   async changePassword(@CurrentUser() user: ActiveUser, @Body() dto: ChangePasswordDto) {
     await this.usersService.changePassword(user.id, dto);

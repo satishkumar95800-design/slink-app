@@ -15,7 +15,15 @@ export class TenantSelfController {
   constructor(private readonly tenantsService: TenantsService) {}
 
   @Get()
-  @Roles(Role.admin, Role.accounts, Role.teacher, Role.parent)
+  @Roles(
+    Role.admin,
+    Role.accounts,
+    Role.teacher,
+    Role.parent,
+    Role.driver,
+    Role.librarian,
+    Role.receptionist,
+  )
   getSelf(@TenantId() tenantId: string) {
     return this.tenantsService.getSelf(tenantId);
   }

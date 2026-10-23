@@ -21,7 +21,12 @@ import {
 import { academicYearStart, funnelOf, furthestStage } from './admissions.math';
 
 const err = (code: string, message: string) => ({ code, message });
-const STAFF: Role[] = [Role.admin, Role.accounts, Role.teacher];
+const STAFF: Role[] = [
+  Role.admin,
+  Role.accounts,
+  Role.teacher,
+  Role.receptionist,
+];
 
 type Db = PrismaService | Prisma.TransactionClient;
 

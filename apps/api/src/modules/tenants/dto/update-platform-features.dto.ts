@@ -58,6 +58,16 @@ export class UpdatePlatformFeaturesDto extends UpdateFeaturesDto {
   @IsOptional()
   transport?: boolean;
 
+  /** Live bus GPS from the driver's phone (Premium Max). */
+  @IsBoolean()
+  @IsOptional()
+  busTracking?: boolean;
+
+  /** Library management (Premium Max). */
+  @IsBoolean()
+  @IsOptional()
+  library?: boolean;
+
   /** Attendance report and fee reports with CSV export (Premium). */
   @IsBoolean()
   @IsOptional()
