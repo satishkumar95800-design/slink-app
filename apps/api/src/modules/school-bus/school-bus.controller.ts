@@ -11,8 +11,16 @@ import {
   Post,
   Put,
   Query,
+  Res,
+  StreamableFile,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Express, Response } from 'express';
+import { memoryStorage } from 'multer';
 import { Role } from '@prisma/client';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -27,15 +35,62 @@ import {
   UnassignStudentsDto,
   UpdateGroundStaffDto,
 } from './dto/school-bus.dto';
+import { buildBusTemplate } from './bus-import';
+import { BusImportService } from './bus-import.service';
 import { SchoolBusService } from './school-bus.service';
 
 const STAFF = [Role.admin, Role.accounts, Role.super_admin] as const;
+
+const upload = FileInterceptor('file', {
+  storage: memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
 
 /** School bus routes (flag `transport`). */
 @Controller('transport')
 @UseGuards(FeatureGuard('transport'))
 export class SchoolBusController {
-  constructor(private readonly transport: SchoolBusService) {}
+  constructor(
+    private readonly transport: SchoolBusService,
+    private readonly busImport: BusImportService,
+  ) {}
+
+  /** Excel import of routes, stops, drivers and children: template, check, import. */
+  @Get('import/template')
+  @Roles(...STAFF)
+  async importTemplate(@Res({ passthrough: true }) res: Response) {
+    res.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': 'attachment; filename="school-bus-template.xlsx"',
+    });
+    return new StreamableFile(await buildBusTemplate());
+  }
+
+  @Post('import/validate')
+  @HttpCode(HttpStatus.OK)
+  @Roles(...STAFF)
+  @UseInterceptors(upload)
+  validateImport(
+    @TenantId() tenantId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('No file provided');
+    return this.busImport.validate(tenantId, file.buffer);
+  }
+
+  @Post('import/commit')
+  @HttpCode(HttpStatus.OK)
+  @Roles(...STAFF)
+  @UseInterceptors(upload)
+  commitImport(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('No file provided');
+    return this.busImport.commit(tenantId, user.id, file.buffer);
+  }
 
   @Get('routes')
   @Roles(...STAFF)

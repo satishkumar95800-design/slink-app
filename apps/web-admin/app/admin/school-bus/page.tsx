@@ -1,6 +1,6 @@
 'use client';
 
-import { Bus, Link2, Phone, Plus } from 'lucide-react';
+import { Bus, FileSpreadsheet, Link2, Phone, Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../../lib/api-client';
@@ -15,6 +15,7 @@ import { Spinner } from '../../../components/ui/spinner';
 import { useToast } from '../../../components/ui/toast';
 import { RouteFields, RouteValues, emptyRoute, routeValid, toBody } from './route-form';
 import { RouteStudents } from './route-students';
+import { ImportBusDialog } from './import-dialog';
 import { GroundStaffCard } from './ground-staff';
 import { LiveBuses } from './tracking';
 import { Person, Route } from './types';
@@ -43,6 +44,7 @@ function SchoolBus({ tracking }: { tracking: boolean }) {
   const [staff, setStaff] = useState<Person[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   const load = useCallback(() => {
     api
@@ -72,10 +74,16 @@ function SchoolBus({ tracking }: { tracking: boolean }) {
           <h1 className="text-xl font-extrabold tracking-tight text-gray-900">{t('title')}</h1>
           <p className="text-sm text-gray-500">{t('intro')}</p>
         </div>
-        <Button onClick={() => setAdding(true)}>
-          <Plus className="h-4 w-4" />
-          {t('addRoute')}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={() => setImporting(true)}>
+            <FileSpreadsheet className="h-4 w-4" />
+            {t('importExcel')}
+          </Button>
+          <Button onClick={() => setAdding(true)}>
+            <Plus className="h-4 w-4" />
+            {t('addRoute')}
+          </Button>
+        </div>
       </div>
 
       {!routes ? (
@@ -143,6 +151,16 @@ function SchoolBus({ tracking }: { tracking: boolean }) {
         {open && <RouteDrawer key={open.id} route={open} staff={staff} onChanged={load} onDeleted={() => setOpenId(null)} />}
       </Drawer>
 
+      {importing && (
+        <ImportBusDialog
+          onClose={() => setImporting(false)}
+          onDone={() => {
+            setImporting(false);
+            load();
+            loadStaff();
+          }}
+        />
+      )}
       {adding && (
         <AddRoute
           staff={staff}
