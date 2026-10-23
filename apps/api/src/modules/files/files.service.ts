@@ -46,9 +46,16 @@ export const isHrKey = (key: string): boolean => key.split('/')[2] === 'hr';
 export const isStaffDocKey = (key: string): boolean =>
   key.split('/')[2] === 'staff-docs';
 
+/** Front desk forms (private/{tenant}/reception-forms/...) are reachable only through the reception module. */
+export const isReceptionFormKey = (key: string): boolean =>
+  key.split('/')[2] === 'reception-forms';
+
 /** Keys the generic /files routes must never serve, sign or delete. */
 export const isModuleOwnedKey = (key: string): boolean =>
-  isPettyCashKey(key) || isHrKey(key) || isStaffDocKey(key);
+  isPettyCashKey(key) ||
+  isHrKey(key) ||
+  isStaffDocKey(key) ||
+  isReceptionFormKey(key);
 
 /**
  * The S3 key of one of this school's student photos, from either the stored
@@ -269,6 +276,19 @@ export class FilesService {
     }
   }
 
+  /** The object's bytes, for a module that serves a file itself (e.g. to print it). */
+  async getBuffer(key: string, tenantId: string): Promise<Buffer> {
+    this.assertTenantOwnsKey(key, tenantId);
+    try {
+      const res = await this.s3.send(
+        new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+      );
+      return Buffer.from(await res.Body!.transformToByteArray());
+    } catch {
+      throw new NotFoundException(`File not found: ${key}`);
+    }
+  }
+
   async delete(key: string, tenantId: string): Promise<void> {
     this.assertTenantOwnsKey(key, tenantId);
 
@@ -377,6 +397,8 @@ export class FilesService {
         return `private/${tenantId}/hr/${entityId ?? uuid}/${uuid}${ext}`;
       case FileCategory.STAFF_DOCUMENT:
         return `private/${tenantId}/staff-docs/${entityId ?? uuid}/${uuid}${ext}`;
+      case FileCategory.RECEPTION_FORM:
+        return `private/${tenantId}/reception-forms/${uuid}${ext}`;
     }
   }
 

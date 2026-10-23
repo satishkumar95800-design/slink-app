@@ -163,7 +163,8 @@
     "VOID_NOT_ALLOWED": "Only admin or accounts can void a receipt.",
     "ALREADY_VOID": "This receipt is already void.",
     "DOCUMENT_UNKNOWN": "Unknown document.",
-    "IMPORT_CHANGED": "Bus routes changed while importing. Check the file again."
+    "IMPORT_CHANGED": "Bus routes changed while importing. Check the file again.",
+    "FORM_NOT_FOUND": "This form has been removed."
   },
   "language": {
     "label": "Language",
@@ -2373,7 +2374,8 @@
       "today": "Today",
       "visitors": "Visitor book",
       "calls": "Call log",
-      "receipts": "Desk receipts"
+      "receipts": "Desk receipts",
+      "forms": "Forms"
     },
     "followUpsDue": "Follow-ups due",
     "followUpsDueHint": "Due today or earlier. Tick one off when it's done; click a name to open the enquiry.",
@@ -2506,7 +2508,31 @@
     },
     "newTodayTitle": "New enquiries today",
     "newTodayNone": "No new enquiries yet today.",
-    "openAdmissions": "Open all admissions"
+    "openAdmissions": "Open all admissions",
+    "forms": {
+      "title": "Forms to print",
+      "intro": "Blank forms visitors and parents sign at the desk: admission form, consent, visitor declaration. Print one whenever it's needed.",
+      "upload": "Upload form",
+      "emptyTitle": "No forms yet",
+      "emptyBody": "Upload the forms the desk hands out most often, as PDF or a photo/scan. They can then be printed with one click.",
+      "print": "Print",
+      "view": "View",
+      "rename": "Rename",
+      "remove": "Remove",
+      "confirmRemove": "Remove \"{title}\"? It can't be printed from here afterwards.",
+      "removed": "Form removed",
+      "addedBy": "Added by {name} on {date}",
+      "chooseFile": "Choose a PDF, JPG or PNG",
+      "fileHint": "Up to 15 MB. Word files: save as PDF first so they print the same everywhere.",
+      "fileType": "Use a PDF, JPG or PNG file",
+      "fileTooBig": "The file is larger than 15 MB",
+      "formTitle": "Name of the form",
+      "formTitlePlaceholder": "e.g. Admission form 2026-27",
+      "note": "Note (optional)",
+      "notePlaceholder": "e.g. Two copies: one for the parent",
+      "saved": "Form saved",
+      "uploaded": "Form uploaded"
+    }
   },
   "library": {
     "title": "Library",

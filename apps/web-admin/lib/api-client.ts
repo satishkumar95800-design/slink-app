@@ -216,6 +216,22 @@ export async function apiUpload<T>(
 }
 
 /** Downloads a binary response (e.g. the import template) and triggers a browser save. */
+/** A file from the API as a Blob, to show or print it on the page. */
+export async function apiBlob(path: string): Promise<Blob> {
+  const { token, tenantId } = getAuth();
+  const res = await send(`${API_BASE}${path}`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
+    },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new ApiError(res.status, `HTTP ${res.status}`, body, errorCode(body));
+  }
+  return res.blob();
+}
+
 export async function apiDownload(path: string, filename: string, tenantOverride?: string): Promise<void> {
   const { token, tenantId } = getAuth();
   const effectiveTenant = tenantOverride ?? tenantId;

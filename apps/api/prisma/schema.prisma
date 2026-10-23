@@ -195,6 +195,8 @@ model Tenant {
   branding           Json     @default("{}")
   // features: { installmentPlans, inAppMessaging, transportFeeModule, photoGallery }
   features           Json     @default("{\"installmentPlans\":false,\"inAppMessaging\":false,\"transportFeeModule\":true,\"photoGallery\":false}")
+  /// How new admission numbers are made (students/admission-number.ts); null = typed by hand.
+  admissionNumbering Json?    @map("admission_numbering")
   receiptSequence    Int      @default(0) @map("receipt_sequence")
   // Subscription (docs/SPEC-subscriptions.md). The plan is what the school pays
   // for; module flags in `features` are what is switched on. Status (active /
@@ -259,6 +261,7 @@ model Tenant {
   admissionPayments        AdmissionPayment[]
   visitors                 Visitor[]
   callLogs                 CallLog[]
+  receptionForms           ReceptionForm[]
   transportStops           TransportStop[]
   studentTransports        StudentTransport[]
   holidayNotices           HolidayNotice[]
@@ -1539,6 +1542,26 @@ enum VisitorPurpose {
   delivery
   official
   other
+}
+
+/// A blank form the front desk prints for visitors and parents to sign
+/// (consent, admission form...). The file is served only by the reception module.
+model ReceptionForm {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  title       String   @db.VarChar(120)
+  note        String?  @db.VarChar(300)
+  fileKey     String   @map("file_key")
+  fileName    String   @map("file_name") @db.VarChar(200)
+  contentType String   @map("content_type") @db.VarChar(100)
+  size        Int
+  uploadedBy  String   @map("uploaded_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, title])
+  @@map("reception_forms")
 }
 
 /// Front-desk visitor book: signed in, then signed out.

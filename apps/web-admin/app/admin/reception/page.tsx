@@ -19,10 +19,11 @@ import { useToast } from '../../../components/ui/toast';
 import { AddEnquiry } from '../admissions/add-enquiry';
 import { EnquiryDrawerBody } from '../admissions/enquiry-drawer';
 import { STAGES, STAGE_VARIANT } from '../admissions/types';
+import { FormsTab } from './forms-tab';
 import { Call, DeskPayment, EnquiryRef, Today, VISITOR_PURPOSES, Visitor, todayYmd } from './types';
 
-type Tab = 'today' | 'visitors' | 'calls' | 'receipts';
-const TABS: Tab[] = ['today', 'visitors', 'calls', 'receipts'];
+type Tab = 'today' | 'visitors' | 'calls' | 'receipts' | 'forms';
+const TABS: Tab[] = ['today', 'visitors', 'calls', 'receipts', 'forms'];
 
 /**
  * The receptionist's front desk: today's follow-ups to tick off, who is in the
@@ -149,6 +150,7 @@ function FrontDesk() {
       {tab === 'visitors' && <VisitorsTab onChanged={load} />}
       {tab === 'calls' && <CallsTab onOpen={(e) => setOpen(e)} />}
       {tab === 'receipts' && <ReceiptsTab />}
+      {tab === 'forms' && <FormsTab />}
 
       <Drawer
         open={!!open}
