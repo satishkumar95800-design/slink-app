@@ -71,16 +71,18 @@ class _DriverHomeBodyState extends ConsumerState<DriverHomeBody> {
                     );
                   }
                   final running = trip.trip;
+                  final runningRoute = running == null ? null : home.routes.where((r) => r.id == (trip.routeId ?? running.routeId)).firstOrNull;
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       if (trip.problem != null) ...[_ProblemCard(problem: trip.problem!), const SizedBox(height: 12)],
-                      if (running != null)
-                        _RunningCard(
-                          state: trip,
-                          route: home.routes.where((r) => r.id == (trip.routeId ?? running.routeId)).firstOrNull,
-                        )
-                      else
+                      if (running != null) ...[
+                        _RunningCard(state: trip, route: runningRoute),
+                        if (runningRoute != null && runningRoute.stops.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          _StopsCard(route: runningRoute, state: trip),
+                        ],
+                      ] else
                         for (final r in home.routes) ...[_RouteCard(route: r, busy: trip.busy), const SizedBox(height: 12)],
                       const SizedBox(height: 4),
                       Text(l.driverTip, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.muted)),
@@ -223,6 +225,108 @@ class _RunningCard extends ConsumerWidget {
             icon: const Icon(Icons.stop_rounded),
             label: Text(l.driverEndTrip),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The trip's stops in the order the bus visits them, ticked once reached,
+/// with "Save location here" for a stop the school hasn't located yet.
+class _StopsCard extends ConsumerStatefulWidget {
+  final DriverRoute route;
+  final DriverTripState state;
+
+  const _StopsCard({required this.route, required this.state});
+
+  @override
+  ConsumerState<_StopsCard> createState() => _StopsCardState();
+}
+
+class _StopsCardState extends ConsumerState<_StopsCard> {
+  String? _saving;
+
+  /// Same order as the server (api bus-eta.ts tripOrder).
+  List<BusStop> _ordered(bool pickup) {
+    final stops = widget.route.stops;
+    String? time(BusStop s) => pickup ? s.pickupTime : s.dropTime;
+    if (stops.every((s) => time(s) != null)) {
+      return [...stops]..sort((a, b) => time(a)!.compareTo(time(b)!));
+    }
+    return pickup ? stops : stops.reversed.toList();
+  }
+
+  Future<void> _here(BusStop stop) async {
+    setState(() => _saving = stop.id);
+    try {
+      await ref.read(driverTripProvider.notifier).stopHere(stop.id!);
+      ref.invalidate(driverHomeProvider);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.driverStopSaved(stop.name))));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(describeError(e))));
+    } finally {
+      if (mounted) setState(() => _saving = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final pickup = widget.state.trip?.isPickup ?? true;
+    final stops = _ordered(pickup);
+    final reached = widget.state.reachedStopIds.toSet();
+    final anyUnlocated = stops.any((s) => !s.located);
+    return SoftCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l.driverStopsTitle, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 4),
+          for (final s in stops)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  Icon(
+                    reached.contains(s.id) ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                    color: reached.contains(s.id) ? FeatureColors.attendance : AppColors.muted,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(s.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                        Text(
+                          [
+                            if ((pickup ? s.pickupTime : s.dropTime) != null) (pickup ? s.pickupTime : s.dropTime)!,
+                            if (reached.contains(s.id)) l.driverStopReached else if (!s.located) l.driverStopNoLocation,
+                          ].join(' · '),
+                          style: theme.textTheme.bodySmall?.copyWith(color: AppColors.muted),
+                        ),
+                        if (!s.located && s.id != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: OutlinedButton.icon(
+                              onPressed: _saving == null ? () => _here(s) : null,
+                              icon: _saving == s.id
+                                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                                  : const Icon(Icons.add_location_alt_rounded, size: 18),
+                              label: Text(l.driverStopHere),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (anyUnlocated) ...[
+            const SizedBox(height: 6),
+            Text(l.driverStopsHint, style: theme.textTheme.bodySmall?.copyWith(color: AppColors.muted)),
+          ],
         ],
       ),
     );

@@ -10,6 +10,8 @@ export interface Stop {
   name: string;
   pickupTime: string | null;
   dropTime: string | null;
+  lat: number | null;
+  lng: number | null;
   studentCount: number;
 }
 

@@ -61,6 +61,8 @@ export class SchoolBusService {
         name: s.name,
         pickupTime: s.pickupTime,
         dropTime: s.dropTime,
+        lat: s.lat,
+        lng: s.lng,
         studentCount: stopCount.get(s.id) ?? 0,
       })),
     }));
@@ -560,6 +562,10 @@ const stopFields = (s: RouteInputDto['stops'][number]) => ({
   name: s.name,
   pickupTime: s.pickupTime ?? null,
   dropTime: s.dropTime ?? null,
+  // A half-filled location is no location.
+  ...(s.lat != null && s.lng != null
+    ? { lat: s.lat, lng: s.lng }
+    : { lat: null, lng: null }),
 });
 
 /** Name and phone of an active driver or attendant; a deactivated one is hidden. */

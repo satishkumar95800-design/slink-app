@@ -2150,6 +2150,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get driverOpenSettings => 'Open settings';
 
   @override
+  String busEtaMinutes(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'Arrives in about $minutes min',
+      one: 'Arrives in about 1 min',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get busEtaArrivingNow => 'Arriving now';
+
+  @override
+  String get busEtaReached => 'The bus has reached your stop';
+
+  @override
+  String get driverStopsTitle => 'Stops';
+
+  @override
+  String get driverStopHere => 'Save location here';
+
+  @override
+  String driverStopSaved(String stop) {
+    return 'Location saved for $stop';
+  }
+
+  @override
+  String get driverStopNoLocation => 'No location yet';
+
+  @override
+  String get driverStopReached => 'Reached';
+
+  @override
+  String get driverStopsHint =>
+      'At a stop with no location? Tap \"Save location here\" so parents get the bus\'s arrival time.';
+
+  @override
+  String get driverErrNoFix =>
+      'Waiting for the phone\'s location. Try again in a few seconds.';
+
+  @override
+  String get busPushTrack => 'Track';
+
+  @override
   String get libraryTitle => 'Library';
 
   @override

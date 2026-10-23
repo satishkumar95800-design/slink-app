@@ -2149,6 +2149,51 @@ class AppLocalizationsHi extends AppLocalizations {
   String get driverOpenSettings => 'सेटिंग्स खोलें';
 
   @override
+  String busEtaMinutes(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'लगभग $minutes मिनट में पहुँचेगी',
+      one: 'लगभग 1 मिनट में पहुँचेगी',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get busEtaArrivingNow => 'बस पहुँच रही है';
+
+  @override
+  String get busEtaReached => 'बस आपके स्टॉप पर पहुँच गई है';
+
+  @override
+  String get driverStopsTitle => 'स्टॉप';
+
+  @override
+  String get driverStopHere => 'यहाँ का स्थान सेव करें';
+
+  @override
+  String driverStopSaved(String stop) {
+    return '$stop का स्थान सेव हो गया';
+  }
+
+  @override
+  String get driverStopNoLocation => 'अभी स्थान नहीं है';
+
+  @override
+  String get driverStopReached => 'पहुँच गए';
+
+  @override
+  String get driverStopsHint =>
+      'बिना स्थान वाले स्टॉप पर हैं? माता-पिता को बस के पहुँचने का समय मिले, इसके लिए \"यहाँ का स्थान सेव करें\" दबाएँ।';
+
+  @override
+  String get driverErrNoFix =>
+      'फ़ोन की लोकेशन मिल रही है। कुछ सेकंड बाद फिर कोशिश करें।';
+
+  @override
+  String get busPushTrack => 'देखें';
+
+  @override
   String get libraryTitle => 'पुस्तकालय';
 
   @override

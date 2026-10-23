@@ -2149,6 +2149,51 @@ class AppLocalizationsKn extends AppLocalizations {
   String get driverOpenSettings => 'ಸೆಟ್ಟಿಂಗ್ಸ್ ತೆರೆಯಿರಿ';
 
   @override
+  String busEtaMinutes(int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: 'ಸುಮಾರು $minutes ನಿಮಿಷದಲ್ಲಿ ಬರಲಿದೆ',
+      one: 'ಸುಮಾರು 1 ನಿಮಿಷದಲ್ಲಿ ಬರಲಿದೆ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get busEtaArrivingNow => 'ಈಗ ಬರುತ್ತಿದೆ';
+
+  @override
+  String get busEtaReached => 'ಬಸ್ ನಿಮ್ಮ ನಿಲ್ದಾಣ ತಲುಪಿದೆ';
+
+  @override
+  String get driverStopsTitle => 'ನಿಲ್ದಾಣಗಳು';
+
+  @override
+  String get driverStopHere => 'ಈ ಸ್ಥಳವನ್ನು ಉಳಿಸಿ';
+
+  @override
+  String driverStopSaved(String stop) {
+    return '$stop ಸ್ಥಳ ಉಳಿಸಲಾಗಿದೆ';
+  }
+
+  @override
+  String get driverStopNoLocation => 'ಇನ್ನೂ ಸ್ಥಳ ಇಲ್ಲ';
+
+  @override
+  String get driverStopReached => 'ತಲುಪಿದೆ';
+
+  @override
+  String get driverStopsHint =>
+      'ಸ್ಥಳ ಇಲ್ಲದ ನಿಲ್ದಾಣದಲ್ಲಿದ್ದೀರಾ? ಪೋಷಕರಿಗೆ ಬಸ್ ಬರುವ ಸಮಯ ಸಿಗಲು \"ಈ ಸ್ಥಳವನ್ನು ಉಳಿಸಿ\" ಒತ್ತಿ.';
+
+  @override
+  String get driverErrNoFix =>
+      'ಫೋನ್ ಸ್ಥಳಕ್ಕಾಗಿ ಕಾಯಲಾಗುತ್ತಿದೆ. ಕೆಲವು ಸೆಕೆಂಡುಗಳ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
+
+  @override
+  String get busPushTrack => 'ನೋಡಿ';
+
+  @override
   String get libraryTitle => 'ಗ್ರಂಥಾಲಯ';
 
   @override

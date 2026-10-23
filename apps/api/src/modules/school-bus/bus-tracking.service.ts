@@ -2,11 +2,28 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { PettyCashPayeeType, Prisma, Role } from '@prisma/client';
+import {
+  BusTripDirection,
+  NotificationChannel,
+  PettyCashPayeeType,
+  Prisma,
+  Role,
+} from '@prisma/client';
+import { effectiveLanguage } from '../../common/i18n/languages';
 import { assertFeatureEnabled } from '../../common/tenant-features';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import {
+  etaMinutes,
+  etaTo,
+  reachedStops,
+  stopsToAlert,
+  tripOrder,
+} from './bus-eta';
+import { arrivingText, tripStartedText } from './bus-push';
 import { PositionDto, StartTripDto } from './dto/bus-tracking.dto';
 
 const err = (code: string, message: string) => ({ code, message });
@@ -47,7 +64,24 @@ const TRIP = {
   speed: true,
   heading: true,
   positionAt: true,
+  passedStopIds: true,
 } as const;
+
+/** What the arrival time needs from a stop. */
+const STOP_ETA = {
+  id: true,
+  name: true,
+  sortOrder: true,
+  lat: true,
+  lng: true,
+  pickupTime: true,
+  dropTime: true,
+} as const;
+
+/** A fix less accurate than this doesn't mark stops reached. */
+const PROGRESS_ACCURACY_M = 150;
+/** "I'm at this stop" needs a fix at most this old. */
+const HERE_MAX_AGE_MS = 2 * 60 * 1000;
 
 type TripRow = Prisma.BusTripGetPayload<{ select: typeof TRIP }>;
 
@@ -80,7 +114,12 @@ function publicTrip(trip: TripRow, now = new Date()) {
  */
 @Injectable()
 export class BusTrackingService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(BusTrackingService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   // ── Staff ──────────────────────────────────────────────────────────────────
 
@@ -245,7 +284,13 @@ export class BusTrackingService {
     const trip = open && tripState(open, now) !== 'over' ? open : null;
     return {
       routes,
-      trip: trip ? { ...publicTrip(trip, now), routeId: trip.routeId } : null,
+      trip: trip
+        ? {
+            ...publicTrip(trip, now),
+            routeId: trip.routeId,
+            reachedStopIds: trip.passedStopIds,
+          }
+        : null,
     };
   }
 
@@ -300,7 +345,15 @@ export class BusTrackingService {
       });
       return created;
     });
-    return { ...publicTrip(trip, now), routeId: trip.routeId };
+    this.inBackground(
+      this.notifyStarted(tenantId, dto.routeId, trip.id, dto.direction),
+      'trip started',
+    );
+    return {
+      ...publicTrip(trip, now),
+      routeId: trip.routeId,
+      reachedStopIds: [],
+    };
   }
 
   /** The phone's latest position. Only the trip's own driver, while it runs. */
@@ -314,8 +367,29 @@ export class BusTrackingService {
     const at = dto.at ? new Date(dto.at) : new Date();
     const now = Date.now();
     // A queued fix older than the stored one, or from the future, is dropped.
-    if (at.getTime() > now + 60_000) return { accepted: false };
-    if (trip.positionAt && at <= trip.positionAt) return { accepted: false };
+    const refused = { accepted: false, reachedStopIds: trip.passedStopIds };
+    if (at.getTime() > now + 60_000) return refused;
+    if (trip.positionAt && at <= trip.positionAt) return refused;
+
+    // Stops reached, and stops whose parents should hear "arriving soon".
+    let reached = trip.passedStopIds;
+    let alerts: { stopId: string; minutes: number }[] = [];
+    if ((dto.accuracy ?? 0) <= PROGRESS_ACCURACY_M) {
+      const stops = await this.prisma.transportStop.findMany({
+        where: { routeId: trip.routeId },
+        select: STOP_ETA,
+      });
+      const ordered = tripOrder(stops, trip.direction);
+      reached = reachedStops(ordered, trip.passedStopIds, dto);
+      alerts = stopsToAlert(
+        ordered,
+        reached,
+        trip.alertedStopIds,
+        dto,
+        trip.direction,
+        new Set(stops.map((s) => s.id)),
+      );
+    }
     await this.prisma.busTrip.update({
       where: { id: trip.id },
       data: {
@@ -325,9 +399,93 @@ export class BusTrackingService {
         heading: dto.heading ?? null,
         accuracy: dto.accuracy ?? null,
         positionAt: at,
+        passedStopIds: reached,
+        ...(alerts.length
+          ? {
+              alertedStopIds: [
+                ...trip.alertedStopIds,
+                ...alerts.map((a) => a.stopId),
+              ],
+            }
+          : {}),
       },
     });
-    return { accepted: true };
+    if (alerts.length)
+      this.inBackground(
+        this.notifyArriving(tenantId, trip, alerts),
+        'bus arriving',
+      );
+    return { accepted: true, reachedStopIds: reached };
+  }
+
+  /**
+   * The driver standing at a stop saves its location from the trip's latest
+   * fix (not a position sent with the request), and the stop counts as reached.
+   */
+  async stopHere(
+    tenantId: string,
+    userId: string,
+    tripId: string,
+    stopId: string,
+  ) {
+    const trip = await this.ownOpenTrip(tenantId, userId, tripId);
+    const stop = await this.prisma.transportStop.findFirst({
+      where: { id: stopId, routeId: trip.routeId, tenantId },
+      select: { id: true, name: true, lat: true, lng: true },
+    });
+    if (!stop)
+      throw new NotFoundException(
+        err('STOP_NOT_FOUND', 'This stop is not on the route'),
+      );
+    const fresh =
+      trip.lat != null &&
+      trip.lng != null &&
+      trip.positionAt != null &&
+      Date.now() - trip.positionAt.getTime() <= HERE_MAX_AGE_MS &&
+      (trip.accuracy ?? 0) <= PROGRESS_ACCURACY_M;
+    if (!fresh)
+      throw new BadRequestException(
+        err('NO_GPS_FIX', 'Wait for the phone to find its location'),
+      );
+    const stops = await this.prisma.transportStop.findMany({
+      where: { routeId: trip.routeId },
+      select: STOP_ETA,
+    });
+    const ordered = tripOrder(
+      stops.map((s) =>
+        s.id === stop.id ? { ...s, lat: trip.lat, lng: trip.lng } : s,
+      ),
+      trip.direction,
+    );
+    const reached = reachedStops(ordered, trip.passedStopIds, {
+      lat: trip.lat!,
+      lng: trip.lng!,
+    });
+    await this.prisma.$transaction([
+      this.prisma.transportStop.update({
+        where: { id: stop.id },
+        data: { lat: trip.lat, lng: trip.lng },
+      }),
+      this.prisma.busTrip.update({
+        where: { id: trip.id },
+        data: { passedStopIds: reached },
+      }),
+      this.prisma.auditLog.create({
+        data: {
+          tenantId,
+          actorId: userId,
+          action: 'transport.stop_located',
+          entityType: 'transport',
+          entityId: stop.id,
+          diff: {
+            name: stop.name,
+            from: stop.lat != null ? [stop.lat, stop.lng] : null,
+            to: [trip.lat, trip.lng],
+          },
+        },
+      }),
+    ]);
+    return { stopId: stop.id, reachedStopIds: reached };
   }
 
   async endTrip(tenantId: string, userId: string, tripId: string) {
@@ -364,10 +522,16 @@ export class BusTrackingService {
             transport: {
               select: {
                 stop: {
-                  select: { name: true, pickupTime: true, dropTime: true },
+                  select: {
+                    id: true,
+                    name: true,
+                    pickupTime: true,
+                    dropTime: true,
+                  },
                 },
                 route: {
                   select: {
+                    stops: { select: STOP_ETA },
                     name: true,
                     vehicleNumber: true,
                     driver: {
@@ -388,12 +552,36 @@ export class BusTrackingService {
       );
     const transport = link.student.transport;
     if (!transport) return { bus: null, trip: null };
-    const { route, stop } = transport;
+    const { route } = transport;
     const now = new Date();
-    const open = route.trips[0];
+    const open =
+      route.trips[0] && tripState(route.trips[0], now) !== 'over'
+        ? route.trips[0]
+        : null;
     const driver = route.driver?.isActive
       ? { name: route.driver.name, phone: route.driver.phone }
       : null;
+    const stop = transport.stop
+      ? {
+          name: transport.stop.name,
+          pickupTime: transport.stop.pickupTime,
+          dropTime: transport.stop.dropTime,
+        }
+      : null;
+    let eta: { minutes: number | null; reached: boolean } | null = null;
+    if (open && transport.stop && open.lat != null && open.lng != null) {
+      const e = etaTo(
+        tripOrder(route.stops, open.direction),
+        open.passedStopIds,
+        { lat: open.lat, lng: open.lng },
+        transport.stop.id,
+        open.direction,
+      );
+      if (e)
+        eta = e.reached
+          ? { minutes: null, reached: true }
+          : { minutes: etaMinutes(e.seconds), reached: false };
+    }
     return {
       bus: {
         routeName: route.name,
@@ -401,9 +589,118 @@ export class BusTrackingService {
         stop,
         driver,
       },
-      trip:
-        open && tripState(open, now) !== 'over' ? publicTrip(open, now) : null,
+      trip: open ? { ...publicTrip(open, now), eta } : null,
     };
+  }
+
+  // ── Pushes ─────────────────────────────────────────────────────────────────
+
+  /** "The bus has started" to the parents of every child on the route. */
+  async notifyStarted(
+    tenantId: string,
+    routeId: string,
+    tripId: string,
+    direction: BusTripDirection,
+  ) {
+    const route = await this.prisma.transportRoute.findFirst({
+      where: { id: routeId, tenantId },
+      select: {
+        name: true,
+        tenant: { select: { defaultLanguage: true } },
+        students: { select: { studentId: true, student: PARENTS } },
+      },
+    });
+    if (!route) return 0;
+    const parents = parentsOf(route.students);
+    let sent = 0;
+    for (const p of parents.values()) {
+      const text = tripStartedText(
+        effectiveLanguage(p.language, route.tenant.defaultLanguage),
+        direction,
+        route.name,
+      );
+      sent += await this.push(tenantId, p.id, text, {
+        type: 'bus_started',
+        studentId: p.studentId,
+        tripId,
+      });
+    }
+    return sent;
+  }
+
+  /** "Arriving in about N minutes", with the chime, to the parents at a stop. */
+  async notifyArriving(
+    tenantId: string,
+    trip: { id: string; routeId: string; direction: BusTripDirection },
+    alerts: { stopId: string; minutes: number }[],
+  ) {
+    const route = await this.prisma.transportRoute.findFirst({
+      where: { id: trip.routeId, tenantId },
+      select: {
+        name: true,
+        tenant: { select: { defaultLanguage: true } },
+        stops: {
+          where: { id: { in: alerts.map((a) => a.stopId) } },
+          select: {
+            id: true,
+            name: true,
+            students: { select: { studentId: true, student: PARENTS } },
+          },
+        },
+      },
+    });
+    if (!route) return 0;
+    let sent = 0;
+    for (const stop of route.stops) {
+      const minutes = alerts.find((a) => a.stopId === stop.id)!.minutes;
+      for (const p of parentsOf(stop.students).values()) {
+        const text = arrivingText(
+          effectiveLanguage(p.language, route.tenant.defaultLanguage),
+          trip.direction,
+          route.name,
+          stop.name,
+          minutes,
+        );
+        sent += await this.push(
+          tenantId,
+          p.id,
+          text,
+          { type: 'bus_arriving', studentId: p.studentId, tripId: trip.id },
+          true,
+        );
+      }
+    }
+    return sent;
+  }
+
+  private async push(
+    tenantId: string,
+    userId: string,
+    text: { title: string; body: string },
+    data: Record<string, string>,
+    chime = false,
+  ): Promise<number> {
+    try {
+      await this.notifications.send({
+        tenantId,
+        userId,
+        channel: NotificationChannel.fcm,
+        ...text,
+        data,
+        ...(chime ? { sound: 'bus_arrival' as const } : {}),
+      });
+      return 1;
+    } catch (e) {
+      this.logger.warn(`Bus push to ${userId} failed: ${(e as Error).message}`);
+      return 0;
+    }
+  }
+
+  /** Pushes go out after the driver's request has been answered. */
+  private inBackground(work: Promise<unknown>, what: string) {
+    work.catch((e: Error) =>
+      this.logger.error(`Bus push (${what}) failed: ${e.message}`),
+    );
   }
 
   // ── helpers ────────────────────────────────────────────────────────────────
@@ -423,13 +720,20 @@ export class BusTrackingService {
         vehicleNumber: true,
         stops: {
           orderBy: { sortOrder: 'asc' },
-          select: { name: true, pickupTime: true, dropTime: true },
+          select: {
+            id: true,
+            name: true,
+            pickupTime: true,
+            dropTime: true,
+            lat: true,
+          },
         },
         _count: { select: { students: true } },
       },
     });
-    return routes.map(({ _count, ...r }) => ({
+    return routes.map(({ _count, stops, ...r }) => ({
       ...r,
+      stops: stops.map(({ lat, ...s }) => ({ ...s, located: lat != null })),
       studentCount: _count.students,
     }));
   }
@@ -438,7 +742,19 @@ export class BusTrackingService {
     await this.assertOn(tenantId);
     const trip = await this.prisma.busTrip.findFirst({
       where: { id: tripId, tenantId, driverUserId: userId, endedAt: null },
-      select: { id: true, startedAt: true, endedAt: true, positionAt: true },
+      select: {
+        id: true,
+        routeId: true,
+        direction: true,
+        startedAt: true,
+        endedAt: true,
+        lat: true,
+        lng: true,
+        accuracy: true,
+        positionAt: true,
+        passedStopIds: true,
+        alertedStopIds: true,
+      },
     });
     if (!trip || tripState(trip) === 'over')
       throw new NotFoundException(
@@ -446,6 +762,38 @@ export class BusTrackingService {
       );
     return trip;
   }
+}
+
+const PARENTS = {
+  select: {
+    parents: {
+      select: { parent: { select: { id: true, preferredLanguage: true } } },
+    },
+  },
+} as const;
+
+/** Each parent once, with one of their children on the bus (for the tap). */
+function parentsOf(
+  riders: {
+    studentId: string;
+    student: {
+      parents: { parent: { id: string; preferredLanguage: string | null } }[];
+    };
+  }[],
+) {
+  const out = new Map<
+    string,
+    { id: string; language: string | null; studentId: string }
+  >();
+  for (const r of riders)
+    for (const { parent } of r.student.parents)
+      if (!out.has(parent.id))
+        out.set(parent.id, {
+          id: parent.id,
+          language: parent.preferredLanguage,
+          studentId: r.studentId,
+        });
+  return out;
 }
 
 function audit(

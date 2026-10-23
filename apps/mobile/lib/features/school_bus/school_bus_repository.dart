@@ -37,9 +37,20 @@ class SchoolBusRepository {
     return LiveTrip.fromJson(r.data!)!;
   }
 
-  Future<void> sendPosition(String tripId, Map<String, dynamic> fix) async {
-    await _dio.post<void>('/transport/driver/trips/$tripId/position', data: fix);
+  /// Returns the stops reached so far on the trip.
+  Future<List<String>> sendPosition(String tripId, Map<String, dynamic> fix) async {
+    final r = await _dio.post<Map<String, dynamic>>('/transport/driver/trips/$tripId/position', data: fix);
+    return _reached(r.data);
   }
+
+  /// The driver is standing at [stopId]: save its location from the latest fix.
+  Future<List<String>> stopHere(String tripId, String stopId) async {
+    final r = await _dio.post<Map<String, dynamic>>('/transport/driver/trips/$tripId/stops/$stopId/here');
+    return _reached(r.data);
+  }
+
+  static List<String> _reached(Map<String, dynamic>? data) =>
+      [for (final id in (data?['reachedStopIds'] as List?) ?? const []) id as String];
 
   Future<void> endTrip(String tripId) async {
     await _dio.post<void>('/transport/driver/trips/$tripId/end');

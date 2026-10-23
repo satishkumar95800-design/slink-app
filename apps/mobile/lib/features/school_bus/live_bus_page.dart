@@ -157,6 +157,10 @@ class _InfoPanel extends StatelessWidget {
                 if (pos != null) Text(_ago(context, pos.at), style: theme.textTheme.bodySmall?.copyWith(color: AppColors.muted)),
               ],
             ),
+            if (t != null && !t.stale && t.eta != null) ...[
+              const SizedBox(height: 10),
+              _EtaLine(eta: t.eta!),
+            ],
             const SizedBox(height: 10),
             Text(
               [bus.routeName, if (bus.vehicleNumber != null) bus.vehicleNumber!].join(' · '),
@@ -181,6 +185,33 @@ class _InfoPanel extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// "Arrives in about 7 min", "Arriving now" or "The bus has reached your stop".
+class _EtaLine extends StatelessWidget {
+  final BusEta eta;
+
+  const _EtaLine({required this.eta});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final minutes = eta.minutes;
+    final text = eta.reached
+        ? l.busEtaReached
+        : minutes == null || minutes <= 1
+            ? l.busEtaArrivingNow
+            : l.busEtaMinutes(minutes);
+    return Row(
+      children: [
+        Icon(eta.reached ? Icons.where_to_vote_rounded : Icons.schedule_rounded, color: FeatureColors.bus, size: 26),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(text, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900, color: FeatureColors.bus)),
+        ),
+      ],
     );
   }
 }

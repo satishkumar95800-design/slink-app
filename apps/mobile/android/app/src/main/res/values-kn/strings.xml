@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bus_channel_name">ಶಾಲಾ ಬಸ್ ಆಗಮನ</string>
+    <string name="bus_channel_description">ನಿಮ್ಮ ಮಗುವಿನ ಬಸ್ ನಿಲ್ದಾಣದಿಂದ ಸುಮಾರು 5 ನಿಮಿಷ ದೂರದಲ್ಲಿದ್ದಾಗ ಘಂಟೆ ಬಾರಿಸುತ್ತದೆ.</string>
+</resources>

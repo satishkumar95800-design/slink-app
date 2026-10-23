@@ -22,7 +22,10 @@ class DriverTripState {
   final LocationProblem? problem;
   final bool busy;
 
-  const DriverTripState({this.trip, this.routeId, this.lastSentAt, this.problem, this.busy = false});
+  /// Stops the server counts as reached on this trip.
+  final List<String> reachedStopIds;
+
+  const DriverTripState({this.trip, this.routeId, this.lastSentAt, this.problem, this.busy = false, this.reachedStopIds = const []});
 
   DriverTripState copyWith({
     LiveTrip? trip,
@@ -32,6 +35,7 @@ class DriverTripState {
     LocationProblem? problem,
     bool clearProblem = false,
     bool? busy,
+    List<String>? reachedStopIds,
   }) =>
       DriverTripState(
         trip: clearTrip ? null : trip ?? this.trip,
@@ -39,6 +43,7 @@ class DriverTripState {
         lastSentAt: clearTrip ? null : lastSentAt ?? this.lastSentAt,
         problem: clearProblem ? null : problem ?? this.problem,
         busy: busy ?? this.busy,
+        reachedStopIds: clearTrip ? const [] : reachedStopIds ?? this.reachedStopIds,
       );
 }
 
@@ -68,7 +73,7 @@ class DriverTripController extends StateNotifier<DriverTripState> {
       return;
     }
     if (state.trip?.id == trip.id && _sub != null) return;
-    state = state.copyWith(trip: trip, routeId: trip.routeId);
+    state = state.copyWith(trip: trip, routeId: trip.routeId, reachedStopIds: trip.reachedStopIds);
     await _startStream();
   }
 
@@ -99,6 +104,15 @@ class DriverTripController extends StateNotifier<DriverTripState> {
       await _stopStream();
       state = const DriverTripState();
     }
+  }
+
+  /// The driver is standing at a stop that has no location: save it.
+  Future<void> stopHere(String stopId) async {
+    final trip = state.trip;
+    if (trip == null) return;
+    await _flush(force: true);
+    final reached = await _repo.stopHere(trip.id, stopId);
+    state = state.copyWith(reachedStopIds: reached);
   }
 
   /// Ask again after the driver fixed a permission or switched location on.
@@ -169,7 +183,7 @@ class DriverTripController extends StateNotifier<DriverTripState> {
     if (!force && _lastSend != null && now.difference(_lastSend!) < _minGap) return;
     _sending = true;
     try {
-      await _repo.sendPosition(trip.id, {
+      final reached = await _repo.sendPosition(trip.id, {
         'lat': p.latitude,
         'lng': p.longitude,
         if (p.speed >= 0) 'speed': p.speed.clamp(0, 100),
@@ -179,7 +193,7 @@ class DriverTripController extends StateNotifier<DriverTripState> {
       });
       if (identical(_pending, p)) _pending = null;
       _lastSend = now;
-      state = state.copyWith(lastSentAt: now, clearProblem: true);
+      state = state.copyWith(lastSentAt: now, clearProblem: true, reachedStopIds: reached);
     } on DioException catch (e) {
       // The server closed the trip (e.g. no fix for 30 minutes): stop sharing.
       if (ApiException.fromDioError(e).code == 'TRIP_NOT_RUNNING') {

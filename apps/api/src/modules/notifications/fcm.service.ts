@@ -3,6 +3,24 @@ import { ConfigService } from '@nestjs/config';
 import { getApps } from 'firebase-admin/app';
 import { getMessaging, Messaging } from 'firebase-admin/messaging';
 
+/**
+ * A push with its own sound. The app ships the sound file (Android
+ * res/raw/bus_chime.wav, iOS bundle bus_chime.wav) and creates the Android
+ * channel; without the channel Android falls back to the default sound.
+ */
+export type PushSound = 'bus_arrival';
+
+const SOUNDS: Record<
+  PushSound,
+  { channelId: string; android: string; ios: string }
+> = {
+  bus_arrival: {
+    channelId: 'bus_arrival',
+    android: 'bus_chime',
+    ios: 'bus_chime.wav',
+  },
+};
+
 @Injectable()
 export class FcmService implements OnModuleInit {
   private messaging: Messaging | null = null;
@@ -27,6 +45,7 @@ export class FcmService implements OnModuleInit {
     title: string,
     body: string,
     data?: Record<string, string>,
+    sound?: PushSound,
   ): Promise<{
     successCount: number;
     failureCount: number;
@@ -51,8 +70,18 @@ export class FcmService implements OnModuleInit {
         tokens: batch,
         notification: { title, body },
         ...(data ? { data } : {}),
-        android: { priority: 'high' },
-        apns: { payload: { aps: { sound: 'default' } } },
+        android: sound
+          ? {
+              priority: 'high',
+              notification: {
+                channelId: SOUNDS[sound].channelId,
+                sound: SOUNDS[sound].android,
+              },
+            }
+          : { priority: 'high' },
+        apns: {
+          payload: { aps: { sound: sound ? SOUNDS[sound].ios : 'default' } },
+        },
       });
 
       successCount += response.successCount;

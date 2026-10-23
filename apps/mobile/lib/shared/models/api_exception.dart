@@ -88,6 +88,7 @@ String? translateErrorCode(String? code) {
     'IMAGE_TOO_LARGE_TO_CHECK' => l.errImageTooLarge,
     'IMAGE_NOT_CHECKED' => l.errImageNotChecked,
     'NO_CHILDREN' => l.errNoChildren,
+    'NO_GPS_FIX' => l.driverErrNoFix,
     _ => null,
   };
 }

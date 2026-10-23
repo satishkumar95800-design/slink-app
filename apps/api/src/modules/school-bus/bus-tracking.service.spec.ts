@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument -- jest Prisma mocks */
-import { Role } from '@prisma/client';
+import { BusTripDirection, Role } from '@prisma/client';
 import { BusTrackingService, tripState } from './bus-tracking.service';
 
 const T = 'tenant-1';
@@ -18,7 +18,15 @@ function makePrisma() {
       update: jest.fn(),
     },
     user: { findFirst: jest.fn(), create: jest.fn(), deleteMany: jest.fn() },
-    transportRoute: { findMany: jest.fn().mockResolvedValue([]) },
+    transportRoute: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findFirst: jest.fn(),
+    },
+    transportStop: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+    },
     busTrip: {
       findFirst: jest.fn(),
       findMany: jest.fn().mockResolvedValue([]),
@@ -80,10 +88,12 @@ describe('tripState', () => {
 describe('BusTrackingService', () => {
   let prisma: any;
   let service: BusTrackingService;
+  let notifications: { send: jest.Mock };
 
   beforeEach(() => {
     prisma = makePrisma();
-    service = new BusTrackingService(prisma);
+    notifications = { send: jest.fn().mockResolvedValue(undefined) };
+    service = new BusTrackingService(prisma, notifications as never);
   });
 
   it('answers FEATURE_DISABLED without the busTracking flag', async () => {
@@ -202,7 +212,7 @@ describe('BusTrackingService', () => {
 
     it("refuses while another driver's trip is running on the route", async () => {
       prisma.transportRoute.findMany.mockResolvedValue([
-        { id: 'r1', _count: { students: 3 } },
+        { id: 'r1', stops: [], _count: { students: 3 } },
       ]);
       prisma.busTrip.findMany.mockResolvedValue([
         {
@@ -220,7 +230,7 @@ describe('BusTrackingService', () => {
 
     it("closes the driver's own earlier trip and starts a new one", async () => {
       prisma.transportRoute.findMany.mockResolvedValue([
-        { id: 'r1', _count: { students: 3 } },
+        { id: 'r1', stops: [], _count: { students: 3 } },
       ]);
       prisma.busTrip.findMany.mockResolvedValue([
         {
@@ -259,13 +269,15 @@ describe('BusTrackingService', () => {
         startedAt: new Date(Date.now() - 60_000),
         endedAt: null,
         positionAt: new Date(),
+        passedStopIds: [],
+        alertedStopIds: [],
       });
       const r = await service.position(T, DRIVER, 't1', {
         lat: 12.9,
         lng: 77.6,
         at: new Date(Date.now() - 30_000).toISOString(),
       });
-      expect(r).toEqual({ accepted: false });
+      expect(r).toEqual({ accepted: false, reachedStopIds: [] });
       expect(prisma.busTrip.update).not.toHaveBeenCalled();
     });
 
@@ -281,6 +293,269 @@ describe('BusTrackingService', () => {
           where: expect.objectContaining({ driverUserId: 'other-driver' }),
         }),
       );
+    });
+  });
+
+  describe('stops reached, arrival push and stop locations', () => {
+    // Two stops 1.1 km apart on the pickup run.
+    const STOPS = [
+      {
+        id: 's-a',
+        name: 'Temple',
+        sortOrder: 0,
+        lat: 12.9,
+        lng: 77.6,
+        pickupTime: null,
+        dropTime: null,
+      },
+      {
+        id: 's-b',
+        name: 'Park',
+        sortOrder: 1,
+        lat: 12.91,
+        lng: 77.6,
+        pickupTime: null,
+        dropTime: null,
+      },
+    ];
+    const openTrip = (extra: object = {}) => ({
+      id: 't1',
+      routeId: 'r1',
+      direction: 'pickup',
+      startedAt: new Date(Date.now() - 60_000),
+      endedAt: null,
+      lat: null,
+      lng: null,
+      accuracy: null,
+      positionAt: null,
+      passedStopIds: [],
+      alertedStopIds: [],
+      ...extra,
+    });
+    const flush = () => new Promise((r) => setImmediate(r));
+    const parentsAt = {
+      name: 'Route 1',
+      tenant: { defaultLanguage: 'en' },
+      stops: [
+        {
+          id: 's-b',
+          name: 'Park',
+          students: [
+            {
+              studentId: 'kid-1',
+              student: {
+                parents: [
+                  { parent: { id: 'mum', preferredLanguage: 'kn' } },
+                  { parent: { id: 'dad', preferredLanguage: null } },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    it('marks a stop reached and sends one chime push per parent within 5 minutes', async () => {
+      prisma.busTrip.findFirst.mockResolvedValue(openTrip());
+      prisma.transportStop.findMany.mockResolvedValue(STOPS);
+      prisma.transportRoute.findFirst.mockResolvedValue(parentsAt);
+      const r = await service.position(T, DRIVER, 't1', {
+        lat: 12.9,
+        lng: 77.6,
+      });
+      expect(r).toEqual({ accepted: true, reachedStopIds: ['s-a'] });
+      expect(prisma.busTrip.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            passedStopIds: ['s-a'],
+            alertedStopIds: ['s-b'],
+          }),
+        }),
+      );
+      await flush();
+      expect(notifications.send).toHaveBeenCalledTimes(2);
+      expect(notifications.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'mum',
+          sound: 'bus_arrival',
+          title: expect.stringContaining('ನಿಮಿಷ'),
+          data: { type: 'bus_arriving', studentId: 'kid-1', tripId: 't1' },
+        }),
+      );
+    });
+
+    it('does not push a stop twice', async () => {
+      prisma.busTrip.findFirst.mockResolvedValue(
+        openTrip({ passedStopIds: ['s-a'], alertedStopIds: ['s-b'] }),
+      );
+      prisma.transportStop.findMany.mockResolvedValue(STOPS);
+      await service.position(T, DRIVER, 't1', { lat: 12.905, lng: 77.6 });
+      await flush();
+      expect(notifications.send).not.toHaveBeenCalled();
+    });
+
+    it('ignores a rough fix for stops reached', async () => {
+      prisma.busTrip.findFirst.mockResolvedValue(openTrip());
+      const r = await service.position(T, DRIVER, 't1', {
+        lat: 12.9,
+        lng: 77.6,
+        accuracy: 900,
+      });
+      expect(r.reachedStopIds).toEqual([]);
+      expect(prisma.transportStop.findMany).not.toHaveBeenCalled();
+    });
+
+    it('tells every parent on the route once when the trip starts', async () => {
+      prisma.transportRoute.findFirst.mockResolvedValue({
+        name: 'Route 1',
+        tenant: { defaultLanguage: 'hi' },
+        students: [
+          {
+            studentId: 'k1',
+            student: {
+              parents: [{ parent: { id: 'p1', preferredLanguage: null } }],
+            },
+          },
+          {
+            studentId: 'k2',
+            student: {
+              parents: [{ parent: { id: 'p1', preferredLanguage: null } }],
+            },
+          },
+          {
+            studentId: 'k3',
+            student: {
+              parents: [{ parent: { id: 'p2', preferredLanguage: 'en' } }],
+            },
+          },
+        ],
+      });
+      const sent = await service.notifyStarted(
+        T,
+        'r1',
+        't1',
+        BusTripDirection.drop,
+      );
+      expect(sent).toBe(2);
+      expect(notifications.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'p1',
+          title: 'स्कूल बस स्कूल से निकल गई है',
+          data: { type: 'bus_started', studentId: 'k1', tripId: 't1' },
+        }),
+      );
+      expect(notifications.send.mock.calls[0][0].sound).toBeUndefined();
+    });
+
+    it("saves a stop's location from the trip's latest fix, audit-logged", async () => {
+      prisma.busTrip.findFirst.mockResolvedValue(
+        openTrip({
+          lat: 12.95,
+          lng: 77.61,
+          accuracy: 10,
+          positionAt: new Date(),
+        }),
+      );
+      prisma.transportStop.findFirst.mockResolvedValue({
+        id: 's-b',
+        name: 'Park',
+        lat: null,
+        lng: null,
+      });
+      prisma.transportStop.findMany.mockResolvedValue(STOPS);
+      const r = await service.stopHere(T, DRIVER, 't1', 's-b');
+      expect(prisma.transportStop.update).toHaveBeenCalledWith({
+        where: { id: 's-b' },
+        data: { lat: 12.95, lng: 77.61 },
+      });
+      expect(r.reachedStopIds).toEqual(['s-a', 's-b']);
+      expect(prisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ action: 'transport.stop_located' }),
+        }),
+      );
+    });
+
+    it('needs a recent fix to save a stop', async () => {
+      prisma.busTrip.findFirst.mockResolvedValue(
+        openTrip({
+          lat: 12.95,
+          lng: 77.61,
+          positionAt: new Date(Date.now() - 10 * 60_000),
+        }),
+      );
+      prisma.transportStop.findFirst.mockResolvedValue({
+        id: 's-b',
+        name: 'Park',
+        lat: null,
+        lng: null,
+      });
+      await expect(
+        service.stopHere(T, DRIVER, 't1', 's-b'),
+      ).rejects.toMatchObject({
+        response: { code: 'NO_GPS_FIX' },
+      });
+    });
+
+    it('refuses a stop on another route', async () => {
+      prisma.busTrip.findFirst.mockResolvedValue(
+        openTrip({ positionAt: new Date() }),
+      );
+      prisma.transportStop.findFirst.mockResolvedValue(null);
+      await expect(
+        service.stopHere(T, DRIVER, 't1', 's-x'),
+      ).rejects.toMatchObject({
+        response: { code: 'STOP_NOT_FOUND' },
+      });
+      expect(prisma.transportStop.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 's-x', routeId: 'r1', tenantId: T },
+        }),
+      );
+    });
+
+    it("gives the parent the minutes to their child's stop", async () => {
+      prisma.studentParent.findFirst.mockResolvedValue({
+        student: {
+          transport: {
+            stop: {
+              id: 's-b',
+              name: 'Park',
+              pickupTime: '07:40',
+              dropTime: null,
+            },
+            route: {
+              name: 'R1',
+              vehicleNumber: null,
+              driver: null,
+              stops: STOPS,
+              trips: [
+                {
+                  id: 't1',
+                  routeId: 'r1',
+                  direction: 'pickup',
+                  startedAt: new Date(),
+                  endedAt: null,
+                  lat: 12.9,
+                  lng: 77.6,
+                  speed: 5,
+                  heading: 0,
+                  positionAt: new Date(),
+                  passedStopIds: ['s-a'],
+                },
+              ],
+            },
+          },
+        },
+      });
+      const r = await service.childLive(T, 'parent-1', 's1');
+      // 1.11 km x 1.35 at 18 km/h = 5 minutes.
+      expect(r.trip?.eta).toEqual({ minutes: 5, reached: false });
+      expect(r.bus?.stop).toEqual({
+        name: 'Park',
+        pickupTime: '07:40',
+        dropTime: null,
+      });
     });
   });
 
@@ -308,8 +583,14 @@ describe('BusTrackingService', () => {
       prisma.studentParent.findFirst.mockResolvedValue({
         student: {
           transport: {
-            stop: { name: 'Gate', pickupTime: '07:40', dropTime: null },
+            stop: {
+              id: 'g',
+              name: 'Gate',
+              pickupTime: '07:40',
+              dropTime: null,
+            },
             route: {
+              stops: [],
               name: 'R1',
               vehicleNumber: 'KA01',
               driver: { name: 'Raju', phone: '+91', isActive: true },

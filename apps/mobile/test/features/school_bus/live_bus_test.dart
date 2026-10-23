@@ -53,4 +53,49 @@ void main() {
     // Stop the 10 s poll timer.
     await tester.pumpWidget(const SizedBox());
   });
+
+  testWidgets("shows the minutes to the child's stop while the bus runs", (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    Future<void> pump(Map<String, dynamic> eta) async {
+      final live = ChildBusLive.fromJson({
+        'bus': {
+          'routeName': 'Route 1',
+          'stop': {'name': 'South End Circle', 'pickupTime': '07:20', 'dropTime': '15:45'},
+        },
+        'trip': {
+          'id': 't1',
+          'direction': 'drop',
+          'startedAt': DateTime.now().toUtc().toIso8601String(),
+          'state': 'live',
+          'position': null,
+          'eta': eta,
+        },
+      });
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          brandingProvider.overrideWith((ref) async => null),
+          schoolBusRepositoryProvider.overrideWithValue(_FakeRepo(live)),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: LiveBusPage(studentId: 's1'),
+        ),
+      ));
+      await tester.pump();
+      await tester.pump();
+    }
+
+    await pump({'minutes': 7, 'reached': false});
+    expect(find.text('Arrives in about 7 min'), findsOneWidget);
+    expect(find.text('Stop: South End Circle · 15:45'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+
+    await pump({'minutes': null, 'reached': true});
+    expect(find.text('The bus has reached your stop'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
 }

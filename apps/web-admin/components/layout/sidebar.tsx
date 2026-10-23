@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import {
   CalendarCheck,
   CalendarDays,
   CalendarX2,
   ChartColumn,
   ChartLine,
+  ChevronDown,
   ClipboardList,
   CreditCard,
   FileText,
@@ -55,53 +57,95 @@ interface NavItem {
 
 interface NavGroup {
   /** Key into messages "nav"; no heading for the first group. */
-  title?: 'groupAcademics' | 'groupFinance' | 'groupSchool';
+  title?: 'groupAcademics' | 'groupFees' | 'groupOffice' | 'groupStaff' | 'groupSetup';
+  /** Folded until opened: pages a school sets up once and rarely visits. */
+  closedByDefault?: boolean;
   items: NavItem[];
 }
 
+/** Grouped by how often a school uses them; "Setup" starts folded. */
 const NAV_GROUPS: NavGroup[] = [
   { items: [{ label: 'dashboard', href: '/admin', icon: LayoutDashboard }] },
   {
     title: 'groupAcademics',
     items: [
       { label: 'students', href: '/admin/students', icon: GraduationCap },
-      { label: 'classes', href: '/admin/classes', icon: School },
-      { label: 'teachers', href: '/admin/teachers', icon: Presentation, hiddenForRoles: ['teacher'] },
       { label: 'attendance', href: '/admin/attendance', icon: CalendarCheck, hiddenForRoles: ['accounts'] },
       { label: 'absence', href: '/admin/absence', icon: CalendarX2, onlyRoles: ['teacher'] },
-      { label: 'timetable', href: '/admin/timetable', icon: CalendarDays, hiddenForRoles: ['teacher'], feature: 'timetable' },
+      { label: 'reports', href: '/admin/reports', icon: ChartColumn },
+      { label: 'syllabus', href: '/admin/syllabus', icon: ListChecks, onlyRoles: ['admin', 'teacher'], feature: 'syllabus' },
+    ],
+  },
+  {
+    title: 'groupFees',
+    items: [
+      { label: 'studentFees', href: '/admin/student-fees', icon: Wallet, hiddenForRoles: ['teacher'] },
+      { label: 'payments', href: '/admin/payments', icon: CreditCard, hiddenForRoles: ['teacher'] },
+      { label: 'paymentClaims', href: '/admin/payment-claims', icon: Receipt, hiddenForRoles: ['teacher'] },
+      { label: 'feeReports', href: '/admin/fee-reports', icon: ChartLine, hiddenForRoles: ['teacher'], feature: 'advancedReports' },
+    ],
+  },
+  {
+    title: 'groupOffice',
+    items: [
       { label: 'reception', href: '/admin/reception', icon: ConciergeBell, onlyRoles: ['receptionist', 'admin', 'accounts'], feature: 'admissions' },
       { label: 'admissions', href: '/admin/admissions', icon: UserPlus, onlyRoles: ['admin', 'accounts', 'receptionist'], feature: 'admissions' },
-      { label: 'syllabus', href: '/admin/syllabus', icon: ListChecks, onlyRoles: ['admin', 'teacher'], feature: 'syllabus' },
       { label: 'schoolBus', href: '/admin/school-bus', icon: Bus, onlyRoles: ['admin', 'accounts'], feature: 'transport' },
       { label: 'library', href: '/admin/library', icon: Library, onlyRoles: ['librarian', 'admin'], feature: 'library' },
-      { label: 'reports', href: '/admin/reports', icon: ChartColumn },
       { label: 'documents', href: '/admin/documents', icon: FolderOpen, hiddenForRoles: ['teacher'] },
       { label: 'sharedDocs', href: '/admin/shared-documents', icon: Folders, onlyRoles: ['teacher', 'admin', 'accounts'], feature: 'staffDocuments' },
     ],
   },
   {
-    title: 'groupFinance',
+    title: 'groupStaff',
     items: [
-      { label: 'fees', href: '/admin/fees', icon: ClipboardList, hiddenForRoles: ['teacher'] },
-      { label: 'studentFees', href: '/admin/student-fees', icon: Wallet, hiddenForRoles: ['teacher'] },
-      { label: 'payments', href: '/admin/payments', icon: CreditCard, hiddenForRoles: ['teacher'] },
-      { label: 'paymentClaims', href: '/admin/payment-claims', icon: Receipt, hiddenForRoles: ['teacher'] },
-      { label: 'feeReports', href: '/admin/fee-reports', icon: ChartLine, hiddenForRoles: ['teacher'], feature: 'advancedReports' },
       { label: 'pettyCash', href: '/admin/petty-cash', icon: PiggyBank, onlyRoles: ['admin', 'accounts'], feature: 'pettyCash' },
       { label: 'hr', href: '/admin/hr', icon: Briefcase, onlyRoles: ['admin', 'accounts'], feature: 'hrms' },
       { label: 'payslips', href: '/admin/payslips', icon: FileText, onlyRoles: ['teacher'], feature: 'hrms' },
     ],
   },
   {
-    title: 'groupSchool',
+    title: 'groupSetup',
+    closedByDefault: true,
     items: [
+      { label: 'classes', href: '/admin/classes', icon: School },
+      { label: 'teachers', href: '/admin/teachers', icon: Presentation, hiddenForRoles: ['teacher'] },
+      { label: 'timetable', href: '/admin/timetable', icon: CalendarDays, hiddenForRoles: ['teacher'], feature: 'timetable' },
+      { label: 'fees', href: '/admin/fees', icon: ClipboardList, hiddenForRoles: ['teacher'] },
       { label: 'users', href: '/admin/users', icon: Users, hiddenForRoles: ['teacher'] },
       { label: 'import', href: '/admin/import', icon: Upload, hiddenForRoles: ['teacher'] },
       { label: 'settings', href: '/admin/settings', icon: Settings, hiddenForRoles: ['teacher'] },
     ],
   },
 ];
+
+const FOLD_KEY = 'nav.folded';
+
+/** Groups this browser folded or opened; the defaults apply to the rest. */
+function useFolded() {
+  const [folded, setFolded] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(FOLD_KEY) ?? '{}') as unknown;
+      if (saved && typeof saved === 'object') setFolded(saved as Record<string, boolean>);
+    } catch {
+      // Storage blocked: defaults.
+    }
+  }, []);
+  const toggle = (title: string, fold: boolean) =>
+    setFolded((prev) => {
+      const next = { ...prev, [title]: fold };
+      try {
+        localStorage.setItem(FOLD_KEY, JSON.stringify(next));
+      } catch {
+        // Not remembered, still toggles.
+      }
+      return next;
+    });
+  return { folded, toggle };
+}
+
+const isActive = (item: NavItem, pathname: string) => (item.href === '/admin' ? pathname === '/admin' : pathname.startsWith(item.href));
 
 interface SidebarProps {
   tenant?: { name: string; logoUrl: string | null } | null;
@@ -118,6 +162,7 @@ export function Sidebar({ tenant, open = false, onClose, collapsed = false, onTo
   const pathname = usePathname();
   const role = getSession()?.role;
   const features = useTenantFeatures();
+  const { folded, toggle } = useFolded();
   const groups = NAV_GROUPS.map((g) => ({
     ...g,
     items: g.items.filter(
@@ -156,19 +201,33 @@ export function Sidebar({ tenant, open = false, onClose, collapsed = false, onTo
         </div>
 
         <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4">
-          {groups.map((group, gi) => (
-            <div key={group.title ?? 'main'} className={gi > 0 ? 'mt-5' : ''}>
+          {groups.map((group, gi) => {
+            // The group of the open page never folds.
+            const holdsActive = group.items.some((item) => isActive(item, pathname));
+            const isFolded = !!group.title && !holdsActive && (folded[group.title] ?? !!group.closedByDefault);
+            const listId = `nav-${group.title ?? 'main'}`;
+            return (
+            <div key={group.title ?? 'main'} className={gi > 0 ? 'mt-4' : ''}>
               {group.title && (
                 <>
-                  <p className={`mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.14em] text-white/40 ${hideWhenCollapsed}`}>
+                  <button
+                    type="button"
+                    onClick={() => toggle(group.title!, !isFolded)}
+                    disabled={holdsActive}
+                    aria-expanded={!isFolded}
+                    aria-controls={listId}
+                    className={`mb-1 flex w-full items-center justify-between rounded-lg px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/40 transition-colors enabled:cursor-pointer enabled:hover:text-white/75 ${hideWhenCollapsed}`}
+                  >
                     {t(group.title)}
-                  </p>
+                    {!holdsActive && <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isFolded ? '-rotate-90' : ''}`} />}
+                  </button>
                   {collapsed && <div className="mx-auto mb-2 hidden h-px w-8 bg-white/10 lg:block" />}
                 </>
               )}
-              <ul className="space-y-0.5">
+              {/* Icons only (collapsed on desktop) keeps every item. */}
+              <ul id={listId} className={`space-y-0.5 ${isFolded ? (collapsed ? 'hidden lg:block' : 'hidden') : ''}`}>
                 {group.items.map((item) => {
-                  const active = item.href === '/admin' ? pathname === '/admin' : pathname.startsWith(item.href);
+                  const active = isActive(item, pathname);
                   const Icon = item.icon;
                   return (
                     <li key={item.href}>
@@ -193,7 +252,8 @@ export function Sidebar({ tenant, open = false, onClose, collapsed = false, onTo
                 })}
               </ul>
             </div>
-          ))}
+            );
+          })}
         </nav>
 
         <div className="border-t border-white/10 p-4 sm:hidden">

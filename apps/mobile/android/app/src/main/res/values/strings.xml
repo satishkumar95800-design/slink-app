@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android Settings > Notifications: the "bus arriving" channel (MainActivity). -->
+    <string name="bus_channel_name">School bus arriving</string>
+    <string name="bus_channel_description">Rings a chime when your child\'s bus is about 5 minutes from the stop.</string>
+</resources>

@@ -12,18 +12,25 @@ class BusContact {
 }
 
 class BusStop {
+  /// Set on the driver's routes (not on a parent's view).
+  final String? id;
   final String name;
   final String? pickupTime;
   final String? dropTime;
 
-  const BusStop({required this.name, this.pickupTime, this.dropTime});
+  /// The stop has a saved location (driver's routes only).
+  final bool located;
+
+  const BusStop({this.id, required this.name, this.pickupTime, this.dropTime, this.located = false});
 
   static BusStop? fromJson(Object? json) {
     if (json is! Map<String, dynamic>) return null;
     return BusStop(
+      id: json['id'] as String?,
       name: json['name'] as String,
       pickupTime: json['pickupTime'] as String?,
       dropTime: json['dropTime'] as String?,
+      located: json['located'] == true,
     );
   }
 }
@@ -81,6 +88,19 @@ class BusPosition {
   }
 }
 
+/// When the bus reaches the parent's child's stop: [reached], or about [minutes].
+class BusEta {
+  final int? minutes;
+  final bool reached;
+
+  const BusEta({this.minutes, required this.reached});
+
+  static BusEta? fromJson(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    return BusEta(minutes: json['minutes'] as int?, reached: json['reached'] == true);
+  }
+}
+
 /// A trip a driver is running: [stale] when no fix came for a few minutes.
 class LiveTrip {
   final String id;
@@ -90,7 +110,22 @@ class LiveTrip {
   final BusPosition? position;
   final String? routeId;
 
-  const LiveTrip({required this.id, required this.direction, required this.startedAt, required this.stale, this.position, this.routeId});
+  /// Parent's view: arrival at their child's stop, null when unknown.
+  final BusEta? eta;
+
+  /// Driver's view: stops reached on this trip.
+  final List<String> reachedStopIds;
+
+  const LiveTrip({
+    required this.id,
+    required this.direction,
+    required this.startedAt,
+    required this.stale,
+    this.position,
+    this.routeId,
+    this.eta,
+    this.reachedStopIds = const [],
+  });
 
   bool get isPickup => direction == 'pickup';
 
@@ -103,6 +138,8 @@ class LiveTrip {
       stale: json['state'] == 'stale',
       position: BusPosition.fromJson(json['position']),
       routeId: json['routeId'] as String?,
+      eta: BusEta.fromJson(json['eta']),
+      reachedStopIds: [for (final id in (json['reachedStopIds'] as List?) ?? const []) id as String],
     );
   }
 }

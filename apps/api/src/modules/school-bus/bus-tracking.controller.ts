@@ -87,6 +87,19 @@ export class BusTrackingController {
     return this.tracking.position(tenantId, user.id, id, dto);
   }
 
+  /** The driver is at this stop: save its location from the latest fix. */
+  @Post('driver/trips/:id/stops/:stopId/here')
+  @Roles(Role.driver)
+  @HttpCode(HttpStatus.OK)
+  stopHere(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('stopId', ParseUUIDPipe) stopId: string,
+  ) {
+    return this.tracking.stopHere(tenantId, user.id, id, stopId);
+  }
+
   @Post('driver/trips/:id/end')
   @Roles(Role.driver)
   @HttpCode(HttpStatus.OK)

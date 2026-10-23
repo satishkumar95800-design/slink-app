@@ -1277,6 +1277,10 @@ model TransportStop {
   sortOrder  Int      @map("sort_order")
   pickupTime String?  @map("pickup_time") @db.VarChar(5)
   dropTime   String?  @map("drop_time") @db.VarChar(5)
+  /// Where the stop is, for the parents' arrival time (set in the console or
+  /// by the driver standing at it).
+  lat        Float?
+  lng        Float?
   createdAt  DateTime @default(now()) @map("created_at")
 
   tenant   Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -1327,6 +1331,10 @@ model BusTrip {
   heading      Float?
   accuracy     Float?
   positionAt   DateTime?        @map("position_at")
+  /// Stops the bus has reached on this trip (bus-eta.ts).
+  passedStopIds  String[]       @default([]) @map("passed_stop_ids")
+  /// Stops whose parents got the "arriving in 5 minutes" push.
+  alertedStopIds String[]       @default([]) @map("alerted_stop_ids")
 
   tenant Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   route  TransportRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)

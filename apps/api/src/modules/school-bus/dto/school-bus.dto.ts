@@ -4,11 +4,14 @@ import {
   ArrayMinSize,
   IsArray,
   IsBoolean,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
   Matches,
+  Max,
   MaxLength,
+  Min,
   MinLength,
   ValidateNested,
 } from 'class-validator';
@@ -45,6 +48,19 @@ export class StopInputDto {
   @Matches(HHMM, { message: 'dropTime must be HH:MM' })
   @IsOptional()
   dropTime?: string | null;
+
+  /** Where the stop is (for the parents' arrival time); both or neither. */
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  @IsOptional()
+  lat?: number | null;
+
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  @IsOptional()
+  lng?: number | null;
 }
 
 export class RouteInputDto {

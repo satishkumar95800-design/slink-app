@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, MapPin, Plus, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
@@ -12,6 +12,8 @@ export interface StopValue {
   name: string;
   pickupTime: string;
   dropTime: string;
+  /** "12.9716, 77.5946" or a Google Maps link; empty for none. */
+  location: string;
 }
 
 export interface RouteValues {
@@ -23,16 +25,44 @@ export interface RouteValues {
   stops: StopValue[];
 }
 
+/**
+ * A stop location typed or pasted: "lat, lng", or a Google Maps link with
+ * "@lat,lng", "q=lat,lng" or "!3dlat!4dlng". Null when empty, 'invalid' when
+ * it can't be read.
+ */
+export function parseLocation(text: string): { lat: number; lng: number } | null | 'invalid' {
+  const v = text.trim();
+  if (!v) return null;
+  const num = String.raw`(-?\d{1,3}(?:\.\d+)?)`;
+  const patterns = [
+    new RegExp(String.raw`!3d${num}!4d${num}`),
+    new RegExp(String.raw`@${num},\s*${num}`),
+    new RegExp(String.raw`[?&](?:q|query|ll|destination)=${num}(?:,|%2C)\s*${num}`, 'i'),
+    new RegExp(String.raw`^${num}\s*[,\s]\s*${num}$`),
+  ];
+  for (const re of patterns) {
+    const m = v.match(re);
+    if (!m) continue;
+    const lat = Number(m[1]);
+    const lng = Number(m[2]);
+    if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && !(lat === 0 && lng === 0)) return { lat, lng };
+  }
+  return 'invalid';
+}
+
+const showLocation = (lat: number | null, lng: number | null) => (lat != null && lng != null ? `${lat.toFixed(6)}, ${lng.toFixed(6)}` : '');
+
 export const emptyRoute = (r?: Route): RouteValues => ({
   name: r?.name ?? '',
   vehicleNumber: r?.vehicleNumber ?? '',
   driverId: r?.driverId ?? '',
   attendantId: r?.attendantId ?? '',
   notes: r?.notes ?? '',
-  stops: r?.stops.map((s) => ({ id: s.id, name: s.name, pickupTime: s.pickupTime ?? '', dropTime: s.dropTime ?? '' })) ?? [],
+  stops: r?.stops.map((s) => ({ id: s.id, name: s.name, pickupTime: s.pickupTime ?? '', dropTime: s.dropTime ?? '', location: showLocation(s.lat, s.lng) })) ?? [],
 });
 
-export const routeValid = (v: RouteValues) => v.name.trim().length > 0 && v.stops.every((s) => s.name.trim().length > 0);
+export const routeValid = (v: RouteValues) =>
+  v.name.trim().length > 0 && v.stops.every((s) => s.name.trim().length > 0 && parseLocation(s.location) !== 'invalid');
 
 export const toBody = (v: RouteValues) => ({
   name: v.name.trim(),
@@ -40,7 +70,16 @@ export const toBody = (v: RouteValues) => ({
   driverId: v.driverId,
   attendantId: v.attendantId,
   notes: v.notes.trim(),
-  stops: v.stops.map((s) => ({ ...(s.id ? { id: s.id } : {}), name: s.name.trim(), pickupTime: s.pickupTime, dropTime: s.dropTime })),
+  stops: v.stops.map((s) => {
+    const at = parseLocation(s.location);
+    return {
+      ...(s.id ? { id: s.id } : {}),
+      name: s.name.trim(),
+      pickupTime: s.pickupTime,
+      dropTime: s.dropTime,
+      ...(at && at !== 'invalid' ? at : { lat: null, lng: null }),
+    };
+  }),
 });
 
 /** Route details and its stops in pick-up order. */
@@ -70,7 +109,7 @@ export function RouteFields({ value, onChange, staff }: { value: RouteValues; on
       <div>
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-gray-800">{t('stops')}</p>
-          <Button size="sm" variant="secondary" onClick={() => set({ stops: [...value.stops, { name: '', pickupTime: '', dropTime: '' }] })}>
+          <Button size="sm" variant="secondary" onClick={() => set({ stops: [...value.stops, { name: '', pickupTime: '', dropTime: '', location: '' }] })}>
             <Plus className="h-4 w-4" />
             {t('addStop')}
           </Button>
@@ -91,6 +130,7 @@ export function RouteFields({ value, onChange, staff }: { value: RouteValues; on
                 <div className="w-36">
                   <Input type="time" label={t('drop')} value={s.dropTime} onChange={(e) => setStop(i, { dropTime: e.target.value })} />
                 </div>
+                <LocationField value={s.location} onChange={(location) => setStop(i, { location })} />
                 <div className="mb-1 flex gap-1">
                   <Button size="sm" variant="ghost" disabled={i === 0} onClick={() => move(i, -1)} aria-label={t('moveUp')}>
                     <ArrowUp className="h-4 w-4" />
@@ -106,7 +146,33 @@ export function RouteFields({ value, onChange, staff }: { value: RouteValues; on
             ))}
           </ol>
         )}
+        {value.stops.length > 0 && <p className="mt-2 text-xs text-gray-500">{t('locationHelp')}</p>}
       </div>
+    </div>
+  );
+}
+
+function LocationField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const t = useTranslations('schoolBus');
+  const at = parseLocation(value);
+  return (
+    <div className="w-full sm:w-64">
+      <Input
+        label={t('location')}
+        placeholder={t('locationPlaceholder')}
+        maxLength={500}
+        value={value}
+        error={at === 'invalid' ? t('locationInvalid') : undefined}
+        onChange={(e) => onChange(e.target.value)}
+        // Show a pasted link as plain coordinates.
+        onBlur={() => at && at !== 'invalid' && onChange(`${at.lat.toFixed(6)}, ${at.lng.toFixed(6)}`)}
+      />
+      {at && at !== 'invalid' && (
+        <a href={`https://www.google.com/maps?q=${at.lat},${at.lng}`} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-teal hover:underline">
+          <MapPin className="h-3.5 w-3.5" />
+          {t('viewOnMap')}
+        </a>
+      )}
     </div>
   );
 }

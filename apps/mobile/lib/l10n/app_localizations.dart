@@ -3582,6 +3582,72 @@ abstract class AppLocalizations {
   /// **'Open settings'**
   String get driverOpenSettings;
 
+  /// No description provided for @busEtaMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes, plural, =1{Arrives in about 1 min} other{Arrives in about {minutes} min}}'**
+  String busEtaMinutes(int minutes);
+
+  /// No description provided for @busEtaArrivingNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Arriving now'**
+  String get busEtaArrivingNow;
+
+  /// No description provided for @busEtaReached.
+  ///
+  /// In en, this message translates to:
+  /// **'The bus has reached your stop'**
+  String get busEtaReached;
+
+  /// No description provided for @driverStopsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Stops'**
+  String get driverStopsTitle;
+
+  /// No description provided for @driverStopHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Save location here'**
+  String get driverStopHere;
+
+  /// No description provided for @driverStopSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Location saved for {stop}'**
+  String driverStopSaved(String stop);
+
+  /// No description provided for @driverStopNoLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'No location yet'**
+  String get driverStopNoLocation;
+
+  /// No description provided for @driverStopReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Reached'**
+  String get driverStopReached;
+
+  /// No description provided for @driverStopsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'At a stop with no location? Tap \"Save location here\" so parents get the bus\'s arrival time.'**
+  String get driverStopsHint;
+
+  /// No description provided for @driverErrNoFix.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the phone\'s location. Try again in a few seconds.'**
+  String get driverErrNoFix;
+
+  /// No description provided for @busPushTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Track'**
+  String get busPushTrack;
+
   /// No description provided for @libraryTitle.
   ///
   /// In en, this message translates to:

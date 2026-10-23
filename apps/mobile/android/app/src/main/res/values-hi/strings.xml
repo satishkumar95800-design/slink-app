@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bus_channel_name">स्कूल बस आ रही है</string>
+    <string name="bus_channel_description">बच्चे की बस स्टॉप से लगभग 5 मिनट दूर होने पर घंटी बजती है।</string>
+</resources>

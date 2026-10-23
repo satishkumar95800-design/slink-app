@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -41,7 +42,12 @@ class SlinkApp extends ConsumerStatefulWidget {
   ConsumerState<SlinkApp> createState() => _SlinkAppState();
 }
 
+/// Plays the bus chime (MainActivity.kt / AppDelegate.swift).
+const _sounds = MethodChannel('slink/sounds');
+
 class _SlinkAppState extends ConsumerState<SlinkApp> {
+  final _messenger = GlobalKey<ScaffoldMessengerState>();
+
   @override
   void initState() {
     super.initState();
@@ -49,6 +55,7 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
   }
 
   Future<void> _configurePushNotifications() async {
+    FirebaseMessaging.onMessage.listen(_onForegroundMessage);
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
       _handleNotificationRoute(message);
     });
@@ -57,6 +64,20 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
     if (initialMessage != null) {
       _handleNotificationRoute(initialMessage);
     }
+  }
+
+  /// The OS shows nothing for a push while the app is open: for the school
+  /// bus, play the chime (bus arriving) and show it with a Track button.
+  void _onForegroundMessage(RemoteMessage message) {
+    final type = message.data['type'];
+    if (type != 'bus_arriving' && type != 'bus_started') return;
+    if (type == 'bus_arriving') _sounds.invokeMethod<void>('busChime').catchError((_) {});
+    final n = message.notification;
+    _messenger.currentState?.showSnackBar(SnackBar(
+      duration: const Duration(seconds: 8),
+      content: Text([n?.title, n?.body].whereType<String>().join('\n')),
+      action: SnackBarAction(label: currentL10n.busPushTrack, onPressed: () => _handleNotificationRoute(message)),
+    ));
   }
 
   void _handleNotificationRoute(RemoteMessage message) {
@@ -126,6 +147,12 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
       // Morning holiday push; the calendar is optional, the history is not.
       case 'holiday':
         return (route: '/dashboard/notifications', extra: null);
+      // School bus started / about 5 minutes away: the child's bus on the map.
+      case 'bus_started':
+      case 'bus_arriving':
+        final studentId = data['studentId'];
+        if (studentId != null) return (route: '/school-bus/live/$studentId', extra: null);
+        break;
     }
 
     if (feeId != null && feeId is String && feeId.isNotEmpty) {
@@ -152,6 +179,7 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
       darkTheme: theme.darkTheme,
       themeMode: themeMode,
       routerConfig: router,
+      scaffoldMessengerKey: _messenger,
       debugShowCheckedModeBanner: false,
       // Changing language rebuilds from here down — no restart or re-login.
       locale: locale,

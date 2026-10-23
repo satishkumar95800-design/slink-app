@@ -18,6 +18,7 @@
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		A1B2C3D41F00000100GSINFO /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41F00000200GSINFO /* GoogleService-Info.plist */; };
+		B05C41A01F00000100BUSCHM /* bus_chime.wav in Resources */ = {isa = PBXBuildFile; fileRef = B05C41A01F00000200BUSCHM /* bus_chime.wav */; };
 		A688B3007F40E2F06D95F247 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D763D708C8BA73460B7DAC4A /* Pods_Runner.framework */; };
 /* End PBXBuildFile section */
 
@@ -68,6 +69,7 @@
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1B2C3D41F00000200GSINFO /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		B05C41A01F00000200BUSCHM /* bus_chime.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = bus_chime.wav; sourceTree = "<group>"; };
 		CECA5F743C1A242656795DE4 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		D763D708C8BA73460B7DAC4A /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		E92DC26EA359A2055BA7DEC0 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -154,6 +156,7 @@
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
 				97C146FD1CF9000F007C117D /* Assets.xcassets */,
 				A1B2C3D41F00000200GSINFO /* GoogleService-Info.plist */,
+				B05C41A01F00000200BUSCHM /* bus_chime.wav */,
 				97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */,
 				97C147021CF9000F007C117D /* Info.plist */,
 				1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */,
@@ -277,6 +280,7 @@
 			files = (
 				97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */,
 				A1B2C3D41F00000100GSINFO /* GoogleService-Info.plist in Resources */,
+				B05C41A01F00000100BUSCHM /* bus_chime.wav in Resources */,
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,

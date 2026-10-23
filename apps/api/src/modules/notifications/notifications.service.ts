@@ -15,7 +15,7 @@ import {
   Role,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { FcmService } from './fcm.service';
+import { FcmService, PushSound } from './fcm.service';
 import { SmsService } from './sms.service';
 import { FilesService } from '../files/files.service';
 import {
@@ -83,6 +83,8 @@ export interface SendOptions {
   title?: string;
   body: string;
   data?: Record<string, string>;
+  /** FCM only: play this sound instead of the default one. */
+  sound?: PushSound;
 }
 
 /** Recipient fields a broadcast needs, including language for translation. */
@@ -613,6 +615,7 @@ export class NotificationsService {
           opts.title ?? '',
           opts.body,
           opts.data,
+          opts.sound,
         );
       } else {
         if (!user.phone) throw new Error('User has no phone number');
