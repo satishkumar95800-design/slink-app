@@ -11,87 +11,137 @@ import '../../core/theme/app_theme.dart';
 import '../../shared/models/api_exception.dart';
 import '../../shared/widgets/authenticated_scaffold.dart';
 import '../../shared/widgets/ui_kit.dart';
+import '../auth/session_controller.dart';
+import '../../shared/models/active_user.dart';
 import '../classes/classes_repository.dart';
 import 'albums_models.dart';
 import 'albums_repository.dart';
-import 'child_albums_page.dart' show albumColor;
+import 'child_albums_page.dart' show albumColor, saveAllToGallery;
 
 final _date = DateFormat('dd/MM/yyyy', 'en');
 
-/// A teacher's photo albums, and a new one for their classes.
-class StaffAlbumsPage extends ConsumerWidget {
+/// A teacher's photo albums: those made for parents, and the staff folder
+/// (teachers and office staff only, never parents).
+class StaffAlbumsPage extends ConsumerStatefulWidget {
   const StaffAlbumsPage({super.key});
 
-  Future<void> _create(BuildContext context, WidgetRef ref) async {
+  @override
+  ConsumerState<StaffAlbumsPage> createState() => _StaffAlbumsPageState();
+}
+
+class _StaffAlbumsPageState extends ConsumerState<StaffAlbumsPage> with SingleTickerProviderStateMixin {
+  late final _tabs = TabController(length: 2, vsync: this)..addListener(() => setState(() {}));
+
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
+  }
+
+  bool get _staff => _tabs.index == 1;
+
+  Future<void> _create() async {
     final album = await showModalBottomSheet<StaffAlbum>(
       context: context,
       isScrollControlled: true,
-      builder: (_) => const _NewAlbumSheet(),
+      builder: (_) => _NewAlbumSheet(forStaff: _staff),
     );
-    if (album == null || !context.mounted) return;
+    if (album == null || !mounted) return;
     ref.invalidate(myAlbumsProvider);
     context.push('/albums/${album.id}');
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l = context.l10n;
     final async = ref.watch(myAlbumsProvider);
+    // Accounts only see the staff folder; they don't make albums.
+    final canCreate = ref.watch(sessionControllerProvider).user?.role != UserRole.accounts;
     return AuthenticatedScaffold(
       appBar: AppBar(
         title: Text(l.albumsTitle),
         actions: [
-          TextButton.icon(
-            onPressed: () => _create(context, ref),
-            icon: const Icon(Icons.add_photo_alternate_rounded),
-            label: Text(l.albumsNew),
-          ),
+          if (canCreate)
+            TextButton.icon(
+              onPressed: _create,
+              icon: const Icon(Icons.add_photo_alternate_rounded),
+              label: Text(_staff ? l.albumsNewStaff : l.albumsNew),
+            ),
         ],
+        bottom: TabBar(
+          controller: _tabs,
+          tabs: [Tab(text: l.albumsFolderParents), Tab(text: l.albumsFolderStaff)],
+        ),
       ),
       body: RefreshIndicator(
         onRefresh: () => ref.refresh(myAlbumsProvider.future),
         child: async.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => EmptyState(icon: Icons.cloud_off_rounded, message: describeError(e), actionLabel: l.commonRetry, onAction: () => ref.invalidate(myAlbumsProvider)),
-          data: (albums) => albums.isEmpty
-              ? EmptyState(icon: Icons.photo_library_rounded, message: l.albumsEmptyStaff, color: albumColor)
-              : ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: albums.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (context, i) {
-                    final a = albums[i];
-                    return SoftCard(
-                      onTap: () => context.push('/albums/${a.id}'),
-                      child: Row(
-                        children: [
-                          const IconBadge(icon: Icons.photo_library_rounded, color: albumColor),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(a.title, style: const TextStyle(fontWeight: FontWeight.w800)),
-                                const SizedBox(height: 4),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 4,
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  children: [
-                                    _StatusPill(album: a),
-                                    Text(l.albumsPhotoCount(a.photoCount), style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.muted)),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+          data: (all) {
+            final albums = all.where((a) => a.forStaff == _staff).toList();
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                if (_staff) ...[
+                  Text(l.albumsStaffHint, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.muted)),
+                  const SizedBox(height: 12),
+                ],
+                if (albums.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 48),
+                    child: EmptyState(
+                      icon: Icons.photo_library_rounded,
+                      message: _staff ? l.albumsEmptyStaffFolder : l.albumsEmptyStaff,
+                      color: albumColor,
+                    ),
+                  )
+                else
+                  for (final a in albums) ...[_AlbumTile(album: a), const SizedBox(height: 10)],
+              ],
+            );
+          },
         ),
+      ),
+    );
+  }
+}
+
+class _AlbumTile extends StatelessWidget {
+  final StaffAlbum album;
+
+  const _AlbumTile({required this.album});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final a = album;
+    return SoftCard(
+      onTap: () => context.push('/albums/${a.id}'),
+      child: Row(
+        children: [
+          IconBadge(icon: a.forStaff ? Icons.badge_rounded : Icons.photo_library_rounded, color: albumColor),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(a.title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _StatusPill(album: a),
+                    Text(l.albumsPhotoCount(a.photoCount), style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.muted)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
+        ],
       ),
     );
   }
@@ -118,7 +168,10 @@ class _StatusPill extends StatelessWidget {
 
 /// Name the album and pick the classes it is for.
 class _NewAlbumSheet extends ConsumerStatefulWidget {
-  const _NewAlbumSheet();
+  /// The staff folder: no classes to pick.
+  final bool forStaff;
+
+  const _NewAlbumSheet({required this.forStaff});
 
   @override
   ConsumerState<_NewAlbumSheet> createState() => _NewAlbumSheetState();
@@ -138,7 +191,7 @@ class _NewAlbumSheetState extends ConsumerState<_NewAlbumSheet> {
   Future<void> _save() async {
     setState(() => _busy = true);
     try {
-      final album = await ref.read(albumsRepositoryProvider).create(_title.text.trim(), _classIds.toList());
+      final album = await ref.read(albumsRepositoryProvider).create(_title.text.trim(), _classIds.toList(), forStaff: widget.forStaff);
       if (mounted) Navigator.of(context).pop(album);
     } catch (e) {
       if (mounted) {
@@ -152,14 +205,14 @@ class _NewAlbumSheetState extends ConsumerState<_NewAlbumSheet> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final classes = ref.watch(myClassesProvider);
-    final ok = _title.text.trim().isNotEmpty && _classIds.isNotEmpty;
+    final ok = _title.text.trim().isNotEmpty && (widget.forStaff || _classIds.isNotEmpty);
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(l.albumsNew, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+          Text(widget.forStaff ? l.albumsNewStaff : l.albumsNew, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
           const SizedBox(height: 16),
           TextField(
             controller: _title,
@@ -169,6 +222,9 @@ class _NewAlbumSheetState extends ConsumerState<_NewAlbumSheet> {
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 8),
+          if (widget.forStaff)
+            Text(l.albumsStaffHint, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.muted))
+          else ...[
           Text(l.albumsShareWith, style: const TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           classes.when(
@@ -187,6 +243,7 @@ class _NewAlbumSheetState extends ConsumerState<_NewAlbumSheet> {
               ],
             ),
           ),
+          ],
           const SizedBox(height: 20),
           FilledButton(
             onPressed: ok && !_busy ? _save : null,
@@ -212,7 +269,21 @@ class _StaffAlbumPageState extends ConsumerState<StaffAlbumPage> {
   StaffAlbum? _album;
   Object? _error;
   ({int done, int total, int failed})? _upload;
+  ({int done, int total})? _saving;
   bool _busy = false;
+
+  Future<void> _saveAll() async {
+    final album = _album!;
+    final repo = ref.read(albumsRepositoryProvider);
+    await saveAllToGallery(
+      context,
+      repo,
+      album.photos,
+      onProgress: (done, total) => setState(() => _saving = (done: done, total: total)),
+      onSaved: () => repo.markSavedByStaff(album.id),
+    );
+    if (mounted) setState(() => _saving = null);
+  }
 
   @override
   void initState() {
@@ -292,7 +363,7 @@ class _StaffAlbumPageState extends ConsumerState<StaffAlbumPage> {
       context: context,
       builder: (c) => AlertDialog(
         title: Text(l.albumsPublishTitle),
-        content: Text(l.albumsPublishBody),
+        content: Text(_album!.forStaff ? l.albumsPublishStaffBody : l.albumsPublishBody),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: Text(l.commonCancel)),
           FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(l.albumsPublish)),
@@ -325,9 +396,21 @@ class _StaffAlbumPageState extends ConsumerState<StaffAlbumPage> {
             : const Center(child: CircularProgressIndicator()),
       );
     }
-    final canAdd = album.status != 'expired' && album.photos.length < album.maxPhotos && _upload == null;
+    final manage = album.canManage;
+    final canAdd = manage && album.status != 'expired' && album.photos.length < album.maxPhotos && _upload == null;
     return AuthenticatedScaffold(
-      appBar: AppBar(title: Text(album.title)),
+      appBar: AppBar(
+        title: Text(album.title),
+        actions: [
+          // Anyone who can see a shared album can keep its photos.
+          if (album.isLive && album.photos.isNotEmpty && _saving == null)
+            TextButton.icon(
+              onPressed: _saveAll,
+              icon: const Icon(Icons.download_rounded),
+              label: Text(l.albumsSaveAll),
+            ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -337,11 +420,23 @@ class _StaffAlbumPageState extends ConsumerState<StaffAlbumPage> {
               children: [
                 Row(children: [_StatusPill(album: album)]),
                 const SizedBox(height: 8),
+                if (album.forStaff) ...[
+                  Text(l.albumsStaffHint, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.muted)),
+                  const SizedBox(height: 6),
+                ],
+                if (_saving != null) ...[
+                  Text(l.albumsSaving(_saving!.done, _saving!.total)),
+                  const SizedBox(height: 6),
+                  LinearProgressIndicator(value: _saving!.total == 0 ? null : _saving!.done / _saving!.total),
+                  const SizedBox(height: 6),
+                ],
                 if (album.isLive)
-                  Text(l.albumsSavedBy(album.savedCount, album.parentCount))
+                  Text(album.forStaff
+                      ? l.albumsSavedByStaff(album.savedCount, album.recipientCount)
+                      : l.albumsSavedBy(album.savedCount, album.recipientCount))
                 else if (album.isDraft)
                   Text(l.albumsDraftNoPhotos, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.muted)),
-                if (album.isDraft) ...[
+                if (album.isDraft && manage) ...[
                   const SizedBox(height: 12),
                   FilledButton.icon(
                     onPressed: album.photos.isEmpty || _busy || _upload != null ? null : _publish,
@@ -356,11 +451,12 @@ class _StaffAlbumPageState extends ConsumerState<StaffAlbumPage> {
           Row(
             children: [
               Expanded(child: Text(l.albumsLimit(album.photos.length, album.maxPhotos), style: const TextStyle(fontWeight: FontWeight.w800))),
-              OutlinedButton.icon(
-                onPressed: canAdd ? _addPhotos : null,
-                icon: const Icon(Icons.add_photo_alternate_rounded),
-                label: Text(l.albumsAddPhotos),
-              ),
+              if (manage)
+                OutlinedButton.icon(
+                  onPressed: canAdd ? _addPhotos : null,
+                  icon: const Icon(Icons.add_photo_alternate_rounded),
+                  label: Text(l.albumsAddPhotos),
+                ),
             ],
           ),
           if (_upload != null) ...[
@@ -384,7 +480,7 @@ class _StaffAlbumPageState extends ConsumerState<StaffAlbumPage> {
                     borderRadius: BorderRadius.circular(10),
                     child: CachedNetworkImage(imageUrl: p.thumbUrl, cacheKey: 'album-thumb-${p.id}', fit: BoxFit.cover),
                   ),
-                  if (album.status != 'expired')
+                  if (manage && album.status != 'expired')
                     Positioned(
                       top: 2,
                       right: 2,

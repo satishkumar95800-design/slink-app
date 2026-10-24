@@ -2,6 +2,96 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/services/api_client.dart';
 
+/// Teachers today from staff attendance (HR & payroll); without it only [total].
+class TeachersToday {
+  final int total;
+  final bool tracked;
+  final int present;
+  final int halfDay;
+  final int absent;
+  final int onLeave;
+  final int notMarked;
+
+  /// Absent or on leave today: (name, ABSENT | ON_LEAVE).
+  final List<(String, String)> away;
+
+  const TeachersToday({
+    required this.total,
+    required this.tracked,
+    this.present = 0,
+    this.halfDay = 0,
+    this.absent = 0,
+    this.onLeave = 0,
+    this.notMarked = 0,
+    this.away = const [],
+  });
+
+  factory TeachersToday.fromJson(Map<String, dynamic> j) => TeachersToday(
+        total: j['total'] as int,
+        tracked: j['tracked'] == true,
+        present: (j['present'] as int?) ?? 0,
+        halfDay: (j['halfDay'] as int?) ?? 0,
+        absent: (j['absent'] as int?) ?? 0,
+        onLeave: (j['onLeave'] as int?) ?? 0,
+        notMarked: (j['notMarked'] as int?) ?? 0,
+        away: [
+          for (final a in (j['away'] as List?) ?? const [])
+            ((a as Map<String, dynamic>)['name'] as String, a['status'] as String),
+        ],
+      );
+}
+
+/// An event, PTM or holiday in the next two weeks.
+class ComingUp {
+  final String title;
+
+  /// event | ptm | holiday
+  final String kind;
+  final DateTime date;
+  final DateTime? endDate;
+  final String? time;
+
+  const ComingUp({required this.title, required this.kind, required this.date, this.endDate, this.time});
+
+  factory ComingUp.fromJson(Map<String, dynamic> j) => ComingUp(
+        title: j['title'] as String,
+        kind: j['kind'] as String,
+        date: DateTime.parse(j['date'] as String),
+        endDate: j['endDate'] == null ? null : DateTime.parse(j['endDate'] as String),
+        time: j['time'] as String?,
+      );
+}
+
+/// Today at the front desk: appointments, campus tours, and the week ahead.
+class DeskToday {
+  /// (time, kind, name, withWhom, status)
+  final List<({String time, String kind, String name, String? withWhom, String status})> appointments;
+
+  /// (childName, parentName)
+  final List<({String child, String parent})> tours;
+  final int laterThisWeek;
+
+  const DeskToday({required this.appointments, required this.tours, required this.laterThisWeek});
+
+  factory DeskToday.fromJson(Map<String, dynamic> j) => DeskToday(
+        appointments: [
+          for (final a in j['today'] as List)
+            (
+              time: (a as Map<String, dynamic>)['time'] as String,
+              kind: a['kind'] as String,
+              name: a['name'] as String,
+              withWhom: a['withWhom'] as String?,
+              status: a['status'] as String,
+            ),
+        ],
+        tours: [
+          for (final t in j['tours'] as List)
+            (child: (t as Map<String, dynamic>)['childName'] as String, parent: t['parentName'] as String),
+        ],
+        laterThisWeek: j['laterThisWeek'] as int,
+      );
+}
+
 /// GET /admin-home: today's numbers for the admin's phone. Sections for
 /// modules the school doesn't have are null (the app hides them).
 class AdminHome {
@@ -24,6 +114,12 @@ class AdminHome {
   final Map<String, int>? alerts;
   final ({int routes, int onTheMove})? buses;
   final int? libraryOverdue;
+  final TeachersToday? teachers;
+  final List<ComingUp> events;
+  final DeskToday? desk;
+
+  /// What needs the admin's attention, most pressing first: (kind, count).
+  final List<(String, int)> urgent;
 
   const AdminHome({
     required this.date,
@@ -45,6 +141,10 @@ class AdminHome {
     required this.alerts,
     required this.buses,
     required this.libraryOverdue,
+    this.teachers,
+    this.events = const [],
+    this.desk,
+    this.urgent = const [],
   });
 
   /// Students counted in marked classes.
@@ -83,6 +183,13 @@ class AdminHome {
       alerts: alerts?.map((k, v) => MapEntry(k, v as int)),
       buses: bus == null ? null : (routes: bus['routes'] as int, onTheMove: bus['onTheMove'] as int),
       libraryOverdue: j['libraryOverdue'] as int?,
+      teachers: j['teachers'] is Map<String, dynamic> ? TeachersToday.fromJson(j['teachers'] as Map<String, dynamic>) : null,
+      events: [for (final e in (j['events'] as List?) ?? const []) ComingUp.fromJson(e as Map<String, dynamic>)],
+      desk: j['appointments'] is Map<String, dynamic> ? DeskToday.fromJson(j['appointments'] as Map<String, dynamic>) : null,
+      urgent: [
+        for (final u in (j['urgent'] as List?) ?? const [])
+          ((u as Map<String, dynamic>)['kind'] as String, u['count'] as int),
+      ],
     );
   }
 }

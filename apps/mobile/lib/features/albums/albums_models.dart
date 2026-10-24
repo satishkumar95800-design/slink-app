@@ -73,9 +73,17 @@ class StaffAlbum {
   final DateTime? expiresAt;
   final int photoCount;
   final int savedCount;
-  final int parentCount;
+
+  /// Parents of the album's children, or the school's staff for the staff folder.
+  final int recipientCount;
   final int maxPhotos;
   final List<AlbumPhoto> photos;
+
+  /// Staff folder: teachers, admin and accounts only, never parents.
+  final bool forStaff;
+
+  /// An admin, or the teacher who made it; others only view the staff folder.
+  final bool canManage;
 
   const StaffAlbum({
     required this.id,
@@ -84,9 +92,11 @@ class StaffAlbum {
     this.expiresAt,
     required this.photoCount,
     required this.savedCount,
-    this.parentCount = 0,
+    this.recipientCount = 0,
     this.maxPhotos = 100,
     this.photos = const [],
+    this.forStaff = false,
+    this.canManage = true,
   });
 
   bool get isDraft => status == 'draft';
@@ -101,7 +111,9 @@ class StaffAlbum {
       expiresAt: _date(j['expiresAt']),
       photoCount: (j['photoCount'] as int?) ?? photos.length,
       savedCount: (j['savedCount'] as int?) ?? 0,
-      parentCount: (j['parentCount'] as int?) ?? 0,
+      recipientCount: (j['recipientCount'] as int?) ?? 0,
+      forStaff: j['forStaff'] == true,
+      canManage: j['canManage'] != false,
       maxPhotos: ((j['limits'] as Map<String, dynamic>?)?['photosPerAlbum'] as int?) ?? 100,
       photos: photos,
     );

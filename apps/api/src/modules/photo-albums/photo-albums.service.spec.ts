@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument -- jest Prisma mocks */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument -- jest Prisma mocks */
 import { Role } from '@prisma/client';
 import type { ActiveUser } from '../../common/types/active-user.type';
 import { FileCategory } from '../files/dto/upload-file.dto';
@@ -26,6 +26,7 @@ const DAY = 86_400_000;
 
 const album = (extra: object = {}) => ({
   id: 'al-1',
+  forStaff: false,
   title: 'Sports Day',
   description: null,
   eventDate: null,
@@ -120,7 +121,7 @@ function setup() {
       : Promise.all(arg as unknown[]),
   );
   const files: any = {
-    upload: jest.fn((_t: string, f: any, category: string) =>
+    upload: jest.fn((_t: string, f: any, category: FileCategory) =>
       Promise.resolve({
         key: `private/${T}/albums/al-1/${category === FileCategory.ALBUM_THUMB ? 'thumbs/' : ''}${f.originalname}`,
         size: f.size,
@@ -329,6 +330,127 @@ describe('PhotoAlbumsService', () => {
     });
   });
 
+  describe('staff folder', () => {
+    const ACCOUNTS: ActiveUser = {
+      id: 'acc-1',
+      role: Role.accounts,
+      tenantId: T,
+      name: 'Manju',
+      isVerified: true,
+    };
+
+    it('a teacher makes a staff album without choosing classes', async () => {
+      const { service, prisma } = setup();
+      await service.create(T, TEACHER, {
+        title: "Teachers' day",
+        forStaff: true,
+        classIds: ['c-6b'],
+        studentIds: [],
+      });
+      expect(prisma.photoAlbum.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            forStaff: true,
+            classIds: [],
+            studentIds: [],
+          }),
+        }),
+      );
+    });
+
+    it('every staff login can open a shared staff album, read-only', async () => {
+      const { service, prisma } = setup();
+      prisma.photoAlbum.findFirst.mockResolvedValue(
+        album({
+          forStaff: true,
+          createdBy: 'teacher-2',
+          publishedAt: NOW,
+          expiresAt: new Date(NOW.getTime() + DAY),
+        }),
+      );
+      prisma.user.findMany.mockResolvedValue([
+        { id: 'acc-1', preferredLanguage: null },
+        { id: 'teacher-1', preferredLanguage: null },
+      ]);
+      const d = await service.detail(T, ACCOUNTS, 'al-1');
+      expect(d).toMatchObject({ forStaff: true, canManage: false, recipientCount: 2 });
+      await expect(service.publish(T, ACCOUNTS, 'al-1')).rejects.toMatchObject({
+        response: { code: 'ALBUM_NOT_FOUND' },
+      });
+      // A draft in someone else's staff folder stays private.
+      prisma.photoAlbum.findFirst.mockResolvedValue(
+        album({ forStaff: true, createdBy: 'teacher-2' }),
+      );
+      await expect(service.detail(T, TEACHER, 'al-1')).rejects.toMatchObject({
+        response: { code: 'ALBUM_NOT_FOUND' },
+      });
+      // Another teacher's parents' album is not theirs to open.
+      prisma.photoAlbum.findFirst.mockResolvedValue(
+        album({
+          createdBy: 'teacher-2',
+          publishedAt: NOW,
+          expiresAt: new Date(NOW.getTime() + DAY),
+        }),
+      );
+      await expect(service.detail(T, TEACHER, 'al-1')).rejects.toMatchObject({
+        response: { code: 'ALBUM_NOT_FOUND' },
+      });
+    });
+
+    it('sharing a staff album tells the staff, not parents', async () => {
+      const { service, prisma, notifications } = setup();
+      prisma.photoAlbum.findFirst.mockResolvedValue(
+        album({ forStaff: true, classIds: [] }),
+      );
+      prisma.user.findMany.mockResolvedValue([
+        { id: 'teacher-1', preferredLanguage: null },
+        { id: 'teacher-2', preferredLanguage: 'hi' },
+        { id: 'acc-1', preferredLanguage: null },
+      ]);
+      await service.publish(T, TEACHER, 'al-1');
+      await flush();
+      // Everyone but the teacher who shared it.
+      expect(notifications.send).toHaveBeenCalledTimes(2);
+      expect(notifications.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'teacher-2',
+          data: { type: 'staff_album', albumId: 'al-1' },
+        }),
+      );
+      // No parents were looked up.
+      expect(prisma.student.findMany).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          select: expect.objectContaining({ parents: expect.anything() }),
+        }),
+      );
+    });
+
+    it("a teacher's list has their own albums and the shared staff folder", async () => {
+      const { service, prisma } = setup();
+      await service.list(T, TEACHER);
+      expect(prisma.photoAlbum.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            tenantId: T,
+            OR: [
+              { createdBy: 'teacher-1' },
+              { forStaff: true, publishedAt: { not: null } },
+            ],
+          },
+        }),
+      );
+      await service.list(T, ACCOUNTS);
+      expect(prisma.photoAlbum.findMany).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          where: {
+            tenantId: T,
+            OR: [{ forStaff: true, publishedAt: { not: null } }],
+          },
+        }),
+      );
+    });
+  });
+
   describe('parents', () => {
     it("open only an album sent to their own child's class, while it is live", async () => {
       const { service, prisma } = setup();
@@ -348,6 +470,7 @@ describe('PhotoAlbumsService', () => {
           where: {
             id: 'al-1',
             tenantId: T,
+            forStaff: false,
             OR: [{ classIds: { has: 'c-5a' } }, { studentIds: { has: 's1' } }],
           },
         }),

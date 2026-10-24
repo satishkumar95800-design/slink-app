@@ -137,28 +137,14 @@ class _AlbumPhotosPageState extends ConsumerState<AlbumPhotosPage> {
   Future<AlbumPhotos> _load() => ref.read(albumsRepositoryProvider).photos(widget.studentId, widget.albumId);
 
   Future<void> _saveAll(AlbumPhotos album) async {
-    final l = context.l10n;
-    final messenger = ScaffoldMessenger.of(context);
-    if (!await _ensureAccess()) {
-      messenger.showSnackBar(SnackBar(content: Text(l.albumsSaveFailed)));
-      return;
-    }
-    final repo = ref.read(albumsRepositoryProvider);
-    var saved = 0;
-    setState(() => _saving = (done: 0, total: album.photos.length));
-    for (final p in album.photos) {
-      try {
-        await Gal.putImageBytes(await repo.download(p.url), album: 'Schoolinkd');
-        saved++;
-      } catch (_) {
-        // Keep going; the count tells how many made it.
-      }
-      if (!mounted) return;
-      setState(() => _saving = (done: _saving!.done + 1, total: album.photos.length));
-    }
-    setState(() => _saving = null);
-    if (saved > 0) await _markSaved();
-    messenger.showSnackBar(SnackBar(content: Text(saved > 0 ? l.albumsSavedAll(saved) : l.albumsSaveFailed)));
+    await saveAllToGallery(
+      context,
+      ref.read(albumsRepositoryProvider),
+      album.photos,
+      onProgress: (done, total) => setState(() => _saving = (done: done, total: total)),
+      onSaved: _markSaved,
+    );
+    if (mounted) setState(() => _saving = null);
   }
 
   Future<void> _markSaved() async {
@@ -254,6 +240,43 @@ class _AlbumPhotosPageState extends ConsumerState<AlbumPhotosPage> {
       },
     );
   }
+}
+
+/// Saves every photo to the phone's gallery, one after another, reporting
+/// progress; [onSaved] runs once if any photo was saved (the "saved by" count).
+Future<void> saveAllToGallery(
+  BuildContext context,
+  AlbumsRepository repo,
+  List<AlbumPhoto> photos, {
+  required void Function(int done, int total) onProgress,
+  required Future<void> Function() onSaved,
+}) async {
+  final l = context.l10n;
+  final messenger = ScaffoldMessenger.of(context);
+  if (!await _ensureAccess()) {
+    messenger.showSnackBar(SnackBar(content: Text(l.albumsSaveFailed)));
+    return;
+  }
+  var saved = 0;
+  onProgress(0, photos.length);
+  for (final (i, p) in photos.indexed) {
+    try {
+      await Gal.putImageBytes(await repo.download(p.url), album: 'Schoolinkd');
+      saved++;
+    } catch (_) {
+      // Keep going; the count tells how many made it.
+    }
+    if (!context.mounted) return;
+    onProgress(i + 1, photos.length);
+  }
+  if (saved > 0) {
+    try {
+      await onSaved();
+    } catch (_) {
+      // Only the "saved by" count; never block.
+    }
+  }
+  messenger.showSnackBar(SnackBar(content: Text(saved > 0 ? l.albumsSavedAll(saved) : l.albumsSaveFailed)));
 }
 
 Future<bool> _ensureAccess() async {

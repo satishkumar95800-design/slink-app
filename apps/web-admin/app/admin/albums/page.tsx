@@ -34,6 +34,10 @@ interface AlbumRow {
   photoCount: number;
   savedCount: number;
   createdBy: string | null;
+  /** Staff folder: teachers, admin and accounts only, never parents. */
+  forStaff: boolean;
+  /** An admin, or the teacher who made it (others only view the staff folder). */
+  canManage: boolean;
 }
 
 interface Photo {
@@ -46,7 +50,8 @@ interface AlbumDetail extends Omit<AlbumRow, 'photoCount' | 'createdBy'> {
   classes: { id: string; name: string; section: string | null }[];
   students: { id: string; name: string; admissionNo: string }[];
   photos: Photo[];
-  parentCount: number;
+  /** Parents of the album's children, or the school's staff for the staff folder. */
+  recipientCount: number;
   limits: { photosPerAlbum: number; schoolBytes: number; usedBytes: number };
 }
 
@@ -94,7 +99,10 @@ function Albums() {
   const errorText = useErrorText();
   const { toast } = useToast();
   const [albums, setAlbums] = useState<AlbumRow[] | null>(null);
+  const [folder, setFolder] = useState<'parents' | 'staff'>('parents');
   const [creating, setCreating] = useState(false);
+  // Accounts only see the staff folder; they don't make albums.
+  const canCreate = getSession()?.role !== 'accounts';
   const [openId, setOpenId] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -114,20 +122,40 @@ function Albums() {
           <h1 className="text-xl font-extrabold tracking-tight text-gray-900">{t('title')}</h1>
           <p className="max-w-2xl text-sm text-gray-500">{t('intro')}</p>
         </div>
-        <Button onClick={() => setCreating(true)}>
-          <Plus className="h-4 w-4" /> {t('newAlbum')}
-        </Button>
+        {canCreate && (
+          <Button onClick={() => setCreating(true)}>
+            <Plus className="h-4 w-4" /> {folder === 'staff' ? t('newStaffAlbum') : t('newAlbum')}
+          </Button>
+        )}
+      </div>
+
+      <div className="space-y-1">
+        <div role="tablist" className="flex gap-1 overflow-x-auto rounded-full bg-gray-100 p-1 sm:w-fit">
+          {(['parents', 'staff'] as const).map((k) => (
+            <button
+              key={k}
+              type="button"
+              role="tab"
+              aria-selected={folder === k}
+              onClick={() => setFolder(k)}
+              className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-bold transition-colors ${folder === k ? 'bg-teal text-white' : 'text-gray-600 hover:text-gray-900'}`}
+            >
+              {k === 'staff' ? t('folderStaff') : t('folderParents')}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500">{folder === 'staff' ? t('folderStaffHelp') : t('folderParentsHelp')}</p>
       </div>
 
       {!albums ? (
         <div className="flex h-40 items-center justify-center">
           <Spinner className="h-8 w-8 text-teal" />
         </div>
-      ) : albums.length === 0 ? (
-        <EmptyState title={t('emptyTitle')} description={t('emptyBody')} />
+      ) : shown(albums, folder).length === 0 ? (
+        <EmptyState title={folder === 'staff' ? t('emptyStaffTitle') : t('emptyTitle')} description={folder === 'staff' ? t('emptyStaffBody') : t('emptyBody')} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {albums.map((a) => (
+          {shown(albums, folder).map((a) => (
             <button
               key={a.id}
               type="button"
@@ -156,6 +184,7 @@ function Albums() {
 
       {creating && (
         <AlbumForm
+          forStaff={folder === 'staff'}
           onClose={() => setCreating(false)}
           onSaved={(id) => {
             setCreating(false);
@@ -181,8 +210,22 @@ function Albums() {
   );
 }
 
+const shown = (albums: AlbumRow[], folder: 'parents' | 'staff') => albums.filter((a) => a.forStaff === (folder === 'staff'));
+
 /** New album, or edit one (who it is for only while it is a draft). */
-function AlbumForm({ album, onClose, onSaved }: { album?: AlbumDetail; onClose: () => void; onSaved: (id: string) => void }) {
+function AlbumForm({
+  album,
+  forStaff: staffFolder = false,
+  onClose,
+  onSaved,
+}: {
+  album?: AlbumDetail;
+  /** A new album in the staff folder (never shown to parents). */
+  forStaff?: boolean;
+  onClose: () => void;
+  onSaved: (id: string) => void;
+}) {
+  const forStaff = album ? album.forStaff : staffFolder;
   const t = useTranslations('albums');
   const tCommon = useTranslations('common');
   const errorText = useErrorText();
@@ -219,7 +262,14 @@ function AlbumForm({ album, onClose, onSaved }: { album?: AlbumDetail; onClose: 
 
   async function save() {
     setSaving(true);
-    const body = { title: title.trim(), description: description.trim(), eventDate: eventDate || undefined, classIds, studentIds: students.map((s) => s.id) };
+    const body = {
+      title: title.trim(),
+      description: description.trim(),
+      eventDate: eventDate || undefined,
+      forStaff,
+      classIds: forStaff ? [] : classIds,
+      studentIds: forStaff ? [] : students.map((s) => s.id),
+    };
     try {
       const res = album ? await api.patch<AlbumDetail>(`/albums/${album.id}`, body) : await api.post<AlbumDetail>('/albums', body);
       toast(album ? t('saved') : t('created'), 'success');
@@ -231,9 +281,9 @@ function AlbumForm({ album, onClose, onSaved }: { album?: AlbumDetail; onClose: 
     }
   }
 
-  const ok = title.trim().length > 0 && (classIds.length > 0 || students.length > 0);
+  const ok = title.trim().length > 0 && (forStaff || classIds.length > 0 || students.length > 0);
   return (
-    <Modal open onClose={onClose} title={album ? t('edit') : t('newAlbum')} size="lg">
+    <Modal open onClose={onClose} title={album ? t('edit') : forStaff ? t('newStaffAlbum') : t('newAlbum')} size="lg">
       <div className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-[1fr_180px]">
           <Input label={t('albumTitle')} required maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('albumTitlePlaceholder')} />
@@ -241,6 +291,10 @@ function AlbumForm({ album, onClose, onSaved }: { album?: AlbumDetail; onClose: 
         </div>
         <Input label={t('description')} maxLength={500} value={description} onChange={(e) => setDescription(e.target.value)} />
 
+        {forStaff ? (
+          <p className="rounded-xl bg-teal/5 p-3 text-sm text-teal">{t('staffAudience')}</p>
+        ) : (
+        <>
         <div>
           <p className="text-sm font-semibold text-gray-800">{t('whoSees')}</p>
           <p className="text-xs text-gray-500">{locked ? t('audienceLocked') : t('whoSeesHelp')}</p>
@@ -305,6 +359,8 @@ function AlbumForm({ album, onClose, onSaved }: { album?: AlbumDetail; onClose: 
             </div>
           )}
         </div>
+        </>
+        )}
 
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>
@@ -401,8 +457,12 @@ function AlbumBody({ id, onChanged, onDeleted }: { id: string; onChanged: () => 
       </div>
     );
 
-  const audience = [...album.classes.map((c) => classLabel({ ...c, academicYear: '' })), ...album.students.map((s) => s.name)].join(', ');
-  const canAdd = album.status !== 'expired' && album.photos.length < album.limits.photosPerAlbum;
+  const audience = album.forStaff
+    ? t('staffAudience')
+    : t('sharedWith', { who: [...album.classes.map((c) => classLabel({ ...c, academicYear: '' })), ...album.students.map((s) => s.name)].join(', ') });
+  const manage = album.canManage;
+  const canAdd = manage && album.status !== 'expired' && album.photos.length < album.limits.photosPerAlbum;
+  const people = album.recipientCount;
 
   return (
     <div className="space-y-5">
@@ -412,16 +472,17 @@ function AlbumBody({ id, onChanged, onDeleted }: { id: string; onChanged: () => 
           {album.eventDate && <span className="text-gray-600">{formatDateOnly(album.eventDate)}</span>}
         </div>
         {album.description && <p className="mt-2 text-gray-700">{album.description}</p>}
-        <p className="mt-2 text-gray-600">{t('sharedWith', { who: audience })}</p>
+        <p className="mt-2 text-gray-600">{audience}</p>
         {album.status === 'live' && album.expiresAt && (
           <p className="mt-2 flex items-center gap-1.5 font-semibold text-amber-700">
-            <CalendarClock className="h-4 w-4" /> {t('until', { date: formatDate(album.expiresAt) })} · {t('savedOf', { saved: album.savedCount, total: album.parentCount })}
+            <CalendarClock className="h-4 w-4" /> {t('until', { date: formatDate(album.expiresAt) })} · {album.forStaff ? t('savedOfStaff', { saved: album.savedCount, total: people }) : t('savedOf', { saved: album.savedCount, total: people })}
           </p>
         )}
-        {album.status === 'draft' && <p className="mt-2 text-gray-500">{t('draftHint', { count: album.parentCount })}</p>}
+        {album.status === 'draft' && <p className="mt-2 text-gray-500">{album.forStaff ? t('draftHintStaff', { count: people }) : t('draftHint', { count: people })}</p>}
+        {manage && (
         <div className="mt-3 flex flex-wrap gap-2">
           {album.status === 'draft' && (
-            <Button size="sm" loading={busy} disabled={album.photos.length === 0} onClick={() => act(() => api.post(`/albums/${id}/publish`, {}), t('published', { count: album.parentCount }))}>
+            <Button size="sm" loading={busy} disabled={album.photos.length === 0} onClick={() => act(() => api.post(`/albums/${id}/publish`, {}), album.forStaff ? t('publishedStaff', { count: people }) : t('published', { count: people }))}>
               <Send className="h-4 w-4" /> {t('publish')}
             </Button>
           )}
@@ -437,6 +498,7 @@ function AlbumBody({ id, onChanged, onDeleted }: { id: string; onChanged: () => 
             <Trash2 className="h-4 w-4" /> {t('delete')}
           </Button>
         </div>
+        )}
       </section>
 
       {album.status === 'expired' ? (
@@ -446,9 +508,11 @@ function AlbumBody({ id, onChanged, onDeleted }: { id: string; onChanged: () => 
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-sm font-bold text-gray-900">{t('photosOf', { count: album.photos.length, max: album.limits.photosPerAlbum })}</h3>
             <input ref={fileRef} type="file" accept="image/jpeg,image/png" multiple className="hidden" onChange={(e) => upload(e.target.files)} />
-            <Button size="sm" disabled={!canAdd || !!progress} onClick={() => fileRef.current?.click()}>
-              <ImagePlus className="h-4 w-4" /> {t('addPhotos')}
-            </Button>
+            {manage && (
+              <Button size="sm" disabled={!canAdd || !!progress} onClick={() => fileRef.current?.click()}>
+                <ImagePlus className="h-4 w-4" /> {t('addPhotos')}
+              </Button>
+            )}
           </div>
           {progress && (
             <div className="rounded-xl bg-teal/5 p-3 text-sm text-teal">
@@ -469,6 +533,7 @@ function AlbumBody({ id, onChanged, onDeleted }: { id: string; onChanged: () => 
                     {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed S3 link */}
                     <img src={p.thumbUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
                   </a>
+                  {manage && (
                   <button
                     type="button"
                     aria-label={t('removePhoto')}
@@ -477,6 +542,7 @@ function AlbumBody({ id, onChanged, onDeleted }: { id: string; onChanged: () => 
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
+                  )}
                 </li>
               ))}
             </ul>

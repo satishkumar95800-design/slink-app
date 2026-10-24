@@ -39,6 +39,7 @@ class _FakeRepo extends AlbumsRepository {
   Future<List<StaffAlbum>> mine() async => [
         StaffAlbum.fromJson({'id': 'a1', 'title': 'Sports Day 2026', 'status': 'draft', 'photoCount': 3, 'savedCount': 0}),
         StaffAlbum.fromJson({'id': 'a2', 'title': 'Annual day rehearsal with a long name', 'status': 'live', 'expiresAt': '2026-11-23T06:00:00.000Z', 'photoCount': 80, 'savedCount': 12}),
+        StaffAlbum.fromJson({'id': 'a3', 'title': "Teachers' day", 'status': 'live', 'forStaff': true, 'canManage': false, 'photoCount': 20, 'savedCount': 4}),
       ];
 }
 
@@ -81,6 +82,14 @@ void main() {
     expect(find.text('Until 23/11/2026'), findsOneWidget);
     expect(find.text('80 photos'), findsOneWidget);
     expect(find.text('New album'), findsOneWidget);
+    // The staff folder is a separate tab.
+    expect(find.text("Teachers' day"), findsNothing);
+    await tester.tap(find.text('Staff folder'));
+    await tester.pumpAndSettle();
+    expect(find.text("Teachers' day"), findsOneWidget);
+    expect(find.text('Sports Day 2026'), findsNothing);
+    expect(find.text('New staff album'), findsOneWidget);
+    expect(find.text('Only teachers and office staff see these. Parents never do.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

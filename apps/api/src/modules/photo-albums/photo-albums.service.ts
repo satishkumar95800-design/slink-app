@@ -38,6 +38,7 @@ type Db = PrismaService | Prisma.TransactionClient;
 
 const ALBUM = {
   id: true,
+  forStaff: true,
   title: true,
   description: true,
   eventDate: true,
@@ -88,10 +89,22 @@ export class PhotoAlbumsService implements OnModuleInit, OnModuleDestroy {
 
   // ── Staff ──────────────────────────────────────────────────────────────────
 
-  /** An admin sees every album; a teacher the ones they made. */
+  /**
+   * An admin sees every album; a teacher the ones they made plus the shared
+   * staff folder; accounts the staff folder.
+   */
   async list(tenantId: string, user: ActiveUser) {
+    const staffFolder = { forStaff: true, publishedAt: { not: null } };
     const rows = await this.prisma.photoAlbum.findMany({
-      where: { tenantId, ...(isAdmin(user) ? {} : { createdBy: user.id }) },
+      where: isAdmin(user)
+        ? { tenantId }
+        : {
+            tenantId,
+            OR: [
+              ...(user.role === Role.teacher ? [{ createdBy: user.id }] : []),
+              staffFolder,
+            ],
+          },
       orderBy: { createdAt: 'desc' },
       select: {
         ...ALBUM,
@@ -105,11 +118,14 @@ export class PhotoAlbumsService implements OnModuleInit, OnModuleDestroy {
       photoCount: _count.photos,
       savedCount: _count.downloads,
       createdBy: names.get(a.createdBy) ?? null,
+      canManage: canManage(user, a),
     }));
   }
 
   async create(tenantId: string, user: ActiveUser, dto: AlbumDto) {
-    await this.assertAudience(tenantId, user, dto);
+    // A staff folder album is for every teacher, admin and accountant.
+    const forStaff = dto.forStaff === true;
+    if (!forStaff) await this.assertAudience(tenantId, user, dto);
     const album = await this.prisma.$transaction(async (tx) => {
       const created = await tx.photoAlbum.create({
         data: {
@@ -119,14 +135,16 @@ export class PhotoAlbumsService implements OnModuleInit, OnModuleDestroy {
           eventDate: dto.eventDate
             ? new Date(`${dto.eventDate}T00:00:00Z`)
             : null,
-          classIds: [...new Set(dto.classIds)],
-          studentIds: [...new Set(dto.studentIds)],
+          forStaff,
+          classIds: forStaff ? [] : [...new Set(dto.classIds)],
+          studentIds: forStaff ? [] : [...new Set(dto.studentIds)],
           createdBy: user.id,
         },
         select: { id: true },
       });
       await audit(tx, tenantId, user.id, 'albums.created', created.id, {
         title: dto.title,
+        forStaff,
         classes: dto.classIds.length,
         students: dto.studentIds.length,
       });
@@ -138,7 +156,8 @@ export class PhotoAlbumsService implements OnModuleInit, OnModuleDestroy {
   /** Title and note any time; who sees it only before it is published. */
   async update(tenantId: string, user: ActiveUser, id: string, dto: AlbumDto) {
     const album = await this.managed(tenantId, user, id);
-    const draft = !album.publishedAt;
+    // Who sees it changes only on a parents' album that is still a draft.
+    const draft = !album.publishedAt && !album.forStaff;
     if (draft) await this.assertAudience(tenantId, user, dto);
     await this.prisma.$transaction([
       this.prisma.photoAlbum.update({
@@ -162,11 +181,14 @@ export class PhotoAlbumsService implements OnModuleInit, OnModuleDestroy {
     return this.detail(tenantId, user, id);
   }
 
-  /** Photos with short-lived links, who it is for, and how many parents saved it. */
+  /**
+   * Photos with short-lived links, who it is for, and how many saved it. A
+   * shared staff folder album is open to every staff login (read-only).
+   */
   async detail(tenantId: string, user: ActiveUser, id: string) {
-    const album = await this.managed(tenantId, user, id);
-    const [photos, parents, saved, classes, students, used] = await Promise.all(
-      [
+    const album = await this.visible(tenantId, user, id);
+    const [photos, recipients, saved, classes, students, used, mine] =
+      await Promise.all([
         this.prisma.albumPhoto.findMany({
           where: { albumId: id },
           orderBy: { createdAt: 'asc' },
@@ -179,7 +201,7 @@ export class PhotoAlbumsService implements OnModuleInit, OnModuleDestroy {
             size: true,
           },
         }),
-        this.parentsOf(tenantId, album),
+        this.recipientsOf(tenantId, album),
         this.prisma.albumDownload.count({ where: { albumId: id } }),
         this.prisma.class.findMany({
           where: { tenantId, id: { in: album.classIds } },
@@ -190,15 +212,20 @@ export class PhotoAlbumsService implements OnModuleInit, OnModuleDestroy {
           select: { id: true, name: true, admissionNo: true },
         }),
         this.usedBytes(tenantId),
-      ],
-    );
+        this.prisma.albumDownload.count({
+          where: { albumId: id, userId: user.id },
+        }),
+      ]);
     return {
       ...this.summary(album, new Date()),
       classes,
       students,
       photos: await Promise.all(photos.map((p) => this.photoView(tenantId, p))),
-      parentCount: parents.size,
+      /** Parents of the album's children, or the school's staff for the staff folder. */
+      recipientCount: recipients.size,
       savedCount: saved,
+      savedByMe: mine > 0,
+      canManage: canManage(user, album),
       limits: {
         photosPerAlbum: MAX_PHOTOS_PER_ALBUM,
         schoolBytes: SCHOOL_ALLOWANCE_BYTES,
@@ -321,8 +348,11 @@ export class PhotoAlbumsService implements OnModuleInit, OnModuleDestroy {
       }),
     ]);
     const published = { ...album, publishedAt: now, expiresAt };
-    void this.notifyParents(tenantId, published, (lang, until) =>
-      publishedText(lang, album.title, photos, until),
+    void this.notifyRecipients(
+      tenantId,
+      published,
+      (lang, until) => publishedText(lang, album.title, photos, until),
+      new Set([user.id]),
     ).catch((e: Error) => this.logger.error(`Album push failed: ${e.message}`));
     return this.detail(tenantId, user, id);
   }
@@ -388,6 +418,8 @@ export class PhotoAlbumsService implements OnModuleInit, OnModuleDestroy {
       where: {
         tenantId,
         publishedAt: { not: null },
+        // The staff folder never reaches parents.
+        forStaff: false,
         OR: [
           { classIds: { has: child.classId } },
           { studentIds: { has: child.id } },
@@ -549,7 +581,7 @@ export class PhotoAlbumsService implements OnModuleInit, OnModuleDestroy {
         })
       ).map((d) => d.userId),
     );
-    await this.notifyParents(
+    await this.notifyRecipients(
       tenantId,
       album,
       (lang, until) => reminderText(lang, album.title, until),
@@ -565,6 +597,7 @@ export class PhotoAlbumsService implements OnModuleInit, OnModuleDestroy {
       title: a.title,
       description: a.description,
       eventDate: ymd(a.eventDate),
+      forStaff: a.forStaff,
       classIds: a.classIds,
       studentIds: a.studentIds,
       status: albumStatus(a, now),
@@ -601,13 +634,42 @@ export class PhotoAlbumsService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
+  /** A staff login saved photos from a live album it can see. */
+  async markSavedByStaff(tenantId: string, user: ActiveUser, id: string) {
+    const album = await this.visible(tenantId, user, id);
+    if (albumStatus(album) !== 'live')
+      throw new BadRequestException(
+        err('ALBUM_EXPIRED', 'These photos have been removed'),
+      );
+    await this.prisma.albumDownload.upsert({
+      where: { albumId_userId: { albumId: id, userId: user.id } },
+      create: { albumId: id, userId: user.id },
+      update: {},
+    });
+    return { saved: true };
+  }
+
+  /** The album, if this login may see it: one it manages, or a shared staff folder album. */
+  private async visible(tenantId: string, user: ActiveUser, id: string) {
+    const album = await this.prisma.photoAlbum.findFirst({
+      where: { id, tenantId },
+      select: ALBUM,
+    });
+    if (
+      !album ||
+      !(canManage(user, album) || (album.forStaff && album.publishedAt))
+    )
+      throw new NotFoundException(err('ALBUM_NOT_FOUND', 'Album not found'));
+    return album;
+  }
+
   /** The album, if this login may change it (an admin, or the teacher who made it). */
   private async managed(tenantId: string, user: ActiveUser, id: string) {
     const album = await this.prisma.photoAlbum.findFirst({
       where: { id, tenantId },
       select: ALBUM,
     });
-    if (!album || (!isAdmin(user) && album.createdBy !== user.id))
+    if (!album || !canManage(user, album))
       throw new NotFoundException(err('ALBUM_NOT_FOUND', 'Album not found'));
     return album;
   }
@@ -697,6 +759,7 @@ export class PhotoAlbumsService implements OnModuleInit, OnModuleDestroy {
       where: {
         id,
         tenantId,
+        forStaff: false,
         OR: [
           { classIds: { has: child.classId } },
           { studentIds: { has: child.id } },
@@ -713,11 +776,31 @@ export class PhotoAlbumsService implements OnModuleInit, OnModuleDestroy {
     return album;
   }
 
-  /** Each parent once, with the language and a child (for the push tap). */
-  private async parentsOf(
+  /**
+   * Who an album is for: each parent once (with a child, for the push tap),
+   * or every teacher, admin and accountant for the staff folder.
+   */
+  private async recipientsOf(
     tenantId: string,
-    album: Pick<AlbumRow, 'classIds' | 'studentIds'>,
-  ) {
+    album: Pick<AlbumRow, 'forStaff' | 'classIds' | 'studentIds'>,
+  ): Promise<
+    Map<string, { language: string | null; studentId: string | null }>
+  > {
+    if (album.forStaff) {
+      const staff = await this.prisma.user.findMany({
+        where: {
+          tenantId,
+          role: { in: [Role.teacher, Role.admin, Role.accounts] },
+        },
+        select: { id: true, preferredLanguage: true },
+      });
+      return new Map(
+        staff.map((u) => [
+          u.id,
+          { language: u.preferredLanguage, studentId: null },
+        ]),
+      );
+    }
     const students = await this.prisma.student.findMany({
       where: {
         tenantId,
@@ -735,7 +818,7 @@ export class PhotoAlbumsService implements OnModuleInit, OnModuleDestroy {
     });
     const out = new Map<
       string,
-      { language: string | null; studentId: string }
+      { language: string | null; studentId: string | null }
     >();
     for (const s of students)
       for (const { parent } of s.parents)
@@ -747,7 +830,7 @@ export class PhotoAlbumsService implements OnModuleInit, OnModuleDestroy {
     return out;
   }
 
-  private async notifyParents(
+  private async notifyRecipients(
     tenantId: string,
     album: AlbumRow,
     text: (
@@ -769,7 +852,7 @@ export class PhotoAlbumsService implements OnModuleInit, OnModuleDestroy {
         }).format(album.expiresAt)
       : '';
     let sent = 0;
-    for (const [userId, p] of await this.parentsOf(tenantId, album)) {
+    for (const [userId, p] of await this.recipientsOf(tenantId, album)) {
       if (skip.has(userId)) continue;
       try {
         await this.notifications.send({
@@ -780,7 +863,9 @@ export class PhotoAlbumsService implements OnModuleInit, OnModuleDestroy {
             effectiveLanguage(p.language, tenant?.defaultLanguage),
             until,
           ),
-          data: { type: 'album', albumId: album.id, studentId: p.studentId },
+          data: p.studentId
+            ? { type: 'album', albumId: album.id, studentId: p.studentId }
+            : { type: 'staff_album', albumId: album.id },
         });
         sent++;
       } catch (e) {
@@ -823,6 +908,10 @@ export class PhotoAlbumsService implements OnModuleInit, OnModuleDestroy {
 
 const isAdmin = (user: ActiveUser) =>
   user.role === Role.admin || user.role === Role.super_admin;
+
+/** An admin, or the teacher who made the album. */
+const canManage = (user: ActiveUser, album: { createdBy: string }) =>
+  isAdmin(user) || album.createdBy === user.id;
 
 function audit(
   db: Db,

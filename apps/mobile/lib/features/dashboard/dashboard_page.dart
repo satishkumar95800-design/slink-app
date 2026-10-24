@@ -105,6 +105,14 @@ class _StaffDashboardBody extends ConsumerWidget {
                       color: FeatureColors.documents,
                       onTap: () => context.push('/staff-docs'),
                     ),
+                  // The staff folder of photo albums.
+                  if (ref.watch(photoAlbumsEnabledProvider))
+                    FeatureTile(
+                      icon: Icons.photo_library_rounded,
+                      label: l.albumsTitle,
+                      color: FeatureColors.notifications,
+                      onTap: () => context.push('/albums'),
+                    ),
                   FeatureTile(
                     icon: Icons.notifications_rounded,
                     label: l.notificationsTitle,

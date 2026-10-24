@@ -44,8 +44,12 @@ class AlbumsRepository {
     return StaffAlbum.fromJson(r.data!);
   }
 
-  Future<StaffAlbum> create(String title, List<String> classIds) async {
-    final r = await _dio.post<Map<String, dynamic>>('/albums', data: {'title': title, 'classIds': classIds, 'studentIds': <String>[]});
+  /// [forStaff]: the staff folder (no classes; parents never see it).
+  Future<StaffAlbum> create(String title, List<String> classIds, {bool forStaff = false}) async {
+    final r = await _dio.post<Map<String, dynamic>>(
+      '/albums',
+      data: {'title': title, 'forStaff': forStaff, 'classIds': forStaff ? <String>[] : classIds, 'studentIds': <String>[]},
+    );
     return StaffAlbum.fromJson(r.data!);
   }
 
@@ -66,6 +70,9 @@ class AlbumsRepository {
   Future<void> removePhoto(String id, String photoId) => _dio.delete<void>('/albums/$id/photos/$photoId');
 
   Future<void> publish(String id) => _dio.post<void>('/albums/$id/publish');
+
+  /// A staff login saved photos from an album (the "saved by" count).
+  Future<void> markSavedByStaff(String id) => _dio.post<void>('/albums/$id/saved');
 }
 
 final albumsRepositoryProvider = Provider<AlbumsRepository>((ref) => AlbumsRepository(ref.watch(apiClientProvider)));

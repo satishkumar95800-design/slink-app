@@ -2,6 +2,7 @@ import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsDateString,
   IsInt,
   IsOptional,
@@ -35,6 +36,11 @@ export class AlbumDto {
   @IsDateString()
   @IsOptional()
   eventDate?: string;
+
+  /** Staff folder: teachers, admin and accounts only; never parents. */
+  @IsBoolean()
+  @IsOptional()
+  forStaff?: boolean;
 
   /** Every child of these classes sees it... */
   @IsArray()

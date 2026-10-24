@@ -184,7 +184,8 @@
     "ALBUM_AUDIENCE_INVALID": "A class or child is not in this school.",
     "NOT_YOUR_CLASS": "Teachers can share albums only with the classes they teach.",
     "PHOTO_NOT_FOUND": "Photo not found.",
-    "ADMIN_ONLY": "Only an admin can do this."
+    "ADMIN_ONLY": "Only an admin can do this.",
+    "APPOINTMENT_NOT_FOUND": "Appointment not found."
   },
   "language": {
     "label": "Language",
@@ -2401,7 +2402,8 @@
       "visitors": "Visitor book",
       "calls": "Call log",
       "receipts": "Desk receipts",
-      "forms": "Forms"
+      "forms": "Forms",
+      "appointments": "Appointments"
     },
     "followUpsDue": "Follow-ups due",
     "followUpsDueHint": "Due today or earlier. Tick one off when it's done; click a name to open the enquiry.",
@@ -2558,6 +2560,46 @@
       "notePlaceholder": "e.g. Two copies: one for the parent",
       "saved": "Form saved",
       "uploaded": "Form uploaded"
+    },
+    "appointments": {
+      "from": "Week from",
+      "book": "Book appointment",
+      "emptyTitle": "No appointments this week",
+      "emptyBody": "Book interviews, parent meetings and other visits so the desk and the admin know who is coming.",
+      "today": "Today, {date}",
+      "meeting": "meeting {who}",
+      "call": "Call",
+      "arrived": "Arrived",
+      "noShow": "Didn't come",
+      "cancel": "Cancel appointment",
+      "booked": "Appointment booked",
+      "kind": "Type",
+      "name": "Name",
+      "phone": "Phone (optional)",
+      "withWhom": "Meeting (optional)",
+      "withWhomPlaceholder": "e.g. Principal",
+      "date": "Date",
+      "time": "Time",
+      "note": "Note (optional)",
+      "kinds": {
+        "interview": "Interview",
+        "parent_meeting": "Parent meeting",
+        "admission_visit": "Admission visit",
+        "vendor": "Vendor",
+        "other": "Other"
+      },
+      "status": {
+        "scheduled": "Expected",
+        "arrived": "Arrived",
+        "cancelled": "Cancelled",
+        "no_show": "Didn't come"
+      },
+      "marked": {
+        "scheduled": "Updated",
+        "arrived": "Marked as arrived",
+        "cancelled": "Appointment cancelled",
+        "no_show": "Marked as didn't come"
+      }
     }
   },
   "library": {
@@ -2783,6 +2825,17 @@
     "noPhotos": "No photos yet. Add photos from this computer; they are made smaller before upload.",
     "removePhoto": "Remove photo",
     "photoRemoved": "Photo removed",
-    "storage": "School photo storage in use: {used} GB of {total} GB. Space comes back as albums expire."
+    "storage": "School photo storage in use: {used} GB of {total} GB. Space comes back as albums expire.",
+    "folderParents": "For parents",
+    "folderStaff": "Staff folder",
+    "folderParentsHelp": "Albums shared with the parents of the classes or children you choose.",
+    "folderStaffHelp": "Photos for teachers and office staff only. Parents never see these.",
+    "newStaffAlbum": "New staff album",
+    "emptyStaffTitle": "No staff albums yet",
+    "emptyStaffBody": "Keep photos of staff events, trainings and celebrations here. Only teachers and office staff can see them.",
+    "staffAudience": "For all teachers and office staff. Parents never see this album.",
+    "savedOfStaff": "saved by {saved} of {total} staff",
+    "draftHintStaff": "Not shared yet. Sharing tells {count, plural, =1 {1 staff member} other {# staff}} with a notification.",
+    "publishedStaff": "Shared. {count, plural, =1 {1 staff member} other {# staff}} will get a notification."
   }
 }

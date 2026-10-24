@@ -3923,6 +3923,258 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add photos, then share the album with parents.'**
   String get albumsDraftNoPhotos;
+
+  /// No description provided for @albumsFolderParents.
+  ///
+  /// In en, this message translates to:
+  /// **'For parents'**
+  String get albumsFolderParents;
+
+  /// No description provided for @albumsFolderStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Staff folder'**
+  String get albumsFolderStaff;
+
+  /// No description provided for @albumsStaffHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Only teachers and office staff see these. Parents never do.'**
+  String get albumsStaffHint;
+
+  /// No description provided for @albumsNewStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'New staff album'**
+  String get albumsNewStaff;
+
+  /// No description provided for @albumsEmptyStaffFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'No staff albums yet. Keep photos of staff events and trainings here.'**
+  String get albumsEmptyStaffFolder;
+
+  /// No description provided for @albumsSavedByStaff.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved by {saved} of {total} staff'**
+  String albumsSavedByStaff(int saved, int total);
+
+  /// No description provided for @albumsPublishStaffBody.
+  ///
+  /// In en, this message translates to:
+  /// **'All teachers and office staff get a notification and can save the photos for 30 days. Parents won\'t see it.'**
+  String get albumsPublishStaffBody;
+
+  /// No description provided for @adminNeedsAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get adminNeedsAttention;
+
+  /// No description provided for @adminAllClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing urgent right now.'**
+  String get adminAllClear;
+
+  /// No description provided for @adminUrgentCriticalAlerts.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 serious alert} other{{count} serious alerts}}'**
+  String adminUrgentCriticalAlerts(int count);
+
+  /// No description provided for @adminUrgentBusesNoSignal.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 bus not sending its location} other{{count} buses not sending their location}}'**
+  String adminUrgentBusesNoSignal(int count);
+
+  /// No description provided for @adminUrgentClassesNotMarked.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 class hasn\'t marked attendance} other{{count} classes haven\'t marked attendance}}'**
+  String adminUrgentClassesNotMarked(int count);
+
+  /// No description provided for @adminUrgentStaffNotMarked.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 teacher\'s attendance not marked} other{{count} teachers\' attendance not marked}}'**
+  String adminUrgentStaffNotMarked(int count);
+
+  /// No description provided for @adminUrgentAppointmentsWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 appointment past its time} other{{count} appointments past their time}}'**
+  String adminUrgentAppointmentsWaiting(int count);
+
+  /// No description provided for @adminUrgentPaymentClaims.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 payment claim to check} other{{count} payment claims to check}}'**
+  String adminUrgentPaymentClaims(int count);
+
+  /// No description provided for @adminUrgentLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 leave request to approve} other{{count} leave requests to approve}}'**
+  String adminUrgentLeave(int count);
+
+  /// No description provided for @adminUrgentPettyCash.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 petty cash entry to approve} other{{count} petty cash entries to approve}}'**
+  String adminUrgentPettyCash(int count);
+
+  /// No description provided for @adminUrgentFollowUps.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 admission follow-up overdue} other{{count} admission follow-ups overdue}}'**
+  String adminUrgentFollowUps(int count);
+
+  /// No description provided for @adminTeachersToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Teachers today'**
+  String get adminTeachersToday;
+
+  /// No description provided for @adminTeachersPresent.
+  ///
+  /// In en, this message translates to:
+  /// **'{present} of {total} present'**
+  String adminTeachersPresent(int present, int total);
+
+  /// No description provided for @adminTeachersAbsent.
+  ///
+  /// In en, this message translates to:
+  /// **'Absent'**
+  String get adminTeachersAbsent;
+
+  /// No description provided for @adminTeachersOnLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'On leave'**
+  String get adminTeachersOnLeave;
+
+  /// No description provided for @adminTeachersNotMarked.
+  ///
+  /// In en, this message translates to:
+  /// **'Not marked'**
+  String get adminTeachersNotMarked;
+
+  /// No description provided for @adminTeachersUntracked.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 teacher} other{{count} teachers}}. Daily staff attendance is part of HR & payroll.'**
+  String adminTeachersUntracked(int count);
+
+  /// No description provided for @adminAwayToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Away today'**
+  String get adminAwayToday;
+
+  /// No description provided for @adminComingUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Coming up'**
+  String get adminComingUp;
+
+  /// No description provided for @adminNothingComingUp.
+  ///
+  /// In en, this message translates to:
+  /// **'No events or holidays in the next two weeks.'**
+  String get adminNothingComingUp;
+
+  /// No description provided for @adminEventHoliday.
+  ///
+  /// In en, this message translates to:
+  /// **'Holiday'**
+  String get adminEventHoliday;
+
+  /// No description provided for @adminEventPtm.
+  ///
+  /// In en, this message translates to:
+  /// **'PTM'**
+  String get adminEventPtm;
+
+  /// No description provided for @adminEventEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get adminEventEvent;
+
+  /// No description provided for @adminAppointmentsToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s appointments'**
+  String get adminAppointmentsToday;
+
+  /// No description provided for @adminNoAppointments.
+  ///
+  /// In en, this message translates to:
+  /// **'No appointments today.'**
+  String get adminNoAppointments;
+
+  /// No description provided for @adminCampusTour.
+  ///
+  /// In en, this message translates to:
+  /// **'Campus tour'**
+  String get adminCampusTour;
+
+  /// No description provided for @adminLaterThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 more later this week} other{{count} more later this week}}'**
+  String adminLaterThisWeek(int count);
+
+  /// No description provided for @adminApptInterview.
+  ///
+  /// In en, this message translates to:
+  /// **'Interview'**
+  String get adminApptInterview;
+
+  /// No description provided for @adminApptParentMeeting.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent meeting'**
+  String get adminApptParentMeeting;
+
+  /// No description provided for @adminApptAdmissionVisit.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission visit'**
+  String get adminApptAdmissionVisit;
+
+  /// No description provided for @adminApptVendor.
+  ///
+  /// In en, this message translates to:
+  /// **'Vendor'**
+  String get adminApptVendor;
+
+  /// No description provided for @adminApptOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Visit'**
+  String get adminApptOther;
+
+  /// No description provided for @adminApptArrived.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrived'**
+  String get adminApptArrived;
+
+  /// No description provided for @adminApptNoShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Didn\'t come'**
+  String get adminApptNoShow;
+
+  /// No description provided for @adminApptWith.
+  ///
+  /// In en, this message translates to:
+  /// **'with {who}'**
+  String adminApptWith(String who);
 }
 
 class _AppLocalizationsDelegate

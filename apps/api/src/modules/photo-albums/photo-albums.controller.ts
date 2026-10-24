@@ -27,6 +27,8 @@ import { AlbumDto, PhotoMetaDto } from './dto/photo-albums.dto';
 import { PhotoAlbumsService } from './photo-albums.service';
 
 const STAFF = [Role.admin, Role.teacher, Role.super_admin] as const;
+/** Everyone who can open the staff folder. */
+const STAFF_VIEW = [...STAFF, Role.accounts] as const;
 
 /** Activity photo albums for parents (flag photoAlbums, Premium Max). */
 @Controller('albums')
@@ -72,7 +74,7 @@ export class PhotoAlbumsController {
   // ── Staff ──
 
   @Get()
-  @Roles(...STAFF)
+  @Roles(...STAFF_VIEW)
   list(@TenantId() tenantId: string, @CurrentUser() user: ActiveUser) {
     return this.albums.list(tenantId, user);
   }
@@ -88,7 +90,7 @@ export class PhotoAlbumsController {
   }
 
   @Get(':id')
-  @Roles(...STAFF)
+  @Roles(...STAFF_VIEW)
   detail(
     @TenantId() tenantId: string,
     @CurrentUser() user: ActiveUser,
@@ -165,6 +167,18 @@ export class PhotoAlbumsController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.albums.publish(tenantId, user, id);
+  }
+
+  /** A staff login saved photos (the "saved by" count). */
+  @Post(':id/saved')
+  @Roles(...STAFF_VIEW)
+  @HttpCode(HttpStatus.OK)
+  savedByStaff(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: ActiveUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.albums.markSavedByStaff(tenantId, user, id);
   }
 
   @Post(':id/extend')

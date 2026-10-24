@@ -2385,4 +2385,228 @@ class AppLocalizationsKn extends AppLocalizations {
   @override
   String get albumsDraftNoPhotos =>
       'ಫೋಟೋಗಳನ್ನು ಸೇರಿಸಿ, ನಂತರ ಆಲ್ಬಮ್ ಅನ್ನು ಪೋಷಕರೊಂದಿಗೆ ಹಂಚಿ.';
+
+  @override
+  String get albumsFolderParents => 'ಪೋಷಕರಿಗೆ';
+
+  @override
+  String get albumsFolderStaff => 'ಸಿಬ್ಬಂದಿ ಫೋಲ್ಡರ್';
+
+  @override
+  String get albumsStaffHint =>
+      'ಶಿಕ್ಷಕರು ಮತ್ತು ಕಚೇರಿ ಸಿಬ್ಬಂದಿ ಮಾತ್ರ ಇವನ್ನು ನೋಡುತ್ತಾರೆ. ಪೋಷಕರಿಗೆ ಕಾಣುವುದಿಲ್ಲ.';
+
+  @override
+  String get albumsNewStaff => 'ಹೊಸ ಸಿಬ್ಬಂದಿ ಆಲ್ಬಮ್';
+
+  @override
+  String get albumsEmptyStaffFolder =>
+      'ಇನ್ನೂ ಸಿಬ್ಬಂದಿ ಆಲ್ಬಮ್‌ಗಳಿಲ್ಲ. ಸಿಬ್ಬಂದಿ ಕಾರ್ಯಕ್ರಮಗಳು ಮತ್ತು ತರಬೇತಿಗಳ ಫೋಟೋಗಳನ್ನು ಇಲ್ಲಿ ಇಡಿ.';
+
+  @override
+  String albumsSavedByStaff(int saved, int total) {
+    return '$total ಸಿಬ್ಬಂದಿಯಲ್ಲಿ $saved ಉಳಿಸಿದ್ದಾರೆ';
+  }
+
+  @override
+  String get albumsPublishStaffBody =>
+      'ಎಲ್ಲಾ ಶಿಕ್ಷಕರು ಮತ್ತು ಕಚೇರಿ ಸಿಬ್ಬಂದಿಗೆ ಅಧಿಸೂಚನೆ ಹೋಗುತ್ತದೆ ಮತ್ತು ಅವರು 30 ದಿನಗಳವರೆಗೆ ಫೋಟೋಗಳನ್ನು ಉಳಿಸಬಹುದು. ಪೋಷಕರಿಗೆ ಕಾಣುವುದಿಲ್ಲ.';
+
+  @override
+  String get adminNeedsAttention => 'ಗಮನ ಬೇಕಾದವು';
+
+  @override
+  String get adminAllClear => 'ಈಗ ತುರ್ತು ಏನೂ ಇಲ್ಲ.';
+
+  @override
+  String adminUrgentCriticalAlerts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ಗಂಭೀರ ಎಚ್ಚರಿಕೆಗಳು',
+      one: 'ಒಂದು ಗಂಭೀರ ಎಚ್ಚರಿಕೆ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String adminUrgentBusesNoSignal(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ಬಸ್‌ಗಳು ಸ್ಥಳ ಕಳುಹಿಸುತ್ತಿಲ್ಲ',
+      one: 'ಒಂದು ಬಸ್ ಸ್ಥಳ ಕಳುಹಿಸುತ್ತಿಲ್ಲ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String adminUrgentClassesNotMarked(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ತರಗತಿಗಳು ಹಾಜರಾತಿ ಗುರುತಿಸಿಲ್ಲ',
+      one: 'ಒಂದು ತರಗತಿ ಹಾಜರಾತಿ ಗುರುತಿಸಿಲ್ಲ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String adminUrgentStaffNotMarked(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ಶಿಕ್ಷಕರ ಹಾಜರಾತಿ ಗುರುತಿಸಿಲ್ಲ',
+      one: 'ಒಬ್ಬ ಶಿಕ್ಷಕರ ಹಾಜರಾತಿ ಗುರುತಿಸಿಲ್ಲ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String adminUrgentAppointmentsWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ಭೇಟಿಗಳ ಸಮಯ ಮೀರಿದೆ',
+      one: 'ಒಂದು ಭೇಟಿಯ ಸಮಯ ಮೀರಿದೆ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String adminUrgentPaymentClaims(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ಪರಿಶೀಲಿಸಬೇಕಾದ $count ಪಾವತಿ ಕ್ಲೇಮ್‌ಗಳು',
+      one: 'ಪರಿಶೀಲಿಸಬೇಕಾದ ಒಂದು ಪಾವತಿ ಕ್ಲೇಮ್',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String adminUrgentLeave(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ಅನುಮೋದಿಸಬೇಕಾದ $count ರಜೆ ಕೋರಿಕೆಗಳು',
+      one: 'ಅನುಮೋದಿಸಬೇಕಾದ ಒಂದು ರಜೆ ಕೋರಿಕೆ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String adminUrgentPettyCash(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ಅನುಮೋದಿಸಬೇಕಾದ $count ಸಣ್ಣ ನಗದು ನಮೂದುಗಳು',
+      one: 'ಅನುಮೋದಿಸಬೇಕಾದ ಒಂದು ಸಣ್ಣ ನಗದು ನಮೂದು',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String adminUrgentFollowUps(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ಪ್ರವೇಶ ಫಾಲೋ-ಅಪ್‌ಗಳು ಬಾಕಿ',
+      one: 'ಒಂದು ಪ್ರವೇಶ ಫಾಲೋ-ಅಪ್ ಬಾಕಿ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get adminTeachersToday => 'ಇಂದು ಶಿಕ್ಷಕರು';
+
+  @override
+  String adminTeachersPresent(int present, int total) {
+    return '$total ರಲ್ಲಿ $present ಹಾಜರು';
+  }
+
+  @override
+  String get adminTeachersAbsent => 'ಗೈರು';
+
+  @override
+  String get adminTeachersOnLeave => 'ರಜೆಯಲ್ಲಿ';
+
+  @override
+  String get adminTeachersNotMarked => 'ಗುರುತಿಸಿಲ್ಲ';
+
+  @override
+  String adminTeachersUntracked(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ಶಿಕ್ಷಕರು',
+      one: 'ಒಬ್ಬ ಶಿಕ್ಷಕರು',
+    );
+    return '$_temp0. ದೈನಂದಿನ ಸಿಬ್ಬಂದಿ ಹಾಜರಾತಿ HR ಮತ್ತು ವೇತನದ ಭಾಗ.';
+  }
+
+  @override
+  String get adminAwayToday => 'ಇಂದು ಇಲ್ಲದವರು';
+
+  @override
+  String get adminComingUp => 'ಮುಂಬರುವವು';
+
+  @override
+  String get adminNothingComingUp =>
+      'ಮುಂದಿನ ಎರಡು ವಾರಗಳಲ್ಲಿ ಕಾರ್ಯಕ್ರಮಗಳು ಅಥವಾ ರಜೆಗಳಿಲ್ಲ.';
+
+  @override
+  String get adminEventHoliday => 'ರಜೆ';
+
+  @override
+  String get adminEventPtm => 'ಪೋಷಕ-ಶಿಕ್ಷಕ ಸಭೆ';
+
+  @override
+  String get adminEventEvent => 'ಕಾರ್ಯಕ್ರಮ';
+
+  @override
+  String get adminAppointmentsToday => 'ಇಂದಿನ ಭೇಟಿಗಳು';
+
+  @override
+  String get adminNoAppointments => 'ಇಂದು ಯಾವುದೇ ಭೇಟಿಗಳಿಲ್ಲ.';
+
+  @override
+  String get adminCampusTour => 'ಶಾಲಾ ಭೇಟಿ';
+
+  @override
+  String adminLaterThisWeek(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ಈ ವಾರ ನಂತರ ಇನ್ನೂ $count',
+      one: 'ಈ ವಾರ ನಂತರ ಇನ್ನೊಂದು',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get adminApptInterview => 'ಸಂದರ್ಶನ';
+
+  @override
+  String get adminApptParentMeeting => 'ಪೋಷಕರ ಭೇಟಿ';
+
+  @override
+  String get adminApptAdmissionVisit => 'ಪ್ರವೇಶ ಭೇಟಿ';
+
+  @override
+  String get adminApptVendor => 'ಮಾರಾಟಗಾರ';
+
+  @override
+  String get adminApptOther => 'ಭೇಟಿ';
+
+  @override
+  String get adminApptArrived => 'ಬಂದಿದ್ದಾರೆ';
+
+  @override
+  String get adminApptNoShow => 'ಬರಲಿಲ್ಲ';
+
+  @override
+  String adminApptWith(String who) {
+    return '$who ಅವರೊಂದಿಗೆ';
+  }
 }

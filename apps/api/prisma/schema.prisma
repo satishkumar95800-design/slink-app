@@ -262,6 +262,7 @@ model Tenant {
   visitors                 Visitor[]
   callLogs                 CallLog[]
   receptionForms           ReceptionForm[]
+  appointments             Appointment[]
   photoAlbums              PhotoAlbum[]
   transportStops           TransportStop[]
   studentTransports        StudentTransport[]
@@ -1545,6 +1546,47 @@ enum VisitorPurpose {
   other
 }
 
+enum AppointmentKind {
+  interview
+  parent_meeting
+  admission_visit
+  vendor
+  other
+}
+
+enum AppointmentStatus {
+  scheduled
+  arrived
+  cancelled
+  no_show
+}
+
+/// Someone expected at school on a day and time (a job interview, a parent
+/// meeting the principal...), booked at the front desk; the admin's phone
+/// shows today's.
+model Appointment {
+  id        String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String            @map("tenant_id") @db.Uuid
+  kind      AppointmentKind
+  name      String            @db.VarChar(120)
+  phone     String?           @db.VarChar(20)
+  /// Who they are meeting, as the desk writes it ("Principal", "Mrs Rao").
+  withWhom  String?           @map("with_whom") @db.VarChar(120)
+  date      DateTime          @db.Date
+  /// "HH:mm", school-local.
+  time      String            @db.VarChar(5)
+  note      String?           @db.VarChar(300)
+  status    AppointmentStatus @default(scheduled)
+  createdBy String            @map("created_by") @db.Uuid
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, date, time])
+  @@map("appointments")
+}
+
 /// A blank form the front desk prints for visitors and parents to sign
 /// (consent, admission form...). The file is served only by the reception module.
 model ReceptionForm {
@@ -2540,6 +2582,8 @@ model PhotoAlbum {
   title         String    @db.VarChar(120)
   description   String?   @db.VarChar(500)
   eventDate     DateTime? @map("event_date") @db.Date
+  /// Staff folder: seen by teachers, admin and accounts only, never by parents.
+  forStaff      Boolean   @default(false) @map("for_staff")
   /// Who sees it: every child of these classes, plus these children.
   classIds      String[]  @map("class_ids") @db.Uuid
   studentIds    String[]  @map("student_ids") @db.Uuid

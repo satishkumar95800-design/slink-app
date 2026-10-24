@@ -153,6 +153,11 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
         final albumId = data['albumId'];
         if (studentId != null && albumId != null) return (route: '/photos/child/$studentId/$albumId', extra: null);
         break;
+      // A staff folder album (teachers and office staff only).
+      case 'staff_album':
+        final albumId = data['albumId'];
+        if (albumId != null) return (route: '/albums/$albumId', extra: null);
+        break;
       // School bus started / about 5 minutes away: the child's bus on the map.
       case 'bus_started':
       case 'bus_arriving':

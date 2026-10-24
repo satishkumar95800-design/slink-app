@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../core/format/money.dart';
 import '../../core/l10n/l10n.dart';
 import '../../core/theme/app_theme.dart';
@@ -89,7 +90,19 @@ class _Content extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _AttentionCard(home: h),
+        const SizedBox(height: 12),
         _AttendanceCard(home: h),
+        if (h.teachers != null) ...[
+          const SizedBox(height: 12),
+          _TeachersCard(teachers: h.teachers!),
+        ],
+        if (h.desk != null) ...[
+          const SizedBox(height: 12),
+          _DeskCard(desk: h.desk!),
+        ],
+        const SizedBox(height: 12),
+        _ComingUpCard(events: h.events),
         const SizedBox(height: 12),
         SoftCard(
           child: Row(
@@ -111,8 +124,6 @@ class _Content extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        _WaitingCard(home: h),
         if (stats.isNotEmpty) ...[
           const SizedBox(height: 12),
           // Two per row; each tile is as tall as its text needs (large fonts too).
@@ -141,6 +152,13 @@ class _Content extends ConsumerWidget {
               label: l.calendarTitle,
               color: FeatureColors.calendar,
               onTap: () => context.push('/calendar'),
+            ),
+          if (ref.watch(photoAlbumsEnabledProvider))
+            FeatureTile(
+              icon: Icons.photo_library_rounded,
+              label: l.albumsTitle,
+              color: FeatureColors.notifications,
+              onTap: () => context.push('/albums'),
             ),
           if (ref.watch(hrmsEnabledProvider)) ...[
             FeatureTile(
@@ -255,45 +273,262 @@ class _AttendanceCard extends StatelessWidget {
   }
 }
 
-class _WaitingCard extends StatelessWidget {
+/// What needs the admin today, most pressing first; decisions are made in the console.
+class _AttentionCard extends StatelessWidget {
   final AdminHome home;
 
-  const _WaitingCard({required this.home});
+  const _AttentionCard({required this.home});
+
+  (IconData, String) _row(BuildContext context, String kind, int n) {
+    final l = context.l10n;
+    return switch (kind) {
+      'critical_alerts' => (Icons.warning_amber_rounded, l.adminUrgentCriticalAlerts(n)),
+      'buses_no_signal' => (Icons.wifi_off_rounded, l.adminUrgentBusesNoSignal(n)),
+      'classes_not_marked' => (Icons.fact_check_rounded, l.adminUrgentClassesNotMarked(n)),
+      'staff_not_marked' => (Icons.badge_rounded, l.adminUrgentStaffNotMarked(n)),
+      'appointments_waiting' => (Icons.schedule_rounded, l.adminUrgentAppointmentsWaiting(n)),
+      'payment_claims' => (Icons.receipt_rounded, l.adminUrgentPaymentClaims(n)),
+      'leave_requests' => (Icons.event_busy_rounded, l.adminUrgentLeave(n)),
+      'petty_cash' => (Icons.savings_rounded, l.adminUrgentPettyCash(n)),
+      'follow_ups_overdue' => (Icons.phone_callback_rounded, l.adminUrgentFollowUps(n)),
+      _ => (Icons.info_outline_rounded, '$kind: $n'),
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
-    final rows = <(IconData, String, int)>[
-      (Icons.receipt_rounded, l.adminWaitingClaims, home.paymentClaims),
-      if (home.leaveRequests != null) (Icons.event_busy_rounded, l.adminWaitingLeave, home.leaveRequests!),
-      if (home.pettyCash != null) (Icons.savings_rounded, l.adminWaitingPettyCash, home.pettyCash!),
-    ];
+    final items = home.urgent;
+    return SoftCard(
+      color: items.isEmpty ? null : AppColors.coral.withValues(alpha: 0.06),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(items.isEmpty ? Icons.check_circle_rounded : Icons.priority_high_rounded,
+                  color: items.isEmpty ? FeatureColors.attendance : AppColors.coral),
+              const SizedBox(width: 8),
+              Text(l.adminNeedsAttention, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (items.isEmpty)
+            Text(l.adminAllClear, style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.muted))
+          else ...[
+            for (final (kind, n) in items)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(_row(context, kind, n).$1, size: 20, color: AppColors.coral),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(_row(context, kind, n).$2)),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 6),
+            Text(l.adminApproveInConsole, style: theme.textTheme.bodySmall?.copyWith(color: AppColors.muted)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Teachers present today, and who is away.
+class _TeachersCard extends StatelessWidget {
+  final TeachersToday teachers;
+
+  const _TeachersCard({required this.teachers});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final t = teachers;
+    final muted = theme.textTheme.bodySmall?.copyWith(color: AppColors.muted);
     return SoftCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(l.adminWaitingTitle, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
-          const SizedBox(height: 8),
-          if (home.waiting == 0)
-            Text(l.adminNothingWaiting, style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.muted))
-          else ...[
-            for (final (icon, label, count) in rows)
-              if (count > 0)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      Icon(icon, size: 20, color: AppColors.muted),
-                      const SizedBox(width: 10),
-                      Expanded(child: Text(label)),
-                      StatusPill(label: '$count', color: AppColors.coral),
-                    ],
-                  ),
+          Row(
+            children: [
+              const IconBadge(icon: Icons.co_present_rounded, color: FeatureColors.classes),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l.adminTeachersToday, style: muted),
+                    if (t.tracked)
+                      Text(l.adminTeachersPresent(t.present + t.halfDay, t.total),
+                          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900))
+                    else
+                      Text(l.adminTeachersUntracked(t.total), style: theme.textTheme.bodyMedium),
+                  ],
                 ),
-            const SizedBox(height: 6),
-            Text(l.adminApproveInConsole, style: theme.textTheme.bodySmall?.copyWith(color: AppColors.muted)),
+              ),
+            ],
+          ),
+          if (t.tracked) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                if (t.absent > 0) StatusPill(label: '${l.adminTeachersAbsent} ${t.absent}', color: AppColors.coral),
+                if (t.onLeave > 0) StatusPill(label: '${l.adminTeachersOnLeave} ${t.onLeave}', color: FeatureColors.payroll),
+                if (t.notMarked > 0) StatusPill(label: '${l.adminTeachersNotMarked} ${t.notMarked}', color: AppColors.muted),
+              ],
+            ),
+            if (t.away.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(l.adminAwayToday, style: muted),
+              const SizedBox(height: 2),
+              Text(t.away.map((a) => a.$1).join(', ')),
+            ],
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Today's appointments (interviews, meetings...) and campus tours.
+class _DeskCard extends StatelessWidget {
+  final DeskToday desk;
+
+  const _DeskCard({required this.desk});
+
+  String _kind(BuildContext context, String kind) {
+    final l = context.l10n;
+    return switch (kind) {
+      'interview' => l.adminApptInterview,
+      'parent_meeting' => l.adminApptParentMeeting,
+      'admission_visit' => l.adminApptAdmissionVisit,
+      'vendor' => l.adminApptVendor,
+      _ => l.adminApptOther,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final muted = theme.textTheme.bodySmall?.copyWith(color: AppColors.muted);
+    final empty = desk.appointments.isEmpty && desk.tours.isEmpty;
+    return SoftCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l.adminAppointmentsToday, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          if (empty) Text(l.adminNoAppointments, style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.muted)),
+          for (final a in desk.appointments)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(width: 52, child: Text(a.time, style: const TextStyle(fontWeight: FontWeight.w800))),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(a.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                        Text([_kind(context, a.kind), if (a.withWhom != null) l.adminApptWith(a.withWhom!)].join(' · '), style: muted),
+                      ],
+                    ),
+                  ),
+                  if (a.status == 'arrived') StatusPill(label: l.adminApptArrived, color: FeatureColors.attendance),
+                  if (a.status == 'no_show') StatusPill(label: l.adminApptNoShow, color: AppColors.coral),
+                ],
+              ),
+            ),
+          for (final t in desk.tours)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Row(
+                children: [
+                  const SizedBox(width: 52, child: Icon(Icons.school_rounded, size: 18, color: AppColors.muted)),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(t.child, style: const TextStyle(fontWeight: FontWeight.w700)),
+                        Text('${l.adminCampusTour} · ${t.parent}', style: muted),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (desk.laterThisWeek > 0) ...[
+            const SizedBox(height: 6),
+            Text(l.adminLaterThisWeek(desk.laterThisWeek), style: muted),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Events, PTMs and holidays in the next two weeks.
+class _ComingUpCard extends StatelessWidget {
+  final List<ComingUp> events;
+
+  const _ComingUpCard({required this.events});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final day = DateFormat('EEE d MMM', Localizations.localeOf(context).languageCode);
+    return SoftCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l.adminComingUp, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          if (events.isEmpty) Text(l.adminNothingComingUp, style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.muted)),
+          for (final e in events)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  IconBadge(
+                    icon: switch (e.kind) {
+                      'holiday' => Icons.beach_access_rounded,
+                      'ptm' => Icons.groups_rounded,
+                      _ => Icons.celebration_rounded,
+                    },
+                    color: e.kind == 'holiday' ? FeatureColors.attendance : FeatureColors.calendar,
+                    size: 32,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(e.title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                        Text(
+                          [
+                            switch (e.kind) { 'holiday' => l.adminEventHoliday, 'ptm' => l.adminEventPtm, _ => l.adminEventEvent },
+                            day.format(e.date) + (e.endDate != null ? ' – ${day.format(e.endDate!)}' : ''),
+                            if (e.time != null) e.time!,
+                          ].join(' · '),
+                          style: theme.textTheme.bodySmall?.copyWith(color: AppColors.muted),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
