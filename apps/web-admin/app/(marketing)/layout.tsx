@@ -23,6 +23,7 @@ export const metadata: Metadata = {
 const NAV_LINKS = [
   { label: 'Why Schoolinkd', href: '/#why' },
   { label: 'Features', href: '/#features' },
+  { label: 'Security', href: '/#security' },
   { label: 'Pricing', href: '/#pricing' },
   { label: 'Contact', href: '/contact' },
 ];
@@ -30,6 +31,7 @@ const NAV_LINKS = [
 const EXPLORE_LINKS = [
   { label: 'Why Schoolinkd', href: '/#why' },
   { label: 'Features', href: '/#features' },
+  { label: 'Security', href: '/#security' },
   { label: 'Pricing', href: '/#pricing' },
   { label: 'How it works', href: '/#how-it-works' },
   { label: 'Contact', href: '/contact' },

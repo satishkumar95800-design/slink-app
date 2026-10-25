@@ -102,6 +102,56 @@ export const strings = {
         },
       ],
     },
+    security: {
+      eyebrow: 'Security',
+      title: 'Your school’s data stays your school’s.',
+      subtitle:
+        'Fee records, children’s details and staff salaries are sensitive. Here is how Schoolinkd protects them, every day.',
+      items: [
+        {
+          icon: 'school',
+          title: 'Walled off from other schools',
+          body: 'Every request is checked against the school it belongs to. A login from one school can never open another school’s data.',
+        },
+        {
+          icon: 'family',
+          title: 'Parents see only their children',
+          body: 'A parent’s app shows their own children’s fees, attendance and photos — nobody else’s, and never staff-only albums.',
+        },
+        {
+          icon: 'code',
+          title: 'Sign-in code by email',
+          body: 'Ask for a 6-digit code on top of the password at every console sign-in. Wrong guesses lock it after a few tries.',
+          plan: 'Premium Max',
+        },
+        {
+          icon: 'fingerprint',
+          title: 'Fingerprint & face unlock',
+          body: 'After the OTP sign-in, the app can open only with the phone owner’s fingerprint, face or PIN.',
+        },
+        {
+          icon: 'lock',
+          title: 'Staff details encrypted',
+          body: 'PAN, Aadhaar, UAN and bank details are stored encrypted (AES-256), shown masked, and every full view is logged.',
+        },
+        {
+          icon: 'card',
+          title: 'Safe online payments',
+          body: 'Payments go through Razorpay. Card and UPI details never touch our servers, and every payment confirmation is signature-checked.',
+        },
+        {
+          icon: 'scan',
+          title: 'Every upload checked',
+          body: 'Files are checked to be what they claim, and homework and album photos are safety-screened before any parent sees them.',
+        },
+        {
+          icon: 'history',
+          title: 'Every change on record',
+          body: 'Fee edits, approvals, payroll and settings changes are logged with who did it and when — with secrets left out.',
+        },
+      ],
+      footnote: 'Encrypted connections (HTTPS) everywhere · Login attempts limited · Security tests run on every update',
+    },
     midCtaTitle: 'See it with your own school’s numbers.',
     midCtaBody: 'A 20-minute demo on a video call or at your school. No commitment.',
     testimonialsEyebrow: 'Schools using Schoolinkd',

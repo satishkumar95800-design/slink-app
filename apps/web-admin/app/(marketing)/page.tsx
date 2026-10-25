@@ -3,6 +3,7 @@ import { WhatsAppDemoButton, TrackedLink } from '../../components/marketing/cta'
 import { DemoVideo } from '../../components/marketing/demo-video';
 import { Testimonials } from '../../components/marketing/testimonials';
 import { Pricing } from '../../components/marketing/pricing';
+import { Security } from '../../components/marketing/security';
 import { AppBadges } from '../../components/marketing/app-badges';
 import { marketingConfig } from '../../lib/marketing-config';
 import { strings } from '../../lib/strings';
@@ -29,6 +30,8 @@ const TICKER_ITEMS = [
   'HOLIDAY ALERTS',
   'KANNADA · HINDI · ENGLISH',
   'HEAD OFFICE VIEW',
+  'FINGERPRINT UNLOCK',
+  'ENCRYPTED STAFF RECORDS',
 ];
 
 export default function LandingPage() {
@@ -123,6 +126,8 @@ export default function LandingPage() {
           <WhatsAppDemoButton className="mt-3" />
         </div>
       </Section>
+
+      <Security />
 
       <Testimonials />
 
