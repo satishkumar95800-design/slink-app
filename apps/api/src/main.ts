@@ -1,11 +1,5 @@
 import express from 'express';
 import { createServer } from 'http';
-import { availableParallelism } from 'os';
-
-// Password checks (bcrypt) run on libuv's thread pool, 4 threads by default, so a
-// burst of staff logins queued 4 at a time (120 at once: up to 6 s). One thread
-// per CPU, at least 4. Read when the pool first starts, so set before any use.
-process.env.UV_THREADPOOL_SIZE ??= String(Math.max(4, availableParallelism()));
 
 /**
  * Hostinger restarts the app unless it calls listen() within 3 seconds of
