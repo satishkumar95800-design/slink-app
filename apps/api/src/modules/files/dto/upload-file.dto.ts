@@ -18,12 +18,8 @@ export enum FileCategory {
 }
 
 export const ALLOWED_MIME: Record<FileCategory, string[]> = {
-  [FileCategory.LOGO]: [
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-    'image/svg+xml',
-  ],
+  // No SVG: logos are public and an SVG can carry script.
+  [FileCategory.LOGO]: ['image/jpeg', 'image/png', 'image/webp'],
   [FileCategory.BACKGROUND]: ['image/jpeg', 'image/png', 'image/webp'],
   [FileCategory.REPORT_PDF]: ['application/pdf'],
   [FileCategory.ATTACHMENT]: [

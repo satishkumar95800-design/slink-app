@@ -141,6 +141,8 @@
     "IMAGE_CHECK_UNAVAILABLE": "Couldn't check the photo. Try again in a moment.",
     "IMAGE_TOO_LARGE_TO_CHECK": "This photo is too large to check. Use a photo under 5 MB.",
     "IMAGE_NOT_CHECKED": "This photo was not checked. Add it again and resend.",
+    "FILE_CONTENT_MISMATCH": "This file's contents don't match its type (for example, a renamed file). Open it, save it again as the right type and upload it.",
+    "WRONG_SCHOOL": "This login belongs to a different school. Sign out and sign in with this school's code.",
     "DRIVER_NOT_FOUND": "Ground staff member not found.",
     "DRIVER_PHONE_MISSING": "Add a mobile number with country code (e.g. +919876543210) to this ground staff member first.",
     "PHONE_IN_USE": "This phone number already belongs to another login of the school.",

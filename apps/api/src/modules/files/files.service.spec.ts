@@ -28,14 +28,22 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const TENANT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 
+/** The first bytes of a real file of each type, so the content check passes. */
+const HEADS: Record<string, Buffer> = {
+  'application/pdf': Buffer.from('%PDF-1.7\n'),
+  'image/jpeg': Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0x10]),
+  'image/png': Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0]),
+};
+
 function makeFile(overrides: Partial<Express.Multer.File> = {}): Express.Multer.File {
+  const mimetype = overrides.mimetype ?? 'application/pdf';
   return {
     fieldname: 'file',
     originalname: 'test.pdf',
     encoding: '7bit',
-    mimetype: 'application/pdf',
+    mimetype,
     size: 1024,
-    buffer: Buffer.from('fake-pdf'),
+    buffer: HEADS[mimetype] ?? Buffer.from('fake'),
     stream: null as any,
     destination: '',
     filename: '',
@@ -120,6 +128,29 @@ describe('FilesService', () => {
       await expect(
         service.upload(TENANT_ID, file, FileCategory.LOGO),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('refuses an HTML page uploaded as a PNG and stores nothing', async () => {
+      const file = makeFile({
+        mimetype: 'image/png',
+        originalname: 'logo.png',
+        buffer: Buffer.from('<html><script>alert(1)</script></html>'),
+      });
+      await expect(service.upload(TENANT_ID, file, FileCategory.LOGO)).rejects.toMatchObject({
+        response: { code: 'FILE_CONTENT_MISMATCH' },
+      });
+      expect(mockSend).not.toHaveBeenCalled();
+    });
+
+    it('names the stored file after the checked type, not the uploaded name', async () => {
+      const file = makeFile({ mimetype: 'application/pdf', originalname: 'evil.html' });
+      const result = await service.upload(TENANT_ID, file, FileCategory.GENERAL_DOCUMENT);
+      expect(result.key).toMatch(/\.pdf$/);
+    });
+
+    it('no longer accepts SVG logos', async () => {
+      const file = makeFile({ mimetype: 'image/svg+xml', originalname: 'logo.svg', buffer: Buffer.from('<svg/>') });
+      await expect(service.upload(TENANT_ID, file, FileCategory.LOGO)).rejects.toThrow(BadRequestException);
     });
 
     it('infers extension from MIME when originalname has none', async () => {

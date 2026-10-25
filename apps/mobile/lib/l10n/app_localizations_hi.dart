@@ -1811,6 +1811,14 @@ class AppLocalizationsHi extends AppLocalizations {
       'यह फ़ोटो नहीं भेजी जा सकती: यह स्कूल के लिए उपयुक्त नहीं लगती। लिखे हुए काम की फ़ोटो भेजें।';
 
   @override
+  String get errFileContentMismatch =>
+      'इस फ़ाइल की सामग्री उसके प्रकार से मेल नहीं खाती (जैसे, नाम बदली हुई फ़ाइल)। इसे खोलें, सही प्रकार में फिर से सेव करें और अपलोड करें।';
+
+  @override
+  String get errWrongSchool =>
+      'यह लॉगिन किसी दूसरे स्कूल का है। लॉग आउट करें और इस स्कूल के कोड से लॉगिन करें।';
+
+  @override
   String get errImageCheckUnavailable =>
       'फ़ोटो की जाँच नहीं हो सकी। थोड़ी देर में फिर कोशिश करें।';
 

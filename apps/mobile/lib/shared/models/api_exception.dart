@@ -84,6 +84,8 @@ String? translateErrorCode(String? code) {
     'TOPIC_NOT_FOUND' => l.syllabusErrTopicGone,
     'SUBSCRIPTION_EXPIRED' => l.errSubscriptionExpired,
     'IMAGE_NOT_ALLOWED' => l.errImageNotAllowed,
+    'FILE_CONTENT_MISMATCH' => l.errFileContentMismatch,
+    'WRONG_SCHOOL' => l.errWrongSchool,
     'IMAGE_CHECK_UNAVAILABLE' => l.errImageCheckUnavailable,
     'IMAGE_TOO_LARGE_TO_CHECK' => l.errImageTooLarge,
     'IMAGE_NOT_CHECKED' => l.errImageNotChecked,

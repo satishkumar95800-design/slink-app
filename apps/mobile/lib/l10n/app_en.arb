@@ -1305,6 +1305,8 @@
   },
   "busCouldNotCall": "Couldn't open the phone app.",
   "errImageNotAllowed": "This photo can't be sent: it looks unsuitable for school. Send a photo of the written work.",
+  "errFileContentMismatch": "This file's contents don't match its type (for example, a renamed file). Open it, save it again as the right type and upload it.",
+  "errWrongSchool": "This login belongs to a different school. Sign out and sign in with this school's code.",
   "errImageCheckUnavailable": "Couldn't check the photo. Try again in a moment.",
   "errImageTooLarge": "This photo is too large to check. Use a photo under 5 MB.",
   "errImageNotChecked": "This photo was not checked. Add it again and resend.",

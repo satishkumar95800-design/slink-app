@@ -3078,6 +3078,18 @@ abstract class AppLocalizations {
   /// **'This photo can\'t be sent: it looks unsuitable for school. Send a photo of the written work.'**
   String get errImageNotAllowed;
 
+  /// No description provided for @errFileContentMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'This file\'s contents don\'t match its type (for example, a renamed file). Open it, save it again as the right type and upload it.'**
+  String get errFileContentMismatch;
+
+  /// No description provided for @errWrongSchool.
+  ///
+  /// In en, this message translates to:
+  /// **'This login belongs to a different school. Sign out and sign in with this school\'s code.'**
+  String get errWrongSchool;
+
   /// No description provided for @errImageCheckUnavailable.
   ///
   /// In en, this message translates to:

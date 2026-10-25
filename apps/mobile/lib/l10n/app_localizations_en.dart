@@ -1812,6 +1812,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'This photo can\'t be sent: it looks unsuitable for school. Send a photo of the written work.';
 
   @override
+  String get errFileContentMismatch =>
+      'This file\'s contents don\'t match its type (for example, a renamed file). Open it, save it again as the right type and upload it.';
+
+  @override
+  String get errWrongSchool =>
+      'This login belongs to a different school. Sign out and sign in with this school\'s code.';
+
+  @override
   String get errImageCheckUnavailable =>
       'Couldn\'t check the photo. Try again in a moment.';
 

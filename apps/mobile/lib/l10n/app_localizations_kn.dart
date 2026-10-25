@@ -1813,6 +1813,14 @@ class AppLocalizationsKn extends AppLocalizations {
       'ಈ ಫೋಟೋ ಕಳುಹಿಸಲಾಗದು: ಶಾಲೆಗೆ ಸೂಕ್ತವಲ್ಲ ಎನಿಸುತ್ತದೆ. ಬರೆದ ಕೆಲಸದ ಫೋಟೋ ಕಳುಹಿಸಿ.';
 
   @override
+  String get errFileContentMismatch =>
+      'ಈ ಫೈಲ್‌ನ ಒಳಗಿರುವುದು ಅದರ ಪ್ರಕಾರಕ್ಕೆ ಹೊಂದುತ್ತಿಲ್ಲ (ಉದಾಹರಣೆಗೆ, ಹೆಸರು ಬದಲಿಸಿದ ಫೈಲ್). ಅದನ್ನು ತೆರೆದು, ಸರಿಯಾದ ಪ್ರಕಾರದಲ್ಲಿ ಮತ್ತೆ ಉಳಿಸಿ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ.';
+
+  @override
+  String get errWrongSchool =>
+      'ಈ ಲಾಗಿನ್ ಬೇರೆ ಶಾಲೆಗೆ ಸೇರಿದೆ. ಲಾಗ್ ಔಟ್ ಮಾಡಿ, ಈ ಶಾಲೆಯ ಕೋಡ್‌ನೊಂದಿಗೆ ಲಾಗಿನ್ ಮಾಡಿ.';
+
+  @override
   String get errImageCheckUnavailable =>
       'ಫೋಟೋ ಪರಿಶೀಲಿಸಲಾಗಲಿಲ್ಲ. ಸ್ವಲ್ಪ ಸಮಯದ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
 

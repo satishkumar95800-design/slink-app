@@ -21,9 +21,9 @@ import {
   RekognitionClient,
 } from '@aws-sdk/client-rekognition';
 import { randomUUID } from 'crypto';
-import { extname } from 'path';
 import type { Express } from 'express';
 import { FileCategory, ALLOWED_MIME, MAX_BYTES } from './dto/upload-file.dto';
+import { contentMatches } from './file-sniff';
 import {
   CHECKED_IMAGE_TYPES,
   MAX_CHECK_BYTES,
@@ -360,6 +360,13 @@ export class FilesService {
       );
     }
 
+    if (!file.buffer || !contentMatches(file.buffer, file.mimetype)) {
+      throw new UnprocessableEntityException({
+        code: 'FILE_CONTENT_MISMATCH',
+        message: `This file is not a real ${file.mimetype} file. Save it again in that format and upload it.`,
+      });
+    }
+
     const maxBytes = MAX_BYTES[category];
     if (file.size > maxBytes) {
       const maxMb = (maxBytes / 1024 / 1024).toFixed(0);
@@ -376,8 +383,8 @@ export class FilesService {
     entityId?: string,
   ): string {
     const uuid = randomUUID();
-    const ext =
-      extname(file.originalname).toLowerCase() || this.inferExt(file.mimetype);
+    // From the checked type, never the uploader's file name (x.html as image/png).
+    const ext = this.inferExt(file.mimetype);
 
     switch (category) {
       case FileCategory.LOGO:
@@ -434,12 +441,18 @@ export class FilesService {
       'image/jpeg': '.jpg',
       'image/png': '.png',
       'image/webp': '.webp',
-      'image/svg+xml': '.svg',
       'application/pdf': '.pdf',
       'text/plain': '.txt',
       'application/vnd.ms-excel': '.xls',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
         '.xlsx',
+      'text/csv': '.csv',
+      'application/msword': '.doc',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        '.docx',
+      'application/vnd.ms-powerpoint': '.ppt',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+        '.pptx',
     };
     return map[mimeType] ?? '';
   }
