@@ -50,6 +50,8 @@
 		<array>
 			<string>location</string>
 		</array>
+		<key>NSFaceIDUsageDescription</key>
+		<string>Used to open Schoolinkd with Face ID instead of a new OTP each time.</string>
 		<key>NSPhotoLibraryAddUsageDescription</key>
 		<string>Used to save the school's activity photos of your child to your photos.</string>
 		<key>NSPhotoLibraryUsageDescription</key>

@@ -3090,6 +3090,78 @@ abstract class AppLocalizations {
   /// **'This login belongs to a different school. Sign out and sign in with this school\'s code.'**
   String get errWrongSchool;
 
+  /// No description provided for @appLockReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm it\'s you to open Schoolinkd'**
+  String get appLockReason;
+
+  /// No description provided for @appLockLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked. Use your fingerprint, face or phone PIN to open.'**
+  String get appLockLocked;
+
+  /// No description provided for @appLockUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get appLockUnlock;
+
+  /// No description provided for @appLockFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Not recognised. Try again, or sign in with OTP.'**
+  String get appLockFailed;
+
+  /// No description provided for @appLockUseOtp.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with OTP instead'**
+  String get appLockUseOtp;
+
+  /// No description provided for @appLockUseOtpConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'This signs you out. You\'ll get a new OTP on your phone to sign in again.'**
+  String get appLockUseOtpConfirm;
+
+  /// No description provided for @appLockOfferTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the app with your fingerprint?'**
+  String get appLockOfferTitle;
+
+  /// No description provided for @appLockOfferBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Next time, unlock Schoolinkd with your fingerprint, face or phone PIN instead of waiting for an OTP. Your phone checks it; it never leaves the phone.'**
+  String get appLockOfferBody;
+
+  /// No description provided for @appLockOfferYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on'**
+  String get appLockOfferYes;
+
+  /// No description provided for @appLockOfferNo.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get appLockOfferNo;
+
+  /// No description provided for @appLockSetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock with fingerprint'**
+  String get appLockSetting;
+
+  /// No description provided for @appLockSettingHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask for your fingerprint, face or phone PIN when the app opens'**
+  String get appLockSettingHelp;
+
   /// No description provided for @errImageCheckUnavailable.
   ///
   /// In en, this message translates to:

@@ -57,6 +57,10 @@ pnpm only — never use npm or yarn in this repo.
 
 `pnpm --filter api seed:demo` builds/resets the fictional "Green Valley Public School" (school code `gvps-demo`). It refuses to touch any school not flagged `features.isDemo`. Logins: `apps/api/prisma/DEMO_SEED.md`.
 
+## Mobile biometric unlock
+
+`lib/features/app_lock/`: after a phone OTP sign-in the app offers once to unlock with fingerprint / face / phone PIN (`local_auth`; Android `FlutterFragmentActivity`, `USE_BIOMETRIC`, AppCompat launch theme + `androidx.appcompat`; iOS `NSFaceIDUsageDescription`). It only unlocks an existing session on the phone; the server never sees it and the tokens stay in secure storage (pushes and the driver's background GPS keep working). `AppLockGate` (MaterialApp.router builder) covers the app at every cold start and after 5 minutes in the background, and while the setting is still being read; switching on needs a confirmed check; "Sign in with OTP instead" signs out. The setting lives in secure storage and is cleared by sign-out. Profile has the switch.
+
 ## Languages (English, Kannada, Hindi)
 
 Spec: `docs/SPEC-languages.md`. English is the source of truth; any missing translation shows English.

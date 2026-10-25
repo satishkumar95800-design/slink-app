@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'features/app_lock/app_lock_gate.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_controller.dart';
@@ -190,6 +191,8 @@ class _SlinkAppState extends ConsumerState<SlinkApp> {
       darkTheme: theme.darkTheme,
       themeMode: themeMode,
       routerConfig: router,
+      // Biometric unlock over the whole app (features/app_lock).
+      builder: (context, child) => AppLockGate(child: child ?? const SizedBox.shrink()),
       scaffoldMessengerKey: _messenger,
       debugShowCheckedModeBanner: false,
       // Changing language rebuilds from here down — no restart or re-login.

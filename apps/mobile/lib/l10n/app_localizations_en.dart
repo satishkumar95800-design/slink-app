@@ -1820,6 +1820,46 @@ class AppLocalizationsEn extends AppLocalizations {
       'This login belongs to a different school. Sign out and sign in with this school\'s code.';
 
   @override
+  String get appLockReason => 'Confirm it\'s you to open Schoolinkd';
+
+  @override
+  String get appLockLocked =>
+      'Locked. Use your fingerprint, face or phone PIN to open.';
+
+  @override
+  String get appLockUnlock => 'Unlock';
+
+  @override
+  String get appLockFailed => 'Not recognised. Try again, or sign in with OTP.';
+
+  @override
+  String get appLockUseOtp => 'Sign in with OTP instead';
+
+  @override
+  String get appLockUseOtpConfirm =>
+      'This signs you out. You\'ll get a new OTP on your phone to sign in again.';
+
+  @override
+  String get appLockOfferTitle => 'Open the app with your fingerprint?';
+
+  @override
+  String get appLockOfferBody =>
+      'Next time, unlock Schoolinkd with your fingerprint, face or phone PIN instead of waiting for an OTP. Your phone checks it; it never leaves the phone.';
+
+  @override
+  String get appLockOfferYes => 'Turn on';
+
+  @override
+  String get appLockOfferNo => 'Not now';
+
+  @override
+  String get appLockSetting => 'Unlock with fingerprint';
+
+  @override
+  String get appLockSettingHelp =>
+      'Ask for your fingerprint, face or phone PIN when the app opens';
+
+  @override
   String get errImageCheckUnavailable =>
       'Couldn\'t check the photo. Try again in a moment.';
 

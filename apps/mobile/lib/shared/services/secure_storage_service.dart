@@ -13,6 +13,8 @@ class SecureStorageService {
   static const _tenantIdKey = 'tenant_id';
   static const _userJsonKey = 'active_user';
   static const _actAsKey = 'act_as';
+  static const _appLockKey = 'app_lock';
+  static const _appLockOfferedKey = 'app_lock_offered';
 
   Future<String?> readAccessToken() => _storage.read(key: _accessTokenKey);
   Future<String?> readRefreshToken() => _storage.read(key: _refreshTokenKey);
@@ -28,6 +30,15 @@ class SecureStorageService {
   Future<void> writeRefreshToken(String value) => _storage.write(key: _refreshTokenKey, value: value);
   Future<void> writeTenantId(String value) => _storage.write(key: _tenantIdKey, value: value);
   Future<void> writeUserJson(String value) => _storage.write(key: _userJsonKey, value: value);
+
+  /// Biometric unlock for this signed-in session ('1' when on). Signing out
+  /// clears it with everything else, so the next person starts with OTP.
+  Future<bool> readAppLock() async => await _storage.read(key: _appLockKey) == '1';
+  Future<void> writeAppLock(bool on) => on ? _storage.write(key: _appLockKey, value: '1') : _storage.delete(key: _appLockKey);
+
+  /// Whether this session was already offered biometric unlock.
+  Future<bool> readAppLockOffered() async => await _storage.read(key: _appLockOfferedKey) == '1';
+  Future<void> writeAppLockOffered() => _storage.write(key: _appLockOfferedKey, value: '1');
 
   Future<void> clearAll() => _storage.deleteAll();
 }

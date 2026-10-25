@@ -1819,6 +1819,48 @@ class AppLocalizationsHi extends AppLocalizations {
       'यह लॉगिन किसी दूसरे स्कूल का है। लॉग आउट करें और इस स्कूल के कोड से लॉगिन करें।';
 
   @override
+  String get appLockReason =>
+      'Schoolinkd खोलने के लिए पुष्टि करें कि यह आप हैं';
+
+  @override
+  String get appLockLocked =>
+      'लॉक है। खोलने के लिए फ़िंगरप्रिंट, चेहरा या फ़ोन PIN इस्तेमाल करें।';
+
+  @override
+  String get appLockUnlock => 'अनलॉक';
+
+  @override
+  String get appLockFailed =>
+      'पहचान नहीं हुई। फिर कोशिश करें, या OTP से साइन इन करें।';
+
+  @override
+  String get appLockUseOtp => 'इसके बजाय OTP से साइन इन करें';
+
+  @override
+  String get appLockUseOtpConfirm =>
+      'इससे आप साइन आउट हो जाएंगे। फिर से साइन इन करने के लिए फ़ोन पर नया OTP आएगा।';
+
+  @override
+  String get appLockOfferTitle => 'फ़िंगरप्रिंट से ऐप खोलें?';
+
+  @override
+  String get appLockOfferBody =>
+      'अगली बार OTP का इंतज़ार किए बिना फ़िंगरप्रिंट, चेहरा या फ़ोन PIN से Schoolinkd खोलें। आपका फ़ोन इसे जांचता है; यह फ़ोन से बाहर नहीं जाता।';
+
+  @override
+  String get appLockOfferYes => 'चालू करें';
+
+  @override
+  String get appLockOfferNo => 'अभी नहीं';
+
+  @override
+  String get appLockSetting => 'फ़िंगरप्रिंट से अनलॉक';
+
+  @override
+  String get appLockSettingHelp =>
+      'ऐप खुलने पर फ़िंगरप्रिंट, चेहरा या फ़ोन PIN मांगें';
+
+  @override
   String get errImageCheckUnavailable =>
       'फ़ोटो की जाँच नहीं हो सकी। थोड़ी देर में फिर कोशिश करें।';
 

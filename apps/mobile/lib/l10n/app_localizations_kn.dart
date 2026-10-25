@@ -1821,6 +1821,47 @@ class AppLocalizationsKn extends AppLocalizations {
       'ಈ ಲಾಗಿನ್ ಬೇರೆ ಶಾಲೆಗೆ ಸೇರಿದೆ. ಲಾಗ್ ಔಟ್ ಮಾಡಿ, ಈ ಶಾಲೆಯ ಕೋಡ್‌ನೊಂದಿಗೆ ಲಾಗಿನ್ ಮಾಡಿ.';
 
   @override
+  String get appLockReason => 'Schoolinkd ತೆರೆಯಲು ಇದು ನೀವೇ ಎಂದು ದೃಢೀಕರಿಸಿ';
+
+  @override
+  String get appLockLocked =>
+      'ಲಾಕ್ ಆಗಿದೆ. ತೆರೆಯಲು ಬೆರಳಚ್ಚು, ಮುಖ ಅಥವಾ ಫೋನ್ PIN ಬಳಸಿ.';
+
+  @override
+  String get appLockUnlock => 'ಅನ್‌ಲಾಕ್';
+
+  @override
+  String get appLockFailed =>
+      'ಗುರುತಿಸಲಾಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ, ಅಥವಾ OTP ಮೂಲಕ ಲಾಗಿನ್ ಮಾಡಿ.';
+
+  @override
+  String get appLockUseOtp => 'ಬದಲಿಗೆ OTP ಮೂಲಕ ಲಾಗಿನ್';
+
+  @override
+  String get appLockUseOtpConfirm =>
+      'ಇದು ನಿಮ್ಮನ್ನು ಲಾಗ್ ಔಟ್ ಮಾಡುತ್ತದೆ. ಮತ್ತೆ ಲಾಗಿನ್ ಆಗಲು ನಿಮ್ಮ ಫೋನ್‌ಗೆ ಹೊಸ OTP ಬರುತ್ತದೆ.';
+
+  @override
+  String get appLockOfferTitle => 'ಬೆರಳಚ್ಚಿನಿಂದ ಆ್ಯಪ್ ತೆರೆಯಬೇಕೇ?';
+
+  @override
+  String get appLockOfferBody =>
+      'ಮುಂದಿನ ಬಾರಿ OTP ಗಾಗಿ ಕಾಯದೆ ಬೆರಳಚ್ಚು, ಮುಖ ಅಥವಾ ಫೋನ್ PIN ನಿಂದ Schoolinkd ತೆರೆಯಿರಿ. ನಿಮ್ಮ ಫೋನ್ ಇದನ್ನು ಪರಿಶೀಲಿಸುತ್ತದೆ; ಅದು ಫೋನ್‌ನಿಂದ ಹೊರಗೆ ಹೋಗುವುದಿಲ್ಲ.';
+
+  @override
+  String get appLockOfferYes => 'ಆನ್ ಮಾಡಿ';
+
+  @override
+  String get appLockOfferNo => 'ಈಗ ಬೇಡ';
+
+  @override
+  String get appLockSetting => 'ಬೆರಳಚ್ಚಿನಿಂದ ಅನ್‌ಲಾಕ್';
+
+  @override
+  String get appLockSettingHelp =>
+      'ಆ್ಯಪ್ ತೆರೆಯುವಾಗ ಬೆರಳಚ್ಚು, ಮುಖ ಅಥವಾ ಫೋನ್ PIN ಕೇಳಿ';
+
+  @override
   String get errImageCheckUnavailable =>
       'ಫೋಟೋ ಪರಿಶೀಲಿಸಲಾಗಲಿಲ್ಲ. ಸ್ವಲ್ಪ ಸಮಯದ ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.';
 

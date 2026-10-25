@@ -11,6 +11,7 @@ import '../../core/l10n/l10n.dart';
 import '../../core/l10n/language_controller.dart';
 import '../../shared/widgets/language_picker.dart';
 import 'class_reminder.dart';
+import '../app_lock/app_lock_controller.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -98,6 +99,16 @@ class ProfilePage extends ConsumerWidget {
               ),
               onTap: () => ref.read(themeModeProvider.notifier).setDark(!isDark),
             ),
+            if (ref.watch(appLockProvider).available)
+              ListCard(
+                leading: const IconBadge(icon: Icons.fingerprint_rounded, color: FeatureColors.fees),
+                title: l.appLockSetting,
+                subtitle: l.appLockSettingHelp,
+                trailing: Switch(
+                  value: ref.watch(appLockProvider).enabled,
+                  onChanged: (v) => ref.read(appLockProvider.notifier).setEnabled(v, l.appLockReason),
+                ),
+              ),
             if (user.role == UserRole.teacher && ref.watch(timetableEnabledProvider))
               const ClassReminderTile(),
             const SizedBox(height: 12),
