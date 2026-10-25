@@ -36,6 +36,7 @@ export const PLAN_MANAGED_FEATURES: OptionalFeature[] = [
   'busTracking',
   'library',
   'photoAlbums',
+  'loginCodes',
 ];
 
 const PREMIUM: OptionalFeature[] = [
@@ -62,6 +63,7 @@ export const PLAN_PRESETS: Record<SubscriptionPlan, OptionalFeature[]> = {
     'busTracking',
     'library',
     'photoAlbums',
+    'loginCodes',
   ],
 };
 

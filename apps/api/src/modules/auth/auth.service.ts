@@ -18,6 +18,7 @@ import { CheckPhoneDto } from './dto/check-phone.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
 import { effectiveLanguage, isLanguage } from '../../common/i18n/languages';
 import type { Language } from '../../common/i18n/languages';
+import { CodeNeeded, LoginCodesService } from './login-codes.service';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -46,6 +47,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly firebaseAdmin: FirebaseAdminService,
     private readonly config: ConfigService,
+    private readonly loginCodes: LoginCodesService,
   ) {}
 
   /**
@@ -55,12 +57,19 @@ export class AuthService {
    * parent, so a verified-but-unrecognized phone is rejected rather than
    * silently given an account.
    */
-  async verifyPhoneOtp(tenantId: string, dto: VerifyOtpDto): Promise<AuthResult> {
+  async verifyPhoneOtp(
+    tenantId: string,
+    dto: VerifyOtpDto,
+  ): Promise<AuthResult> {
     let phone: string;
     try {
-      const decoded = await this.firebaseAdmin.verifyIdToken(dto.firebaseIdToken);
+      const decoded = await this.firebaseAdmin.verifyIdToken(
+        dto.firebaseIdToken,
+      );
       if (!decoded.phone_number) {
-        throw new UnauthorizedException('Firebase token does not contain a phone number');
+        throw new UnauthorizedException(
+          'Firebase token does not contain a phone number',
+        );
       }
       phone = decoded.phone_number;
     } catch (err) {
@@ -81,7 +90,10 @@ export class AuthService {
     }
 
     if (!user.isVerified) {
-      await this.prisma.user.update({ where: { id: user.id }, data: { isVerified: true } });
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { isVerified: true },
+      });
     }
 
     return this.issueTokens(user, dto.deviceId);
@@ -91,7 +103,10 @@ export class AuthService {
    * Lets the mobile app check a phone number before spending a Firebase SMS
    * send on it — mirrors the registration check in verifyPhoneOtp above.
    */
-  async checkPhoneExists(tenantId: string, dto: CheckPhoneDto): Promise<{ exists: boolean }> {
+  async checkPhoneExists(
+    tenantId: string,
+    dto: CheckPhoneDto,
+  ): Promise<{ exists: boolean }> {
     const user = await this.prisma.user.findUnique({
       where: { tenantId_phone: { tenantId, phone: dto.phone } },
       select: { id: true },
@@ -102,13 +117,19 @@ export class AuthService {
   /**
    * Email + password login for teachers and admin/accounts staff.
    */
-  async emailLogin(tenantId: string, dto: EmailLoginDto): Promise<AuthResult> {
+  async emailLogin(
+    tenantId: string,
+    dto: EmailLoginDto,
+  ): Promise<AuthResult | CodeNeeded> {
     const user = await this.prisma.user.findUnique({
       where: { tenantId_email: { tenantId, email: dto.email } },
     });
 
     if (!user) {
-      throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Invalid credentials' });
+      throw new UnauthorizedException({
+        code: 'INVALID_CREDENTIALS',
+        message: 'Invalid credentials',
+      });
     }
 
     if (user.role === Role.parent) {
@@ -119,15 +140,21 @@ export class AuthService {
     }
 
     if (!user.passwordHash) {
-      throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Invalid credentials' });
+      throw new UnauthorizedException({
+        code: 'INVALID_CREDENTIALS',
+        message: 'Invalid credentials',
+      });
     }
 
     const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordMatch) {
-      throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Invalid credentials' });
+      throw new UnauthorizedException({
+        code: 'INVALID_CREDENTIALS',
+        message: 'Invalid credentials',
+      });
     }
 
-    return this.issueTokens(user, dto.deviceId);
+    return this.passwordAccepted(user, dto.deviceId);
   }
 
   /**
@@ -136,7 +163,9 @@ export class AuthService {
    * only, never by tenant_id, so this never trusts a client-supplied tenant like
    * the tenant-scoped login does.
    */
-  async superAdminLogin(dto: SuperAdminLoginDto): Promise<AuthResult> {
+  async superAdminLogin(
+    dto: SuperAdminLoginDto,
+  ): Promise<AuthResult | CodeNeeded> {
     const user = await this.prisma.user.findFirst({
       where: {
         email: dto.email,
@@ -145,15 +174,58 @@ export class AuthService {
     });
 
     if (!user || !user.passwordHash) {
-      throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Invalid credentials' });
+      throw new UnauthorizedException({
+        code: 'INVALID_CREDENTIALS',
+        message: 'Invalid credentials',
+      });
     }
 
     const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordMatch) {
-      throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Invalid credentials' });
+      throw new UnauthorizedException({
+        code: 'INVALID_CREDENTIALS',
+        message: 'Invalid credentials',
+      });
     }
 
-    return this.issueTokens(user, dto.deviceId);
+    return this.passwordAccepted(user, dto.deviceId);
+  }
+
+  /**
+   * After a right password: tokens, or first an emailed code when the login
+   * needs one (platform logins always; a school's when its admin switched it on).
+   */
+  private async passwordAccepted(
+    user: Parameters<AuthService['issueTokens']>[0] & { email: string | null },
+    deviceId?: string,
+  ): Promise<AuthResult | CodeNeeded> {
+    if (await this.loginCodes.isRequired(user))
+      return this.loginCodes.start(
+        user,
+        await this.languageFor(user),
+        deviceId,
+      );
+    return this.issueTokens(user, deviceId);
+  }
+
+  /** The emailed code for a password sign-in: tokens when it is right. */
+  async verifyLoginCode(
+    challengeId: string,
+    code: string,
+  ): Promise<AuthResult> {
+    const { user, deviceId } = await this.loginCodes.verify(challengeId, code);
+    return this.issueTokens(user, deviceId);
+  }
+
+  /** A fresh code for a sign-in waiting on one. */
+  resendLoginCode(challengeId: string) {
+    return this.loginCodes.resend(challengeId, async (userId) => {
+      const u = await this.prisma.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { tenantId: true, preferredLanguage: true },
+      });
+      return this.languageFor(u);
+    });
   }
 
   /**
@@ -210,7 +282,10 @@ export class AuthService {
     return {
       ...user,
       preferredLanguage: row.preferredLanguage,
-      language: await this.languageFor({ tenantId: user.tenantId, preferredLanguage: row.preferredLanguage }),
+      language: await this.languageFor({
+        tenantId: user.tenantId,
+        preferredLanguage: row.preferredLanguage,
+      }),
       hasChildren: await this.hasChildren(user.id, user.tenantId),
     };
   }
@@ -234,8 +309,10 @@ export class AuthService {
     },
     deviceId?: string,
   ): Promise<AuthResult> {
-    const accessExpiresIn = this.config.get<string>('JWT_ACCESS_EXPIRES_IN') ?? '15m';
-    const refreshExpiresIn = this.config.get<string>('JWT_REFRESH_EXPIRES_IN') ?? '30d';
+    const accessExpiresIn =
+      this.config.get<string>('JWT_ACCESS_EXPIRES_IN') ?? '15m';
+    const refreshExpiresIn =
+      this.config.get<string>('JWT_REFRESH_EXPIRES_IN') ?? '30d';
 
     const payload: JwtPayload = {
       sub: user.id,
@@ -289,7 +366,10 @@ export class AuthService {
   }
 
   /** Effective interface language for a user: their pick, else their school's default, else English. */
-  async languageFor(user: { tenantId: string; preferredLanguage: string | null }): Promise<Language> {
+  async languageFor(user: {
+    tenantId: string;
+    preferredLanguage: string | null;
+  }): Promise<Language> {
     if (isLanguage(user.preferredLanguage)) return user.preferredLanguage;
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: user.tenantId },
@@ -308,7 +388,9 @@ export class AuthService {
     const match = expiry.match(/^(\d+)([smhd])$/);
     if (!match) throw new Error(`Invalid expiry format: ${expiry}`);
     const [, value, unit] = match;
-    const ms = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 }[unit as string]!;
+    const ms = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 }[
+      unit as string
+    ]!;
     return new Date(now + parseInt(value, 10) * ms);
   }
 

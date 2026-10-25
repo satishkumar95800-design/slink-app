@@ -73,6 +73,11 @@ export class UpdatePlatformFeaturesDto extends UpdateFeaturesDto {
   @IsOptional()
   photoAlbums?: boolean;
 
+  /** Email code at sign-in, switched on by the school admin (Premium Max). */
+  @IsBoolean()
+  @IsOptional()
+  loginCodes?: boolean;
+
   /** Attendance report and fee reports with CSV export (Premium). */
   @IsBoolean()
   @IsOptional()

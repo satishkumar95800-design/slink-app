@@ -39,6 +39,12 @@
     "selectClass": "Select a class"
   },
   "errors": {
+    "LOGIN_CODE_EXPIRED": "This code has expired or was tried too often. Sign in again for a new code.",
+    "LOGIN_CODE_WRONG": "That code is not right.",
+    "LOGIN_CODE_WAIT": "Wait a few seconds before asking for another code.",
+    "LOGIN_CODE_TOO_MANY_SENDS": "No more codes for this sign-in. Sign in again.",
+    "LOGIN_CODE_NOT_SENT": "The sign-in code could not be emailed. Try again in a few minutes.",
+    "LOGIN_CODE_MAIL_OFF": "Email is not set up on the server, so sign-in codes cannot be switched on yet.",
     "generic": "Something went wrong. Please try again.",
     "NETWORK_ERROR": "Network error — check your connection and try again.",
     "SESSION_EXPIRED": "Session expired — please log in again.",
@@ -246,6 +252,17 @@
     "driver": "Bus driver"
   },
   "login": {
+    "codeTitle": "Enter your sign-in code",
+    "codeSent": "We emailed a 6-digit code to {email}. It works once, for 10 minutes.",
+    "codeLabel": "Code",
+    "codeVerify": "Sign in",
+    "codeWrong": "That code is not right. Tries left: {n}.",
+    "codeResend": "Send a new code",
+    "codeResendIn": "New code in {s} s",
+    "codeResent": "A new code is on its way to {email}.",
+    "codeBack": "Use another account",
+    "codeStartAgain": "Sign in again",
+    "codeHelp": "No email? Check spam, or ask for a new code. Didn't try to sign in? Change your password.",
     "consoleBadge": "Admin Console",
     "title": "Sign in",
     "tenantLabel": "Tenant ID / Slug",
@@ -872,6 +889,23 @@
     "applied": "Leave request sent."
   },
   "settings": {
+    "loginCodes": {
+      "title": "Sign-in security",
+      "help": "Ask for a code sent by email each time someone signs in to the console with a password.",
+      "summaryOn": "Email code at sign-in: on",
+      "summaryOff": "Email code at sign-in: off",
+      "isOn": "An emailed code is needed at every console sign-in with a password.",
+      "isOff": "Staff sign in with their password only.",
+      "covers": "Applies to {n} staff logins with a password (admin, accounts, teachers, librarian, front desk). Parents and drivers sign in by phone and are not affected.",
+      "how1": "After the right password, a 6-digit code is emailed to the person's own address; it works once, for 10 minutes.",
+      "how2": "A stolen password alone is no longer enough to get in.",
+      "how3": "Make sure every staff login has an email address they can open before you switch this on.",
+      "mailOff": "Email is not set up on the server yet, so codes can't be sent. Ask Schoolinkd support.",
+      "turnOn": "Switch on",
+      "turnOff": "Switch off",
+      "turnedOn": "Email code at sign-in is on",
+      "turnedOff": "Email code at sign-in is off"
+    },
     "backgroundUpdated": "Background image updated",
     "uploadFailed": "Upload failed",
     "branding": "Branding",

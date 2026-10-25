@@ -28,6 +28,7 @@ export interface TenantFeatures {
   library?: boolean;
   /** Activity photo albums for parents (Premium Max). */
   photoAlbums?: boolean;
+  loginCodes?: boolean;
 }
 
 // Keyed by school so signing in to another school in the same tab refetches.

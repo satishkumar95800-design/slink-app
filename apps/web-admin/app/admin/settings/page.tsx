@@ -1,6 +1,6 @@
 'use client';
 
-import { BellRing, CalendarHeart, CalendarOff, Globe, Hash, ImageIcon, ListPlus } from 'lucide-react';
+import { BellRing, CalendarHeart, CalendarOff, Globe, Hash, ImageIcon, ListPlus, ShieldCheck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, apiUpload } from '../../../lib/api-client';
@@ -14,6 +14,7 @@ import { useToast } from '../../../components/ui/toast';
 import { getSession } from '../../../lib/auth';
 import { useTenantFeaturesState } from '../../../lib/tenant-features';
 import { AdmissionNumbering, AdmissionNumberingSection } from './admission-numbering-section';
+import { LoginCodesSection, LoginCodesSetting } from './login-codes-section';
 import { BellSchedulesSection } from './bell-schedules';
 import { CustomFieldsSection, FieldDefinition } from './custom-fields-section';
 import { EventsSection } from './events-section';
@@ -32,8 +33,8 @@ interface UploadResult {
   publicUrl: string | null;
 }
 
-type SectionId = 'language' | 'branding' | 'admissionNo' | 'fields' | 'holidays' | 'events' | 'bells';
-const SECTION_IDS: SectionId[] = ['language', 'branding', 'admissionNo', 'fields', 'holidays', 'events', 'bells'];
+type SectionId = 'language' | 'branding' | 'loginCodes' | 'admissionNo' | 'fields' | 'holidays' | 'events' | 'bells';
+const SECTION_IDS: SectionId[] = ['language', 'branding', 'loginCodes', 'admissionNo', 'fields', 'holidays', 'events', 'bells'];
 
 /** What the collapsed rows show; filled by small fetches when the page opens. */
 interface Summaries {
@@ -72,6 +73,8 @@ export default function SettingsPage() {
   const [open, setOpen] = useState<Set<SectionId>>(new Set());
   const [summaries, setSummaries] = useState<Summaries>({});
   const [numbering, setNumbering] = useState<AdmissionNumbering | null>(null);
+  const [loginCodes, setLoginCodes] = useState<LoginCodesSetting | null>(null);
+  const codesAvailable = isAdmin && !!features.loginCodes;
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read of the URL hash after hydration
@@ -118,11 +121,12 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!loaded || !isAdmin) return;
     api.get<AdmissionNumbering>('/students/admission-numbering').then(setNumbering).catch(() => {});
+    if (features.loginCodes) api.get<LoginCodesSetting>('/security/login-codes').then(setLoginCodes).catch(() => {});
     loadFields();
     loadHolidays();
     if (calendar) loadEvents();
     if (timetable) loadBells();
-  }, [loaded, isAdmin, calendar, timetable, loadFields, loadHolidays, loadEvents, loadBells]);
+  }, [loaded, isAdmin, features.loginCodes, calendar, timetable, loadFields, loadHolidays, loadEvents, loadBells]);
 
   function toggle(id: SectionId) {
     setOpen((prev) => {
@@ -205,6 +209,18 @@ export default function SettingsPage() {
         >
           <BrandingBody tenant={tenant} onChange={setTenant} canChange={loaded && !!features.customBranding} />
         </SettingsSection>
+        {codesAvailable && (
+          <SettingsSection
+            {...section('loginCodes')}
+            icon={<ShieldCheck className="h-5 w-5" />}
+            accent="bg-emerald-50 text-emerald-700"
+            title={t('loginCodes.title')}
+            summary={loginCodes ? (loginCodes.enabled ? t('loginCodes.summaryOn') : t('loginCodes.summaryOff')) : null}
+            help={t('loginCodes.help')}
+          >
+            <LoginCodesSection data={loginCodes} onSaved={setLoginCodes} />
+          </SettingsSection>
+        )}
       </SettingsGroup>
 
       {isAdmin && (

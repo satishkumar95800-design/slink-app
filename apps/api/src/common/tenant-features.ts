@@ -34,7 +34,9 @@ export type OptionalFeature =
   /** Library: books, copies, issue/return, overdue and fines (Premium Max). */
   | 'library'
   /** Activity photo albums for parents, kept 30 days (Premium Max). */
-  | 'photoAlbums';
+  | 'photoAlbums'
+  /** Email code at sign-in for password logins, switched by the school admin (Premium Max). */
+  | 'loginCodes';
 
 export async function isFeatureEnabled(
   prisma: PrismaService,

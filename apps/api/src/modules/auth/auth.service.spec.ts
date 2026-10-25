@@ -6,6 +6,8 @@ import { Role } from '@prisma/client';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FirebaseAdminService } from '../../firebase/firebase-admin.service';
+import { LoginCodesService } from './login-codes.service';
+import * as bcrypt from 'bcrypt';
 
 const mockUser = {
   id: 'user-uuid',
@@ -42,6 +44,12 @@ const prismaMock = {
   },
 };
 
+const loginCodesMock = {
+  isRequired: jest.fn(),
+  start: jest.fn(),
+  verify: jest.fn(),
+};
+
 const firebaseMock = {
   verifyIdToken: jest.fn(),
 };
@@ -72,50 +80,69 @@ describe('AuthService', () => {
         { provide: FirebaseAdminService, useValue: firebaseMock },
         { provide: JwtService, useValue: jwtMock },
         { provide: ConfigService, useValue: configMock },
+        { provide: LoginCodesService, useValue: loginCodesMock },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
     jest.clearAllMocks();
+    loginCodesMock.isRequired.mockResolvedValue(false);
   });
 
   describe('verifyPhoneOtp', () => {
     it('rejects an unregistered phone number without creating an account', async () => {
-      firebaseMock.verifyIdToken.mockResolvedValue({ phone_number: '+911234567890' });
+      firebaseMock.verifyIdToken.mockResolvedValue({
+        phone_number: '+911234567890',
+      });
       prismaMock.user.findUnique.mockResolvedValue(null);
 
       await expect(
-        service.verifyPhoneOtp('tenant-uuid', { firebaseIdToken: 'firebase.id.token' }),
+        service.verifyPhoneOtp('tenant-uuid', {
+          firebaseIdToken: 'firebase.id.token',
+        }),
       ).rejects.toThrow(ForbiddenException);
 
       expect(prismaMock.user.create).not.toHaveBeenCalled();
     });
 
     it("signs in with the school's default language when the user hasn't picked one", async () => {
-      firebaseMock.verifyIdToken.mockResolvedValue({ phone_number: '+911234567890' });
+      firebaseMock.verifyIdToken.mockResolvedValue({
+        phone_number: '+911234567890',
+      });
       prismaMock.user.findUnique.mockResolvedValue(mockUser);
       prismaMock.tenant.findUnique.mockResolvedValue({ defaultLanguage: 'kn' });
       prismaMock.refreshToken.create.mockResolvedValue({});
 
-      const result = await service.verifyPhoneOtp('tenant-uuid', { firebaseIdToken: 'firebase.id.token' });
+      const result = await service.verifyPhoneOtp('tenant-uuid', {
+        firebaseIdToken: 'firebase.id.token',
+      });
 
       expect(result.user.preferredLanguage).toBeNull();
       expect(result.user.language).toBe('kn');
     });
 
     it("signs in with the user's own language on a new device", async () => {
-      firebaseMock.verifyIdToken.mockResolvedValue({ phone_number: '+911234567890' });
-      prismaMock.user.findUnique.mockResolvedValue({ ...mockUser, preferredLanguage: 'hi' });
+      firebaseMock.verifyIdToken.mockResolvedValue({
+        phone_number: '+911234567890',
+      });
+      prismaMock.user.findUnique.mockResolvedValue({
+        ...mockUser,
+        preferredLanguage: 'hi',
+      });
       prismaMock.refreshToken.create.mockResolvedValue({});
 
-      const result = await service.verifyPhoneOtp('tenant-uuid', { firebaseIdToken: 'firebase.id.token' });
+      const result = await service.verifyPhoneOtp('tenant-uuid', {
+        firebaseIdToken: 'firebase.id.token',
+      });
 
       expect(result.user.language).toBe('hi');
       expect(prismaMock.tenant.findUnique).not.toHaveBeenCalled();
     });
 
     it('tags an unregistered phone with PHONE_NOT_REGISTERED so apps can translate it', async () => {
-      firebaseMock.verifyIdToken.mockResolvedValue({ phone_number: '+911234567890' });
+      firebaseMock.verifyIdToken.mockResolvedValue({
+        phone_number: '+911234567890',
+      });
       prismaMock.user.findUnique.mockResolvedValue(null);
 
       const err = await service
@@ -123,27 +150,40 @@ describe('AuthService', () => {
         .catch((e: ForbiddenException) => e);
 
       expect(err).toBeInstanceOf(ForbiddenException);
-      expect((err as ForbiddenException).getResponse()).toMatchObject({ code: 'PHONE_NOT_REGISTERED' });
+      expect((err as ForbiddenException).getResponse()).toMatchObject({
+        code: 'PHONE_NOT_REGISTERED',
+      });
     });
 
     it('returns tokens for existing verified user without re-creating', async () => {
-      firebaseMock.verifyIdToken.mockResolvedValue({ phone_number: '+911234567890' });
+      firebaseMock.verifyIdToken.mockResolvedValue({
+        phone_number: '+911234567890',
+      });
       prismaMock.user.findUnique.mockResolvedValue(mockUser);
       prismaMock.refreshToken.create.mockResolvedValue({});
 
-      await service.verifyPhoneOtp('tenant-uuid', { firebaseIdToken: 'firebase.id.token' });
+      await service.verifyPhoneOtp('tenant-uuid', {
+        firebaseIdToken: 'firebase.id.token',
+      });
 
       expect(prismaMock.user.create).not.toHaveBeenCalled();
     });
 
     it('marks an unverified existing user as verified', async () => {
       const unverifiedUser = { ...mockUser, isVerified: false };
-      firebaseMock.verifyIdToken.mockResolvedValue({ phone_number: '+911234567890' });
+      firebaseMock.verifyIdToken.mockResolvedValue({
+        phone_number: '+911234567890',
+      });
       prismaMock.user.findUnique.mockResolvedValue(unverifiedUser);
-      prismaMock.user.update.mockResolvedValue({ ...unverifiedUser, isVerified: true });
+      prismaMock.user.update.mockResolvedValue({
+        ...unverifiedUser,
+        isVerified: true,
+      });
       prismaMock.refreshToken.create.mockResolvedValue({});
 
-      await service.verifyPhoneOtp('tenant-uuid', { firebaseIdToken: 'firebase.id.token' });
+      await service.verifyPhoneOtp('tenant-uuid', {
+        firebaseIdToken: 'firebase.id.token',
+      });
 
       expect(prismaMock.user.update).toHaveBeenCalledWith(
         expect.objectContaining({ data: { isVerified: true } }),
@@ -162,7 +202,9 @@ describe('AuthService', () => {
       firebaseMock.verifyIdToken.mockResolvedValue({ phone_number: undefined });
 
       await expect(
-        service.verifyPhoneOtp('tenant-uuid', { firebaseIdToken: 'no-phone.token' }),
+        service.verifyPhoneOtp('tenant-uuid', {
+          firebaseIdToken: 'no-phone.token',
+        }),
       ).rejects.toThrow(UnauthorizedException);
     });
   });
@@ -180,7 +222,10 @@ describe('AuthService', () => {
       prismaMock.user.findUnique.mockResolvedValue(mockUser);
 
       await expect(
-        service.emailLogin('tenant-uuid', { email: 'parent@x.com', password: 'password1' }),
+        service.emailLogin('tenant-uuid', {
+          email: 'parent@x.com',
+          password: 'password1',
+        }),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -188,8 +233,64 @@ describe('AuthService', () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
 
       await expect(
-        service.emailLogin('tenant-uuid', { email: 'nobody@x.com', password: 'password1' }),
+        service.emailLogin('tenant-uuid', {
+          email: 'nobody@x.com',
+          password: 'password1',
+        }),
       ).rejects.toThrow(UnauthorizedException);
+    });
+
+    describe('with the right password', () => {
+      const hashed = bcrypt.hashSync('password1', 4);
+      const login = () =>
+        service.emailLogin('tenant-uuid', {
+          email: 'teacher@school.com',
+          password: 'password1',
+        });
+
+      beforeEach(() => {
+        prismaMock.user.findUnique.mockResolvedValue({
+          ...teacherUser,
+          passwordHash: hashed,
+        });
+        prismaMock.tenant.findUnique.mockResolvedValue({
+          defaultLanguage: 'en',
+        });
+        prismaMock.refreshToken.create.mockResolvedValue({});
+      });
+
+      it('signs in straight away when no code is needed', async () => {
+        const res = await login();
+        expect(res).toHaveProperty('accessToken');
+        expect(loginCodesMock.start).not.toHaveBeenCalled();
+      });
+
+      it('asks for the emailed code instead of giving tokens when one is needed', async () => {
+        loginCodesMock.isRequired.mockResolvedValue(true);
+        loginCodesMock.start.mockResolvedValue({
+          codeRequired: true,
+          challengeId: 'c1',
+          sentTo: 'te•••@school.com',
+        });
+        const res = await login();
+        expect(res).toEqual({
+          codeRequired: true,
+          challengeId: 'c1',
+          sentTo: 'te•••@school.com',
+        });
+        expect(res).not.toHaveProperty('accessToken');
+        expect(prismaMock.refreshToken.create).not.toHaveBeenCalled();
+      });
+
+      it('gives tokens once the code is right', async () => {
+        loginCodesMock.verify.mockResolvedValue({
+          user: { ...teacherUser, passwordHash: hashed },
+          deviceId: undefined,
+        });
+        const res = await service.verifyLoginCode('c1', '123456');
+        expect(res).toHaveProperty('accessToken');
+        expect(prismaMock.refreshToken.create).toHaveBeenCalled();
+      });
     });
 
     it('throws UnauthorizedException on wrong password', async () => {
@@ -223,7 +324,9 @@ describe('AuthService', () => {
       const result = await service.refresh('some-uuid-refresh-token');
 
       expect(prismaMock.refreshToken.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ revokedAt: expect.any(Date) }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ revokedAt: expect.any(Date) }),
+        }),
       );
       expect(result.accessToken).toBeTruthy();
     });
@@ -234,7 +337,9 @@ describe('AuthService', () => {
         revokedAt: new Date(),
       });
 
-      await expect(service.refresh('revoked-token')).rejects.toThrow(UnauthorizedException);
+      await expect(service.refresh('revoked-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('throws UnauthorizedException for expired token', async () => {
@@ -243,13 +348,17 @@ describe('AuthService', () => {
         expiresAt: new Date(Date.now() - 1000),
       });
 
-      await expect(service.refresh('expired-token')).rejects.toThrow(UnauthorizedException);
+      await expect(service.refresh('expired-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('throws UnauthorizedException when token not found', async () => {
       prismaMock.refreshToken.findUnique.mockResolvedValue(null);
 
-      await expect(service.refresh('unknown-token')).rejects.toThrow(UnauthorizedException);
+      await expect(service.refresh('unknown-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 

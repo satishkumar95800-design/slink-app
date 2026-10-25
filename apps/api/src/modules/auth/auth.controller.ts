@@ -16,6 +16,10 @@ import { EmailLoginDto } from './dto/email-login.dto';
 import { SuperAdminLoginDto } from './dto/super-admin-login.dto';
 import { CheckPhoneDto } from './dto/check-phone.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import {
+  LoginCodeChallengeDto,
+  VerifyLoginCodeDto,
+} from './dto/login-code.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { TenantId } from '../../common/decorators/tenant.decorator';
@@ -75,6 +79,29 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   superAdminLogin(@Body() dto: SuperAdminLoginDto) {
     return this.authService.superAdminLogin(dto);
+  }
+
+  /**
+   * Second step of a password sign-in that needs an emailed code: the code
+   * for the challenge the login returned. No X-Tenant-ID (super admin has none).
+   */
+  @Public()
+  @Post('login-code/verify')
+  @UseGuards(AuthThrottlerGuard)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  verifyLoginCode(@Body() dto: VerifyLoginCodeDto) {
+    return this.authService.verifyLoginCode(dto.challengeId, dto.code);
+  }
+
+  /** Emails a fresh code for the same sign-in. */
+  @Public()
+  @Post('login-code/resend')
+  @UseGuards(AuthThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  resendLoginCode(@Body() dto: LoginCodeChallengeDto) {
+    return this.authService.resendLoginCode(dto.challengeId);
   }
 
   /**

@@ -197,6 +197,8 @@ model Tenant {
   features           Json     @default("{\"installmentPlans\":false,\"inAppMessaging\":false,\"transportFeeModule\":true,\"photoGallery\":false}")
   /// How new admission numbers are made (students/admission-number.ts); null = typed by hand.
   admissionNumbering Json?    @map("admission_numbering")
+  /// Email code at sign-in for the school's password logins (Premium Max flag loginCodes; the admin switches it).
+  loginCodes         Boolean  @default(false) @map("login_codes")
   receiptSequence    Int      @default(0) @map("receipt_sequence")
   // Subscription (docs/SPEC-subscriptions.md). The plan is what the school pays
   // for; module flags in `features` are what is switched on. Status (active /
@@ -394,6 +396,7 @@ model User {
   linkedStudents   StudentParent[]
   reports          Report[]        @relation("TeacherReports")
   refreshTokens    RefreshToken[]
+  loginChallenges    LoginChallenge[]
   notifications    Notification[]
   recordedReceipts Receipt[]       @relation("ReceiptRecordedBy")
   taughtClasses    ClassTeacher[]
@@ -433,6 +436,26 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+/// A password sign-in waiting for the emailed code (MFA). Single use, 10 minutes,
+/// 5 tries. Only a keyed hash of the code is stored.
+model LoginChallenge {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  codeHash   String    @map("code_hash")
+  attempts   Int       @default(0)
+  sends      Int       @default(1)
+  lastSentAt DateTime  @default(now()) @map("last_sent_at")
+  expiresAt  DateTime  @map("expires_at")
+  usedAt     DateTime? @map("used_at")
+  deviceId   String?   @map("device_id")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("login_challenges")
 }
 
 // ─── Student ──────────────────────────────────────────────────────────────────

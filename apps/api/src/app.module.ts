@@ -145,6 +145,10 @@ export class AppModule implements NestModule {
         // X-Tenant-ID here, so these must not need one.
         { path: 'auth/refresh', method: RequestMethod.POST },
         { path: 'auth/logout', method: RequestMethod.POST },
+        // The emailed sign-in code: the challenge id names the user; super
+        // admin and head office have no school.
+        { path: 'auth/login-code/verify', method: RequestMethod.POST },
+        { path: 'auth/login-code/resend', method: RequestMethod.POST },
         { path: 'tenants', method: RequestMethod.ALL },
         { path: 'tenants/:id', method: RequestMethod.ALL },
         { path: 'tenants/:id/users', method: RequestMethod.ALL },
