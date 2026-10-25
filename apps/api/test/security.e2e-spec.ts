@@ -372,3 +372,19 @@ describe('browser and transport rules', () => {
       .send({ event: 'payment.captured' })
       .expect(401));
 });
+
+describe('marketing site (no school)', () => {
+  it('hands out the price list PDF without a school id', async () => {
+    const res = await http()
+      .post('/v1/public/pricing')
+      .send({ schoolName: 'Test School', email: 'owner@school.test', phone: '+919876543210' })
+      .expect(200);
+    expect(res.headers['content-type']).toContain('application/pdf');
+  });
+
+  it('the super admin lists price list and contact requests without a school id', async () => {
+    const auth = { Authorization: `Bearer ${f.superAdmin}` };
+    await http().get('/v1/platform/pricing-requests').set(auth).expect(200);
+    await http().get('/v1/platform/contact-requests').set(auth).expect(200);
+  });
+});

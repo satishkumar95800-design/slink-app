@@ -185,8 +185,10 @@ export class AppModule implements NestModule {
         { path: 'receipts/public/:token/pdf', method: RequestMethod.GET },
         // Marketing site (no tenant) and the super-admin views of its data.
         { path: 'public/contact', method: RequestMethod.POST },
+        { path: 'public/pricing', method: RequestMethod.POST },
         { path: 'public/events', method: RequestMethod.POST },
         { path: 'platform/contact-requests', method: RequestMethod.GET },
+        { path: 'platform/pricing-requests', method: RequestMethod.GET },
         { path: 'platform/site-stats', method: RequestMethod.GET },
       )
       .forRoutes('*');
