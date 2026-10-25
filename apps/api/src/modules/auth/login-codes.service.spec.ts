@@ -45,6 +45,13 @@ function setup(
     user: { count: jest.fn().mockResolvedValue(4) },
     loginChallenge: {
       deleteMany: jest.fn(),
+      aggregate: jest.fn(() => ({
+        _sum: {
+          attempts: [...rows.values()]
+            .filter((r) => r.usedAt === null)
+            .reduce((n, r) => n + r.attempts, 0),
+        },
+      })),
       create: jest.fn(
         ({
           data,
@@ -158,6 +165,18 @@ describe('LoginCodesService', () => {
     });
     await expect(service.verify('c1', right)).rejects.toMatchObject({
       response: { code: 'LOGIN_CODE_EXPIRED' },
+    });
+  });
+
+  it('locks codes for the day after 15 wrong ones, across sign-ins', async () => {
+    const { service } = setup();
+    for (let n = 0; n < 3; n++) {
+      const { challengeId } = await service.start(user, 'en');
+      for (let i = 0; i < MAX_TRIES; i++)
+        await service.verify(challengeId, 'x').catch(() => undefined);
+    }
+    await expect(service.start(user, 'en')).rejects.toMatchObject({
+      response: { code: 'LOGIN_CODE_LOCKED' },
     });
   });
 

@@ -13,6 +13,13 @@ export const CODE_MINUTES = 10;
 export const MAX_TRIES = 5;
 export const MAX_SENDS = 3;
 export const RESEND_GAP_SECONDS = 30;
+/**
+ * Wrong codes one account may get in 24 hours. Without it, someone holding the
+ * password could start 10 sign-ins every 15 minutes (the login limit) with 5
+ * guesses each: about 4,800 guesses a day, a 0.5% daily chance of a hit.
+ */
+export const MAX_DAILY_WRONG = 15;
+export const DAY_MS = 24 * 60 * 60_000;
 
 const PLATFORM_ROLES: Role[] = [Role.super_admin, Role.head_office];
 

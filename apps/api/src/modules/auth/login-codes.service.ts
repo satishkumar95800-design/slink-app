@@ -13,6 +13,8 @@ import { MailerService } from '../public-site/mailer.service';
 import type { Language } from '../../common/i18n/languages';
 import {
   CODE_MINUTES,
+  DAY_MS,
+  MAX_DAILY_WRONG,
   MAX_SENDS,
   MAX_TRIES,
   RESEND_GAP_SECONDS,
@@ -77,13 +79,28 @@ export class LoginCodesService {
     deviceId?: string,
   ): Promise<CodeNeeded> {
     if (!user.email) throw this.notSent();
-    // Old, finished challenges of this user are of no further use.
+    const dayAgo = new Date(Date.now() - DAY_MS);
+    // Older challenges have served their purpose; the last day's count wrong tries.
     await this.prisma.loginChallenge.deleteMany({
-      where: {
-        userId: user.id,
-        OR: [{ expiresAt: { lt: new Date() } }, { usedAt: { not: null } }],
-      },
+      where: { userId: user.id, createdAt: { lt: dayAgo } },
     });
+    const wrong = await this.prisma.loginChallenge.aggregate({
+      where: { userId: user.id, createdAt: { gte: dayAgo }, usedAt: null },
+      _sum: { attempts: true },
+    });
+    if ((wrong._sum.attempts ?? 0) >= MAX_DAILY_WRONG) {
+      this.logger.warn(
+        `Sign-in codes locked for user ${user.id}: too many wrong codes today`,
+      );
+      throw new HttpException(
+        {
+          code: 'LOGIN_CODE_LOCKED',
+          message:
+            'Too many wrong codes today. Try again tomorrow, or ask your admin to change your password.',
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
     const challenge = await this.prisma.loginChallenge.create({
       data: {
         userId: user.id,

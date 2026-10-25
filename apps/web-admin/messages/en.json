@@ -45,6 +45,7 @@
     "LOGIN_CODE_TOO_MANY_SENDS": "No more codes for this sign-in. Sign in again.",
     "LOGIN_CODE_NOT_SENT": "The sign-in code could not be emailed. Try again in a few minutes.",
     "LOGIN_CODE_MAIL_OFF": "Email is not set up on the server, so sign-in codes cannot be switched on yet.",
+    "LOGIN_CODE_LOCKED": "Too many wrong codes today. Try again tomorrow, or ask your admin to change your password.",
     "generic": "Something went wrong. Please try again.",
     "NETWORK_ERROR": "Network error — check your connection and try again.",
     "SESSION_EXPIRED": "Session expired — please log in again.",
