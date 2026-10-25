@@ -1,35 +1,22 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { CheckCircle2, Download } from 'lucide-react';
+import { useState } from 'react';
+import { CheckCircle2, Mail } from 'lucide-react';
 import { strings } from '../../lib/strings';
 import { track } from '../../lib/track';
 import { isIndianMobile } from './contact-form';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/v1';
-const FILENAME = 'Schoolinkd_Plans_and_Pricing_2026-27.pdf';
 const t = strings.marketing.pricing;
 
 const FIELD = 'w-full rounded-xl border border-gray-300 bg-white px-3.5 py-3 text-base outline-none transition focus:border-coral focus:ring-2 focus:ring-coral/30';
 
-/** Saves the PDF to the visitor's downloads under a fixed name. */
-function saveFile(blob: Blob) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = FILENAME;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 10_000);
-}
-
-/** School name, email and phone in exchange for the price list PDF (POST /public/pricing). */
+/** School name, email and phone; the price list PDF is emailed to that address (POST /public/pricing). */
 export function PricingForm() {
   const [form, setForm] = useState({ schoolName: '', email: '', phone: '', website: '' });
   const [phoneError, setPhoneError] = useState<string | null>(null);
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
-  const pdf = useRef<Blob | null>(null);
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error' | 'emailFailed'>('idle');
+  const [sentTo, setSentTo] = useState('');
 
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -47,10 +34,13 @@ export function PricingForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, website: form.website || undefined }),
       });
-      if (!res.ok) throw new Error(String(res.status));
-      pdf.current = await res.blob();
-      saveFile(pdf.current);
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: { code?: string } } | null;
+        setStatus(body?.error?.code === 'PRICING_EMAIL_FAILED' ? 'emailFailed' : 'error');
+        return;
+      }
       track('pricing_download');
+      setSentTo(form.email.trim());
       setStatus('sent');
     } catch {
       setStatus('error');
@@ -59,17 +49,10 @@ export function PricingForm() {
 
   if (status === 'sent') {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-3xl border border-green-200 bg-green-50 p-8 text-center">
+      <div className="flex flex-col items-center gap-3 rounded-3xl border border-green-200 bg-green-50 p-8 text-center" role="status">
         <CheckCircle2 className="h-10 w-10 text-green-600" aria-hidden />
-        <p className="text-lg font-semibold text-green-900">{t.success}</p>
-        <button
-          type="button"
-          onClick={() => pdf.current && saveFile(pdf.current)}
-          className="inline-flex items-center gap-2 text-sm font-bold text-green-800 underline-offset-4 hover:underline"
-        >
-          <Download className="h-4 w-4" aria-hidden />
-          {t.downloadAgain}
-        </button>
+        <p className="text-lg font-semibold break-words text-green-900">{t.success(sentTo)}</p>
+        <p className="max-w-md text-sm text-green-800">{t.successHint}</p>
       </div>
     );
   }
@@ -105,14 +88,16 @@ export function PricingForm() {
       </div>
       {/* Honeypot: hidden from people and screen readers; bots fill it in. */}
       <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden value={form.website} onChange={set('website')} className="hidden" />
-      {status === 'error' && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{t.error}</p>}
+      {(status === 'error' || status === 'emailFailed') && (
+        <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{status === 'emailFailed' ? t.emailFailed : t.error}</p>
+      )}
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
         <button
           type="submit"
           disabled={status === 'sending'}
           className="inline-flex items-center justify-center gap-2 rounded-full bg-coral px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-coral/20 transition-colors hover:bg-coral-dark disabled:opacity-60"
         >
-          <Download className="h-4 w-4" aria-hidden />
+          <Mail className="h-4 w-4" aria-hidden />
           {status === 'sending' ? t.sending : t.submit}
         </button>
         <p className="text-xs text-gray-500">{t.privacy}</p>

@@ -2,6 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import nodemailer, { Transporter } from 'nodemailer';
 
+export interface MailExtras {
+  /** Where a reply goes when the sender is a no-reply address. */
+  replyTo?: string;
+  attachments?: { filename: string; content: Buffer; contentType: string }[];
+}
+
 /**
  * Plain SMTP via the school's own mailbox (e.g. Hostinger email) — no paid
  * email service. Disabled, and silently skipped, until SMTP_* env vars are set.
@@ -35,10 +41,21 @@ export class MailerService {
   }
 
   /** Returns true when sent. Never throws — a failed email must not lose the submission. */
-  async send(to: string, subject: string, text: string): Promise<boolean> {
+  async send(
+    to: string,
+    subject: string,
+    text: string,
+    extras: MailExtras = {},
+  ): Promise<boolean> {
     if (!this.transporter) return false;
     try {
-      await this.transporter.sendMail({ from: this.from, to, subject, text });
+      await this.transporter.sendMail({
+        from: this.from,
+        to,
+        subject,
+        text,
+        ...extras,
+      });
       return true;
     } catch (err) {
       this.logger.warn(`Email to ${to} failed: ${(err as Error).message}`);

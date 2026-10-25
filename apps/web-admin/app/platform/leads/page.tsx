@@ -154,7 +154,7 @@ export default function LeadsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-xs font-medium text-gray-500">
-                  {['Received', 'School', 'Email', 'Phone', 'Emailed'].map((h) => (
+                  {['Received', 'School', 'Email', 'Phone', 'Price list sent'].map((h) => (
                     <th key={h} className="whitespace-nowrap px-4 py-3">
                       {h}
                     </th>

@@ -20,11 +20,16 @@ import { configureApp } from '../src/server';
 const PASSWORD = 'Correct-Horse-9';
 
 /** Emails "sent" during the tests, newest last. */
-const outbox: { to: string; text: string }[] = [];
+const outbox: { to: string; text: string; attachment?: string }[] = [];
 const mailer = {
   enabled: true,
-  send: (to: string, _subject: string, text: string) => {
-    outbox.push({ to, text });
+  send: (
+    to: string,
+    _subject: string,
+    text: string,
+    extras?: { attachments?: { filename: string }[] },
+  ) => {
+    outbox.push({ to, text, attachment: extras?.attachments?.[0]?.filename });
     return Promise.resolve(true);
   },
 };
@@ -374,12 +379,20 @@ describe('browser and transport rules', () => {
 });
 
 describe('marketing site (no school)', () => {
-  it('hands out the price list PDF without a school id', async () => {
+  it('emails the price list PDF without a school id', async () => {
     const res = await http()
       .post('/v1/public/pricing')
-      .send({ schoolName: 'Test School', email: 'owner@school.test', phone: '+919876543210' })
+      .send({
+        schoolName: 'Test School',
+        email: 'owner@school.test',
+        phone: '+919876543210',
+      })
       .expect(200);
-    expect(res.headers['content-type']).toContain('application/pdf');
+    const body = res.body as { data?: unknown };
+    expect(body.data ?? body).toEqual({ sent: true, to: 'owner@school.test' });
+    expect(res.headers['content-type']).not.toContain('application/pdf');
+    const mail = outbox.find((m) => m.to === 'owner@school.test');
+    expect(mail?.attachment).toBe('Schoolinkd_Plans_and_Pricing_2026-27.pdf');
   });
 
   it('the super admin lists price list and contact requests without a school id', async () => {

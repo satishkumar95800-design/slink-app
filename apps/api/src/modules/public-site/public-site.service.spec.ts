@@ -8,6 +8,7 @@ import {
   PricingRequestDto,
 } from './dto/contact-request.dto';
 import { cleanPath, PublicSiteService } from './public-site.service';
+import type { MailExtras } from './mailer.service';
 
 describe('contact form validation', () => {
   it.each([
@@ -88,6 +89,7 @@ describe('PublicSiteService', () => {
       pricingRequest: {
         create: jest.fn().mockResolvedValue({ id: 'p1' }),
         update: jest.fn(),
+        count: jest.fn().mockResolvedValue(0),
       },
       $executeRaw: jest.fn().mockResolvedValue(1),
     };
@@ -145,38 +147,77 @@ describe('PublicSiteService', () => {
     expect(prisma.contactRequest.create).not.toHaveBeenCalled();
   });
 
-  it('stores a price-list request, emails the team and returns the PDF', async () => {
+  const lead = {
+    schoolName: 'GVPS',
+    email: 'office@gvps.in',
+    phone: '+919876543210',
+  };
+
+  it('emails the price list PDF to the visitor, then tells the team', async () => {
     const { prisma, mailer, service } = make();
-    const pdf = await service.createPricingRequest({
-      schoolName: 'GVPS',
-      email: 'office@gvps.in',
-      phone: '+919876543210',
+    await expect(service.createPricingRequest(lead)).resolves.toEqual({
+      sent: true,
+      to: 'office@gvps.in',
     });
-    expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
-    expect(prisma.pricingRequest.create).toHaveBeenCalledWith({
-      data: {
-        schoolName: 'GVPS',
-        email: 'office@gvps.in',
-        phone: '+919876543210',
-      },
+    expect(prisma.pricingRequest.create).toHaveBeenCalledWith({ data: lead });
+    const [to, subject, text, extras] = mailer.send.mock.calls[0] as [
+      string,
+      string,
+      string,
+      Required<MailExtras>,
+    ];
+    expect(to).toBe('office@gvps.in');
+    expect(subject).toBe('Schoolinkd plans and prices 2026-27');
+    expect(text).toContain('GVPS');
+    expect(extras.replyTo).toBe('team@schoolinkd.in');
+    expect(extras.attachments[0].filename).toBe(
+      'Schoolinkd_Plans_and_Pricing_2026-27.pdf',
+    );
+    expect(extras.attachments[0].content.subarray(0, 5).toString()).toBe(
+      '%PDF-',
+    );
+    expect(prisma.pricingRequest.update).toHaveBeenCalledWith({
+      where: { id: 'p1' },
+      data: { emailedAt: expect.any(Date) },
     });
-    expect(mailer.send).toHaveBeenCalledWith(
+    expect(mailer.send).toHaveBeenLastCalledWith(
       'team@schoolinkd.in',
-      'Price list downloaded: GVPS',
+      'Price list sent: GVPS',
       expect.stringContaining('office@gvps.in'),
     );
-    expect(prisma.pricingRequest.update).toHaveBeenCalled();
   });
 
-  it('gives bots the PDF without storing a lead', async () => {
-    const { prisma, service } = make();
-    const pdf = await service.createPricingRequest({
-      schoolName: 'GVPS',
-      email: 'a@b.in',
-      phone: '+919876543210',
-      website: 'http://spam',
+  it('keeps the lead, warns the team and answers PRICING_EMAIL_FAILED when email fails', async () => {
+    const { prisma, mailer, service } = make(false);
+    await expect(service.createPricingRequest(lead)).rejects.toMatchObject({
+      response: { code: 'PRICING_EMAIL_FAILED' },
     });
-    expect(pdf.length).toBeGreaterThan(0);
+    expect(prisma.pricingRequest.create).toHaveBeenCalled();
+    expect(prisma.pricingRequest.update).not.toHaveBeenCalled();
+    expect(mailer.send).toHaveBeenLastCalledWith(
+      'team@schoolinkd.in',
+      'Price list NOT sent (email failed): GVPS',
+      expect.any(String),
+    );
+  });
+
+  it('sends one address the price list at most 3 times a day', async () => {
+    const { prisma, mailer, service } = make();
+    prisma.pricingRequest.count.mockResolvedValue(3);
+    await expect(service.createPricingRequest(lead)).resolves.toEqual({
+      sent: true,
+      to: 'office@gvps.in',
+    });
+    expect(mailer.send).not.toHaveBeenCalled();
+    expect(prisma.pricingRequest.create).not.toHaveBeenCalled();
+  });
+
+  it('tells bots it was sent, but sends and stores nothing', async () => {
+    const { prisma, mailer, service } = make();
+    await expect(
+      service.createPricingRequest({ ...lead, website: 'http://spam' }),
+    ).resolves.toEqual({ sent: true, to: 'office@gvps.in' });
+    expect(mailer.send).not.toHaveBeenCalled();
     expect(prisma.pricingRequest.create).not.toHaveBeenCalled();
   });
 

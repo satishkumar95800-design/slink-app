@@ -113,7 +113,7 @@ pnpm db:generate   # regenerates the Prisma client
 | parent | done | Parent home summary (fees/today/attendance in one call), per-child notices |
 | fee-reminders | done | Daily Bull job: fee-due pushes 3 days before and on the due date |
 | broadcasts | done | Notice/homework sent items, per-parent "seen" tracking, unseen-parent lists |
-| public-site | done | Marketing-site contact form (stored + SMTP email, optional plan interest), "Download the price list" form (`POST /public/pricing`: school name, email, phone → stored `pricing_requests` + SMTP email, returns `Schoolinkd_Plans_and_Pricing_2026-27.pdf`; plan prices live only in `pricing-plans.ts`), cookie-free daily event counts; Platform "Leads" views |
+| public-site | done | Marketing-site contact form (stored + SMTP email, optional plan interest), price list form (`POST /public/pricing`: school name, email, phone → stored `pricing_requests`; the PDF `Schoolinkd_Plans_and_Pricing_2026-27.pdf` is never downloaded from the site, it is emailed to the visitor's address from `SMTP_FROM` (noreply@schoolinkd.in) with Reply-To the team, at most 3 times a day per address; `emailed_at` = it reached them; the team gets a "sent" or "NOT sent" email; a failed send keeps the lead and answers 503 `PRICING_EMAIL_FAILED`; plan prices live only in `pricing-plans.ts`), cookie-free daily event counts; Platform "Leads" views |
 | class-reminders | done | Teacher "next class" push 1–5 min before each period (in-process, once per slot per day) |
 | payment-gateway | done | Per-school Razorpay keys, encrypted (platform console) |
 | ai | done | Premium (`aiInsights`): Claude client with per-school cap + usage log, notice translation, report remark drafts — docs/SPEC-ai.md |
