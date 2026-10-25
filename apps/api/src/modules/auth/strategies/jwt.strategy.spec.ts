@@ -62,3 +62,31 @@ describe('JwtStrategy parent mode', () => {
     }
   });
 });
+
+describe('JwtStrategy school check', () => {
+  const inSchool = (tenantId: string) => ({ headers: {}, tenantId }) as never;
+
+  it.each([Role.admin, Role.teacher, Role.accounts, Role.parent, Role.driver])(
+    'refuses a %s token sent to another school',
+    async (role) => {
+      const { strategy } = setup(role, 0);
+      await expect(
+        strategy.validate(inSchool('tenant-2'), payload),
+      ).rejects.toMatchObject({ response: { code: 'WRONG_SCHOOL' } });
+    },
+  );
+
+  it('accepts the own school, and super admin in any school', async () => {
+    expect(
+      (await setup(Role.admin, 0).strategy.validate(inSchool(T), payload)).role,
+    ).toBe(Role.admin);
+    expect(
+      (
+        await setup(Role.super_admin, 0).strategy.validate(
+          inSchool('tenant-2'),
+          payload,
+        )
+      ).role,
+    ).toBe(Role.super_admin);
+  });
+});

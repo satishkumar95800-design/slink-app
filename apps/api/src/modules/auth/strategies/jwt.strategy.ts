@@ -31,6 +31,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
+      algorithms: ['HS256'],
       secretOrKey: config.getOrThrow<string>('JWT_SECRET'),
       passReqToCallback: true,
     });
@@ -45,11 +46,31 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(req: Request, payload: JwtPayload) {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { id: true, tenantId: true, role: true, name: true, isVerified: true },
+      select: {
+        id: true,
+        tenantId: true,
+        role: true,
+        name: true,
+        isVerified: true,
+      },
     });
 
     if (!user || user.tenantId !== payload.tenantId) {
       throw new UnauthorizedException();
+    }
+
+    // The school named by X-Tenant-ID (TenantMiddleware) must be the user's
+    // own; only the platform team works inside other schools.
+    const requested = (req as Request & { tenantId?: string }).tenantId;
+    if (
+      requested &&
+      requested !== user.tenantId &&
+      user.role !== Role.super_admin
+    ) {
+      throw new ForbiddenException({
+        code: 'WRONG_SCHOOL',
+        message: 'This login belongs to a different school',
+      });
     }
 
     if (req.headers[ACT_AS_HEADER] === 'parent' && user.role !== Role.parent) {

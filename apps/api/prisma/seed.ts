@@ -8,7 +8,13 @@ const BCRYPT_ROUNDS = 12;
 const PLATFORM_TENANT_SLUG = 'platform';
 
 const SUPER_ADMIN_EMAIL = process.env.SEED_SUPER_ADMIN_EMAIL ?? 'superadmin@platform.local';
-const SUPER_ADMIN_PASSWORD = process.env.SEED_SUPER_ADMIN_PASSWORD ?? 'ChangeMe123!';
+const DEV_PASSWORD = 'ChangeMe123!';
+const SUPER_ADMIN_PASSWORD = process.env.SEED_SUPER_ADMIN_PASSWORD ?? DEV_PASSWORD;
+
+// The built-in password is for local development only.
+if (process.env.NODE_ENV === 'production' && (SUPER_ADMIN_PASSWORD === DEV_PASSWORD || SUPER_ADMIN_PASSWORD.length < 12)) {
+  throw new Error('Set SEED_SUPER_ADMIN_PASSWORD (12+ characters, not the default) to seed in production');
+}
 const SUPER_ADMIN_NAME = process.env.SEED_SUPER_ADMIN_NAME ?? 'Super Admin';
 
 const prisma = new PrismaClient();

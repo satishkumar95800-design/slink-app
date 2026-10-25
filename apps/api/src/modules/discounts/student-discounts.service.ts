@@ -29,7 +29,9 @@ export class StudentDiscountsService {
     if (!discountType) throw new NotFoundException('Discount type not found');
 
     if (dto.feeItemId) {
-      const feeItem = await this.prisma.feeItem.findUnique({ where: { id: dto.feeItemId } });
+      const feeItem = await this.prisma.feeItem.findFirst({
+        where: { id: dto.feeItemId, feeStructure: { tenantId } },
+      });
       if (!feeItem) throw new NotFoundException('Fee item not found');
     }
 

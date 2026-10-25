@@ -36,18 +36,36 @@ export async function startNest(server: Express, port: string | number) {
   app.useGlobalGuards(new RolesGuard(app.get(Reflector)));
   app.useGlobalInterceptors(new AuditLogInterceptor(app.get(PrismaService)));
 
-  const allowedOrigins = [
-    process.env.ADMIN_BASE_URL ?? 'http://localhost:3001',
-    ...(process.env.EXTRA_CORS_ORIGINS
-      ? process.env.EXTRA_CORS_ORIGINS.split(',')
-      : []),
-  ];
+  // Exact origins only: a prefix test would also let in
+  // https://schoolinkd.in.evil.com.
+  const allowedOrigins = new Set(
+    [
+      process.env.ADMIN_BASE_URL ?? 'http://localhost:3001',
+      ...(process.env.EXTRA_CORS_ORIGINS
+        ? process.env.EXTRA_CORS_ORIGINS.split(',')
+        : []),
+    ]
+      .map((o) => o.trim().replace(/\/+$/, ''))
+      .filter(Boolean),
+  );
   app.enableCors({
     origin: (
       origin: string | undefined,
       cb: (err: Error | null, allow?: boolean) => void,
-    ) => cb(null, !origin || allowedOrigins.some((o) => origin.startsWith(o))),
+    ) => cb(null, !origin || allowedOrigins.has(origin)),
     credentials: true,
+  });
+
+  // Basic hardening headers (the API serves JSON and files, never pages).
+  server.disable('x-powered-by');
+  server.use((_req, res, next) => {
+    res.set({
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'no-referrer',
+      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+    });
+    next();
   });
 
   await app.init();

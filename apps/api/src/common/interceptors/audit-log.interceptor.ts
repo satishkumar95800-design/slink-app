@@ -20,6 +20,18 @@ const REDACTED_KEYS = new Set([
   'otp',
   'token',
   'firebaseidtoken',
+  // Payment gateway keys (platform console).
+  'keysecret',
+  'webhooksecret',
+  // Staff identity and bank details (HR): audit rows carry field names only.
+  'pan',
+  'aadhaar',
+  'uan',
+  'esinumber',
+  'bankaccount',
+  'accountnumber',
+  'bankifsc',
+  'bankholder',
 ]);
 
 /**
@@ -91,13 +103,13 @@ export class AuditLogInterceptor implements NestInterceptor {
     return null;
   }
 
-  private redact(body: unknown): unknown {
-    if (!body || typeof body !== 'object') return body;
-    const clone: Record<string, unknown> = { ...(body as Record<string, unknown>) };
-    for (const key of Object.keys(clone)) {
-      if (REDACTED_KEYS.has(key.toLowerCase())) {
-        clone[key] = '[REDACTED]';
-      }
+  /** Hides sensitive values at any depth (e.g. an import's rows, a nested bank object). */
+  private redact(body: unknown, depth = 0): unknown {
+    if (!body || typeof body !== 'object' || depth > 6) return body;
+    if (Array.isArray(body)) return body.map((v) => this.redact(v, depth + 1));
+    const clone: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(body as Record<string, unknown>)) {
+      clone[key] = REDACTED_KEYS.has(key.toLowerCase()) ? '[REDACTED]' : this.redact(value, depth + 1);
     }
     return clone;
   }

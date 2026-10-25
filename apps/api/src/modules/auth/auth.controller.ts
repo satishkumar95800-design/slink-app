@@ -1,6 +1,14 @@
 import { SelfService } from '../../common/decorators/roles.decorator';
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req } from '@nestjs/common';
-import { Request } from 'express';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { ActiveUser } from '../../common/types/active-user.type';
 import { AuthService } from './auth.service';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
@@ -11,6 +19,10 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { TenantId } from '../../common/decorators/tenant.decorator';
+import { AuthThrottlerGuard } from './auth-throttler.guard';
+
+/** Password sign-in: 10 tries per account per 15 minutes. */
+const LOGIN_LIMIT = { default: { limit: 10, ttl: 15 * 60_000 } };
 
 @Controller('auth')
 export class AuthController {
@@ -33,6 +45,8 @@ export class AuthController {
    */
   @Public()
   @Post('phone/check')
+  @UseGuards(AuthThrottlerGuard)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   checkPhone(@TenantId() tenantId: string, @Body() dto: CheckPhoneDto) {
     return this.authService.checkPhoneExists(tenantId, dto);
@@ -43,6 +57,8 @@ export class AuthController {
    */
   @Public()
   @Post('email/login')
+  @UseGuards(AuthThrottlerGuard)
+  @Throttle(LOGIN_LIMIT)
   @HttpCode(HttpStatus.OK)
   emailLogin(@TenantId() tenantId: string, @Body() dto: EmailLoginDto) {
     return this.authService.emailLogin(tenantId, dto);
@@ -54,6 +70,8 @@ export class AuthController {
    */
   @Public()
   @Post('super-admin/login')
+  @UseGuards(AuthThrottlerGuard)
+  @Throttle(LOGIN_LIMIT)
   @HttpCode(HttpStatus.OK)
   superAdminLogin(@Body() dto: SuperAdminLoginDto) {
     return this.authService.superAdminLogin(dto);
