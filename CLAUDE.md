@@ -43,6 +43,12 @@ Health check: GET http://localhost:3000/v1/health
 5. Payment gateway credentials per tenant live in `tenant_payment_gateways` (set from the platform console); the key secret and webhook secret are AES-256-GCM encrypted with the `PAYMENT_SECRETS_KEY` env var and are never returned by the API — never in the `tenants` table.
 6. All money values: `Decimal` / `NUMERIC(12,2)` in DB; integer paise/pence arithmetic in application code.
 
+## Tests and CI
+
+- **Unit** (`pnpm --filter api test`): `src/**/*.spec.ts`, Prisma mocked.
+- **Integration** (`pnpm --filter api test:e2e`): `apps/api/test/*.e2e-spec.ts` boot the whole `AppModule` with `configureApp` (server.ts: the same guards, validation, CORS and headers production runs) against a real Postgres database rebuilt from every migration before each run (`test/prepare-db.mjs`; `E2E_DATABASE_URL`, else `DATABASE_URL` renamed to `slink_e2e`; it refuses any database whose name does not end in `_e2e`). Needs Redis. Email goes to an in-memory outbox. Add a case here for every access rule (school isolation, parent own-children, roles, sign-in codes): `security.e2e-spec.ts` is the pattern.
+- **CI** (`.github/workflows/ci.yml`, every push): API types + unit + integration, console types + translations, mobile analyze. Hostinger deploys on push regardless, so a red run means the live commit is broken.
+
 ## Package manager
 
 pnpm only — never use npm or yarn in this repo.

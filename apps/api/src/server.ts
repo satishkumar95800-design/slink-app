@@ -1,5 +1,5 @@
 import { NestFactory, Reflector } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import type { Express } from 'express';
 import { join } from 'path';
@@ -12,14 +12,11 @@ import { PrismaService } from './prisma/prisma.service';
 import { MigrationRow, runPendingMigrations } from './migrations-runner';
 
 /**
- * Builds the Nest app on [server], which main.ts has already put on the port
- * (see there for why). Resolves once every module is initialised.
+ * Everything the running API applies on top of the modules: prefix, validation,
+ * error shape, guards, audit log, CORS and headers. Shared with the integration
+ * tests (test/), so they exercise exactly what production runs.
  */
-export async function startNest(server: Express, port: string | number) {
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(server), {
-    rawBody: true,
-  });
-
+export function configureApp(app: INestApplication, server: Express) {
   app.setGlobalPrefix('v1');
 
   app.useGlobalPipes(
@@ -67,6 +64,18 @@ export async function startNest(server: Express, port: string | number) {
     });
     next();
   });
+}
+
+/**
+ * Builds the Nest app on [server], which main.ts has already put on the port
+ * (see there for why). Resolves once every module is initialised.
+ */
+export async function startNest(server: Express, port: string | number) {
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(server), {
+    rawBody: true,
+  });
+
+  configureApp(app, server);
 
   await app.init();
   console.warn(`API running on http://localhost:${port}/v1`);

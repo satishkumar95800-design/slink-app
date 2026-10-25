@@ -1,0 +1,81 @@
+# Runs on every push and pull request. Hostinger deploys main on push, so a red
+# run here means the commit that just went live is broken: fix it or revert it.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: API (types, unit, integration)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: slink
+          POSTGRES_PASSWORD: slink
+          POSTGRES_DB: slink_e2e
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U slink" --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+    env:
+      # Test-only values; nothing here reaches production.
+      E2E_DATABASE_URL: postgresql://slink:slink@localhost:5432/slink_e2e
+      DATABASE_URL: postgresql://slink:slink@localhost:5432/slink_e2e
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: ci-only-jwt-secret-not-used-anywhere-else
+      PAYMENT_SECRETS_KEY: ci-only-payment-secrets-key-32-characters-plus
+      IMAGE_MODERATION: 'off'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter api exec prisma generate
+      - run: pnpm --filter api exec tsc --noEmit -p tsconfig.json
+      - run: pnpm --filter api test
+      - run: pnpm --filter api test:e2e
+
+  console:
+    name: Console (types, translations)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter web-admin exec tsc --noEmit
+      - run: pnpm --filter web-admin check:i18n
+
+  mobile:
+    name: Mobile (analyze)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter gen-l10n
+      # Tests stay out until the 3 known failures (l10n_test, language_switch,
+      # widget_test) are fixed; then add: flutter test
+      - run: flutter analyze --no-fatal-infos
