@@ -21,9 +21,9 @@ export interface Subscription {
 }
 
 export const PLANS: { key: PlanKey; name: string; price: number; students: number; extraStudent: number }[] = [
-  { key: 'basic', name: 'Basic', price: 13333, students: 400, extraStudent: 40 },
-  { key: 'premium', name: 'Premium', price: 29999, students: 1000, extraStudent: 35 },
-  { key: 'premium_max', name: 'Premium Max', price: 60000, students: 2000, extraStudent: 30 },
+  { key: 'basic', name: 'Basic', price: 15000, students: 400, extraStudent: 40 },
+  { key: 'premium', name: 'Premium', price: 40000, students: 1000, extraStudent: 35 },
+  { key: 'premium_max', name: 'Premium Max', price: 65000, students: 2000, extraStudent: 30 },
 ];
 
 export const planName = (key: PlanKey) => PLANS.find((p) => p.key === key)?.name ?? key;

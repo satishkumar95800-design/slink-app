@@ -101,7 +101,7 @@ export function buildPricingPdf(
         0,
       );
       doc.font('regular').fontSize(8);
-      return 150 + doc.heightOfString(p.tagline, { width: inner }) + list;
+      return 166 + doc.heightOfString(p.tagline, { width: inner }) + list;
     });
     const cardH = Math.max(...heights);
     PLANS.forEach((p, i) => {
@@ -125,6 +125,28 @@ export function buildPricingPdf(
         .fillColor(MUTED)
         .text(p.tagline, x + pad, y, { width: inner });
       y = doc.y + 8;
+      // List price struck through, and the saving.
+      const was = formatRupees(p.listPrice);
+      doc.font('regular').fontSize(9.5).fillColor(MUTED);
+      const wasW = doc.widthOfString(was);
+      doc.text(was, x + pad, y, { lineBreak: false });
+      doc
+        .moveTo(x + pad, y + 5.5)
+        .lineTo(x + pad + wasW, y + 5.5)
+        .lineWidth(0.8)
+        .strokeColor(MUTED)
+        .stroke();
+      doc
+        .font('bold')
+        .fontSize(8.5)
+        .fillColor(CORAL)
+        .text(
+          `Save ${formatRupees(p.listPrice - p.price)}`,
+          x + pad + wasW + 8,
+          y + 0.5,
+          { lineBreak: false },
+        );
+      y += 14;
       doc
         .font('bold')
         .fontSize(20)
@@ -211,15 +233,20 @@ export function buildPricingPdf(
       doc.y += 2;
     }
 
+    const contact = () => {
+      const cy = doc.y;
+      doc.roundedRect(M, cy, width, 40, 6).fill(TINT);
+      doc
+        .font('bold')
+        .fontSize(10)
+        .fillColor(TEAL)
+        .text(CONTACT_LINE, M, cy + 14, { width, align: 'center' });
+    };
+    // On page 1 when it fits, else under the comparison table (never a page
+    // of its own).
     doc.moveDown(1.2);
-    if (doc.y + 50 > bottom()) doc.addPage();
-    const cy = doc.y;
-    doc.roundedRect(M, cy, width, 40, 6).fill(TINT);
-    doc
-      .font('bold')
-      .fontSize(10)
-      .fillColor(TEAL)
-      .text(CONTACT_LINE, M, cy + 14, { width, align: 'center' });
+    const contactOnFirstPage = doc.y + 50 <= bottom();
+    if (contactOnFirstPage) contact();
 
     // Comparison table
     doc.addPage();
@@ -270,7 +297,11 @@ export function buildPricingPdf(
           header();
         }
         const y = doc.y;
-        doc.fillColor(INK).text(label, M + 8, y + 4.5, { width: featW - 16 });
+        doc
+          .font('regular')
+          .fontSize(8.5)
+          .fillColor(INK)
+          .text(label, M + 8, y + 4.5, { width: featW - 16 });
         cells.forEach((cell, i) =>
           drawCell(doc, cell, M + featW + i * colW, y, colW, h),
         );
@@ -282,6 +313,11 @@ export function buildPricingPdf(
           .stroke();
         doc.y = y + h;
       }
+    }
+    if (!contactOnFirstPage) {
+      doc.y += 18;
+      if (doc.y + 50 > bottom()) doc.addPage();
+      contact();
     }
 
     // Schools with several branches (docs/SPEC-franchise.md §5)

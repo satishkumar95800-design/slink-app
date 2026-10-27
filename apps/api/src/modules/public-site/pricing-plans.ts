@@ -9,7 +9,9 @@ export const PRICING_FILENAME = `Schoolinkd_Plans_and_Pricing_${PRICING_YEAR}.pd
 export interface Plan {
   name: string;
   tagline: string;
-  /** Yearly price in rupees, before GST. */
+  /** Yearly list price in rupees, before GST (shown struck through). */
+  listPrice: number;
+  /** Yearly price the school pays, in rupees before GST (the offer price). */
   price: number;
   students: number;
   extraStudent: number;
@@ -22,15 +24,17 @@ export const PLANS: Plan[] = [
   {
     name: 'Basic',
     tagline: 'For small schools moving off paper and WhatsApp',
-    price: 13333,
+    listPrice: 30000,
+    price: 15000,
     students: 400,
     extraStudent: 40,
     highlights: [
-      'Parent and teacher mobile app (Android and iPhone)',
-      'Daily attendance with absence alerts to parents',
+      'Parent and teacher app with fingerprint unlock',
+      'Attendance with absence alerts to parents',
       'Notices and homework with "seen by" tracking',
-      'Fee structures, offline receipts and online payment',
-      'Automatic fee-due reminders',
+      'Fee receipts, online payment and reminders',
+      'Holiday morning alerts to parents',
+      'Principal’s day at a glance on the phone',
       'Progress reports to parents',
       'English, Kannada and Hindi',
     ],
@@ -38,15 +42,17 @@ export const PLANS: Plan[] = [
   {
     name: 'Premium',
     tagline: 'For growing schools that run office and accounts on it',
-    price: 29999,
+    listPrice: 65000,
+    price: 40000,
     students: 1000,
     extraStudent: 35,
     highlights: [
       'Everything in Basic',
       'Timetable with next-class reminders',
       'School calendar, events and PTMs',
+      'Consent forms for trips and events',
       'Fee concessions and transfer certificates',
-      'School bus routes with driver contact',
+      'School bus routes, driver contact, "Track the bus" link',
       'Shared documents, CSV reports',
       'Head office view for groups of schools',
       'School background and colours',
@@ -55,14 +61,17 @@ export const PLANS: Plan[] = [
   {
     name: 'Premium Max',
     tagline: 'For established schools that want payroll and AI',
-    price: 60000,
+    listPrice: 95000,
+    price: 65000,
     students: 2000,
     extraStudent: 30,
     highlights: [
       'Everything in Premium',
       'Admissions, front desk and syllabus progress',
-      'Petty cash, bus tracking, library, photo albums',
+      'Live bus tracking with arrival alerts',
+      'Library, photo albums and petty cash',
       'HR and payroll: PF, ESI, PT, payslips and leave',
+      'Emailed sign-in code (2-step login)',
       'AI assistant, notice translation, report remarks',
       'Early warnings and a Monday summary',
       'Named account manager, on-site training day',
@@ -91,17 +100,25 @@ export const COMPARISON: ComparisonGroup[] = [
       ['Push notifications', 'Unlimited', 'Unlimited', 'Unlimited'],
       ['Progress reports with read receipts', true, true, true],
       ['English, Kannada and Hindi', true, true, true],
+      ['Homework and notice photos safety-checked', true, true, true],
+      ['Holiday morning alerts to parents', true, true, true],
+      ['Staff who are also parents switch to a parent view', true, true, true],
       ['Timetable and next-class reminders', false, true, true],
       ['School calendar with events and PTMs', false, true, true],
+      ['Consent forms for trips and events', false, true, true],
       ['Shared staff documents', false, true, true],
       ['School bus routes, stops and driver contact', false, true, true],
-      ['Live bus tracking, library and photo albums', false, false, true],
+      ['Bus routes Excel import and "Track the bus" link', false, true, true],
+      ['Live bus tracking with arrival alerts', false, false, true],
+      ['Library (issue, return, fines, Excel import)', false, false, true],
+      ['Photo albums for parents, plus a staff folder', false, false, true],
     ],
   },
   {
     title: 'Attendance',
     rows: [
       ['Daily attendance with absence alerts', true, true, true],
+      ['Monthly class attendance view', true, true, true],
       ['Attendance report with CSV download', false, true, true],
     ],
   },
@@ -121,15 +138,44 @@ export const COMPARISON: ComparisonGroup[] = [
     rows: [
       ['Student records, parent linking and photos', true, true, true],
       ['Excel import of classes, staff, students and fees', true, true, true],
+      ['Automatic admission numbers', true, true, true],
+      [
+        'Principal’s mobile home: attendance, fees, approvals, urgent issues',
+        true,
+        true,
+        true,
+      ],
       ['Transfer certificates', false, true, true],
-      ['Admissions, front desk and syllabus progress', false, false, true],
       ['School background and colours', false, true, true],
+      ['Admissions pipeline and follow-ups', false, false, true],
+      [
+        'Front desk: visitors, calls, appointments, forms to print',
+        false,
+        false,
+        true,
+      ],
+      ['Syllabus progress with Excel import', false, false, true],
+    ],
+  },
+  {
+    title: 'Security',
+    rows: [
+      ['Each school’s data walled off, every change logged', true, true, true],
+      ['Fingerprint or face unlock in the app', true, true, true],
+      ['Login attempts limited, HTTPS everywhere', true, true, true],
+      ['Staff PAN, Aadhaar and bank details encrypted', false, 'Add-on', true],
+      ['Emailed sign-in code at console login (2-step)', false, false, true],
     ],
   },
   {
     title: 'HR, payroll and AI',
     rows: [
-      ['Staff records, leave and payroll (PF, ESI, PT, payslips)', false, 'Add-on', true],
+      [
+        'Staff records, leave and payroll (PF, ESI, PT, payslips)',
+        false,
+        'Add-on',
+        true,
+      ],
       ['AI assistant, translation and early warnings', false, 'Add-on', true],
     ],
   },

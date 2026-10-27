@@ -139,6 +139,6 @@ describe('SubscriptionsService', () => {
     const list = await service.renewals();
     expect(list).toHaveLength(1);
     expect(list[0].subscription.status).toBe('renewal_due');
-    expect(list[0].subscription.yearlyAmount.total).toBe(29999 + 18000);
+    expect(list[0].subscription.yearlyAmount.total).toBe(40000 + 18000);
   });
 });

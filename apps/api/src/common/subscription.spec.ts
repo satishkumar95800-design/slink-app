@@ -68,13 +68,13 @@ describe('subscription rules', () => {
     const features = { ...presetFlags('premium'), hrms: true };
     expect(addOnsOf('premium', features)).toEqual(['hrms']);
     expect(yearlyAmount('premium', features, 1100)).toEqual({
-      plan: 29999,
+      plan: 40000,
       addOns: 18000,
       extraStudents: 100,
       extraStudentsAmount: 3500,
-      total: 51499,
+      total: 61500,
     });
-    expect(yearlyAmount('basic', {}, 300).total).toBe(13333);
+    expect(yearlyAmount('basic', {}, 300).total).toBe(15000);
   });
 
   it('prices a group by branch size with a volume discount and a head office fee', () => {
@@ -112,7 +112,7 @@ describe('subscription rules', () => {
       groupPricing: false,
       discountPercent: 0,
       headOfficeFee: 15000,
-      branchesTotal: 2 * 29999,
+      branchesTotal: 2 * 40000,
     });
   });
 });
