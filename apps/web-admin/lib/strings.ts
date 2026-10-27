@@ -20,7 +20,7 @@ export const strings = {
       'Cash, cheque and online payments in one dashboard — plus a parent and teacher app for homework, notices, attendance and report cards.',
     bookDemo: 'Book a free demo on WhatsApp',
     schoolLogin: 'School Login',
-    heroNote: 'Free demo · Set up in a day · We import your data for you',
+    heroNote: 'Free demo · 14-day free trial · We import your data for you',
     stats: [
       { value: '1 day', label: 'To go live' },
       { value: '4', label: 'Payment modes tracked' },
@@ -160,7 +160,7 @@ export const strings = {
       eyebrow: 'Pricing',
       title: 'Three plans, one yearly price for your whole school',
       subtitle:
-        'Every plan includes the parent & teacher app, online fee payments with no commission, and free setup with your existing data.',
+        'Every plan includes the parent & teacher app, online fee payments with no commission, and free setup with your existing data. Try any plan free for 14 days.',
       popular: 'Most popular',
       upTo: (students: string) => `Up to ${students} students`,
       plans: [

@@ -91,6 +91,7 @@ export class PlatformDashboardService {
         plan: t.subscriptionPlan,
         features: (t.features ?? {}) as Record<string, unknown>,
         status: sub.status,
+        onTrial: t.onTrial,
         daysLeft: sub.daysLeft,
         yearlyTotal: sub.yearlyAmount.total,
         addOns: sub.addOns,

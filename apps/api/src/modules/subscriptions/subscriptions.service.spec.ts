@@ -97,6 +97,20 @@ describe('SubscriptionsService', () => {
     expect(audit[0].action).toBe('subscription.renew');
   });
 
+  it('turns a free trial into a paid year starting the day after the trial', async () => {
+    const { service, tenant, audit } = setup('2027-10-20');
+    tenant.onTrial = true;
+    const t = await service.renew(ID, { amount: 40000 }, ROOT);
+    expect(tenant.onTrial).toBe(false);
+    expect(t.subscription).toMatchObject({
+      startsOn: '2027-10-21',
+      endsOn: '2028-10-20',
+      status: 'active',
+      onTrial: false,
+    });
+    expect(audit[0].diff).toMatchObject({ fromTrial: true });
+  });
+
   it('renews a school switched off long ago from today', async () => {
     const { service } = setup('2027-08-01');
     const t = await service.renew(ID, {}, ROOT);

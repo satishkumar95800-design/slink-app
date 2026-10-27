@@ -18,9 +18,9 @@ export class TenantQueryDto {
   plan?: SubscriptionPlan;
 
   /** Derived subscription status (docs/SPEC-subscriptions.md). */
-  @IsIn(['active', 'renewal_due', 'grace', 'expired'])
+  @IsIn(['trial', 'active', 'renewal_due', 'grace', 'expired'])
   @IsOptional()
-  subscription?: 'active' | 'renewal_due' | 'grace' | 'expired';
+  subscription?: 'trial' | 'active' | 'renewal_due' | 'grace' | 'expired';
 
   @Type(() => Number)
   @IsInt()

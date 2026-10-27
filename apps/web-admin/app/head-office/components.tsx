@@ -29,7 +29,7 @@ export function UnavailableNote({ b }: { b: Branch }) {
 export function StatusBadge({ b }: { b: Branch }) {
   const t = useTranslations('headOffice');
   if (b.status === 'active') return null;
-  const variant = b.status === 'renewal_due' ? 'yellow' : b.status === 'grace' ? 'orange' : 'red';
+  const variant = b.status === 'trial' ? 'blue' : b.status === 'renewal_due' ? 'yellow' : b.status === 'grace' ? 'orange' : 'red';
   return <Badge variant={variant}>{t(`status.${b.status}`)}</Badge>;
 }
 

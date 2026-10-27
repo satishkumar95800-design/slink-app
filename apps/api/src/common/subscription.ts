@@ -126,6 +126,8 @@ export function yearlyAmount(
 
 export const RENEWAL_WINDOW_DAYS = 30;
 export const GRACE_DAYS = 7;
+/** A new school's free trial, counting the first day. */
+export const TRIAL_DAYS = 14;
 
 const ymdToUtc = (ymd: string) => Date.parse(`${ymd}T00:00:00Z`);
 const utcToYmd = (ms: number) => new Date(ms).toISOString().slice(0, 10);
@@ -152,7 +154,8 @@ export function daysFromTo(from: string, to: string): number {
   return Math.round((ymdToUtc(to) - ymdToUtc(from)) / 86_400_000);
 }
 
-export type SubscriptionStatus = 'active' | 'renewal_due' | 'grace' | 'expired';
+export type SubscriptionStatus =
+  'trial' | 'active' | 'renewal_due' | 'grace' | 'expired';
 
 export interface SubscriptionState {
   status: SubscriptionStatus;
@@ -162,11 +165,24 @@ export interface SubscriptionState {
   graceDaysLeft: number | null;
 }
 
+/** The last day of a free trial starting on `startsOn` (14 days in all). */
+export function trialEndsOn(startsOn: string): string {
+  return addDays(startsOn, TRIAL_DAYS - 1);
+}
+
 export function subscriptionState(
   endsOn: string,
   today: string,
+  /** A free trial: `trial` until its last day, then expired at once (no grace). */
+  trial = false,
 ): SubscriptionState {
   const daysLeft = daysFromTo(today, endsOn);
+  if (trial)
+    return {
+      status: daysLeft >= 0 ? 'trial' : 'expired',
+      daysLeft,
+      graceDaysLeft: null,
+    };
   if (daysLeft > RENEWAL_WINDOW_DAYS)
     return { status: 'active', daysLeft, graceDaysLeft: null };
   if (daysLeft >= 0)
@@ -177,12 +193,16 @@ export function subscriptionState(
 }
 
 /**
- * The period a renewal starts: the day after the current end, or today when
- * the school has been switched off (past the grace period) for a while.
+ * The period a renewal starts: the day after the current end (or the trial's
+ * last day), or today when the school has been switched off for a while.
  */
-export function nextPeriodStart(currentEndsOn: string, today: string): string {
+export function nextPeriodStart(
+  currentEndsOn: string,
+  today: string,
+  trial = false,
+): string {
   const next = addDays(currentEndsOn, 1);
-  return subscriptionState(currentEndsOn, today).status === 'expired'
+  return subscriptionState(currentEndsOn, today, trial).status === 'expired'
     ? today
     : next;
 }

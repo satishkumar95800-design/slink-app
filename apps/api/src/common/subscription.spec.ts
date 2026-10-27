@@ -6,6 +6,7 @@ import {
   oneYearFrom,
   presetFlags,
   subscriptionState,
+  trialEndsOn,
   yearlyAmount,
 } from './subscription';
 
@@ -37,6 +38,28 @@ describe('subscription rules', () => {
       graceDaysLeft: 0,
     });
     expect(subscriptionState(ends, '2027-10-24').status).toBe('expired');
+  });
+
+  it('a free trial is 14 days, has no renewal window and no grace', () => {
+    expect(trialEndsOn('2026-10-27')).toBe('2026-11-09');
+    expect(subscriptionState('2026-11-09', '2026-10-27', true)).toMatchObject({
+      status: 'trial',
+      daysLeft: 13,
+      graceDaysLeft: null,
+    });
+    expect(subscriptionState('2026-11-09', '2026-11-09', true).status).toBe(
+      'trial',
+    );
+    expect(subscriptionState('2026-11-09', '2026-11-10', true).status).toBe(
+      'expired',
+    );
+    // The paid year starts the day after a running trial, today once it ran out.
+    expect(nextPeriodStart('2026-11-09', '2026-11-01', true)).toBe(
+      '2026-11-10',
+    );
+    expect(nextPeriodStart('2026-11-09', '2026-11-12', true)).toBe(
+      '2026-11-12',
+    );
   });
 
   it('starts a renewal after the current end, or today once switched off', () => {

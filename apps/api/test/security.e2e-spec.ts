@@ -401,3 +401,32 @@ describe('marketing site (no school)', () => {
     await http().get('/v1/platform/contact-requests').set(auth).expect(200);
   });
 });
+
+describe('free trial', () => {
+  const day = (offset: number) => new Date(Date.now() + offset * 86_400_000);
+  const trialSchool = async (slug: string, endsOn: Date) => {
+    const t = await prisma.tenant.create({
+      data: { slug, name: slug, onTrial: true, subscriptionEndsOn: endsOn },
+    });
+    const admin = await prisma.user.create({
+      data: { tenantId: t.id, role: Role.admin, name: slug, isVerified: true },
+    });
+    return token(admin.id, t.id, Role.admin);
+  };
+
+  it('works while the trial runs', async () => {
+    const tok = await trialSchool('trial-on', day(5));
+    await http().get('/v1/students').set(as(tok, 'trial-on')).expect(200);
+  });
+
+  it('switches the school off the day after the trial, with no grace', async () => {
+    const tok = await trialSchool('trial-over', day(-2));
+    const res = await http()
+      .get('/v1/students')
+      .set(as(tok, 'trial-over'))
+      .expect(403);
+    expect((res.body as { error: { code: string } }).error.code).toBe(
+      'SUBSCRIPTION_EXPIRED',
+    );
+  });
+});

@@ -84,7 +84,8 @@ export class SubscriptionsService {
     const t = await this.require(tenantId);
     const today = todayIn(t.timezone || 'Asia/Kolkata');
     const previousEndsOn = fromDbDate(t.subscriptionEndsOn);
-    const startsOn = nextPeriodStart(previousEndsOn, today);
+    // A trial's paid year starts the day after the trial (today if it ran out).
+    const startsOn = nextPeriodStart(previousEndsOn, today, t.onTrial);
     const endsOn = dto.endsOn ?? oneYearFrom(startsOn);
     this.assertPeriod(startsOn, endsOn);
     const plan: SubscriptionPlan = dto.plan ?? t.subscriptionPlan;
@@ -95,6 +96,7 @@ export class SubscriptionsService {
           subscriptionPlan: plan,
           subscriptionStartsOn: toDbDate(startsOn),
           subscriptionEndsOn: toDbDate(endsOn),
+          onTrial: false,
           ...(dto.plan &&
             dto.plan !== t.subscriptionPlan && {
               features: mergedFlags(t, dto.plan),
@@ -123,6 +125,7 @@ export class SubscriptionsService {
         startsOn,
         endsOn,
         amount: dto.amount ?? null,
+        ...(t.onTrial && { fromTrial: true }),
       });
       return updated;
     });

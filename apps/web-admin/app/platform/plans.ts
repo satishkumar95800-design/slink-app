@@ -6,7 +6,7 @@
  */
 
 export type PlanKey = 'basic' | 'premium' | 'premium_max';
-export type SubscriptionStatus = 'active' | 'renewal_due' | 'grace' | 'expired';
+export type SubscriptionStatus = 'trial' | 'active' | 'renewal_due' | 'grace' | 'expired';
 
 export interface Subscription {
   plan: PlanKey;
@@ -14,6 +14,8 @@ export interface Subscription {
   startsOn: string;
   endsOn: string;
   status: SubscriptionStatus;
+  /** Free trial (still running, or ended without a renewal). */
+  onTrial?: boolean;
   daysLeft: number;
   graceDaysLeft: number | null;
   addOns: string[];
@@ -75,6 +77,7 @@ export const presetFlags = (plan: PlanKey) =>
   Object.fromEntries(MODULES.map((m) => [m.key, PRESETS[plan].includes(m.key)])) as Record<ModuleKey, boolean>;
 
 export const STATUS_LABEL: Record<SubscriptionStatus, string> = {
+  trial: 'Free trial',
   active: 'Active',
   renewal_due: 'Renewal due',
   grace: 'Grace period',
@@ -82,6 +85,7 @@ export const STATUS_LABEL: Record<SubscriptionStatus, string> = {
 };
 
 export const STATUS_VARIANT = {
+  trial: 'blue',
   active: 'green',
   renewal_due: 'yellow',
   grace: 'orange',
@@ -116,6 +120,10 @@ export const todayYmd = () => {
 };
 
 /** Mirrors the API: the day before the same date next year (29 Feb → 28 Feb). */
+/** A new school's free trial, counting the first day (API TRIAL_DAYS). */
+export const TRIAL_DAYS = 14;
+export const trialEndsOn = (start: string) => addDays(start, TRIAL_DAYS - 1);
+
 export function oneYearFrom(start: string) {
   const [y, m, d] = start.split('-').map(Number);
   if (m === 2 && d === 29) return `${y + 1}-02-28`;

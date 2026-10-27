@@ -1,5 +1,5 @@
 import { SubscriptionPlan } from '@prisma/client';
-import { IsEnum, IsString, IsOptional, Matches, MinLength, MaxLength, IsHexColor } from 'class-validator';
+import { IsBoolean, IsEnum, IsString, IsOptional, Matches, MinLength, MaxLength, IsHexColor } from 'class-validator';
 
 export class CreateTenantDto {
   /** URL-safe slug: lowercase letters, digits, hyphens. e.g. "greenfield-school" */
@@ -38,4 +38,9 @@ export class CreateTenantDto {
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'startsOn must be YYYY-MM-DD' })
   @IsOptional()
   startsOn?: string;
+
+  /** A 14-day free trial (TRIAL_DAYS) instead of a paid year; a renewal makes it paid. */
+  @IsBoolean()
+  @IsOptional()
+  trial?: boolean;
 }

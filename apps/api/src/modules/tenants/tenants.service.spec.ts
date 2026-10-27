@@ -88,6 +88,16 @@ describe('TenantsService', () => {
       expect(data.features).toMatchObject({ transportFeeModule: true, calendar: true, syllabus: false, hrms: false });
     });
 
+    it('starts a 14-day free trial when asked', async () => {
+      mockPrisma.tenant.findUnique.mockResolvedValue(null);
+      mockPrisma.tenant.create.mockResolvedValue(makeTenant());
+
+      await service.create({ ...dto, plan: 'premium_max', startsOn: '2026-10-27', trial: true });
+      const data = mockPrisma.tenant.create.mock.calls[0][0].data;
+      expect(data.onTrial).toBe(true);
+      expect(data.subscriptionEndsOn).toEqual(new Date('2026-11-09T00:00:00Z'));
+    });
+
     it('applies defaults for timezone and colors', async () => {
       mockPrisma.tenant.findUnique.mockResolvedValue(null);
       mockPrisma.tenant.create.mockResolvedValue(makeTenant());

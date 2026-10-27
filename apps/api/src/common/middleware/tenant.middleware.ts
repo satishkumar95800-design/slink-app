@@ -48,7 +48,12 @@ export class TenantMiddleware implements NestMiddleware {
       where: isUuid
         ? { id: tenantId, isActive: true }
         : { slug: tenantId, isActive: true },
-      select: { id: true, timezone: true, subscriptionEndsOn: true },
+      select: {
+        id: true,
+        timezone: true,
+        subscriptionEndsOn: true,
+        onTrial: true,
+      },
     });
 
     if (!tenant) {
@@ -63,6 +68,7 @@ export class TenantMiddleware implements NestMiddleware {
     const { status } = subscriptionState(
       fromDbDate(tenant.subscriptionEndsOn),
       todayIn(tenant.timezone || 'Asia/Kolkata'),
+      tenant.onTrial,
     );
     if (status === 'expired' && !this.isSuperAdmin(req)) {
       throw new ForbiddenException({

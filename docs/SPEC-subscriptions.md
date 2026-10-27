@@ -52,6 +52,13 @@ Status (derived, never stored), with `today` in the school's timezone:
 - `is_active` (the manual on/off switch on the Settings tab) is unchanged and separate: a manually deactivated school answers `SCHOOL_NOT_FOUND` as today.
 - The console and the mobile app translate `SUBSCRIPTION_EXPIRED`: "This school's Schoolinkd subscription has ended. Please contact the school office." (en/kn/hi).
 
+### Free trial (14 days)
+
+- The super admin may create a school "with a 14-day free trial" (`POST /tenants` `trial: true`, any plan; Premium Max lets it try every module). `tenants.on_trial` is set and `subscription_ends_on` = start + 13 days (`TRIAL_DAYS` = 14, counting the first day).
+- Status `trial` from the start to the last day (no `renewal_due`); the school's admin and accounts users see a banner: "Free trial: N days left · Your trial ends on DD/MM/YYYY…". The day after the last day the status is `expired` at once: there is **no grace** after a trial.
+- "Start paid year" (the renewal, `POST /tenants/:id/renew`) clears `on_trial` and starts the paid year the day after the trial, or today if the trial has run out; the audit entry carries `fromTrial`. Editing the dates keeps the school on trial (a way to extend one).
+- Trials are not revenue: the platform dashboard leaves them out of contracted, due and overdue amounts and lists them, running or ended, under "Free trials".
+
 ## 4. Renewal
 
 - `POST /tenants/:id/renew` (super_admin) with `{ plan?, endsOn?, amount?, reference?, note? }`.

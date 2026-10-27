@@ -20,6 +20,8 @@ export interface SchoolFacts {
   plan: SubscriptionPlan;
   features: Record<string, unknown>;
   status: SubscriptionStatus;
+  /** On a free trial (still running, or ended without a renewal). */
+  onTrial?: boolean;
   daysLeft: number;
   yearlyTotal: number;
   addOns: string[];
@@ -33,6 +35,7 @@ export interface SchoolFacts {
 
 export type SuggestionKind =
   | 'renew_soon'
+  | 'trials'
   | 'switched_off'
   | 'extra_students'
   | 'upgrade_premium'
@@ -66,7 +69,9 @@ export function buildDashboard(
   headOfficeFees = 0,
 ) {
   const live = schools.filter((s) => s.isActive);
-  const billable = live.filter((s) => s.status !== 'expired');
+  // A trial pays nothing yet: no revenue, nothing overdue.
+  const billable = live.filter((s) => s.status !== 'expired' && !s.onTrial);
+  const paying = live.filter((s) => !s.onTrial);
   const byPlan = { basic: 0, premium: 0, premium_max: 0 } as Record<
     SubscriptionPlan,
     number
@@ -76,6 +81,7 @@ export function buildDashboard(
     number
   >;
   const byStatus: Record<SubscriptionStatus, number> = {
+    trial: 0,
     active: 0,
     renewal_due: 0,
     grace: 0,
@@ -102,10 +108,10 @@ export function buildDashboard(
     contracted: sum(billable) + headOfficeFees,
     headOfficeFees,
     byPlan: revenueByPlan,
-    dueIn30: sum(live.filter((s) => s.daysLeft >= 0 && s.daysLeft <= 30)),
-    dueIn90: sum(live.filter((s) => s.daysLeft >= 0 && s.daysLeft <= 90)),
+    dueIn30: sum(paying.filter((s) => s.daysLeft >= 0 && s.daysLeft <= 30)),
+    dueIn90: sum(paying.filter((s) => s.daysLeft >= 0 && s.daysLeft <= 90)),
     overdue: sum(
-      live.filter((s) => s.status === 'grace' || s.status === 'expired'),
+      paying.filter((s) => s.status === 'grace' || s.status === 'expired'),
     ),
   };
 
@@ -132,7 +138,27 @@ export function buildDashboard(
     })),
   });
 
-  const off = live.filter((s) => s.status === 'expired');
+  const trials = live
+    .filter((s) => s.onTrial)
+    .sort((a, b) => a.daysLeft - b.daysLeft);
+  add({
+    kind: 'trials',
+    tone: 'opportunity',
+    title: 'Free trials',
+    detail:
+      'Schools on the 14-day trial. Call them before it ends; marking one renewed starts its paid year.',
+    amount: sum(trials),
+    schools: trials.map((s) => ({
+      id: s.id,
+      name: s.name,
+      value:
+        s.daysLeft >= 0
+          ? `${s.daysLeft} days left · ${inr(s.yearlyTotal)}`
+          : `Ended ${-s.daysLeft} days ago · ${inr(s.yearlyTotal)}`,
+    })),
+  });
+
+  const off = paying.filter((s) => s.status === 'expired');
   add({
     kind: 'switched_off',
     tone: 'danger',

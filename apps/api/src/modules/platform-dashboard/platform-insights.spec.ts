@@ -125,4 +125,25 @@ describe('platform dashboard rules', () => {
     expect(d.revenue.contracted).toBe(29999);
     expect(d.revenue.overdue).toBe(29999);
   });
+
+  it('lists free trials, running or ended, without counting them as revenue or switched off', () => {
+    const d = buildDashboard(
+      [
+        school({ name: 'paid' }),
+        school({ name: 't1', onTrial: true, status: 'trial', daysLeft: 3 }),
+        school({ name: 't2', onTrial: true, status: 'expired', daysLeft: -2 }),
+      ],
+      { last7: 0, last30: 0 },
+    );
+    expect(d.totals.byStatus).toMatchObject({ trial: 1, expired: 1 });
+    expect(d.revenue).toMatchObject({ contracted: 29999, overdue: 0 });
+    const kinds = d.suggestions.map((s) => s.kind);
+    expect(kinds).toContain('trials');
+    expect(kinds).not.toContain('switched_off');
+    expect(
+      d.suggestions
+        .find((s) => s.kind === 'trials')!
+        .schools.map((s) => s.value),
+    ).toEqual(['Ended 2 days ago · ₹29,999', '3 days left · ₹29,999']);
+  });
 });

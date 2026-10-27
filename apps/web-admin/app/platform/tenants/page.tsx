@@ -25,7 +25,9 @@ import {
   dmy,
   inr,
   oneYearFrom,
+  TRIAL_DAYS,
   todayYmd,
+  trialEndsOn,
 } from '../plans';
 
 interface Tenant {
@@ -48,6 +50,7 @@ const schema = z.object({
   name: z.string().min(2, 'Name is required'),
   plan: z.enum(['basic', 'premium', 'premium_max']),
   startsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Choose a date'),
+  trial: z.boolean(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -76,7 +79,7 @@ export default function TenantsListPage() {
     reset,
     formState: { errors, isSubmitting },
     watch,
-  } = useForm<FormData>({ resolver: zodResolver(schema), defaultValues: { plan: 'basic', startsOn: todayYmd() } });
+  } = useForm<FormData>({ resolver: zodResolver(schema), defaultValues: { plan: 'basic', startsOn: todayYmd(), trial: false } });
   const chosenPlan = PLANS.find((p) => p.key === watch('plan'));
   const startsOn = watch('startsOn');
 
@@ -109,7 +112,7 @@ export default function TenantsListPage() {
       const tenant = await api.post<Tenant>('/tenants', data);
       toast(`"${tenant.name}" created`, 'success');
       setShowModal(false);
-      reset({ plan: 'basic', startsOn: todayYmd(), name: '', slug: '' });
+      reset({ plan: 'basic', startsOn: todayYmd(), trial: false, name: '', slug: '' });
       router.push(`/platform/tenants/${tenant.id}`);
     } catch (err) {
       toast(err instanceof ApiError ? err.message : 'Could not create tenant', 'error');
@@ -256,11 +259,18 @@ export default function TenantsListPage() {
             error={errors.startsOn?.message}
             helpText={
               chosenPlan && startsOn
-                ? `Runs one year, until ${dmy(oneYearFrom(startsOn))}. ${chosenPlan.key === 'basic' ? 'Core features only; modules can be added later.' : `${chosenPlan.name} modules are switched on.`}`
+                ? `${watch('trial') ? `Free trial for ${TRIAL_DAYS} days, until ${dmy(trialEndsOn(startsOn))}; switched off the day after unless its paid year is started.` : `Runs one year, until ${dmy(oneYearFrom(startsOn))}.`} ${chosenPlan.key === 'basic' ? 'Core features only; modules can be added later.' : `${chosenPlan.name} modules are switched on.`}`
                 : undefined
             }
             {...register('startsOn')}
           />
+          <label className="flex items-start gap-2 text-sm text-gray-800">
+            <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-teal" {...register('trial')} />
+            <span>
+              <span className="font-semibold">Start with a {TRIAL_DAYS}-day free trial</span>
+              <span className="block text-xs text-gray-500">Pick Premium Max to let the school try every module.</span>
+            </span>
+          </label>
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={() => setShowModal(false)}>
               Cancel

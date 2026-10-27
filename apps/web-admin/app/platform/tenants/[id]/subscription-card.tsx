@@ -56,7 +56,7 @@ export function SubscriptionCard({
             Edit dates
           </Button>
           <Button size="sm" onClick={() => setRenewing(true)}>
-            Mark renewed
+            {s.onTrial ? 'Start paid year' : 'Mark renewed'}
           </Button>
         </div>
       </div>
@@ -81,7 +81,9 @@ export function SubscriptionCard({
         <div>
           <dt className="text-xs font-semibold uppercase tracking-wider text-gray-500">When it ends</dt>
           <dd className="mt-0.5 text-xs text-gray-600">
-            Renewals list from 30 days before. 7 days of grace after the end date, then the school is switched off until renewed.
+            {s.onTrial
+              ? 'Free trial: no grace. The day after it ends the school is switched off until its paid year starts.'
+              : 'Renewals list from 30 days before. 7 days of grace after the end date, then the school is switched off until renewed.'}
           </dd>
         </div>
       </dl>
@@ -89,6 +91,11 @@ export function SubscriptionCard({
       {s.status === 'grace' && (
         <p className="mt-3 rounded-xl bg-orange-50 px-3 py-2 text-sm text-orange-900">
           In grace: the school is switched off in {s.graceDaysLeft} day{s.graceDaysLeft === 1 ? '' : 's'} unless renewed.
+        </p>
+      )}
+      {s.status === 'trial' && (
+        <p className="mt-3 rounded-xl bg-teal/5 px-3 py-2 text-sm text-teal">
+          On a free trial. &ldquo;Start paid year&rdquo; begins the paid year the day after the trial (today if it has ended).
         </p>
       )}
       {s.status === 'expired' && (

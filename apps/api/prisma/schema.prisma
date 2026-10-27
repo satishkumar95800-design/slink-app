@@ -206,6 +206,8 @@ model Tenant {
   subscriptionPlan     SubscriptionPlan @default(basic) @map("subscription_plan")
   subscriptionStartsOn DateTime         @default(dbgenerated("CURRENT_DATE")) @map("subscription_starts_on") @db.Date
   subscriptionEndsOn   DateTime         @default(dbgenerated("((CURRENT_DATE + '1 year'::interval) - '1 day'::interval)")) @map("subscription_ends_on") @db.Date
+  /// Free trial (TRIAL_DAYS): no grace after it ends; a renewal makes it a paid period.
+  onTrial              Boolean          @default(false) @map("on_trial")
   /// Franchise / group the school belongs to (head office view), if any.
   groupId              String?          @map("group_id") @db.Uuid
   createdAt          DateTime @default(now()) @map("created_at")

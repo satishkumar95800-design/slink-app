@@ -2086,6 +2086,8 @@
   },
   "subscription": {
     "graceTitle": "Your Schoolinkd subscription ended on {date}.",
+    "trialTitle": "Free trial: {days, plural, =0 {last day today} =1 {1 day left} other {# days left}}",
+    "trialBody": "Your trial ends on {date}. To keep using Schoolinkd after that, contact the Schoolinkd team to choose a plan.",
     "graceBody": "{days, plural, =0 {Renew today to avoid interruption: the school will be switched off tomorrow.} =1 {Renew within 1 day to avoid interruption.} other {Renew within # days to avoid interruption.}} Contact the Schoolinkd team to renew."
   },
   "headOffice": {
@@ -2124,6 +2126,7 @@
     "notIncluded": "Not included in the {plan} plan",
     "switchedOff": "Switched off: subscription not renewed",
     "status": {
+      "trial": "Free trial",
       "active": "Active",
       "renewal_due": "Renewal due",
       "grace": "Grace period",

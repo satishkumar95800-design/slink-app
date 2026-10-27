@@ -40,6 +40,7 @@ const TONE = {
 } as const;
 
 const STATUS_TONE: Record<SubscriptionStatus, string> = {
+  trial: 'text-teal',
   active: 'text-emerald-700',
   renewal_due: 'text-amber-700',
   grace: 'text-orange-700',
@@ -80,7 +81,7 @@ export default function PlatformDashboardPage() {
     );
 
   const { totals, revenue } = data;
-  const statuses: SubscriptionStatus[] = ['active', 'renewal_due', 'grace', 'expired'];
+  const statuses: SubscriptionStatus[] = ['trial', 'active', 'renewal_due', 'grace', 'expired'];
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div>

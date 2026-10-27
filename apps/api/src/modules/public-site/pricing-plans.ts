@@ -197,6 +197,7 @@ export const ADD_ONS: [string, number][] = [
 ];
 
 export const TERMS = [
+  'Every plan starts with a 14-day free trial. Nothing is charged unless the school continues; if it does not, the school is switched off when the trial ends.',
   'Prices are per school per year and exclude 18% GST.',
   'Billed yearly in advance from the start of the academic year.',
   'Setup, import of your existing Excel data and online staff training are free.',

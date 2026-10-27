@@ -20,6 +20,7 @@ import {
   branchListPrice,
   groupDiscount,
   oneYearFrom,
+  trialEndsOn,
   presetFlags,
   subscriptionState,
   yearlyAmount,
@@ -43,6 +44,7 @@ export const tenantSelect = {
   subscriptionPlan: true,
   subscriptionStartsOn: true,
   subscriptionEndsOn: true,
+  onTrial: true,
   groupId: true,
   group: { select: { id: true, name: true, _count: { select: { tenants: true } } } },
   createdAt: true,
@@ -69,7 +71,8 @@ export function subscriptionView(t: TenantRow) {
     planName: PLAN_LABEL[t.subscriptionPlan],
     startsOn: fromDbDate(t.subscriptionStartsOn),
     endsOn,
-    ...subscriptionState(endsOn, todayIn(t.timezone || 'Asia/Kolkata')),
+    onTrial: t.onTrial,
+    ...subscriptionState(endsOn, todayIn(t.timezone || 'Asia/Kolkata'), t.onTrial),
     addOns: addOnsOf(t.subscriptionPlan, features),
     yearlyAmount: branchAmount(t, features),
   };
@@ -110,7 +113,7 @@ export class TenantsService {
     private readonly files: FilesService,
   ) {}
 
-  /** A new school on the chosen plan (default Basic), subscribed for a year from today. */
+  /** A new school on the chosen plan (default Basic), subscribed for a year from today, or on a 14-day free trial (`trial`). */
   async create(dto: CreateTenantDto) {
     const existing = await this.prisma.tenant.findUnique({ where: { slug: dto.slug } });
     if (existing) throw new ConflictException(`Slug "${dto.slug}" is already taken`);
@@ -128,7 +131,8 @@ export class TenantsService {
           accentColor: dto.accentColor ?? '#F59E0B',
           subscriptionPlan: plan,
           subscriptionStartsOn: toDbDate(startsOn),
-          subscriptionEndsOn: toDbDate(oneYearFrom(startsOn)),
+          subscriptionEndsOn: toDbDate(dto.trial ? trialEndsOn(startsOn) : oneYearFrom(startsOn)),
+          onTrial: dto.trial ?? false,
           features: { ...BASE_FEATURES, ...presetFlags(plan) },
         },
         select: tenantSelect,

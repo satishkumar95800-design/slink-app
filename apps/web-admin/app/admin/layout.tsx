@@ -21,7 +21,7 @@ interface TenantBrand {
   logoUrl: string | null;
   backgroundImageUrl: string | null;
   /** Plan and end date; drives the grace-period banner (docs/SPEC-subscriptions.md). */
-  subscription?: { status: string; endsOn: string; graceDaysLeft: number | null };
+  subscription?: { status: string; endsOn: string; daysLeft: number; graceDaysLeft: number | null };
 }
 
 /** Header title (shown when the school's name hasn't loaded) — keys into messages "nav". */
@@ -173,6 +173,7 @@ function AdminShell({ children }: { children: ReactNode }) {
             }
           >
             {tenant?.subscription?.status === 'grace' && <GraceBanner endsOn={tenant.subscription.endsOn} daysLeft={tenant.subscription.graceDaysLeft ?? 0} />}
+            {tenant?.subscription?.status === 'trial' && <TrialBanner endsOn={tenant.subscription.endsOn} daysLeft={tenant.subscription.daysLeft} />}
             {children}
           </main>
         </div>
@@ -238,14 +239,33 @@ function LogoutButton() {
   );
 }
 
-/** Admin and accounts see this during the 7 days after the subscription's end date. */
-function GraceBanner({ endsOn, daysLeft }: { endsOn: string; daysLeft: number }) {
-  const t = useTranslations('subscription');
+/** The signed-in role, read after hydration (null before). */
+function useRole() {
   const [role, setRole] = useState<string | null>(null);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- session is read after hydration
     setRole(getSession()?.role ?? null);
   }, []);
+  return role;
+}
+
+/** Admin and accounts see how long the school's free trial has left. */
+function TrialBanner({ endsOn, daysLeft }: { endsOn: string; daysLeft: number }) {
+  const t = useTranslations('subscription');
+  const role = useRole();
+  if (role !== 'admin' && role !== 'accounts') return null;
+  return (
+    <div role="status" className={`mb-4 rounded-2xl border px-4 py-3 text-sm ${daysLeft <= 3 ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-teal/20 bg-teal/5 text-teal'}`}>
+      <p className="font-semibold">{t('trialTitle', { days: daysLeft })}</p>
+      <p className="mt-0.5">{t('trialBody', { date: formatDateOnly(endsOn) })}</p>
+    </div>
+  );
+}
+
+/** Admin and accounts see this during the 7 days after the subscription's end date. */
+function GraceBanner({ endsOn, daysLeft }: { endsOn: string; daysLeft: number }) {
+  const t = useTranslations('subscription');
+  const role = useRole();
   if (role !== 'admin' && role !== 'accounts') return null;
   return (
     <div role="alert" className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">

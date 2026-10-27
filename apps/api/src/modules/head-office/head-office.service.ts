@@ -40,6 +40,7 @@ const branchSelect = {
   features: true,
   subscriptionPlan: true,
   subscriptionEndsOn: true,
+  onTrial: true,
   _count: { select: { students: true } },
 } satisfies Prisma.TenantSelect;
 type BranchRow = Prisma.TenantGetPayload<{ select: typeof branchSelect }>;
@@ -491,6 +492,7 @@ export class HeadOfficeService {
     const { status } = subscriptionState(
       fromDbDate(b.subscriptionEndsOn),
       todayIn(b.timezone || 'Asia/Kolkata'),
+      b.onTrial,
     );
     const included = INCLUDED.includes(b.subscriptionPlan);
     return {

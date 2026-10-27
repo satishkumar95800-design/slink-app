@@ -1,4 +1,4 @@
-export type SubscriptionStatus = 'active' | 'renewal_due' | 'grace' | 'expired';
+export type SubscriptionStatus = 'trial' | 'active' | 'renewal_due' | 'grace' | 'expired';
 
 export interface BranchMetrics {
   students: number;
