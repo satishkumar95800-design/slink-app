@@ -161,6 +161,12 @@ const KNOWN_CODES = [
   'VOID_NOT_ALLOWED',
   'ALREADY_VOID',
   'DOCUMENT_UNKNOWN',
+  'BRIEF_LIMIT',
+  'NO_FINDINGS',
+  'MONTH_TOO_OLD',
+  'MONTH_IN_FUTURE',
+  'ALREADY_VOIDED',
+  'PAYMENT_NOT_FOUND',
 ] as const;
 type KnownCode = (typeof KNOWN_CODES)[number];
 

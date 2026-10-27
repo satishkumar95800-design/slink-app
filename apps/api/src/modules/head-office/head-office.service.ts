@@ -24,6 +24,7 @@ import { funnelFor } from '../admissions/admissions.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { BroadcastTarget } from '../notifications/dto/broadcast-notification.dto';
 import { CreateCircularDto } from './dto/groups.dto';
+import type { BranchFacts } from './group-insights';
 
 const err = (code: string, message: string) => ({ code, message });
 
@@ -469,10 +470,77 @@ export class HeadOfficeService {
     }
   }
 
+  // ── for insights and royalties ───────────────────────────────────────────
+
+  /** The group's branches that show data (plan includes it, not switched off). */
+  async liveBranches(groupId: string) {
+    const branches = await this.prisma.tenant.findMany({
+      where: { groupId },
+      select: branchSelect,
+      orderBy: { name: 'asc' },
+    });
+    return branches.filter((b) => this.access(b).available);
+  }
+
+  /** What the insights rules need for each live branch (group-insights.ts). */
+  async insightFacts(group: {
+    id: string;
+    attendanceCutoff: string;
+  }): Promise<BranchFacts[]> {
+    const live = await this.liveBranches(group.id);
+    if (live.length === 0) return [];
+    const ids = live.map((b) => b.id);
+    const metrics = await this.metrics(live, group.attendanceCutoff);
+    const today = todayIn('Asia/Kolkata');
+    const d30 = toDbDate(addDays(today, -30));
+    const d60 = toDbDate(addDays(today, -60));
+    const [prevAttendance, money] = await Promise.all([
+      this.prisma.attendanceRecord.groupBy({
+        by: ['tenantId', 'status'],
+        where: {
+          tenantId: { in: ids },
+          date: {
+            gte: toDbDate(addDays(today, -59)),
+            lte: toDbDate(addDays(today, -30)),
+          },
+        },
+        _count: { _all: true },
+      }),
+      this.prisma.$queryRaw<
+        {
+          tenant_id: string;
+          last30: Prisma.Decimal | null;
+          prev30: Prisma.Decimal | null;
+        }[]
+      >`
+        SELECT tenant_id,
+               SUM(amount) FILTER (WHERE paid_on > ${d30}) AS last30,
+               SUM(amount) FILTER (WHERE paid_on <= ${d30}) AS prev30
+        FROM receipts
+        WHERE tenant_id = ANY(${ids}::uuid[]) AND paid_on > ${d60}
+        GROUP BY tenant_id`,
+    ]);
+    const prev = new Map<string, AttendanceCounts>();
+    for (const r of prevAttendance) {
+      const c = prev.get(r.tenantId) ?? emptyCounts();
+      c[r.status] += r._count._all;
+      prev.set(r.tenantId, c);
+    }
+    const moneyBy = new Map(money.map((m) => [m.tenant_id, m]));
+    return live.map((b) => ({
+      id: b.id,
+      name: b.name,
+      metrics: metrics.get(b.id)!,
+      attendancePrev30: attendancePct(prev.get(b.id) ?? emptyCounts()),
+      collectedLast30: Number(moneyBy.get(b.id)?.last30 ?? 0),
+      collectedPrev30: Number(moneyBy.get(b.id)?.prev30 ?? 0),
+    }));
+  }
+
   // ── internals ─────────────────────────────────────────────────────────────
 
   /** The signed-in head office user's group, read from their own row. */
-  private async groupOf(user: ActiveUser) {
+  async groupOf(user: ActiveUser) {
     const row = await this.prisma.user.findUnique({
       where: { id: user.id },
       select: {

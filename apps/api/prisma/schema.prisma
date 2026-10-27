@@ -250,6 +250,8 @@ model Tenant {
   classReminderSettings    ClassReminderSetting[]
   paymentGateway           TenantPaymentGateway?
   aiUsage                  AiUsage[]
+  royaltyTerms             RoyaltyTerm[]
+  royaltyPayments          RoyaltyPayment[]
   insightAlerts            InsightAlert[]
   pettyCashSetting         PettyCashSetting?
   pettyCashCategories      PettyCashCategory[]
@@ -303,8 +305,84 @@ model SchoolGroup {
   tenants   Tenant[]
   users     User[]
   circulars GroupCircular[]
+  royaltyTerms    RoyaltyTerm[]
+  royaltyPayments RoyaltyPayment[]
+  aiBriefs        GroupAiBrief[]
+  aiUsage         AiUsage[]
 
   @@map("school_groups")
+}
+
+enum RoyaltyMode {
+  /// A share of the fees the branch collected that month (receipts), with an optional monthly minimum.
+  percent
+  /// The same amount every month.
+  fixed
+}
+
+/// What a branch pays its group (franchisor) each month (docs/SPEC-franchise.md §7).
+/// Immutable and effective-dated: a change is a new row; the latest row whose
+/// effective_from is on or before a month applies to that month.
+model RoyaltyTerm {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  groupId       String      @map("group_id") @db.Uuid
+  tenantId      String      @map("tenant_id") @db.Uuid
+  mode          RoyaltyMode
+  percent       Decimal?    @db.Decimal(5, 2)
+  fixedAmount   Decimal?    @map("fixed_amount") @db.Decimal(12, 2)
+  minimumAmount Decimal?    @map("minimum_amount") @db.Decimal(12, 2)
+  /// YYYY-MM
+  effectiveFrom String      @map("effective_from") @db.VarChar(7)
+  createdBy     String      @map("created_by") @db.Uuid
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  group  SchoolGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  tenant Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, tenantId, effectiveFrom])
+  @@map("royalty_terms")
+}
+
+/// Royalty received from a branch for a month. Never edited or deleted: a mistake is voided with a reason.
+model RoyaltyPayment {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  groupId    String    @map("group_id") @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  /// YYYY-MM the payment is for
+  month      String    @db.VarChar(7)
+  amount     Decimal   @db.Decimal(12, 2)
+  receivedOn DateTime  @map("received_on") @db.Date
+  reference  String?
+  note       String?
+  recordedBy String    @map("recorded_by") @db.Uuid
+  createdAt  DateTime  @default(now()) @map("created_at")
+  voidedAt   DateTime? @map("voided_at")
+  voidedBy   String?   @map("voided_by") @db.Uuid
+  voidReason String?   @map("void_reason")
+
+  group  SchoolGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  tenant Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, tenantId, month])
+  @@map("royalty_payments")
+}
+
+/// The head office's weekly brief: rule findings, phrased by the model when AI is available.
+model GroupAiBrief {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  groupId   String    @map("group_id") @db.Uuid
+  /// Monday of the week (Asia/Kolkata)
+  weekStart DateTime  @map("week_start") @db.Date
+  language  String    @db.VarChar(8)
+  text      String
+  findings  Json
+  createdAt DateTime  @default(now()) @map("created_at")
+  emailedAt DateTime? @map("emailed_at")
+
+  group SchoolGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, weekStart, language])
+  @@map("group_ai_briefs")
 }
 
 enum CircularAudience {
@@ -1971,7 +2049,9 @@ model TenantPaymentGateway {
 /// One Claude call (docs/SPEC-ai.md): for the per-school monthly cap and billing.
 model AiUsage {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId     String   @map("tenant_id") @db.Uuid
+  /// The school, or null for a group's head office (groupId).
+  tenantId     String?  @map("tenant_id") @db.Uuid
+  groupId      String?  @map("group_id") @db.Uuid
   /// e.g. "translate_notice", "report_remark"
   feature      String
   model        String
@@ -1979,9 +2059,11 @@ model AiUsage {
   outputTokens Int      @map("output_tokens")
   createdAt    DateTime @default(now()) @map("created_at")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant?       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  group  SchoolGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, createdAt])
+  @@index([groupId, createdAt])
   @@map("ai_usage")
 }
 

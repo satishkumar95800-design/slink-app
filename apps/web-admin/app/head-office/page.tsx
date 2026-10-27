@@ -1,10 +1,11 @@
 'use client';
 
-import { ArrowDown, ArrowUp, Building2, IndianRupee, Megaphone, Users, Wallet } from 'lucide-react';
+import { ArrowDown, ArrowUp, Building2, Download, IndianRupee, Megaphone, Users, Wallet } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/api-client';
+import { downloadCsv } from '../../lib/csv';
 import { formatRupees } from '../../lib/format';
 import { useErrorText } from '../../lib/i18n/errors';
 import { Badge } from '../../components/ui/badge';
@@ -123,6 +124,19 @@ export default function HeadOfficeOverview() {
     </th>
   );
 
+  /** The comparison table as a spreadsheet: one row per school, plain numbers. */
+  const exportCsv = () => {
+    const raw = (b: Branch, key: MeasureKey) => {
+      if (!b.metrics) return '';
+      if (key === 'admissions') return b.metrics.admissions ? `${b.metrics.admissions.enrolled}/${b.metrics.admissions.enquiries}` : '';
+      return MEASURES.find((m) => m.key === key)!.get(b.metrics) ?? '';
+    };
+    downloadCsv(`${data.group!.name} - schools.csv`, [
+      [t('col.name'), ...MEASURES.map((m) => t(`col.${m.key}`))],
+      ...rows.map((b) => [b.name, ...MEASURES.map((m) => raw(b, m.key))]),
+    ]);
+  };
+
   const tot = data.totals;
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -152,9 +166,19 @@ export default function HeadOfficeOverview() {
       </div>
 
       <section className="rounded-3xl border border-black/5 bg-white shadow-sm">
-        <div className="px-5 pt-5">
-          <h2 className="text-base font-semibold text-gray-900">{t('tableTitle')}</h2>
-          <p className="mt-1 text-sm text-gray-500">{t('tableHelp')}</p>
+        <div className="flex flex-wrap items-start justify-between gap-3 px-5 pt-5">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">{t('tableTitle')}</h2>
+            <p className="mt-1 text-sm text-gray-500">{t('tableHelp')}</p>
+          </div>
+          <button
+            type="button"
+            onClick={exportCsv}
+            className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-sm font-semibold text-teal hover:bg-teal/5"
+          >
+            <Download className="h-4 w-4" />
+            {t('exportCsv')}
+          </button>
         </div>
         <div className="mt-3 overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">

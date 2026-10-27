@@ -177,6 +177,22 @@ export class AppModule implements NestModule {
         { path: 'head-office/overview', method: RequestMethod.GET },
         { path: 'head-office/circulars', method: RequestMethod.ALL },
         { path: 'head-office/branches/:tenantId', method: RequestMethod.GET },
+        { path: 'head-office/insights', method: RequestMethod.GET },
+        { path: 'head-office/insights/brief', method: RequestMethod.POST },
+        { path: 'head-office/royalties', method: RequestMethod.GET },
+        { path: 'head-office/royalties/:tenantId', method: RequestMethod.GET },
+        {
+          path: 'head-office/royalties/:tenantId/terms',
+          method: RequestMethod.PUT,
+        },
+        {
+          path: 'head-office/royalties/:tenantId/payments',
+          method: RequestMethod.POST,
+        },
+        {
+          path: 'head-office/royalty-payments/:id/void',
+          method: RequestMethod.POST,
+        },
         { path: 'dev/audit-logs', method: RequestMethod.ALL },
         // Addendum 4 / A9 — unauthenticated receipt link: no X-Tenant-ID header
         // (opened straight from an SMS/push, not a logged-in session); the

@@ -430,3 +430,94 @@ describe('free trial', () => {
     );
   });
 });
+
+describe('head office of a franchise group', () => {
+  let ho: string;
+  const auth = () => ({ Authorization: `Bearer ${ho}` });
+
+  beforeAll(async () => {
+    // School A belongs to group G, school B to another group.
+    const g = await prisma.schoolGroup.create({ data: { name: 'Group G' } });
+    const h = await prisma.schoolGroup.create({ data: { name: 'Group H' } });
+    await prisma.tenant.update({ where: { id: f.A }, data: { groupId: g.id } });
+    await prisma.tenant.update({ where: { id: f.B }, data: { groupId: h.id } });
+    const u = await prisma.user.create({
+      data: {
+        tenantId: f.A,
+        groupId: g.id,
+        role: Role.head_office,
+        name: 'Owner G',
+        isVerified: true,
+      },
+    });
+    ho = token(u.id, f.A, Role.head_office);
+  });
+
+  it('sees its own branches with scores and findings', async () => {
+    const res = await http()
+      .get('/v1/head-office/insights')
+      .set(auth())
+      .expect(200);
+    const body = res.body as { scores: { id: string }[] };
+    expect(body.scores.map((s) => s.id)).toEqual([f.A]);
+  });
+
+  it("cannot open or set royalty for another group's school", async () => {
+    await http()
+      .get(`/v1/head-office/royalties/${f.B}`)
+      .set(auth())
+      .expect(404);
+    await http()
+      .put(`/v1/head-office/royalties/${f.B}/terms`)
+      .set(auth())
+      .send({ mode: 'fixed', fixedAmount: 1000, effectiveFrom: '2026-10' })
+      .expect(404);
+  });
+
+  it('school staff cannot reach head office routes', async () => {
+    await http()
+      .get('/v1/head-office/insights')
+      .set(as(f.adminA, f.A))
+      .expect(403);
+    await http()
+      .get('/v1/head-office/royalties')
+      .set(as(f.adminA, f.A))
+      .expect(403);
+  });
+
+  it('sets terms, records a payment and voids it', async () => {
+    const month = new Date().toISOString().slice(0, 7);
+    await http()
+      .put(`/v1/head-office/royalties/${f.A}/terms`)
+      .set(auth())
+      .send({ mode: 'fixed', fixedAmount: 15000, effectiveFrom: month })
+      .expect(200);
+    const paid = await http()
+      .post(`/v1/head-office/royalties/${f.A}/payments`)
+      .set(auth())
+      .send({
+        month,
+        amount: 15000,
+        receivedOn: new Date().toISOString().slice(0, 10),
+        reference: 'UTR1',
+      })
+      .expect(201);
+    type Branch = {
+      months: { month: string; due: string; received: string }[];
+      payments: { id: string }[];
+    };
+    const b = paid.body as Branch;
+    expect(b.months[0]).toMatchObject({
+      month,
+      due: '15000.00',
+      received: '15000.00',
+    });
+
+    const voided = await http()
+      .post(`/v1/head-office/royalty-payments/${b.payments[0].id}/void`)
+      .set(auth())
+      .send({ reason: 'Entered twice' })
+      .expect(200);
+    expect((voided.body as Branch).months[0].received).toBe('0.00');
+  });
+});

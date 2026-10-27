@@ -8,6 +8,9 @@ import {
   SchoolCircularsController,
 } from './head-office.controller';
 import { HeadOfficeService } from './head-office.service';
+import { GroupInsightsService } from './group-insights.service';
+import { RoyaltiesService } from './royalties.service';
+import { MailerService } from '../public-site/mailer.service';
 
 @Module({
   imports: [NotificationsModule],
@@ -16,6 +19,13 @@ import { HeadOfficeService } from './head-office.service';
     GroupsController,
     SchoolCircularsController,
   ],
-  providers: [HeadOfficeService, GroupsService, CircularsService],
+  providers: [
+    HeadOfficeService,
+    GroupsService,
+    CircularsService,
+    GroupInsightsService,
+    RoyaltiesService,
+    MailerService,
+  ],
 })
 export class HeadOfficeModule {}

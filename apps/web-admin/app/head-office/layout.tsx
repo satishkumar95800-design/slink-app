@@ -48,6 +48,21 @@ function Shell({ children }: { children: ReactNode }) {
       </div>
     );
 
+  const navLinks = [
+    { href: '/head-office', label: t('navOverview'), active: pathname === '/head-office' || pathname.startsWith('/head-office/branches') },
+    { href: '/head-office/insights', label: t('navInsights'), active: pathname.startsWith('/head-office/insights') },
+    { href: '/head-office/royalties', label: t('navRoyalties'), active: pathname.startsWith('/head-office/royalties') },
+    { href: '/head-office/circulars', label: t('navCirculars'), active: pathname.startsWith('/head-office/circulars') },
+  ].map((item) => (
+    <Link
+      key={item.href}
+      href={item.href}
+      className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium ${item.active ? 'bg-coral text-white' : 'text-white/80 hover:bg-white/10'}`}
+    >
+      {item.label}
+    </Link>
+  ));
+
   return (
     <ToastProvider>
       <div className="flex min-h-screen flex-col bg-cream">
@@ -59,20 +74,7 @@ function Shell({ children }: { children: ReactNode }) {
             <span className="truncate text-sm font-bold text-white">{t('title')}</span>
 
           </Link>
-          <nav className="flex items-center gap-1">
-            {[
-              { href: '/head-office', label: t('navOverview'), active: !pathname.startsWith('/head-office/circulars') },
-              { href: '/head-office/circulars', label: t('navCirculars'), active: pathname.startsWith('/head-office/circulars') },
-            ].map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium ${item.active ? 'bg-coral text-white' : 'text-white/80 hover:bg-white/10'}`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <nav className="hidden items-center gap-1 lg:flex">{navLinks}</nav>
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden text-sm text-white md:inline">{name}</span>
             <LanguageSwitcher signedIn={false} className="border-white/20 bg-white/10 text-white" />
@@ -88,6 +90,8 @@ function Shell({ children }: { children: ReactNode }) {
             </button>
           </div>
         </header>
+        {/* Below lg the tabs get their own row, scrolling sideways if needed. */}
+        <nav className="flex gap-1 overflow-x-auto bg-teal px-3 pb-2 lg:hidden">{navLinks}</nav>
         <main className="flex-1 p-3 sm:p-4 lg:p-6">{children}</main>
       </div>
     </ToastProvider>

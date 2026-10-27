@@ -59,6 +59,9 @@ interface SarvamChatResponse {
   usage?: { prompt_tokens: number; completion_tokens: number };
 }
 
+/** Whose monthly cap a call counts against: a school, or a group's head office. */
+type UsageOwner = { tenantId: string } | { groupId: string };
+
 const needsVision = (content: AiRequest['content']) =>
   Array.isArray(content) && content.some((c) => c.type !== 'text');
 
@@ -130,7 +133,12 @@ export class AiService {
         provider === 'sarvam'
           ? await this.callSarvam(req, model, opts.json)
           : await this.callAnthropic(req, model);
-      await this.logUsage(req.tenantId, req.feature, model, usage);
+      await this.logUsage(
+        { tenantId: req.tenantId },
+        req.feature,
+        model,
+        usage,
+      );
       return text;
     } catch (err) {
       const e =
@@ -140,6 +148,54 @@ export class AiService {
       this.logger.warn(`${req.feature} (${provider}) failed: ${e.message}`);
       throw e;
     }
+  }
+
+  /**
+   * complete() for a group's head office (no school): allowed when one of the
+   * group's live branches has aiInsights, under the group's own monthly cap,
+   * logged against the group. Text only.
+   */
+  async completeForGroup(
+    groupId: string,
+    req: Omit<AiRequest, 'tenantId'>,
+  ): Promise<string> {
+    const provider = this.provider();
+    if (!provider) throw new AiUnavailableError('not_configured');
+    if (!(await this.groupHasAi(groupId)))
+      throw new AiUnavailableError('disabled');
+    await this.assertWithinBudget({ groupId });
+    const model = this.model(req.tier, provider);
+    const full = { ...req, tenantId: '' };
+    try {
+      const { text, usage } =
+        provider === 'sarvam'
+          ? await this.callSarvam(full, model)
+          : await this.callAnthropic(full, model);
+      await this.logUsage({ groupId }, req.feature, model, usage);
+      return text;
+    } catch (err) {
+      const e =
+        err instanceof AiUnavailableError
+          ? err
+          : new AiUnavailableError('failed', (err as Error).message);
+      this.logger.warn(
+        `${req.feature} (${provider}, group) failed: ${e.message}`,
+      );
+      throw e;
+    }
+  }
+
+  /** A group's head office may use AI when one of its active branches has aiInsights. */
+  async groupHasAi(groupId: string): Promise<boolean> {
+    if (this.provider() === null) return false;
+    const n = await this.prisma.tenant.count({
+      where: {
+        groupId,
+        isActive: true,
+        features: { path: ['aiInsights'], equals: true },
+      },
+    });
+    return n > 0;
   }
 
   /** complete() for a reply that must be one JSON object. */
@@ -196,7 +252,7 @@ export class AiService {
       const body = (await res.json()) as { translated_text?: string };
       const out = body.translated_text?.trim();
       if (!out) throw new AiUnavailableError('failed', 'empty translation');
-      await this.logUsage(tenantId, feature, SARVAM_TRANSLATE_MODEL, {
+      await this.logUsage({ tenantId }, feature, SARVAM_TRANSLATE_MODEL, {
         input: input.length,
         output: out.length,
       });
@@ -290,30 +346,35 @@ export class AiService {
     if (!(await isFeatureEnabled(this.prisma, tenantId, 'aiInsights'))) {
       throw new AiUnavailableError('disabled');
     }
-    await this.assertWithinBudget(tenantId);
+    await this.assertWithinBudget({ tenantId });
   }
 
   /** Tokens this school used this calendar month (UTC). */
-  async monthlyTokens(tenantId: string): Promise<number> {
+  monthlyTokens(tenantId: string): Promise<number> {
+    return this.monthlyTokensOf({ tenantId });
+  }
+
+  /** Tokens a school, or a group's head office, used this calendar month (UTC). */
+  private async monthlyTokensOf(owner: UsageOwner): Promise<number> {
     const now = new Date();
     const since = new Date(
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
     );
     const sum = await this.prisma.aiUsage.aggregate({
-      where: { tenantId, createdAt: { gte: since } },
+      where: { ...owner, createdAt: { gte: since } },
       _sum: { inputTokens: true, outputTokens: true },
     });
     return (sum._sum.inputTokens ?? 0) + (sum._sum.outputTokens ?? 0);
   }
 
-  private async assertWithinBudget(tenantId: string) {
+  private async assertWithinBudget(owner: UsageOwner) {
     const limit = Number(
       this.config.get<string>('AI_MONTHLY_TOKEN_LIMIT') ??
         DEFAULT_MONTHLY_TOKEN_LIMIT,
     );
     let used: number;
     try {
-      used = await this.monthlyTokens(tenantId);
+      used = await this.monthlyTokensOf(owner);
     } catch (err) {
       // Usage table missing (migration not applied) — don't run unmetered.
       throw new AiUnavailableError('failed', (err as Error).message);
@@ -322,7 +383,7 @@ export class AiService {
   }
 
   private async logUsage(
-    tenantId: string,
+    owner: UsageOwner,
     feature: string,
     model: string,
     usage: { input: number; output: number },
@@ -330,7 +391,7 @@ export class AiService {
     try {
       await this.prisma.aiUsage.create({
         data: {
-          tenantId,
+          ...owner,
           feature,
           model,
           inputTokens: usage.input,

@@ -1,12 +1,17 @@
-import { CircularAudience } from '@prisma/client';
+import { CircularAudience, RoyaltyMode } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
   IsEmail,
   IsEnum,
+  IsNumber,
   IsOptional,
+  IsPositive,
   Matches,
+  Max,
+  Min,
+  ValidateIf,
   IsString,
   IsUUID,
   MaxLength,
@@ -98,4 +103,71 @@ export class CreateCircularDto {
   @IsUUID('all', { each: true })
   @IsOptional()
   tenantIds?: string[];
+}
+
+const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+const MAX_AMOUNT = 1_00_00_000;
+
+/** What a branch pays the group from a month on (a new row; earlier terms stay). */
+export class RoyaltyTermsDto {
+  @IsEnum(RoyaltyMode)
+  mode: RoyaltyMode;
+
+  /** percent mode: share of the fees the branch collects, e.g. 10 or 7.5. */
+  @ValidateIf((o: RoyaltyTermsDto) => o.mode === RoyaltyMode.percent)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  @Max(100)
+  percent?: number;
+
+  /** fixed mode: rupees every month. */
+  @ValidateIf((o: RoyaltyTermsDto) => o.mode === RoyaltyMode.fixed)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsPositive()
+  @Max(MAX_AMOUNT)
+  fixedAmount?: number;
+
+  /** percent mode, optional: never less than this many rupees a month. */
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(MAX_AMOUNT)
+  minimumAmount?: number;
+
+  @Matches(MONTH, { message: 'effectiveFrom must be YYYY-MM' })
+  effectiveFrom: string;
+}
+
+export class RoyaltyPaymentDto {
+  @Matches(MONTH, { message: 'month must be YYYY-MM' })
+  month: string;
+
+  /** Rupees, at most two decimals. */
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsPositive()
+  @Max(MAX_AMOUNT)
+  amount: number;
+
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'receivedOn must be YYYY-MM-DD' })
+  receivedOn: string;
+
+  @trim()
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  reference?: string;
+
+  @trim()
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  note?: string;
+}
+
+export class VoidRoyaltyPaymentDto {
+  @trim()
+  @IsString()
+  @MinLength(3)
+  @MaxLength(300)
+  reason: string;
 }

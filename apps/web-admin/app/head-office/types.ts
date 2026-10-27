@@ -59,3 +59,72 @@ export interface BranchDetail extends Branch {
   monthlyCollection: { month: string; amount: number }[];
   attendanceTrend: { date: string; pct: number | null; marked: number }[];
 }
+
+export type Band = 'good' | 'watch' | 'risk';
+
+export interface BranchScore {
+  id: string;
+  name: string;
+  score: number | null;
+  band: Band | null;
+  parts: { attendance: number | null; collection: number | null; appUse: number | null; syllabus: number | null; compliance: number | null };
+}
+
+export type FindingKind =
+  | 'attendance_drop'
+  | 'attendance_low'
+  | 'attendance_late_today'
+  | 'collection_behind'
+  | 'collections_slowing'
+  | 'group_dues'
+  | 'admissions_weak'
+  | 'app_use_low'
+  | 'syllabus_late'
+  | 'top_branch';
+
+export interface Finding {
+  kind: FindingKind;
+  severity: Band;
+  branchId: string | null;
+  branch: string | null;
+  values: Record<string, number>;
+}
+
+export interface Insights {
+  group: { id: string; name: string } | null;
+  scores: BranchScore[];
+  findings: Finding[];
+  brief: { text: string; createdAt: string } | null;
+  aiAvailable: boolean;
+}
+
+export interface RoyaltyTerm {
+  mode: 'percent' | 'fixed';
+  percent: number | null;
+  fixedAmount: string | null;
+  minimumAmount: string | null;
+  effectiveFrom: string;
+}
+
+export interface RoyaltySummary {
+  month: string;
+  branches: {
+    id: string;
+    name: string;
+    term: RoyaltyTerm | null;
+    thisMonth: { collected: string; due: string; received: string };
+    outstanding: string;
+    lastReceivedOn: string | null;
+  }[];
+  totals: { dueThisMonth: string; receivedThisMonth: string; outstanding: string };
+}
+
+export interface RoyaltyBranch {
+  id: string;
+  name: string;
+  month: string;
+  outstanding: string;
+  months: { month: string; collected: string; term: RoyaltyTerm | null; due: string; received: string; balance: string }[];
+  terms: (RoyaltyTerm & { id: string; createdAt: string })[];
+  payments: { id: string; month: string; amount: string; receivedOn: string; reference: string | null; note: string | null; voided: boolean; voidReason: string | null }[];
+}
