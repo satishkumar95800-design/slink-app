@@ -102,7 +102,7 @@ What a franchisee branch pays its group. Group-level records only; no branch dat
 
 ## 9. Further ideas for franchise owners (not built)
 
-Ranked by value to a franchisor:
+On hold until after pitching to schools; scope, decisions and effort per item in docs/PLAN-franchise-next.md. Ranked by value to a franchisor:
 
 1. **Group templates**: push a fee structure, holiday calendar or syllabus plan to every branch at once (needs a rule change: today the head office never writes school data).
 2. **Brand audits**: inspection checklists an area manager fills in per visit (score, photos), with trends per branch.
