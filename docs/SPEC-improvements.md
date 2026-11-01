@@ -1,4 +1,4 @@
-# Slink — Website & Mobile App Improvements Spec (for Claude Code)
+# Schoolinkd — Website & Mobile App Improvements Spec (for Claude Code)
 _Oct 8, 2026 · @satish_
 
 ## How to use this with Claude Code
@@ -32,7 +32,7 @@ how to run migrations, and a manual test checklist for this phase.
 
 ## Context and ground rules
 
-Slink is a school management system for Indian private schools: a marketing website (schoolinkd.in), an admin web console with Admin, Accounts and Teacher roles, and one mobile app with Parent and Teacher logins. The goal of these changes is to make the product easier to sell to school owners (fee recovery, attendance, control) and to get a clean demo ready for a product video.
+Schoolinkd is a school management system for Indian private schools: a marketing website (schoolinkd.in), an admin web console with Admin, Accounts and Teacher roles, and one mobile app with Parent and Teacher logins. The goal of these changes is to make the product easier to sell to school owners (fee recovery, attendance, control) and to get a clean demo ready for a product video.
 
 Ground rules for the agent:
 
@@ -64,7 +64,7 @@ These are small but visible problems that would hurt the demo video and first im
 
 **1.4 Name capitalisation.** On display, do not alter stored names, but add validation on create and import that trims spaces and warns if a name is all lowercase. Fix the demo data separately (Phase 6).
 
-**1.5 Branding consistency.** Use "Slink" as the product name everywhere in the website, console, app titles and emails. The domain can stay schoolinkd.in.
+**1.5 Branding consistency.** Use "Schoolinkd" as the product name everywhere in the website, console, app titles and emails. The domain can stay schoolinkd.in.
 
 ## Phase 2: Daily attendance
 
@@ -169,9 +169,9 @@ Reposition the site around fee recovery for school owners and make it easy to bo
 
 **5.1 New hero message.** Lead with the owner's outcome rather than features. Suggested headline: "Know exactly how much fee your school collected, and who still owes, every single day." Subline: cash, cheque and online payments in one dashboard, plus a parent and teacher app. Primary button: Book a free demo on WhatsApp; secondary: School Login.
 
-**5.2 WhatsApp demo button.** A floating WhatsApp button on every page and the primary CTA in hero, mid-page and footer. Link format https://wa.me/<number>?text=<prefilled message> with a message like "Hi, I'd like a demo of Slink for my school." Put the number in one config value. Do not put any personal data in the URL beyond this fixed message.
+**5.2 WhatsApp demo button.** A floating WhatsApp button on every page and the primary CTA in hero, mid-page and footer. Link format https://wa.me/<number>?text=<prefilled message> with a message like "Hi, I'd like a demo of Schoolinkd for my school." Put the number in one config value. Do not put any personal data in the URL beyond this fixed message.
 
-**5.3 Demo video section.** Below the hero, an embedded video player (YouTube embed, lazy-loaded) with a placeholder thumbnail until the video exists. Title: "See Slink in 90 seconds".
+**5.3 Demo video section.** Below the hero, an embedded video player (YouTube embed, lazy-loaded) with a placeholder thumbnail until the video exists. Title: "See Schoolinkd in 90 seconds".
 
 **5.4 "Why schools switch" section.** Three short benefit blocks: fewer fee defaults (cash and online in one place), live in a day (one Excel import, we do it for you), parents stay informed (homework, notices, attendance, report cards on their phone).
 

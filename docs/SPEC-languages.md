@@ -1,8 +1,8 @@
-# Slink — Kannada & Hindi Language Support Spec (for Claude Code)
+# Schoolinkd — Kannada & Hindi Language Support Spec (for Claude Code)
 
 Oct 9, 2026 · @satish
 
-Add Kannada and Hindi alongside English in the parent app, teacher app and admin web console, so each user can use Slink in the language they're most comfortable with.
+Add Kannada and Hindi alongside English in the parent app, teacher app and admin web console, so each user can use Schoolinkd in the language they're most comfortable with.
 
 ## How to use with Claude Code
 
