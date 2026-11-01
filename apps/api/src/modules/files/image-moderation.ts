@@ -39,6 +39,18 @@ export function imageModerationEnabled(
   return !s3Endpoint;
 }
 
+/**
+ * Rekognition is not offered in every region the bucket may live in (e.g. not
+ * eu-north-1), so it has its own REKOGNITION_REGION; the photo bytes travel in
+ * the request, so it need not match the bucket. Falls back to AWS_REGION.
+ */
+export function rekognitionRegion(
+  setting: string | undefined,
+  awsRegion: string,
+): string {
+  return setting?.trim() || awsRegion;
+}
+
 export interface ModerationLabel {
   Name?: string;
   ParentName?: string;

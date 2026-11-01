@@ -33,6 +33,7 @@ import {
   blockedCategories,
   imageModerationEnabled,
   needsImageCheck,
+  rekognitionRegion,
 } from './image-moderation';
 
 /** Petty cash receipts (private/{tenant}/petty-cash/...) are reachable only through the petty-cash module. */
@@ -113,12 +114,21 @@ export class FilesService {
         ? { endpoint: this.endpoint, forcePathStyle: true }
         : {}),
     });
-    this.rekognition = imageModerationEnabled(
-      config.get<string>('IMAGE_MODERATION'),
-      this.endpoint,
-    )
-      ? new RekognitionClient({ region: this.region })
-      : null;
+    if (
+      imageModerationEnabled(
+        config.get<string>('IMAGE_MODERATION'),
+        this.endpoint,
+      )
+    ) {
+      const region = rekognitionRegion(
+        config.get<string>('REKOGNITION_REGION'),
+        this.region,
+      );
+      this.rekognition = new RekognitionClient({ region });
+      this.logger.log(`Photo checks use Rekognition in ${region}`);
+    } else {
+      this.rekognition = null;
+    }
   }
 
   async upload(
