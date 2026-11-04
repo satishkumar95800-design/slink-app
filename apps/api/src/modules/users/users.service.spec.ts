@@ -4,10 +4,11 @@ import {
   ConflictException,
   UnauthorizedException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { UsersService } from './users.service';
+import { DELETED_USER_NAME, UsersService } from './users.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
 jest.mock('bcrypt', () => ({
@@ -48,6 +49,12 @@ const mockPrisma = {
   attendanceRecord: {
     count: jest.fn().mockResolvedValue(0),
   },
+  studentParent: { deleteMany: jest.fn() },
+  loginChallenge: { deleteMany: jest.fn() },
+  notification: { deleteMany: jest.fn() },
+  employee: { updateMany: jest.fn() },
+  pettyCashPayee: { updateMany: jest.fn() },
+  auditLog: { create: jest.fn() },
   $transaction: jest.fn(),
 };
 
@@ -437,6 +444,98 @@ describe('UsersService', () => {
       await expect(service.changePassword('user-uuid', dto)).rejects.toThrow(
         BadRequestException,
       );
+    });
+  });
+
+  // ── deleteMe ──────────────────────────────────────────────────────────────────
+
+  describe('deleteMe', () => {
+    const runTransaction = () =>
+      mockPrisma.$transaction.mockImplementation(
+        (fn: (tx: typeof mockPrisma) => Promise<unknown>) => fn(mockPrisma),
+      );
+
+    it('anonymises the account, unlinks children and revokes every token', async () => {
+      mockPrisma.user.findUniqueOrThrow.mockResolvedValue({
+        id: 'user-uuid',
+        tenantId: 'tenant-uuid',
+        role: Role.parent,
+      });
+      mockPrisma.studentParent.deleteMany.mockResolvedValue({ count: 2 });
+      runTransaction();
+
+      await service.deleteMe('user-uuid');
+
+      expect(mockPrisma.studentParent.deleteMany).toHaveBeenCalledWith({
+        where: { parentId: 'user-uuid' },
+      });
+      expect(mockPrisma.refreshToken.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: 'user-uuid', revokedAt: null },
+        }),
+      );
+      expect(mockPrisma.notification.deleteMany).toHaveBeenCalledWith({
+        where: { userId: 'user-uuid' },
+      });
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-uuid' },
+        data: expect.objectContaining({
+          name: DELETED_USER_NAME,
+          phone: null,
+          email: null,
+          passwordHash: null,
+          fcmTokens: [],
+          deletedAt: expect.any(Date),
+        }),
+      });
+      const log = mockPrisma.auditLog.create.mock.calls[0][0].data;
+      expect(log).toMatchObject({
+        action: 'user.self_delete',
+        actorId: 'user-uuid',
+        diff: { role: Role.parent, childrenUnlinked: 2 },
+      });
+    });
+
+    it('refuses the platform team', async () => {
+      mockPrisma.user.findUniqueOrThrow.mockResolvedValue({
+        id: 'user-uuid',
+        tenantId: 'tenant-uuid',
+        role: Role.super_admin,
+      });
+
+      await expect(service.deleteMe('user-uuid')).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it("refuses the school's only admin", async () => {
+      mockPrisma.user.findUniqueOrThrow.mockResolvedValue({
+        id: 'user-uuid',
+        tenantId: 'tenant-uuid',
+        role: Role.admin,
+      });
+      mockPrisma.user.count.mockResolvedValue(0);
+
+      await expect(service.deleteMe('user-uuid')).rejects.toThrow(
+        ConflictException,
+      );
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('lets an admin go when another admin remains', async () => {
+      mockPrisma.user.findUniqueOrThrow.mockResolvedValue({
+        id: 'user-uuid',
+        tenantId: 'tenant-uuid',
+        role: Role.admin,
+      });
+      mockPrisma.user.count.mockResolvedValue(1);
+      mockPrisma.studentParent.deleteMany.mockResolvedValue({ count: 0 });
+      runTransaction();
+
+      await service.deleteMe('user-uuid');
+
+      expect(mockPrisma.user.update).toHaveBeenCalled();
     });
   });
 });

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/l10n/language_controller.dart';
 import '../../shared/models/active_user.dart';
+import '../../shared/services/api_client.dart';
 import '../../shared/services/secure_storage_service.dart';
 import '../../shared/services/push_notification_service.dart';
 import 'auth_repository.dart';
@@ -150,6 +151,15 @@ class SessionController extends StateNotifier<SessionState> {
     }
 
     await storage.clearAll();
+    state = const SessionState.loggedOut();
+  }
+
+  /// Deletes the signed-in user's own account on the server (it is anonymised
+  /// and every token revoked there), then forgets the session on this phone.
+  /// No server sign-out afterwards: the tokens no longer work.
+  Future<void> deleteAccount() async {
+    await _ref.read(apiClientProvider).delete<void>('/users/me');
+    await _ref.read(secureStorageServiceProvider).clearAll();
     state = const SessionState.loggedOut();
   }
 }

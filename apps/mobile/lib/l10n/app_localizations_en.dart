@@ -2658,4 +2658,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String adminApptWith(String who) {
     return 'with $who';
   }
+
+  @override
+  String get profileDeleteAccount => 'Delete my account';
+
+  @override
+  String get profileDeleteTitle => 'Delete your account?';
+
+  @override
+  String get profileDeleteBody =>
+      'This deletes your Schoolinkd account now: your name, phone number, email, notifications and the link to your children. You will be signed out on every phone, and this can\'t be undone.\n\nYour school keeps its own records, such as fee receipts, attendance and report cards. To use the app again, ask your school to add your number.';
+
+  @override
+  String get profileDeleteConfirm => 'Delete account';
+
+  @override
+  String get profileDeleted => 'Your account has been deleted.';
+
+  @override
+  String get errLastAdmin =>
+      'You are the only admin of this school. Make someone else an admin first.';
+
+  @override
+  String get errAccountDeleteNotAllowed =>
+      'This account can\'t be deleted from the app.';
 }

@@ -52,10 +52,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         role: true,
         name: true,
         isVerified: true,
+        deletedAt: true,
       },
     });
 
-    if (!user || user.tenantId !== payload.tenantId) {
+    if (!user || user.deletedAt || user.tenantId !== payload.tenantId) {
       throw new UnauthorizedException();
     }
 

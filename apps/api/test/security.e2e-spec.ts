@@ -521,3 +521,72 @@ describe('head office of a franchise group', () => {
     expect((voided.body as Branch).months[0].received).toBe('0.00');
   });
 });
+
+describe('deleting your own account', () => {
+  const setUp = async (slug: string) => {
+    const { t, cls } = await school(slug, {});
+    const admin = await prisma.user.create({
+      data: {
+        tenantId: t.id,
+        role: Role.admin,
+        name: 'Only Admin',
+        isVerified: true,
+      },
+    });
+    const parent = await prisma.user.create({
+      data: {
+        tenantId: t.id,
+        role: Role.parent,
+        name: 'Leaving Parent',
+        phone: '+919000000077',
+        isVerified: true,
+      },
+    });
+    const child = await prisma.student.create({
+      data: {
+        tenantId: t.id,
+        classId: cls.id,
+        name: 'Kid',
+        admissionNo: 'K-1',
+      },
+    });
+    await prisma.studentParent.create({
+      data: { studentId: child.id, parentId: parent.id },
+    });
+    return { t, admin, parent, child };
+  };
+
+  it('removes the parent at once: token refused, number unknown, child unlinked', async () => {
+    const { t, parent, child } = await setUp('delete-parent');
+    const tok = token(parent.id, t.id, Role.parent);
+
+    await http().delete('/v1/users/me').set(as(tok, t.id)).expect(204);
+
+    await http().get('/v1/users/me').set(as(tok, t.id)).expect(401);
+    const check = await http()
+      .post('/v1/auth/phone/check')
+      .set('X-Tenant-ID', t.id)
+      .send({ phone: '+919000000077' })
+      .expect(200);
+    expect(check.body).toEqual({ exists: false });
+    expect(
+      await prisma.studentParent.count({ where: { studentId: child.id } }),
+    ).toBe(0);
+    const row = await prisma.user.findUniqueOrThrow({
+      where: { id: parent.id },
+    });
+    expect(row).toMatchObject({ phone: null, name: 'Deleted user' });
+    expect(row.deletedAt).not.toBeNull();
+  });
+
+  it("refuses the school's only admin", async () => {
+    const { t, admin } = await setUp('delete-last-admin');
+    const res = await http()
+      .delete('/v1/users/me')
+      .set(as(token(admin.id, t.id, Role.admin), t.id))
+      .expect(409);
+    expect((res.body as { error: { code: string } }).error.code).toBe(
+      'LAST_ADMIN',
+    );
+  });
+});

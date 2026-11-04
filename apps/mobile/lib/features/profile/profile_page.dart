@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/models/active_user.dart';
+import '../../shared/models/api_exception.dart';
 import '../../shared/services/branding_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/theme_mode_controller.dart';
@@ -43,6 +44,33 @@ class ProfilePage extends ConsumerWidget {
         ),
       );
       if (ok == true) await ref.read(sessionControllerProvider.notifier).logout();
+    }
+
+    Future<void> confirmDelete() async {
+      const danger = Color(0xFFDC2626);
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(l.profileDeleteTitle),
+          content: SingleChildScrollView(child: Text(l.profileDeleteBody)),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l.commonCancel)),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: danger),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(l.profileDeleteConfirm),
+            ),
+          ],
+        ),
+      );
+      if (ok != true || !context.mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      try {
+        await ref.read(sessionControllerProvider.notifier).deleteAccount();
+        messenger.showSnackBar(SnackBar(content: Text(l.profileDeleted)));
+      } catch (e) {
+        messenger.showSnackBar(SnackBar(content: Text(describeError(e))));
+      }
     }
 
     return AuthenticatedScaffold(
@@ -116,6 +144,11 @@ class ProfilePage extends ConsumerWidget {
               leading: const IconBadge(icon: Icons.logout_rounded, color: Color(0xFFDC2626)),
               title: l.profileLogout,
               onTap: confirmLogout,
+            ),
+            ListCard(
+              leading: const IconBadge(icon: Icons.person_remove_rounded, color: Color(0xFFDC2626)),
+              title: l.profileDeleteAccount,
+              onTap: confirmDelete,
             ),
           ],
         ),

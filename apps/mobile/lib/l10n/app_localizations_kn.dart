@@ -2658,4 +2658,28 @@ class AppLocalizationsKn extends AppLocalizations {
   String adminApptWith(String who) {
     return '$who ಅವರೊಂದಿಗೆ';
   }
+
+  @override
+  String get profileDeleteAccount => 'ನನ್ನ ಖಾತೆಯನ್ನು ಅಳಿಸಿ';
+
+  @override
+  String get profileDeleteTitle => 'ನಿಮ್ಮ ಖಾತೆಯನ್ನು ಅಳಿಸುವುದೇ?';
+
+  @override
+  String get profileDeleteBody =>
+      'ಇದು ನಿಮ್ಮ Schoolinkd ಖಾತೆಯನ್ನು ಈಗಲೇ ಅಳಿಸುತ್ತದೆ: ನಿಮ್ಮ ಹೆಸರು, ಫೋನ್ ಸಂಖ್ಯೆ, ಇಮೇಲ್, ಅಧಿಸೂಚನೆಗಳು ಮತ್ತು ನಿಮ್ಮ ಮಕ್ಕಳೊಂದಿಗಿನ ಸಂಪರ್ಕ. ಎಲ್ಲಾ ಫೋನ್‌ಗಳಲ್ಲಿ ನೀವು ಸೈನ್ ಔಟ್ ಆಗುತ್ತೀರಿ ಮತ್ತು ಇದನ್ನು ರದ್ದುಗೊಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ.\n\nಶಾಲೆಯು ಶುಲ್ಕದ ರಸೀದಿಗಳು, ಹಾಜರಾತಿ ಮತ್ತು ವರದಿ ಕಾರ್ಡ್‌ಗಳಂತಹ ತನ್ನ ದಾಖಲೆಗಳನ್ನು ಇಟ್ಟುಕೊಳ್ಳುತ್ತದೆ. ಆ್ಯಪ್ ಅನ್ನು ಮತ್ತೆ ಬಳಸಲು, ನಿಮ್ಮ ಸಂಖ್ಯೆಯನ್ನು ಸೇರಿಸುವಂತೆ ನಿಮ್ಮ ಶಾಲೆಯನ್ನು ಕೇಳಿ.';
+
+  @override
+  String get profileDeleteConfirm => 'ಖಾತೆ ಅಳಿಸಿ';
+
+  @override
+  String get profileDeleted => 'ನಿಮ್ಮ ಖಾತೆಯನ್ನು ಅಳಿಸಲಾಗಿದೆ.';
+
+  @override
+  String get errLastAdmin =>
+      'ನೀವು ಈ ಶಾಲೆಯ ಏಕೈಕ ಅಡ್ಮಿನ್. ಮೊದಲು ಬೇರೊಬ್ಬರನ್ನು ಅಡ್ಮಿನ್ ಮಾಡಿ.';
+
+  @override
+  String get errAccountDeleteNotAllowed =>
+      'ಈ ಖಾತೆಯನ್ನು ಆ್ಯಪ್‌ನಿಂದ ಅಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ.';
 }

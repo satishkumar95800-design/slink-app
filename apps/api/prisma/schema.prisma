@@ -468,6 +468,9 @@ model User {
   // head_office users only: the group whose schools they see. Their tenant_id
   // is one school of the group (a user needs one) and is never used for scope.
   groupId      String?  @map("group_id") @db.Uuid
+  // Set when the person deleted their own account (DELETE /users/me): the row
+  // stays, anonymised, because fee receipts, attendance and reports point at it.
+  deletedAt    DateTime? @map("deleted_at")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 

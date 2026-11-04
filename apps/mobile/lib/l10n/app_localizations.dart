@@ -4259,6 +4259,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'with {who}'**
   String adminApptWith(String who);
+
+  /// Profile item that starts deleting the signed-in user's own account
+  ///
+  /// In en, this message translates to:
+  /// **'Delete my account'**
+  String get profileDeleteAccount;
+
+  /// No description provided for @profileDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete your account?'**
+  String get profileDeleteTitle;
+
+  /// Explains what account deletion removes and what the school keeps
+  ///
+  /// In en, this message translates to:
+  /// **'This deletes your Schoolinkd account now: your name, phone number, email, notifications and the link to your children. You will be signed out on every phone, and this can\'t be undone.\n\nYour school keeps its own records, such as fee receipts, attendance and report cards. To use the app again, ask your school to add your number.'**
+  String get profileDeleteBody;
+
+  /// No description provided for @profileDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get profileDeleteConfirm;
+
+  /// No description provided for @profileDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account has been deleted.'**
+  String get profileDeleted;
+
+  /// No description provided for @errLastAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'You are the only admin of this school. Make someone else an admin first.'**
+  String get errLastAdmin;
+
+  /// No description provided for @errAccountDeleteNotAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'This account can\'t be deleted from the app.'**
+  String get errAccountDeleteNotAllowed;
 }
 
 class _AppLocalizationsDelegate

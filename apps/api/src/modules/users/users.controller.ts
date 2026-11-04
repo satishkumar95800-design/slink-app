@@ -50,15 +50,29 @@ export class UsersController {
   /** Saves the caller's interface language (any role) — applies on every device at next sign-in. */
   @Patch('me/language')
   @SelfService()
-  updateMyLanguage(@CurrentUser() user: ActiveUser, @Body() dto: UpdateLanguageDto) {
+  updateMyLanguage(
+    @CurrentUser() user: ActiveUser,
+    @Body() dto: UpdateLanguageDto,
+  ) {
     return this.usersService.updateMyLanguage(user.id, dto.language);
   }
 
   @Post('me/change-password')
   @SelfService()
   @HttpCode(HttpStatus.NO_CONTENT)
-  async changePassword(@CurrentUser() user: ActiveUser, @Body() dto: ChangePasswordDto) {
+  async changePassword(
+    @CurrentUser() user: ActiveUser,
+    @Body() dto: ChangePasswordDto,
+  ) {
     await this.usersService.changePassword(user.id, dto);
+  }
+
+  /** Deletes the caller's own account (anonymised at once); the apps then sign out. */
+  @Delete('me')
+  @SelfService()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteMe(@CurrentUser() user: ActiveUser) {
+    await this.usersService.deleteMe(user.id);
   }
 
   // ─── Admin endpoints ──────────────────────────────────────────────────────────

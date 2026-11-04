@@ -10,24 +10,34 @@ export default function DataDeletionPage() {
         <h1 className="text-3xl font-bold text-gray-900">Account &amp; Data Deletion</h1>
 
         <p className="mt-8 text-gray-700">
-          You can request deletion of your Schoolinkd account and the personal data associated with it at any time.
-          This currently requires a request to our support team (there is no self-service delete option in the
-          app yet).
+          You can delete your Schoolinkd account and the personal data linked to it at any time, straight from
+          the app.
         </p>
 
-        <h2 className="mt-10 text-xl font-semibold text-gray-900">How to request deletion</h2>
+        <h2 className="mt-10 text-xl font-semibold text-gray-900">Delete your account in the app</h2>
+        <ol className="mt-4 list-decimal space-y-2 pl-6 text-gray-700">
+          <li>Open the Schoolinkd app and sign in.</li>
+          <li>Tap <strong>Profile</strong>.</li>
+          <li>Tap <strong>Delete my account</strong>, read what will be deleted, and tap <strong>Delete account</strong>.</li>
+        </ol>
+        <p className="mt-4 text-gray-700">
+          Your account is deleted straight away and you are signed out on every phone.
+        </p>
+
+        <h2 className="mt-10 text-xl font-semibold text-gray-900">If you can&apos;t use the app</h2>
         <p className="mt-4 text-gray-700">
           Email <a href="mailto:support@schoolinkd.in" className="text-blue-600 hover:underline">support@schoolinkd.in</a>{' '}
-          from the email address or phone number linked to your account, with the subject &quot;Account
-          Deletion Request&quot;. Include your name, your school&apos;s name, and the phone number you use to
-          sign in.
+          with the subject &quot;Account Deletion Request&quot;. Include your name, your school&apos;s name, and the
+          phone number you use to sign in. We delete the account within 7 days of confirming the request
+          comes from you.
         </p>
 
         <h2 className="mt-10 text-xl font-semibold text-gray-900">What gets deleted</h2>
         <ul className="mt-4 list-disc space-y-2 pl-6 text-gray-700">
-          <li>Your account profile (name, phone number, email) and login credentials.</li>
-          <li>Push notification tokens registered to your device.</li>
-          <li>Your read/notification history within the app.</li>
+          <li>Your name, phone number, email and sign-in details.</li>
+          <li>Push notification tokens registered to your phones.</li>
+          <li>Your notification history in the app.</li>
+          <li>The link between your account and your children.</li>
         </ul>
 
         <h2 className="mt-10 text-xl font-semibold text-gray-900">What may be retained</h2>
@@ -38,9 +48,10 @@ export default function DataDeletionPage() {
           administrator, not deleted alongside a parent/teacher account.
         </p>
 
-        <h2 className="mt-10 text-xl font-semibold text-gray-900">Processing time</h2>
+        <h2 className="mt-10 text-xl font-semibold text-gray-900">Using the app again</h2>
         <p className="mt-4 text-gray-700">
-          We aim to complete deletion requests within [X] business days of verifying your identity.
+          A deleted account can&apos;t be restored. To use Schoolinkd again, ask your school to add your phone
+          number; you then start with a new account.
         </p>
       </div>
     </Section>

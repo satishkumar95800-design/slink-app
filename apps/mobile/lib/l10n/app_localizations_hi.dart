@@ -2659,4 +2659,27 @@ class AppLocalizationsHi extends AppLocalizations {
   String adminApptWith(String who) {
     return '$who से';
   }
+
+  @override
+  String get profileDeleteAccount => 'मेरा खाता हटाएँ';
+
+  @override
+  String get profileDeleteTitle => 'अपना खाता हटाएँ?';
+
+  @override
+  String get profileDeleteBody =>
+      'इससे आपका Schoolinkd खाता अभी हट जाएगा: आपका नाम, फ़ोन नंबर, ईमेल, सूचनाएँ और आपके बच्चों से जुड़ाव। आप हर फ़ोन से साइन आउट हो जाएँगे और इसे वापस नहीं किया जा सकता।\n\nस्कूल अपने रिकॉर्ड रखता है, जैसे फ़ीस की रसीदें, उपस्थिति और रिपोर्ट कार्ड। ऐप फिर से इस्तेमाल करने के लिए स्कूल से अपना नंबर जोड़ने को कहें।';
+
+  @override
+  String get profileDeleteConfirm => 'खाता हटाएँ';
+
+  @override
+  String get profileDeleted => 'आपका खाता हटा दिया गया है।';
+
+  @override
+  String get errLastAdmin =>
+      'आप इस स्कूल के अकेले एडमिन हैं। पहले किसी और को एडमिन बनाएँ।';
+
+  @override
+  String get errAccountDeleteNotAllowed => 'यह खाता ऐप से नहीं हटाया जा सकता।';
 }

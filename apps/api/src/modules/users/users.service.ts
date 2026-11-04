@@ -4,6 +4,7 @@ import {
   ConflictException,
   UnauthorizedException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Prisma, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -17,6 +18,9 @@ import { effectiveLanguage } from '../../common/i18n/languages';
 import type { Language } from '../../common/i18n/languages';
 
 const BCRYPT_ROUNDS = 12;
+
+/** Name left on an account its owner deleted (receipts and records still show it). */
+export const DELETED_USER_NAME = 'Deleted user';
 
 const userSelect = {
   id: true,
@@ -90,7 +94,7 @@ export class UsersService {
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.UserWhereInput = { tenantId };
+    const where: Prisma.UserWhereInput = { tenantId, deletedAt: null };
 
     if (query.role) {
       where.role = query.role;
@@ -215,7 +219,10 @@ export class UsersService {
     });
     return {
       ...user,
-      language: effectiveLanguage(user.preferredLanguage, tenant.defaultLanguage),
+      language: effectiveLanguage(
+        user.preferredLanguage,
+        tenant.defaultLanguage,
+      ),
     };
   }
 
@@ -274,6 +281,95 @@ export class UsersService {
     await this.prisma.user.update({
       where: { id: userId },
       data: { passwordHash },
+    });
+  }
+
+  // ─── Self: delete own account ─────────────────────────────────────────────────
+
+  /**
+   * The person deletes their own account (App Store 5.1.1(v), schoolinkd.in/data-deletion).
+   * The row stays because receipts, attendance and reports point at it, but
+   * everything that identifies the person goes at once: name, phone, email,
+   * password, push tokens, notification history and the link to their children.
+   * Every token is revoked, the phone or email can't sign in any more (the
+   * school can add the number again as a new account), and JwtStrategy refuses
+   * the row. Records the school keeps (fees, receipts, attendance marked,
+   * reports, the HR employee record) are not touched.
+   */
+  async deleteMe(userId: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { id: true, tenantId: true, role: true },
+    });
+
+    if (user.role === Role.super_admin) {
+      throw new ForbiddenException({
+        code: 'ACCOUNT_DELETE_NOT_ALLOWED',
+        message: 'Platform accounts are removed by the platform team',
+      });
+    }
+    if (user.role === Role.admin) {
+      const otherAdmins = await this.prisma.user.count({
+        where: {
+          tenantId: user.tenantId,
+          role: Role.admin,
+          deletedAt: null,
+          id: { not: userId },
+        },
+      });
+      if (otherAdmins === 0) {
+        throw new ConflictException({
+          code: 'LAST_ADMIN',
+          message:
+            'You are the only admin of this school. Make someone else an admin first.',
+        });
+      }
+    }
+
+    const now = new Date();
+    await this.prisma.$transaction(async (tx) => {
+      const children = await tx.studentParent.deleteMany({
+        where: { parentId: userId },
+      });
+      await tx.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: now },
+      });
+      await tx.loginChallenge.deleteMany({ where: { userId } });
+      await tx.notification.deleteMany({ where: { userId } });
+      await tx.employee.updateMany({
+        where: { userId },
+        data: { userId: null },
+      });
+      await tx.pettyCashPayee.updateMany({
+        where: { userId },
+        data: { userId: null },
+      });
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          name: DELETED_USER_NAME,
+          phone: null,
+          email: null,
+          passwordHash: null,
+          fcmTokens: [],
+          profession: null,
+          preferredLanguage: null,
+          isVerified: false,
+          deletedAt: now,
+        },
+      });
+      // No personal data in the log: only what was removed.
+      await tx.auditLog.create({
+        data: {
+          tenantId: user.tenantId,
+          actorId: userId,
+          action: 'user.self_delete',
+          entityType: 'user',
+          entityId: userId,
+          diff: { role: user.role, childrenUnlinked: children.count },
+        },
+      });
     });
   }
 
